@@ -1,0 +1,144 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OxidEsales\PaymentComponent\Contract;
+
+use DateTimeInterface;
+use OxidEsales\PaymentComponent\Model\ModelInterface;
+
+/**
+ * Payment contract capturing purchase intent before order creation.
+ *
+ * States: DRAFT → PENDING → AUTHORIZED → READY_TO_COMMIT → COMMITTED → FULFILLED
+ * Or: CANCELLED | EXPIRED | FAILED
+ */
+interface PaymentContractInterface extends ModelInterface
+{
+    public function getState(): ContractState;
+
+    public function getStateValue(): string;
+
+    public function getAmount(): float;
+
+    public function getCurrency(): string;
+
+    public function isInState(string $state): bool;
+
+    public function getOrderId(): ?string;
+
+    public function getProviderOrderId(): ?string;
+
+    public function getCreatedAt(): DateTimeInterface;
+
+    public function getUpdatedAt(): DateTimeInterface;
+
+    public function getUserId(): string;
+
+    public function getBasketSnapshot(): BasketSnapshot;
+
+    public function areAllConditionsFulfilled(): bool;
+
+    /**
+     * Transition contract from DRAFT to PENDING state.
+     */
+    public function transitionToPending(): void;
+
+    /**
+     * Transition contract from PENDING to AUTHORIZED state.
+     *
+     * Used when payment is authorized but not yet captured (manual capture mode).
+     */
+    public function authorize(): void;
+
+    /**
+     * Transition contract from AUTHORIZED to READY_TO_COMMIT state.
+     *
+     * Used when an authorized payment is captured (manual capture mode).
+     */
+    public function captureAuthorization(): void;
+
+    /**
+     * Fulfill a condition on this contract.
+     *
+     * @param string $type Condition type (e.g., 'payment_authorized')
+     * @param array<string, mixed> $data Additional data for the condition
+     */
+    public function fulfillCondition(string $type, array $data = []): void;
+
+    public function commitToOrder(string $orderId): void;
+
+    public function fulfill(): void;
+
+    /**
+     * Set payment provider information.
+     *
+     * @param string $provider Provider name (e.g., 'stripe')
+     * @param string $providerOrderId Provider-specific identifier (session ID, payment intent ID)
+     * @param string|null $redirectUrl Optional redirect URL for the payment
+     */
+    public function setProvider(string $provider, string $providerOrderId, ?string $redirectUrl = null): void;
+
+    /**
+     * Set a metadata value.
+     *
+     * Used to store provider-specific data like delivery address hash.
+     */
+    public function setMetadata(string $key, mixed $value): void;
+
+    /**
+     * Get a metadata value.
+     *
+     * @return mixed The stored value, or null if not set
+     */
+    public function getMetadata(string $key): mixed;
+
+    /**
+     * Get all metadata.
+     *
+     * @return array<string, mixed>
+     */
+    public function getAllMetadata(): array;
+
+    // Sprint 8: Capture/Refund tracking (consolidated from order_state)
+
+    /**
+     * Get the captured payment amount.
+     */
+    public function getCapturedAmount(): ?float;
+
+    /**
+     * Set the captured payment amount.
+     */
+    public function setCapturedAmount(float $amount): void;
+
+    /**
+     * Get the total refunded amount.
+     */
+    public function getRefundedAmount(): ?float;
+
+    /**
+     * Add to the refunded amount (accumulates multiple refunds).
+     */
+    public function addRefundedAmount(float $amount): void;
+
+    /**
+     * Get the timestamp when payment was captured.
+     */
+    public function getCapturedAt(): ?DateTimeInterface;
+
+    /**
+     * Set the timestamp when payment was captured.
+     */
+    public function setCapturedAt(DateTimeInterface $date): void;
+
+    /**
+     * Get the timestamp of last refund.
+     */
+    public function getRefundedAt(): ?DateTimeInterface;
+
+    /**
+     * Set the timestamp of last refund.
+     */
+    public function setRefundedAt(DateTimeInterface $date): void;
+}

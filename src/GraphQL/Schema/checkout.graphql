@@ -1,0 +1,236 @@
+"""
+One-Page Checkout Mutations for One-Time Payment Flow
+"""
+type Mutation {
+    """
+    Update customer address during checkout
+    """
+    updateAddress(input: UpdateAddressInput!): AddressUpdateResponse!
+
+    """
+    Process one-time payment with encrypted card data
+    """
+    processPayment(input: ProcessPaymentInput!): PaymentResponse!
+
+    """
+    Track checkout abandonment (called when user leaves checkout)
+    """
+    abandonCheckout(input: AbandonCheckoutInput!): AbandonCheckoutResponse!
+}
+
+"""
+Input for updating address
+"""
+input UpdateAddressInput {
+    """
+    Billing address
+    """
+    billingAddress: AddressInput!
+
+    """
+    Shipping address (optional, falls back to billing)
+    """
+    shippingAddress: AddressInput
+
+    """
+    Use billing address as shipping address
+    """
+    useBillingAsShipping: Boolean = true
+}
+
+"""
+Address input fields
+"""
+input AddressInput {
+    firstName: String!
+    lastName: String!
+    street: String!
+    streetNo: String
+    city: String!
+    zip: String!
+    countryCode: String!
+    phone: String
+    email: String!
+}
+
+"""
+Response for address update
+"""
+type AddressUpdateResponse {
+    success: Boolean!
+    message: String
+    errors: [ValidationError!]
+}
+
+"""
+Input for processing payment
+"""
+input ProcessPaymentInput {
+    """
+    Encrypted card data from Web Crypto API
+    Format: "ENC:base64EncodedData"
+    """
+    encryptedData: String!
+
+    """
+    Amount in cents
+    """
+    amount: Int!
+
+    """
+    Currency code (e.g., EUR, USD)
+    """
+    currency: String!
+
+    """
+    Optional: Save card for future use
+    """
+    saveCard: Boolean = false
+
+    """
+    Optional: Return URL for 3D Secure redirect
+    """
+    returnUrl: String
+}
+
+"""
+Payment response
+"""
+type PaymentResponse {
+    success: Boolean!
+    orderId: String
+    status: PaymentStatus!
+    message: String
+    redirectUrl: String
+    clientSecret: String
+    errors: [ValidationError!]
+}
+
+"""
+Payment status enum
+"""
+enum PaymentStatus {
+    PENDING
+    REQUIRES_ACTION
+    SUCCEEDED
+    FAILED
+    CANCELED
+}
+
+"""
+Validation error
+"""
+type ValidationError {
+    field: String!
+    message: String!
+}
+
+"""
+Input for tracking checkout abandonment
+"""
+input AbandonCheckoutInput {
+    """
+    Session ID for tracking
+    """
+    sessionId: String!
+
+    """
+    Reason for abandonment
+    """
+    reason: AbandonmentReason!
+
+    """
+    Current checkout state when abandoned
+    """
+    checkoutState: CheckoutStateInput!
+
+    """
+    Contract ID (if payment was initiated)
+    """
+    contractId: String
+
+    """
+    Additional metadata
+    """
+    metadata: JSON
+}
+
+"""
+Checkout state at time of abandonment
+"""
+input CheckoutStateInput {
+    """
+    Current stage (address, payment, review)
+    """
+    currentStage: String!
+
+    """
+    Whether address was completed
+    """
+    addressCompleted: Boolean!
+
+    """
+    Whether payment was attempted
+    """
+    paymentAttempted: Boolean!
+
+    """
+    Cart items
+    """
+    cartItems: [CartItemInput!]!
+
+    """
+    Cart total
+    """
+    cartTotal: Float
+
+    """
+    Currency
+    """
+    currency: String
+
+    """
+    Time spent in checkout (seconds)
+    """
+    timeSpent: Int
+
+    """
+    Customer email (if provided)
+    """
+    email: String
+
+    """
+    Billing address (if provided)
+    """
+    billingAddress: JSON
+}
+
+"""
+Cart item for abandonment tracking
+"""
+input CartItemInput {
+    productId: String!
+    productName: String!
+    quantity: Int!
+    price: Float!
+}
+
+"""
+Reason for checkout abandonment
+"""
+enum AbandonmentReason {
+    TIMEOUT
+    NAVIGATION
+    PAYMENT_FAILED
+    USER_CANCELLED
+    SESSION_EXPIRED
+    UNKNOWN
+}
+
+"""
+Response for abandonment tracking
+"""
+type AbandonCheckoutResponse {
+    success: Boolean!
+    message: String
+}

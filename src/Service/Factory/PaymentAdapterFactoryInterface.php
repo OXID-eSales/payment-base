@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * Copyright © OXID eSales AG. All rights reserved.
+ * See LICENSE file for license details.
+ */
+
+declare(strict_types=1);
+
+namespace OxidEsales\PaymentComponent\Service\Factory;
+
+use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
+
+/**
+ * Interface for payment adapter factories.
+ *
+ * This is a provider-agnostic interface following Liskov Substitution Principle.
+ * Provider-specific factories (e.g., StripeAdapterFactory, PayPalAdapterFactory)
+ * should implement this interface.
+ *
+ * Used in constructors for proper Dependency Injection and TDD.
+ *
+ * @since 1.0.0
+ */
+interface PaymentAdapterFactoryInterface
+{
+    /**
+     * Creates an adapter for the specified provider.
+     *
+     * @param string $providerName The provider identifier (e.g., 'stripe', 'paypal')
+     * @return PaymentAdapterInterface
+     * @throws \InvalidArgumentException If the provider is not supported
+     */
+    public function createAdapter(string $providerName): PaymentAdapterInterface;
+
+    /**
+     * Creates the default adapter for this factory.
+     *
+     * @return PaymentAdapterInterface
+     */
+    public function createDefaultAdapter(): PaymentAdapterInterface;
+
+    /**
+     * Checks if a provider is supported by this factory.
+     *
+     * @param string $providerName The provider identifier to check
+     * @return bool
+     */
+    public function isProviderSupported(string $providerName): bool;
+
+    /**
+     * Gets all providers supported by this factory.
+     *
+     * @return array<string> List of provider identifiers
+     */
+    public function getSupportedProviders(): array;
+}
