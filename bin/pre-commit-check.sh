@@ -133,7 +133,7 @@ get_changed_files_local() {
 # 1. Code Style Check (phpcs)
 echo ">>> Running PHP Code Sniffer..."
 if [ "$ENVIRONMENT" = "github" ]; then
-    run_command "composer run phpcs src"
+    cd "$MODULE_ROOT" && composer run phpcs
 else
     run_phpcs_docker
 fi
@@ -184,7 +184,7 @@ fi
 # 3. PHPStan Static Analysis
 echo ">>> Running PHPStan static analysis..."
 if [ "$ENVIRONMENT" = "github" ]; then
-    run_command "composer phpstan"
+    cd "$MODULE_ROOT" && composer run phpstan
     PHPSTAN_STATUS=$?
 else
     # Get changed PHP files for local analysis
@@ -204,7 +204,7 @@ echo ""
 # 4. PHPMD (PHP Mess Detector)
 echo ">>> Running PHPMD..."
 if [ "$ENVIRONMENT" = "github" ]; then
-    run_command "composer phpmd"
+    cd "$MODULE_ROOT" && composer run phpmd
     PHPMD_STATUS=$?
 else
     # Use same changed files for PHPMD

@@ -9,14 +9,14 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Adapter\Request;
 
-use OxidEsales\Eshop\Application\Model\Basket;
-use OxidEsales\Eshop\Core\Registry;
-
 /**
  * Request DTO for creating an order.
  *
  * Contains all necessary information to create and finalize an order
  * from the current basket/cart.
+ *
+ * Note: This is a provider-agnostic DTO. Basket retrieval should be handled
+ * by the shop-specific implementation of ShopOrderServiceInterface.
  *
  * @since 1.0.0
  */
@@ -38,15 +38,5 @@ final readonly class CreateOrderRequest
         public ?string $orderRemark = null,
         public array $metadata = []
     ) {
-    }
-
-    /**
-     * Get the basket from session.
-     *
-     * @return Basket|null
-     */
-    public function getBasket(): ?Basket
-    {
-        return Registry::getSession()->getBasket();
     }
 }
