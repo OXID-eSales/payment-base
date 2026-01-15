@@ -8,6 +8,7 @@ use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
 
 class EventDispatcher implements EventDispatcherInterface
 {
+    /** @var array<string, array<array{listener: callable, priority: int}>> */
     private array $listeners = [];
     private ?EventListenerProviderInterface $listenerProvider;
 
@@ -34,9 +35,11 @@ class EventDispatcher implements EventDispatcherInterface
             return;
         }
 
+        /** @var array<array{listener: callable, priority: int}> $eventListeners */
+        $eventListeners = $this->listeners[$eventClass];
         $this->listeners[$eventClass] = array_filter(
-            $this->listeners[$eventClass],
-            fn($item) => $item['listener'] !== $listener
+            $eventListeners,
+            static fn(array $item): bool => $item['listener'] !== $listener
         );
     }
 
@@ -45,6 +48,7 @@ class EventDispatcher implements EventDispatcherInterface
         $eventClass = get_class($event);
 
         // Get listeners from provider first (DI-registered handlers)
+        /** @var array<callable> $listeners */
         $listeners = $this->listenerProvider
             ? $this->listenerProvider->getListenersForEvent($eventClass)
             : [];
@@ -56,8 +60,12 @@ class EventDispatcher implements EventDispatcherInterface
         }
 
         foreach ($listeners as $listener) {
-            if ($this->isStoppableEvent($event) && $event->isPropagationStopped()) {
-                break;
+            if ($this->isStoppableEvent($event)) {
+                /** @var object&\Psr\EventDispatcher\StoppableEventInterface $stoppableEvent */
+                $stoppableEvent = $event;
+                if ($stoppableEvent->isPropagationStopped()) {
+                    break;
+                }
             }
 
             $listener($event);
@@ -66,13 +74,17 @@ class EventDispatcher implements EventDispatcherInterface
         return $event;
     }
 
+    /**
+     * @return array<callable>
+     */
     private function getSortedListeners(string $eventClass): array
     {
+        /** @var array<array{listener: callable, priority: int}> $listeners */
         $listeners = $this->listeners[$eventClass];
 
-        usort($listeners, fn($a, $b) => $b['priority'] <=> $a['priority']);
+        usort($listeners, static fn(array $a, array $b): int => $b['priority'] <=> $a['priority']);
 
-        return array_map(fn($item) => $item['listener'], $listeners);
+        return array_map(static fn(array $item): callable => $item['listener'], $listeners);
     }
 
     private function isStoppableEvent(EventInterface $event): bool

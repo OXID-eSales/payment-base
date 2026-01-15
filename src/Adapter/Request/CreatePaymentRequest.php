@@ -16,6 +16,21 @@ namespace OxidEsales\PaymentComponent\Adapter\Request;
  */
 readonly class CreatePaymentRequest
 {
+    /**
+     * @param float $amount Payment amount
+     * @param string $currency Currency code (ISO 4217)
+     * @param string $orderId Order identifier
+     * @param string $shopId Shop identifier
+     * @param string $paymentMethod Payment method name
+     * @param bool $directCapture Whether to capture immediately
+     * @param string|null $paymentMethodId Stored payment method ID
+     * @param string|null $customerId Customer identifier
+     * @param string|null $returnUrl URL to return to after payment
+     * @param string|null $cancelUrl URL to redirect to on cancellation
+     * @param array<string, mixed> $metadata Additional metadata
+     * @param array<string, string>|null $billingAddress Billing address
+     * @param array<string, string>|null $shippingAddress Shipping address
+     */
     public function __construct(
         public float $amount,
         public string $currency,

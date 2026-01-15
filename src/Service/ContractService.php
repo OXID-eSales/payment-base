@@ -224,7 +224,8 @@ class ContractService implements ContractServiceInterface
 
         if (method_exists($basket, 'getBasketCurrency')) {
             $basketCurrency = $basket->getBasketCurrency();
-            if ($basketCurrency !== null && isset($basketCurrency->name)) {
+            if (is_object($basketCurrency) && property_exists($basketCurrency, 'name')) {
+                /** @var object{name: string} $basketCurrency */
                 $currency = (string) $basketCurrency->name;
             }
         }

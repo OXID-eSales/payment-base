@@ -22,14 +22,14 @@ final readonly class OrderResponse
 {
     /**
      * @param string $orderId Shop-internal order ID
-     * @param string $orderNumber Customer-visible order number
+     * @param int $orderNumber Customer-visible order number
      * @param string $userId User/Customer identifier
      * @param float $totalAmount Total order amount
      * @param string $currency Currency code (ISO 4217)
      * @param string $status Order status (pending, processing, completed, cancelled, etc.)
      * @param string $paymentId Payment method identifier
      * @param string|null $paymentTransactionId External payment transaction ID
-     * @param DateTimeImmutable $createdAt Order creation timestamp
+     * @param DateTimeImmutable|null $createdAt Order creation timestamp
      * @param array<string, mixed> $metadata Additional order metadata
      * @param array<string, mixed> $shopData Platform-specific order data (for debugging/logging)
      */

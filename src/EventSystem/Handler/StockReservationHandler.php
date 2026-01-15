@@ -10,9 +10,11 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentComponent\EventSystem\Handler;
 
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\StockManagementServiceInterface;
+use DateTimeImmutable;
 use RuntimeException;
 
 /**
@@ -52,13 +54,14 @@ class StockReservationHandler implements HandlerInterface
         $contract = $context->get('contract');
         $basket = $context->get('basket');
 
-        if (!$contract || $basket === null) {
+        if (!$contract instanceof PaymentContractInterface || !is_iterable($basket)) {
             return;
         }
 
         try {
             $reservedProducts = [];
 
+            /** @var array{productId: string, quantity: int} $item */
             foreach ($basket as $item) {
                 $productId = $item['productId'];
                 $quantity = $item['quantity'];
@@ -79,7 +82,7 @@ class StockReservationHandler implements HandlerInterface
             $contract->fulfillCondition(
                 ContractCondition::TYPE_STOCK_RESERVED,
                 [
-                    'reservedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
+                    'reservedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
                     'products' => $reservedProducts,
                     'timeoutSeconds' => self::RESERVATION_TIMEOUT_SECONDS,
                 ]

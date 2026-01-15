@@ -39,6 +39,9 @@ class EventListenerProvider implements EventListenerProviderInterface
         $this->handlers = $handlers;
     }
 
+    /**
+     * @return array<callable>
+     */
     public function getListenersForEvent(string $eventClass): array
     {
         // Lazy initialize handlers on first access
@@ -48,10 +51,11 @@ class EventListenerProvider implements EventListenerProviderInterface
             return [];
         }
 
+        /** @var array<array{listener: callable, priority: int}> $listeners */
         $listeners = $this->listeners[$eventClass];
-        usort($listeners, fn($a, $b) => $b['priority'] <=> $a['priority']);
+        usort($listeners, static fn(array $a, array $b): int => $b['priority'] <=> $a['priority']);
 
-        return array_map(fn($item) => $item['listener'], $listeners);
+        return array_map(static fn(array $item): callable => $item['listener'], $listeners);
     }
 
     public function addListener(string $eventClass, callable $listener, int $priority = 0): void

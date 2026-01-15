@@ -189,7 +189,8 @@ class CheckoutOrchestrator implements CheckoutOrchestratorInterface
     {
         if (method_exists($basket, 'getBasketCurrency')) {
             $currency = $basket->getBasketCurrency();
-            if (is_object($currency) && isset($currency->name)) {
+            if (is_object($currency) && property_exists($currency, 'name')) {
+                /** @var object{name: string} $currency */
                 return (string) $currency->name;
             }
         }

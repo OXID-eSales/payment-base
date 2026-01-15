@@ -71,6 +71,13 @@ interface PaymentContractInterface extends ModelInterface
     public function fulfill(): void;
 
     /**
+     * Fail the contract with a reason.
+     *
+     * @param string $reason Reason for failure
+     */
+    public function fail(string $reason): void;
+
+    /**
      * Set payment provider information.
      *
      * @param string $provider Provider name (e.g., 'stripe')

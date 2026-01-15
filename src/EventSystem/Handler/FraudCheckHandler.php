@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentComponent\EventSystem\Handler;
 
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\FraudScoringServiceInterface;
@@ -55,7 +56,7 @@ class FraudCheckHandler implements HandlerInterface
         $context = $event->getContext();
         $contract = $context->get('contract');
 
-        if (!$contract) {
+        if (!$contract instanceof PaymentContractInterface) {
             return;
         }
 
@@ -81,7 +82,7 @@ class FraudCheckHandler implements HandlerInterface
                 ContractCondition::TYPE_FRAUD_CHECK,
                 [
                     'riskScore' => $riskScore,
-                    'checkedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
+                    'checkedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
                 ]
             );
         }

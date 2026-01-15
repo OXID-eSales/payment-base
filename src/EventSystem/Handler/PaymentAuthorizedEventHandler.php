@@ -91,8 +91,11 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
             );
 
             // Set provider info
-            $providerName = $context->get('providerName') ?? 'stripe';
-            $contract->setProvider($providerName, $event->getProviderOrderId());
+            $providerName = $context->get('providerName');
+            $contract->setProvider(
+                is_string($providerName) ? $providerName : 'stripe',
+                $event->getProviderOrderId()
+            );
 
             // STRP-74: Update order's OXTRANSID if order was created early
             // This links the Payment Intent ID to the existing order so webhooks can find it

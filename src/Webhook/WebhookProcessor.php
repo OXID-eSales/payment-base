@@ -40,9 +40,15 @@ class WebhookProcessor implements WebhookProcessorInterface
 
         [$eventId, $eventType, $eventData, $contract] = $processData;
 
-        $this->dispatchWebhookEvent($eventId, $eventType, $eventData, $contract->getId());
+        $contractId = $contract->getId();
+        if ($contractId === null) {
+            $this->logger->error('Contract has no ID', ['eventId' => $eventId]);
+            return;
+        }
+
+        $this->dispatchWebhookEvent($eventId, $eventType, $eventData, $contractId);
         $this->idempotencyChecker->markAsProcessed($eventId);
-        $this->logWebhookEvent($eventId, $eventType, $contract->getId());
+        $this->logWebhookEvent($eventId, $eventType, $contractId);
     }
 
     /**

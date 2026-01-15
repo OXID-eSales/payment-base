@@ -8,9 +8,13 @@ use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 
 class EventContext implements EventContextInterface
 {
+    /** @var array<string, mixed> */
     private array $data = [];
     private ?PaymentContractInterface $contract = null;
 
+    /**
+     * @param array<string, mixed> $initialData
+     */
     public function __construct(array $initialData = [])
     {
         $this->data = $initialData;
@@ -31,6 +35,9 @@ class EventContext implements EventContextInterface
         return isset($this->data[$key]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function all(): array
     {
         return $this->data;

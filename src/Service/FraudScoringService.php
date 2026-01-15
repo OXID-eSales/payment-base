@@ -51,13 +51,21 @@ class FraudScoringService implements FraudScoringServiceInterface
         // Check address mismatch
         if (
             isset($data['billingAddress'], $data['shippingAddress'])
-            && !$this->addressesMatch($data['billingAddress'], $data['shippingAddress'])
+            && is_array($data['billingAddress'])
+            && is_array($data['shippingAddress'])
         ) {
-            $score += self::POINTS_ADDRESS_MISMATCH;
+            /** @var array<string, string> $billingAddress */
+            $billingAddress = $data['billingAddress'];
+            /** @var array<string, string> $shippingAddress */
+            $shippingAddress = $data['shippingAddress'];
+
+            if (!$this->addressesMatch($billingAddress, $shippingAddress)) {
+                $score += self::POINTS_ADDRESS_MISMATCH;
+            }
         }
 
         // Check disposable email
-        if (isset($data['email']) && $this->isDisposableEmail($data['email'])) {
+        if (isset($data['email']) && is_string($data['email']) && $this->isDisposableEmail($data['email'])) {
             $score += self::POINTS_DISPOSABLE_EMAIL;
         }
 
@@ -78,7 +86,12 @@ class FraudScoringService implements FraudScoringServiceInterface
 
     public function isDisposableEmail(string $email): bool
     {
-        $domain = strtolower(substr(strrchr($email, '@'), 1));
+        $atPosition = strrchr($email, '@');
+        if ($atPosition === false) {
+            return false;
+        }
+
+        $domain = strtolower(substr($atPosition, 1));
 
         foreach (self::DISPOSABLE_DOMAINS as $disposableDomain) {
             if ($domain === $disposableDomain) {
