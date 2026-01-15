@@ -51,7 +51,7 @@ class PaymentAuthorizationHandler extends AbstractHandler
 
         $this->contractRepository->save($contract);
 
-        if ($contract->areAllConditionsFulfilled()) {
+        if ($contract->areAllConditionsFulfilled() && $this->eventDispatcher !== null) {
             $readyEvent = new ContractReadyToCommitEvent(
                 $contract,
                 $context,

@@ -59,12 +59,17 @@ class StockReleaseHandler implements HandlerInterface
             }
         }
 
-        if (!$stockCondition) {
+        if ($stockCondition === null) {
             return;
         }
 
         $data = $stockCondition->getData();
-        $products = $data['products'] ?? [];
+        if (!is_array($data) || !isset($data['products']) || !is_array($data['products'])) {
+            return;
+        }
+
+        /** @var array<array{productId: string, quantity: int}> $products */
+        $products = $data['products'];
 
         if (empty($products)) {
             return;

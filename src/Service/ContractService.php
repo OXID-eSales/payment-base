@@ -100,21 +100,47 @@ class ContractService implements ContractServiceInterface
             return $items;
         }
 
-        foreach ($basket->getContents() as $basketItem) {
-            $article = method_exists($basketItem, 'getArticle') ? $basketItem->getArticle() : null;
-            $unitPrice = method_exists($basketItem, 'getUnitPrice')
-                ? $basketItem->getUnitPrice()->getBruttoPrice()
-                : 0.0;
-            $amount = method_exists($basketItem, 'getAmount') ? (int) $basketItem->getAmount() : 1;
+        $contents = $basket->getContents();
+        if (!is_iterable($contents)) {
+            return $items;
+        }
+
+        foreach ($contents as $basketItem) {
+            if (!is_object($basketItem)) {
+                continue;
+            }
+
+            $article = null;
+            if (method_exists($basketItem, 'getArticle')) {
+                $articleResult = $basketItem->getArticle();
+                $article = is_object($articleResult) ? $articleResult : null;
+            }
+
+            $unitPrice = 0.0;
+            if (method_exists($basketItem, 'getUnitPrice')) {
+                $priceObj = $basketItem->getUnitPrice();
+                if (is_object($priceObj) && method_exists($priceObj, 'getBruttoPrice')) {
+                    $unitPrice = (float) $priceObj->getBruttoPrice();
+                }
+            }
+
+            $amount = 1;
+            if (method_exists($basketItem, 'getAmount')) {
+                $amount = (int) $basketItem->getAmount();
+            }
 
             $title = $this->extractArticleTitle($article);
+            $productId = '';
+            if ($article !== null && method_exists($article, 'getId')) {
+                $productId = (string) $article->getId();
+            }
 
             $items[] = [
-                'productId' => $article !== null ? $article->getId() : '',
+                'productId' => $productId,
                 'title' => $title,
                 'quantity' => $amount,
-                'unitPrice' => (float) $unitPrice,
-                'totalPrice' => (float) ($unitPrice * $amount),
+                'unitPrice' => $unitPrice,
+                'totalPrice' => $unitPrice * $amount,
             ];
         }
 
@@ -127,8 +153,13 @@ class ContractService implements ContractServiceInterface
             return 'Product';
         }
 
-        if (isset($article->oxarticles__oxtitle->value)) {
-            return (string) $article->oxarticles__oxtitle->value;
+        // OXID article title field access
+        if (property_exists($article, 'oxarticles__oxtitle')) {
+            /** @var object{value?: string}|null $titleField */
+            $titleField = $article->oxarticles__oxtitle;
+            if (is_object($titleField) && property_exists($titleField, 'value')) {
+                return (string) $titleField->value;
+            }
         }
 
         if (method_exists($article, 'getTitle')) {
@@ -155,9 +186,25 @@ class ContractService implements ContractServiceInterface
         }
 
         foreach ($basketDiscounts as $discount) {
+            if (!is_object($discount)) {
+                continue;
+            }
+
+            $name = 'Discount';
+            if (property_exists($discount, 'sDiscount')) {
+                /** @phpstan-ignore-next-line */
+                $name = (string) $discount->sDiscount;
+            }
+
+            $amount = 0.0;
+            if (property_exists($discount, 'dDiscount')) {
+                /** @phpstan-ignore-next-line */
+                $amount = (float) $discount->dDiscount;
+            }
+
             $discounts[] = [
-                'name' => $discount->sDiscount ?? 'Discount',
-                'amount' => $discount->dDiscount ?? 0.0,
+                'name' => $name,
+                'amount' => $amount,
             ];
         }
 
@@ -186,7 +233,12 @@ class ContractService implements ContractServiceInterface
 
         foreach ($costTypes as $costKey => $config) {
             $cost = $basket->getCosts($costKey);
-            if ($cost === null || $cost->getBruttoPrice() <= 0) {
+            if ($cost === null || !is_object($cost) || !method_exists($cost, 'getBruttoPrice')) {
+                continue;
+            }
+
+            $bruttoPrice = (float) $cost->getBruttoPrice();
+            if ($bruttoPrice <= 0) {
                 continue;
             }
 
@@ -194,8 +246,8 @@ class ContractService implements ContractServiceInterface
                 'productId' => $config['id'],
                 'title' => $config['title'],
                 'quantity' => 1,
-                'unitPrice' => (float) $cost->getBruttoPrice(),
-                'totalPrice' => (float) $cost->getBruttoPrice(),
+                'unitPrice' => $bruttoPrice,
+                'totalPrice' => $bruttoPrice,
                 $config['flag'] => true,
             ];
         }
@@ -215,10 +267,16 @@ class ContractService implements ContractServiceInterface
 
         if (method_exists($basket, 'getPrice')) {
             $price = $basket->getPrice();
-            if ($price !== null) {
-                $totalGross = (float) $price->getBruttoPrice();
-                $totalNet = (float) $price->getNettoPrice();
-                $totalVat = (float) $price->getVatValue();
+            if (is_object($price)) {
+                if (method_exists($price, 'getBruttoPrice')) {
+                    $totalGross = (float) $price->getBruttoPrice();
+                }
+                if (method_exists($price, 'getNettoPrice')) {
+                    $totalNet = (float) $price->getNettoPrice();
+                }
+                if (method_exists($price, 'getVatValue')) {
+                    $totalVat = (float) $price->getVatValue();
+                }
             }
         }
 

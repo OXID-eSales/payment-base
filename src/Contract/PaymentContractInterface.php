@@ -40,6 +40,18 @@ interface PaymentContractInterface extends ModelInterface
     public function areAllConditionsFulfilled(): bool;
 
     /**
+     * Get all conditions attached to this contract.
+     *
+     * @return array<ContractCondition>
+     */
+    public function getConditions(): array;
+
+    /**
+     * Expire the contract (timeout).
+     */
+    public function expire(): void;
+
+    /**
      * Transition contract from DRAFT to PENDING state.
      */
     public function transitionToPending(): void;

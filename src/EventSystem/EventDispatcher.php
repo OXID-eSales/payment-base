@@ -60,12 +60,8 @@ class EventDispatcher implements EventDispatcherInterface
         }
 
         foreach ($listeners as $listener) {
-            if ($this->isStoppableEvent($event)) {
-                /** @var object&\Psr\EventDispatcher\StoppableEventInterface $stoppableEvent */
-                $stoppableEvent = $event;
-                if ($stoppableEvent->isPropagationStopped()) {
-                    break;
-                }
+            if ($this->isStoppableEvent($event) && $this->isPropagationStopped($event)) {
+                break;
             }
 
             $listener($event);
@@ -90,5 +86,11 @@ class EventDispatcher implements EventDispatcherInterface
     private function isStoppableEvent(EventInterface $event): bool
     {
         return method_exists($event, 'isPropagationStopped');
+    }
+
+    private function isPropagationStopped(EventInterface $event): bool
+    {
+        /** @phpstan-ignore-next-line */
+        return $event->isPropagationStopped();
     }
 }
