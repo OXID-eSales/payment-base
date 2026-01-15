@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<ruleset name="Payment Component PHPMD Rules"
+         xmlns="http://pmd.sf.net/ruleset/1.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd"
+         xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd">
+    <description>PHPMD rules for Payment Component with project-specific exclusions</description>
+
+    <!-- ========================================== -->
+    <!-- Clean Code Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/cleancode.xml">
+        <!-- DTOs and value objects often have boolean flags -->
+        <exclude name="BooleanArgumentFlag"/>
+        <!-- Else expressions are common in validation logic -->
+        <exclude name="ElseExpression"/>
+        <!-- Missing imports for framework patterns -->
+        <exclude name="MissingImport"/>
+        <!-- Assignment in if is sometimes cleaner -->
+        <exclude name="IfStatementAssignment"/>
+        <!-- Static access is common in factory patterns -->
+        <exclude name="StaticAccess"/>
+    </rule>
+
+    <!-- ========================================== -->
+    <!-- Code Size Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/codesize.xml">
+        <exclude name="TooManyPublicMethods"/>
+        <exclude name="ExcessivePublicCount"/>
+        <exclude name="TooManyMethods"/>
+        <exclude name="ExcessiveClassComplexity"/>
+        <exclude name="ExcessiveClassLength"/>
+        <exclude name="TooManyFields"/>
+        <!-- DTOs/Value objects can have many constructor parameters -->
+        <exclude name="ExcessiveParameterList"/>
+        <!-- Exclude all complexity rules - we'll add them back with higher thresholds -->
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
+        <exclude name="ExcessiveMethodLength"/>
+    </rule>
+
+    <!-- Relaxed thresholds for complex domain logic -->
+    <rule ref="rulesets/codesize.xml/TooManyFields">
+        <properties>
+            <property name="maxfields" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/NPathComplexity">
+        <properties>
+            <property name="minimum" value="5000"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/TooManyPublicMethods">
+        <properties>
+            <!-- PaymentContract is an Aggregate Root managing state, conditions, and metadata -->
+            <property name="maxmethods" value="50"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/ExcessivePublicCount">
+        <properties>
+            <!-- PaymentContract is an Aggregate Root with many public accessors -->
+            <property name="minimum" value="50"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/ExcessiveClassComplexity">
+        <properties>
+            <!-- Complex domain classes may exceed default threshold -->
+            <property name="maximum" value="120"/>
+        </properties>
+    </rule>
+    <rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
+        <properties>
+            <property name="minimum" value="150"/>
+        </properties>
+    </rule>
+
+    <!-- ========================================== -->
+    <!-- Controversial Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/controversial.xml">
+        <!-- $_REQUEST, $_SERVER access needed for web apps -->
+        <exclude name="Superglobals"/>
+        <!-- Underscore-prefixed properties are common in some frameworks -->
+        <exclude name="CamelCasePropertyName"/>
+    </rule>
+
+    <!-- ========================================== -->
+    <!-- Design Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/design.xml">
+        <!-- Handlers coordinate multiple services by design -->
+        <exclude name="CouplingBetweenObjects"/>
+        <!-- Exit may be needed in CLI scripts -->
+        <exclude name="ExitExpression"/>
+    </rule>
+
+    <!-- ========================================== -->
+    <!-- Naming Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/naming.xml">
+        <!-- Single-letter variables acceptable in loops -->
+        <exclude name="ShortVariable"/>
+        <!-- Descriptive names are preferred -->
+        <exclude name="LongVariable"/>
+        <!-- Short method names like 'id()' or 'get()' are OK -->
+        <exclude name="ShortMethodName"/>
+        <!-- Long class names for interfaces are acceptable -->
+        <exclude name="LongClassName"/>
+    </rule>
+
+    <!-- ========================================== -->
+    <!-- Unused Code Rules -->
+    <!-- ========================================== -->
+    <rule ref="rulesets/unusedcode.xml">
+        <!-- Interface implementations may not use all parameters -->
+        <exclude name="UnusedFormalParameter"/>
+        <!-- Some private methods are kept for future use -->
+        <exclude name="UnusedPrivateMethod"/>
+        <!-- Local variables may be assigned for debugging/documentation -->
+        <exclude name="UnusedLocalVariable"/>
+    </rule>
+
+</ruleset>

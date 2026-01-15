@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests & Code Quality
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.1', '8.2', '8.3']
+        php-version: ['8.2', '8.3', '8.4']
 
     steps:
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
           coverage: none
-          tools: composer:v2
+          tools: composer:v2, phpcs, phpstan, phpmd
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -47,10 +47,10 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run Unit Tests
-        run: vendor/bin/phpunit --testsuite Unit
+        run: vendor/bin/phpunit -c phpunit.xml --testsuite Unit
 
-  static-analysis:
-    name: Static Analysis
+  code-quality:
+    name: Code Quality Checks
     runs-on: ubuntu-latest
 
     steps:
@@ -60,13 +60,13 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl
           coverage: none
-          tools: composer:v2
+          tools: composer:v2, phpcs, phpstan, phpmd
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse -c phpstan.neon
+      - name: Run Pre-commit Checks
+        run: ./bin/pre-commit-check.sh --no-phpunit

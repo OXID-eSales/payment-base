@@ -105,7 +105,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $context = $event->getContext();
 
         $paymentId = 'oxidstripe';
-        $sessionId = $context->get('sessionId', 'contract_' . $contract->getId());
+        $sessionId = (string) $context->get('sessionId', 'contract_' . $contract->getId());
 
         $this->logEvent('EarlyOrderCreationHandler: Creating order', [
             'userId' => $contract->getUserId(),
@@ -162,7 +162,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $contract->transitionToPending();
         $this->contractRepository->save($contract);
 
-        if ($this->eventDispatcher === null) {
+        $dispatcher = $this->eventDispatcher;
+        if ($dispatcher === null) {
             return;
         }
 
@@ -176,12 +177,13 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $contract->getId(),
         ]);
 
-        $this->eventDispatcher->dispatch($pendingEvent);
+        $dispatcher->dispatch($pendingEvent);
     }
 
     private function dispatchOrderCreatedEvent(ContractDraftCompletedEvent $event, string $orderId): void
     {
-        if ($this->eventDispatcher === null) {
+        $dispatcher = $this->eventDispatcher;
+        if ($dispatcher === null) {
             return;
         }
 
@@ -196,7 +198,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $event->getContractId(),
         ]);
 
-        $this->eventDispatcher->dispatch($orderCreatedEvent);
+        $dispatcher->dispatch($orderCreatedEvent);
     }
 
     /**

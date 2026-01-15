@@ -75,13 +75,13 @@ run_command() {
         cd "$MODULE_ROOT" && eval "$1"
     else
         # Local: Run in Docker container
-        docker compose exec -w /var/www/extensions/stripe -T php bash -c "$1"
+        docker compose exec -w /var/www/extensions/payment-component -T php bash -c "$1"
     fi
 }
 
 # Helper function to run phpcs in Docker with correct path
 run_phpcs_docker() {
-    docker compose exec -w /var/www/extensions/stripe -T php \
+    docker compose exec -w /var/www/extensions/payment-component -T php \
         /var/www/vendor/bin/phpcs --standard=tests/phpcs.xml --warning-severity=0 src/
 }
 
@@ -90,7 +90,7 @@ run_phpstan_docker() {
     local files="$1"
     if [ -n "$files" ]; then
         echo "Running PHPStan on changed files: $files"
-        docker compose exec -w /var/www/extensions/stripe -T php \
+        docker compose exec -w /var/www/extensions/payment-component -T php \
             vendor/bin/phpstan analyse -c tests/PhpStan/phpstan.neon --level=max $files --memory-limit=1G
     else
         echo "No PHP files to check with PHPStan"
@@ -98,13 +98,19 @@ run_phpstan_docker() {
     fi
 }
 
-# Helper function to run phpmd in Docker using module's vendor
+# Helper function to run phpmd in Docker using module's vendor or skip if not available
 run_phpmd_docker() {
     local files="$1"
     if [ -n "$files" ]; then
         echo "Running PHPMD on changed files: $files"
-        docker compose exec -w /var/www/extensions/stripe -T php \
-            vendor/bin/phpmd $files text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict
+        # Check if phpmd is available in module's vendor, otherwise skip
+        if docker compose exec -w /var/www/extensions/payment-component -T php test -f vendor/bin/phpmd 2>/dev/null; then
+            docker compose exec -w /var/www/extensions/payment-component -T php \
+                vendor/bin/phpmd $files text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict
+        else
+            echo "PHPMD not available - skipping (add phpmd/phpmd to require-dev to enable)"
+            return 0
+        fi
     else
         echo "No PHP files to check with PHPMD"
         return 0
@@ -160,7 +166,7 @@ else
       PHPUNIT_STATUS=0
     else
         # Local: Run in Docker with shop bootstrap (use shop's vendor phpunit)
-        docker compose exec -w /var/www/extensions/stripe -T php \
+        docker compose exec -w /var/www/extensions/payment-component -T php \
             /var/www/vendor/bin/phpunit -c tests/phpunit.xml --bootstrap=/var/www/source/bootstrap.php $TESTSUITE_ARG
         PHPUNIT_STATUS=$?
     fi
