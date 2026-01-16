@@ -244,9 +244,13 @@ jobs:
         run: |
           docker compose exec -T php composer update --no-interaction
 
-      - name: Install component dev dependencies and run migrations
+      - name: Install component dev dependencies
         run: |
           docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      - name: Run database migrations
+        run: |
+          docker compose exec -T php bash -c "cd /var/www/test-module && composer migrations"
 
       - name: Run integration tests with shop bootstrap
         run: |

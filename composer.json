@@ -45,13 +45,7 @@
         ],
         "test": "phpunit -c phpunit.xml",
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit",
-        "migrations": "doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=migration/migrations-db.php --no-interaction --allow-no-migration",
-        "post-install-cmd": [
-            "@migrations"
-        ],
-        "post-update-cmd": [
-            "@migrations"
-        ]
+        "migrations": "doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=migration/migrations-db.php --no-interaction --allow-no-migration"
     },
     "config": {
         "sort-packages": true,
