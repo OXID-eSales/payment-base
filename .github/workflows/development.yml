@@ -184,6 +184,11 @@ jobs:
           key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+
       - name: Start containers
         run: |
           make up
@@ -224,6 +229,11 @@ jobs:
             ./*
           key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
+
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
 
       - name: Start containers
         run: |
