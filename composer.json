@@ -45,7 +45,7 @@
         ],
         "test": "phpunit -c phpunit.xml",
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit",
-        "migrations": "doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=migration/migrations-db.php --no-interaction --allow-no-migration"
+        "migrations": "echo 'Use: vendor/bin/doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=<path-to-db-config> --no-interaction' or run within OXID shop context"
     },
     "config": {
         "sort-packages": true,
