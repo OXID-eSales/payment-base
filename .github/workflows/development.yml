@@ -247,8 +247,7 @@ jobs:
       - name: Run integration tests with shop bootstrap
         run: |
           docker compose exec -T -e XDEBUG_MODE=coverage php vendor/bin/phpunit \
-            -c /var/www/test-module/tests/phpunit-integration.xml \
-            --bootstrap=/var/www/source/bootstrap.php
+            -c /var/www/test-module/tests/phpunit-integration.xml
 
       - name: Upload log artifact
         if: always()
