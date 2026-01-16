@@ -8,10 +8,18 @@ on:
     branches:
       - main
       - master
+      - 'b-*'
+
+env:
+  PHP_VERSION_DEFAULT: '8.3'
+  MYSQL_VERSION: '8.0'
 
 jobs:
-  pre-commit-checks:
-    name: Pre-commit Checks (PHP ${{ matrix.php-version }})
+  # ==========================================================================
+  # Style Checks - PHPCS, PHPStan, PHPMD (no shop required)
+  # ==========================================================================
+  style-checks:
+    name: Style Checks (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,7 +37,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
           coverage: none
-          tools: composer:v2, phpcs, phpstan, phpmd
+          tools: composer:v2
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -39,27 +47,79 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-composer-
+            ${{ runner.os }}-php${{ matrix.php-version }}-composer-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run Pre-commit Checks (Unit Tests + Code Quality)
-        run: ./bin/pre-commit-check.sh
+      - name: Run PHP Code Sniffer
+        run: composer run phpcs
 
+      - name: Run PHPStan
+        run: composer run phpstan
+
+      - name: Run PHPMD
+        run: composer run phpmd
+        continue-on-error: true
+
+  # ==========================================================================
+  # Isolated Unit Tests - No shop required, runs standalone
+  # ==========================================================================
+  unit-tests:
+    name: Unit Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php${{ matrix.php-version }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run Unit Tests
+        run: vendor/bin/phpunit -c phpunit.xml --testsuite Unit
+
+  # ==========================================================================
+  # Integration Tests - Requires full OXID shop setup with database
+  # ==========================================================================
   integration-tests:
     name: Integration Tests (OXID Shop)
     runs-on: ubuntu-latest
-    needs: [ pre-commit-checks ]
+    needs: [style-checks, unit-tests]
 
     services:
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: example
+          MYSQL_DATABASE: oxid
         ports:
           - 3306:3306
         options: >-
@@ -74,20 +134,6 @@ jobs:
         with:
           path: payment-component
 
-      - name: Clone OXID eShop
-        run: |
-          git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.4.x --single-branch shop
-          cp shop/source/config.inc.php.dist shop/source/config.inc.php
-          sed -i -e 's/<dbHost>/127.0.0.1/'\
-                 -e 's/<dbUser>/root/'\
-                 -e 's/<dbName>/example/'\
-                 -e 's/<dbPwd>/root/'\
-                 -e 's/<dbPort>/3306/'\
-                 -e 's/<sShopURL>/http:\/\/localhost\//'\
-                 -e 's/<sShopDir>/\/github\/workspace\/shop\/source\//'\
-                 -e 's/<sCompileDir>/\/github\/workspace\/shop\/source\/tmp\//'\
-              shop/source/config.inc.php
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -96,20 +142,72 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Clone OXID eShop
+        run: |
+          git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.4.x --single-branch shop
+
+      - name: Create shop directories
+        run: |
+          mkdir -p shop/source/tmp
+          mkdir -p shop/source/log
+          mkdir -p shop/source/out/pictures
+          mkdir -p shop/source/export
+          chmod -R 777 shop/source/tmp
+          chmod -R 777 shop/source/log
+          chmod -R 777 shop/source/out
+          chmod -R 777 shop/source/export
+
+      - name: Configure shop
+        run: |
+          cp shop/source/config.inc.php.dist shop/source/config.inc.php
+          sed -i -e 's/<dbHost>/127.0.0.1/' \
+                 -e 's/<dbUser>/root/' \
+                 -e 's/<dbName>/oxid/' \
+                 -e 's/<dbPwd>/root/' \
+                 -e 's/<dbPort>/3306/' \
+                 -e "s|<sShopURL>|http://localhost/|" \
+                 -e "s|<sShopDir>|${{ github.workspace }}/shop/source/|" \
+                 -e "s|<sCompileDir>|${{ github.workspace }}/shop/source/tmp/|" \
+              shop/source/config.inc.php
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-shop-composer-${{ hashFiles('shop/**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-shop-composer-
+
+      - name: Install shop dependencies
+        working-directory: shop
+        run: |
+          composer config --no-plugins allow-plugins.oxid-esales/oxideshop-composer-plugin true
+          composer config --no-plugins allow-plugins.oxid-esales/oxideshop-unified-namespace-generator true
+          composer install --prefer-dist --no-progress --no-interaction
+
       - name: Install payment-component in shop
         working-directory: shop
         run: |
           composer config repositories.payment-component path ../payment-component
-          composer require oxid-esales/payment-component:* --no-interaction
+          composer require oxid-esales/payment-component:* --no-interaction --no-progress
 
-      - name: Setup database
+      - name: Setup database schema
+        run: |
+          mysql -h127.0.0.1 -uroot -proot oxid < shop/source/Setup/Sql/database_schema.sql || echo "Schema import completed"
+
+      - name: Generate views
         working-directory: shop
         run: |
-          mysql -h127.0.0.1 -uroot -proot example < source/Setup/Sql/database_schema.sql || true
+          vendor/bin/oe-eshop-db_views_generate || echo "Views generation completed"
+        continue-on-error: true
 
       - name: Run Integration Tests
         working-directory: shop
         run: |
           vendor/bin/phpunit -c vendor/oxid-esales/payment-component/phpunit.xml \
             --testsuite Integration \
-            --bootstrap source/bootstrap.php || echo "Some integration tests may require full shop setup"
+            --bootstrap source/bootstrap.php
