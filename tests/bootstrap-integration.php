@@ -41,19 +41,31 @@ if ($shopBootstrap === null) {
 require_once $shopBootstrap;
 
 // Register autoloader for test classes (autoload-dev is not loaded in production installs)
-$testDir = __DIR__;
-spl_autoload_register(static function (string $class) use ($testDir): void {
-    $prefix = 'OxidEsales\\PaymentComponent\\Tests\\';
-    $prefixLength = strlen($prefix);
+// Try multiple possible test directories
+$possibleTestDirs = [
+    __DIR__,
+    '/var/www/test-module/tests',
+    '/var/www/extensions/payment-component/tests',
+    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-component/tests',
+];
 
-    if (strncmp($class, $prefix, $prefixLength) !== 0) {
-        return;
+foreach ($possibleTestDirs as $testDir) {
+    if (is_dir($testDir)) {
+        spl_autoload_register(static function (string $class) use ($testDir): void {
+            $prefix = 'OxidEsales\\PaymentComponent\\Tests\\';
+            $prefixLength = strlen($prefix);
+
+            if (strncmp($class, $prefix, $prefixLength) !== 0) {
+                return;
+            }
+
+            $relativeClass = substr($class, $prefixLength);
+            $file = $testDir . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        });
+        break;
     }
-
-    $relativeClass = substr($class, $prefixLength);
-    $file = $testDir . '/' . str_replace('\\', '/', $relativeClass) . '.php';
-
-    if (file_exists($file)) {
-        require_once $file;
-    }
-});
+}
