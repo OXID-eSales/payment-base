@@ -292,30 +292,28 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         array $data,
         array $conditions
     ): void {
-        $reflection = new ReflectionClass($contract);
-
         /** @phpstan-ignore-next-line */
         $stateValue = is_string($data['OXSTATE']) ? $data['OXSTATE'] : (string) ($data['OXSTATE'] ?? 'draft');
-        $this->setPrivateProperty($reflection, $contract, 'state', ContractState::fromValue($stateValue));
-        $this->setPrivateProperty($reflection, $contract, 'orderId', $data['OXORDERID']);
-        $this->setPrivateProperty($reflection, $contract, 'provider', $data['OXPROVIDER']);
-        $this->setPrivateProperty($reflection, $contract, 'providerOrderId', $data['OXPROVIDERORDERID']);
-        $this->setPrivateProperty($reflection, $contract, 'expiresAt', $this->parseDateTime($data['OXEXPIRESAT']));
-        $this->setPrivateProperty($reflection, $contract, 'createdAt', $this->parseDateTime($data['OXCREATED']));
-        $this->setPrivateProperty($reflection, $contract, 'updatedAt', $this->parseDateTime($data['OXUPDATED']));
-        $this->setPrivateProperty($reflection, $contract, 'committedAt', $this->parseDateTime($data['OXCOMMITTEDAT']));
-        $this->setPrivateProperty($reflection, $contract, 'fulfilledAt', $this->parseDateTime($data['OXFULFILLEDAT']));
-        $this->setPrivateProperty($reflection, $contract, 'conditions', $conditions);
+        $this->setPrivateProperty($contract, 'state', ContractState::fromValue($stateValue));
+        $this->setPrivateProperty($contract, 'orderId', $data['OXORDERID']);
+        $this->setPrivateProperty($contract, 'provider', $data['OXPROVIDER']);
+        $this->setPrivateProperty($contract, 'providerOrderId', $data['OXPROVIDERORDERID']);
+        $this->setPrivateProperty($contract, 'expiresAt', $this->parseDateTime($data['OXEXPIRESAT']));
+        $this->setPrivateProperty($contract, 'createdAt', $this->parseDateTime($data['OXCREATED']));
+        $this->setPrivateProperty($contract, 'updatedAt', $this->parseDateTime($data['OXUPDATED']));
+        $this->setPrivateProperty($contract, 'committedAt', $this->parseDateTime($data['OXCOMMITTEDAT']));
+        $this->setPrivateProperty($contract, 'fulfilledAt', $this->parseDateTime($data['OXFULFILLEDAT']));
+        $this->setPrivateProperty($contract, 'conditions', $conditions);
 
         // Restore metadata from database
         $metadata = $this->hydrateContractMetadata($data);
-        $this->setPrivateProperty($reflection, $contract, 'metadata', $metadata);
+        $this->setPrivateProperty($contract, 'metadata', $metadata);
 
         // Sprint 8: Capture/Refund tracking fields
-        $this->setPrivateProperty($reflection, $contract, 'capturedAmount', $this->parseOptionalFloat($data['OXCAPTUREDAMOUNT'] ?? null));
-        $this->setPrivateProperty($reflection, $contract, 'refundedAmount', $this->parseOptionalFloat($data['OXREFUNDEDAMOUNT'] ?? null));
-        $this->setPrivateProperty($reflection, $contract, 'capturedAt', $this->parseDateTime($data['OXCAPTUREDAT'] ?? null));
-        $this->setPrivateProperty($reflection, $contract, 'refundedAt', $this->parseDateTime($data['OXREFUNDEDAT'] ?? null));
+        $this->setPrivateProperty($contract, 'capturedAmount', $this->parseOptionalFloat($data['OXCAPTUREDAMOUNT'] ?? null));
+        $this->setPrivateProperty($contract, 'refundedAmount', $this->parseOptionalFloat($data['OXREFUNDEDAMOUNT'] ?? null));
+        $this->setPrivateProperty($contract, 'capturedAt', $this->parseDateTime($data['OXCAPTUREDAT'] ?? null));
+        $this->setPrivateProperty($contract, 'refundedAt', $this->parseDateTime($data['OXREFUNDEDAT'] ?? null));
     }
 
     /**
@@ -339,12 +337,11 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
     /**
      * Set a private property value using reflection.
-     *
-     * @param ReflectionClass<object> $reflection
      */
-    private function setPrivateProperty(ReflectionClass $reflection, object $object, string $propertyName, mixed $value): void
+    private function setPrivateProperty(object $object, string $propertyName, mixed $value): void
     {
         try {
+            $reflection = new ReflectionClass($object);
             $property = $reflection->getProperty($propertyName);
             $property->setAccessible(true);
             $property->setValue($object, $value);

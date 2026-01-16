@@ -33,7 +33,7 @@
     },
     "scripts": {
         "phpcs": "phpcs --standard=tests/phpcs.xml --warning-severity=0 src/",
-        "phpstan": "phpstan analyse -c tests/PhpStan/phpstan.neon --memory-limit=1G",
+        "phpstan": "phpstan analyse --memory-limit=1G",
         "phpmd": "phpmd src/ text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict",
         "style": [
             "@phpcs",

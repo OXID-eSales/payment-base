@@ -1,7 +1,27 @@
+includes:
+    - tests/PhpStan/phpstan-baseline.neon
+    - tests/PhpStan/rules.neon
+
 parameters:
-    level: 6
+    bootstrapFiles:
+        - tests/PhpStan/phpstan-bootstrap.php
+    level: max
     paths:
         - src
     excludePaths:
         - tests
+        - vendor
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Missing array value type in legacy code
+        - '#type has no value type specified in iterable type array#'
+        # Cannot cast mixed to scalar types
+        - '#Cannot cast mixed to int#'
+        - '#Cannot cast mixed to string#'
+        - '#Cannot cast mixed to float#'
+        # Parameter type mismatches from dynamic data
+        - '#Parameter .* expects string, mixed given#'
+        - '#Parameter .* expects int, mixed given#'
+        # Method returns mixed from external calls
+        - '#should return .* but returns mixed#'

@@ -185,7 +185,7 @@ fi
 # 3. PHPStan Static Analysis
 echo ">>> Running PHPStan static analysis..."
 if [ "$ENVIRONMENT" = "github" ]; then
-    cd "$MODULE_ROOT" && composer run phpstan
+    cd "$MODULE_ROOT" && vendor/bin/phpstan analyse --memory-limit=1G
     PHPSTAN_STATUS=$?
 else
     # Get changed PHP files for local analysis

@@ -13,3 +13,6 @@ declare(strict_types=1);
 if (!defined('VENDOR_PATH')) {
     define('VENDOR_PATH', dirname(__DIR__, 2) . '/vendor/');
 }
+
+// Load custom PHPStan rules
+require_once __DIR__ . '/Rules/NoConcreteClassTypeHintRule.php';
