@@ -162,12 +162,13 @@ else
     fi
 
     if [ "$ENVIRONMENT" = "github" ]; then
-      echo "skip on github"
-      PHPUNIT_STATUS=0
+        # GitHub: Run with module's own bootstrap (standalone mode)
+        cd "$MODULE_ROOT" && vendor/bin/phpunit -c phpunit.xml $TESTSUITE_ARG
+        PHPUNIT_STATUS=$?
     else
-        # Local: Run in Docker with shop bootstrap (use shop's vendor phpunit)
+        # Local: Run in Docker with component's own phpunit.xml (standalone mode)
         docker compose exec -w /var/www/extensions/payment-component -T php \
-            /var/www/vendor/bin/phpunit -c tests/phpunit.xml --bootstrap=/var/www/source/bootstrap.php $TESTSUITE_ARG
+            vendor/bin/phpunit -c phpunit.xml $TESTSUITE_ARG
         PHPUNIT_STATUS=$?
     fi
 
