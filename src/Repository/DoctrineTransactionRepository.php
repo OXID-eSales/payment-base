@@ -20,7 +20,7 @@ use RuntimeException;
  */
 class DoctrineTransactionRepository implements TransactionRepositoryInterface
 {
-    private const TABLE_NAME = 'osc_payment_transaction';
+    private const TABLE_NAME = 'oe_payments_transaction';
 
     public function __construct(
         private Connection $connection

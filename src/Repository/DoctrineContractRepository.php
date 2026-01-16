@@ -28,7 +28,7 @@ use ReflectionException;
  */
 class DoctrineContractRepository implements ContractRepositoryInterface
 {
-    private const TABLE_CONTRACTS = 'osc_payment_contract';
+    private const TABLE_CONTRACTS = 'oe_payments_contract';
 
     public function __construct(
         private readonly Connection $connection

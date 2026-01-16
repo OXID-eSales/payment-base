@@ -20,7 +20,7 @@ use RuntimeException;
  */
 class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
 {
-    private const TABLE_NAME = 'osc_payment_webhooklogs';
+    private const TABLE_NAME = 'oe_payments_webhooklogs';
 
     public function __construct(
         private readonly Connection $connection

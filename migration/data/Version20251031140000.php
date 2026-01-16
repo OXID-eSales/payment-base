@@ -16,7 +16,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Migration: Create osc_payment_contract table (PRIMARY - Provider-Agnostic)
+ * Migration: Create oe_payments_contract table (PRIMARY - Provider-Agnostic)
  *
  * This is the main contract table that tracks payment lifecycle from intent to fulfillment.
  * Provider-agnostic design supports Stripe, PayPal, Amazon Pay, Unzer, Adyen, Klarna, etc.
@@ -25,7 +25,7 @@ final class Version20251031140000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create osc_payment_contract table - primary contract lifecycle management (provider-agnostic)';
+        return 'Create oe_payments_contract table - primary contract lifecycle management (provider-agnostic)';
     }
 
     public function up(Schema $schema): void
@@ -51,20 +51,20 @@ final class Version20251031140000 extends AbstractMigration
             WHERE CONSTRAINT_SCHEMA = DATABASE()
             AND CONSTRAINT_NAME = 'FK_CONTRACT_ORDER'
             AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-            AND TABLE_NAME = 'osc_payment_contract'
+            AND TABLE_NAME = 'oe_payments_contract'
         ";
 
         $result = $this->connection->fetchOne($sql);
 
         if ($result > 0) {
-            $this->addSql('ALTER TABLE osc_payment_contract DROP FOREIGN KEY FK_CONTRACT_ORDER');
+            $this->addSql('ALTER TABLE oe_payments_contract DROP FOREIGN KEY FK_CONTRACT_ORDER');
         }
     }
 
     public function down(Schema $schema): void
     {
-        if ($schema->hasTable('osc_payment_contract')) {
-            $schema->dropTable('osc_payment_contract');
+        if ($schema->hasTable('oe_payments_contract')) {
+            $schema->dropTable('oe_payments_contract');
         }
     }
 
@@ -73,7 +73,7 @@ final class Version20251031140000 extends AbstractMigration
      */
     private function createPaymentContractTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_contract';
+        $tableName = 'oe_payments_contract';
 
         if ($schema->hasTable($tableName)) {
             return;

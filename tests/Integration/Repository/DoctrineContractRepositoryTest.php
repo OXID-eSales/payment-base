@@ -47,7 +47,7 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
 
     private function cleanupTestData(): void
     {
-        $this->connection->executeStatement('DELETE FROM osc_payment_contract');
+        $this->connection->executeStatement('DELETE FROM oe_payments_contract');
     }
 
     private function createTestBasketSnapshot(): BasketSnapshot

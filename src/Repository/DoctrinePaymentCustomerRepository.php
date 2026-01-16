@@ -11,15 +11,15 @@ use RuntimeException;
 /**
  * Doctrine DBAL implementation of PaymentCustomerRepositoryInterface.
  *
- * Uses the provider-agnostic osc_payment_customer table instead of
- * Stripe-specific osc_stripe_customer_mapping.
+ * Uses the provider-agnostic oe_payments_customer table instead of
+ * Stripe-specific oe_payments_stripe_customer_mapping.
  *
  * LSP Compliance: Implements PaymentCustomerRepositoryInterface and can be
  * substituted with any other implementation.
  */
 class DoctrinePaymentCustomerRepository implements PaymentCustomerRepositoryInterface
 {
-    private const TABLE_NAME = 'osc_payment_customer';
+    private const TABLE_NAME = 'oe_payments_customer';
 
     public function __construct(
         private readonly Connection $connection

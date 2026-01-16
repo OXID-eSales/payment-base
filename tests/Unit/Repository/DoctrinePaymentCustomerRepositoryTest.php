@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * TDD Tests for DoctrinePaymentCustomerRepository
  *
- * Sprint 2 Phase 2: Repository must use osc_payment_customer table
+ * Sprint 2 Phase 2: Repository must use oe_payments_customer table
  * instead of osc_stripe_customer_mapping.
  *
  * @group sprint-2
@@ -34,7 +34,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
 
     /**
      * @test
-     * RED: Repository should use osc_payment_customer table
+     * RED: Repository should use oe_payments_customer table
      */
     public function repositoryShouldUsePaymentCustomerTable(): void
     {
@@ -44,7 +44,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
             ->expects($this->once())
             ->method('fetchAssociative')
             ->with(
-                $this->stringContains('osc_payment_customer'),
+                $this->stringContains('oe_payments_customer'),
                 $this->anything()
             )
             ->willReturn(null);
@@ -130,7 +130,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
             ->expects($this->once())
             ->method('insert')
             ->with(
-                'osc_payment_customer',
+                'oe_payments_customer',
                 $this->callback(function (array $data) {
                     return isset($data['OXUSERID'])
                         && $data['OXUSERID'] === 'user_new'
@@ -161,7 +161,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
             ->expects($this->once())
             ->method('update')
             ->with(
-                'osc_payment_customer',
+                'oe_payments_customer',
                 $this->callback(function (array $data) {
                     return isset($data['OXPAYMENTCUSTOMERID'])
                         && $data['OXPAYMENTCUSTOMERID'] === 'cus_updated_456';

@@ -8,6 +8,7 @@ parameters:
     level: max
     paths:
         - ../../src
+        - ../../migration/data
     excludePaths:
         - ../../vendor
     reportUnmatchedIgnoredErrors: false

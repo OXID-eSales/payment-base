@@ -13,7 +13,7 @@ namespace OxidEsales\PaymentComponent\Repository;
  * LSP Compliance: Any implementation can be substituted without affecting clients.
  *
  * Sprint 2: Replaces Stripe-specific osc_stripe_customer_mapping with
- * provider-agnostic osc_payment_customer table.
+ * provider-agnostic oe_payments_customer table.
  */
 interface PaymentCustomerRepositoryInterface
 {

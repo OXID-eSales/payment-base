@@ -44,20 +44,20 @@ final class Version20251031140200 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        if ($schema->hasTable('osc_payment_webhooklogs')) {
-            $schema->dropTable('osc_payment_webhooklogs');
+        if ($schema->hasTable('oe_payments_webhooklogs')) {
+            $schema->dropTable('oe_payments_webhooklogs');
         }
-        if ($schema->hasTable('osc_payment_sessions')) {
-            $schema->dropTable('osc_payment_sessions');
+        if ($schema->hasTable('oe_payments_sessions')) {
+            $schema->dropTable('oe_payments_sessions');
         }
-        if ($schema->hasTable('osc_payment_idempotency')) {
-            $schema->dropTable('osc_payment_idempotency');
+        if ($schema->hasTable('oe_payments_idempotency')) {
+            $schema->dropTable('oe_payments_idempotency');
         }
-        if ($schema->hasTable('osc_payment_customer')) {
-            $schema->dropTable('osc_payment_customer');
+        if ($schema->hasTable('oe_payments_customer')) {
+            $schema->dropTable('oe_payments_customer');
         }
-        if ($schema->hasTable('osc_payment_order_state')) {
-            $schema->dropTable('osc_payment_order_state');
+        if ($schema->hasTable('oe_payments_order_state')) {
+            $schema->dropTable('oe_payments_order_state');
         }
     }
 
@@ -66,7 +66,7 @@ final class Version20251031140200 extends AbstractMigration
      */
     private function createPaymentOrderStateTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_order_state';
+        $tableName = 'oe_payments_order_state';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -87,7 +87,7 @@ final class Version20251031140200 extends AbstractMigration
         $table->addColumn('OXCONTRACTID', Types::STRING, [
             'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NULL',
             'notnull' => false,
-            'comment' => 'FK to osc_payment_contract.OXID (contract-aware)'
+            'comment' => 'FK to oe_payments_contract.OXID (contract-aware)'
         ]);
 
         $table->addColumn('OXPAYMENTSTATE', Types::STRING, [
@@ -141,7 +141,7 @@ final class Version20251031140200 extends AbstractMigration
         // Unique index UK_ORDER ensures 1:1 relationship and query performance
 
         $table->addForeignKeyConstraint(
-            'osc_payment_contract',
+            'oe_payments_contract',
             ['OXCONTRACTID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],
@@ -157,7 +157,7 @@ final class Version20251031140200 extends AbstractMigration
      */
     private function createPaymentCustomerTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_customer';
+        $tableName = 'oe_payments_customer';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -222,7 +222,7 @@ final class Version20251031140200 extends AbstractMigration
      */
     private function createPaymentIdempotencyTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_idempotency';
+        $tableName = 'oe_payments_idempotency';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -281,7 +281,7 @@ final class Version20251031140200 extends AbstractMigration
      */
     private function createPaymentSessionsTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_sessions';
+        $tableName = 'oe_payments_sessions';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -340,7 +340,7 @@ final class Version20251031140200 extends AbstractMigration
      */
     private function createPaymentWebhookLogsTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_webhooklogs';
+        $tableName = 'oe_payments_webhooklogs';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -367,7 +367,7 @@ final class Version20251031140200 extends AbstractMigration
         $table->addColumn('OXCONTRACTID', Types::STRING, [
             'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NULL',
             'notnull' => false,
-            'comment' => 'FK to osc_payment_contract.OXID'
+            'comment' => 'FK to oe_payments_contract.OXID'
         ]);
 
         $table->addColumn('OXSTATUS', Types::STRING, [
@@ -392,7 +392,7 @@ final class Version20251031140200 extends AbstractMigration
         $table->addIndex(['OXRECEIVEDAT'], 'IDX_RECEIVED_AT');
 
         $table->addForeignKeyConstraint(
-            'osc_payment_contract',
+            'oe_payments_contract',
             ['OXCONTRACTID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],

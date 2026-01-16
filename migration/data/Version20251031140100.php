@@ -15,7 +15,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Migration: Create osc_payment_transaction table (MASTER - Provider-Agnostic)
+ * Migration: Create oe_payments_transaction table (MASTER - Provider-Agnostic)
  *
  * Core transaction data - present for ALL transactions.
  * Master table in master-detail pattern for performance optimization.
@@ -24,7 +24,7 @@ final class Version20251031140100 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create osc_payment_transaction table - master transaction table (provider-agnostic)';
+        return 'Create oe_payments_transaction table - master transaction table (provider-agnostic)';
     }
 
     public function up(Schema $schema): void
@@ -35,8 +35,8 @@ final class Version20251031140100 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        if ($schema->hasTable('osc_payment_transaction')) {
-            $schema->dropTable('osc_payment_transaction');
+        if ($schema->hasTable('oe_payments_transaction')) {
+            $schema->dropTable('oe_payments_transaction');
         }
     }
 
@@ -45,7 +45,7 @@ final class Version20251031140100 extends AbstractMigration
      */
     private function createPaymentTransactionTable(Schema $schema): void
     {
-        $tableName = 'osc_payment_transaction';
+        $tableName = 'oe_payments_transaction';
 
         if ($schema->hasTable($tableName)) {
             return;
@@ -73,7 +73,7 @@ final class Version20251031140100 extends AbstractMigration
         $table->addColumn('OXCONTRACTID', Types::STRING, [
             'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NULL',
             'notnull' => false,
-            'comment' => 'FK to osc_payment_contract.OXID (contract-aware)'
+            'comment' => 'FK to oe_payments_contract.OXID (contract-aware)'
         ]);
 
         // Provider identification (provider-agnostic)
@@ -165,7 +165,7 @@ final class Version20251031140100 extends AbstractMigration
         // Index IDX_ORDER is sufficient for query performance
 
         $table->addForeignKeyConstraint(
-            'osc_payment_contract',
+            'oe_payments_contract',
             ['OXCONTRACTID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],
@@ -173,7 +173,7 @@ final class Version20251031140100 extends AbstractMigration
         );
 
         $table->addForeignKeyConstraint(
-            'osc_payment_transaction',
+            'oe_payments_transaction',
             ['OXPARENTTRANSACTIONID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],

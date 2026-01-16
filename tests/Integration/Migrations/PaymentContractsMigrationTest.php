@@ -15,9 +15,9 @@ use Psr\Log\NullLogger;
 
 class PaymentContractsMigrationTest extends MigrationTestBase
 {
-    private const TABLE_CONTRACTS = 'osc_payment_contract';
-    private const TABLE_CONDITIONS = 'osc_payment_contract_condition';
-    private const TABLE_WEBHOOK_LOGS = 'osc_payment_webhook_logs';
+    private const TABLE_CONTRACTS = 'oe_payments_contract';
+    private const TABLE_CONDITIONS = 'oe_payments_contract_condition';
+    private const TABLE_WEBHOOK_LOGS = 'oe_payments_webhook_logs';
 
     /** @test */
     public function migration_creates_payment_contracts_table(): void

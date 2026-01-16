@@ -198,7 +198,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
     private function cleanupTestData(): void
     {
         $this->connection->executeStatement(
-            "DELETE FROM osc_payment_contract WHERE OXID LIKE ?",
+            "DELETE FROM oe_payments_contract WHERE OXID LIKE ?",
             [self::TEST_PREFIX . '%']
         );
     }

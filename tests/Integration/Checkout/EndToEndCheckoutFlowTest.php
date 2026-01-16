@@ -39,7 +39,7 @@ use Psr\Log\NullLogger;
  *
  * Key features:
  * - Uses real DoctrineContractRepository with actual MySQL connection
- * - Data is persisted to osc_payment_contract table
+ * - Data is persisted to oe_payments_contract table
  * - Data is NOT cleaned up after tests (for manual inspection)
  * - All test contract IDs start with "e2e_test_" prefix
  *
@@ -117,7 +117,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
      * All test data has "e2e_" prefix for easy identification.
      *
      * To query test data:
-     * SELECT * FROM osc_payment_contract WHERE OXID LIKE 'e2e_%' OR OXUSERID LIKE 'e2e_%';
+     * SELECT * FROM oe_payments_contract WHERE OXID LIKE 'e2e_%' OR OXUSERID LIKE 'e2e_%';
      */
     public function tearDown(): void
     {
@@ -184,7 +184,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Query database directly to verify persistence
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT * FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
 
@@ -223,7 +223,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Verify in database
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXBASKETDATA FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXBASKETDATA FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
         $basketData = json_decode($dbRow['OXBASKETDATA'], true);
@@ -264,7 +264,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Verify conditions are stored in database
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXCONDITIONS FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXCONDITIONS FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
         $dbConditions = json_decode($dbRow['OXCONDITIONS'], true);
@@ -385,7 +385,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Verify in database
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXCONDITIONS FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXCONDITIONS FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contract->getId()]
         );
 
@@ -414,7 +414,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Verify in database
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXSTATE, OXCONDITIONS FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXSTATE, OXCONDITIONS FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contract->getId()]
         );
 
@@ -611,7 +611,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
 
         // Verify in database
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXPROVIDER, OXPROVIDERORDERID FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXPROVIDER, OXPROVIDERORDERID FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contract->getId()]
         );
 
@@ -782,7 +782,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
     private function assertDatabaseState(string $contractId, string $expectedState): void
     {
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXSTATE FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXSTATE FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
 
@@ -797,7 +797,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
     private function assertDatabaseOrderId(string $contractId, string $expectedOrderId): void
     {
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXORDERID FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXORDERID FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
 
@@ -812,7 +812,7 @@ final class EndToEndCheckoutFlowTest extends IntegrationTestCase
     private function assertDatabaseFulfilledAt(string $contractId): void
     {
         $dbRow = $this->connection->fetchAssociative(
-            'SELECT OXFULFILLEDAT FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT OXFULFILLEDAT FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
 

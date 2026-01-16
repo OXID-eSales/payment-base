@@ -44,8 +44,8 @@ class DoctrineTransactionRepositoryTest extends IntegrationTestCase
 
     private function cleanupTestData(): void
     {
-        $this->connection->executeStatement('DELETE FROM osc_payment_transaction WHERE OXID LIKE "test_%"');
-        $this->connection->executeStatement('DELETE FROM osc_payment_contract WHERE OXID LIKE "test_%"');
+        $this->connection->executeStatement('DELETE FROM oe_payments_transaction WHERE OXID LIKE "test_%"');
+        $this->connection->executeStatement('DELETE FROM oe_payments_contract WHERE OXID LIKE "test_%"');
     }
 
     private function createTestContracts(): void
@@ -57,7 +57,7 @@ class DoctrineTransactionRepositoryTest extends IntegrationTestCase
         ];
 
         foreach ($contracts as $contractId => $data) {
-            $this->connection->insert('osc_payment_contract', [
+            $this->connection->insert('oe_payments_contract', [
                 'OXID' => $contractId,
                 'OXSHOPID' => 1,
                 'OXUSERID' => $data['user'],

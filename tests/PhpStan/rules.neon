@@ -1,0 +1,5 @@
+services:
+    -
+        class: OxidEsales\PaymentComponent\Tests\PhpStan\Rules\NoConcreteClassTypeHintRule
+        tags:
+            - phpstan.rules.rule

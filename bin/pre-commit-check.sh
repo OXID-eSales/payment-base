@@ -155,9 +155,15 @@ if [ "$SKIP_PHPUNIT" = true ]; then
 else
     if [ "$FULL_TESTS" = true ]; then
         echo ">>> Running PHPUnit Tests (Full: Unit + Integration)..."
-        TESTSUITE_ARG=""
+        echo -e "${YELLOW}Note: Integration tests require OXID shop context.${NC}"
+        echo -e "${YELLOW}Run from shop root with: docker compose exec php vendor/bin/phpunit -c extensions/payment-component/phpunit.xml${NC}"
+        echo ""
+        # In standalone mode, --full still only runs unit tests safely
+        # Integration tests need IntegrationTestCase from OXID shop
+        TESTSUITE_ARG="--testsuite Unit"
+        echo "Running Unit tests only (Integration tests require shop context)..."
     else
-        echo ">>> Running PHPUnit Tests (Unit only, use --full for all)..."
+        echo ">>> Running PHPUnit Tests (Unit only)..."
         TESTSUITE_ARG="--testsuite Unit"
     fi
 

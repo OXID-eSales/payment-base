@@ -51,9 +51,9 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
     private function cleanupTestData(): void
     {
         // Clean webhook logs first (has FK to contracts)
-        $this->connection->executeStatement('DELETE FROM osc_payment_webhooklogs WHERE OXEVENTID LIKE "test_%"');
+        $this->connection->executeStatement('DELETE FROM oe_payments_webhooklogs WHERE OXEVENTID LIKE "test_%"');
         // Clean test contracts
-        $this->connection->executeStatement('DELETE FROM osc_payment_contract WHERE OXID LIKE "contract_%"');
+        $this->connection->executeStatement('DELETE FROM oe_payments_contract WHERE OXID LIKE "contract_%"');
     }
 
     private function createTestContract(string $contractId): PaymentContract

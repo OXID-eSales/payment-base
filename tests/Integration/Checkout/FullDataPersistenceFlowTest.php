@@ -23,23 +23,23 @@ use OxidEsales\PaymentComponent\Transaction\Transaction;
 /**
  * Full Data Persistence Flow Test
  *
- * Tests that ALL relevant osc_payment_* tables are populated during the checkout flow
+ * Tests that ALL relevant oe_payments_* tables are populated during the checkout flow
  * as documented in: docs/payment-component/puml/04-02-payment-smart-contract-flow-standard.puml
  *
  * Tables tested:
- * - osc_payment_contract    : Contract state machine (includes capture/refund tracking since Sprint 8)
- * - osc_payment_customer    : Customer payment profile
- * - osc_payment_transaction : Payment transactions (auth, capture, refund)
- * - osc_payment_sessions    : Payment session data
+ * - oe_payments_contract    : Contract state machine (includes capture/refund tracking since Sprint 8)
+ * - oe_payments_customer    : Customer payment profile
+ * - oe_payments_transaction : Payment transactions (auth, capture, refund)
+ * - oe_payments_sessions    : Payment session data
  * - oxorder                 : OXID order (linked via contract)
  * - oxuser                  : OXID user (linked via contract)
  *
  * NOT tested (require Stripe API):
- * - osc_payment_webhooklogs
- * - osc_payment_idempotency
+ * - oe_payments_webhooklogs
+ * - oe_payments_idempotency
  *
- * Note: osc_payment_order_state was DROPPED in Sprint 8.
- * Capture/refund tracking is now handled by osc_payment_contract fields.
+ * Note: oe_payments_order_state was DROPPED in Sprint 8.
+ * Capture/refund tracking is now handled by oe_payments_contract fields.
  *
  * @group integration
  * @group e2e
@@ -91,7 +91,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     }
 
     // =========================================================================
-    // TEST: osc_payment_contract + oxuser + oxorder
+    // TEST: oe_payments_contract + oxuser + oxorder
     // =========================================================================
 
     /**
@@ -107,12 +107,12 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $contract = $this->createContract($contractId, $userId);
         $this->contractRepository->save($contract);
 
-        // 3. Verify contract in osc_payment_contract
+        // 3. Verify contract in oe_payments_contract
         $dbContract = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT * FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
-        $this->assertNotFalse($dbContract, 'Contract should exist in osc_payment_contract');
+        $this->assertNotFalse($dbContract, 'Contract should exist in oe_payments_contract');
         $this->assertEquals($userId, $dbContract['OXUSERID'], 'Contract should link to user');
         $this->assertEquals('draft', $dbContract['OXSTATE']);
 
@@ -154,7 +154,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // 5. Verify contract links to order
         $dbContract = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT * FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
         $this->assertNotFalse($dbContract, 'Contract should exist');
@@ -173,7 +173,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     }
 
     // =========================================================================
-    // TEST: osc_payment_transaction
+    // TEST: oe_payments_transaction
     // =========================================================================
 
     /**
@@ -210,7 +210,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify in database
         $dbTx = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_transaction WHERE OXID = :id',
+            'SELECT * FROM oe_payments_transaction WHERE OXID = :id',
             ['id' => $transactionId]
         );
 
@@ -259,7 +259,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify
         $dbTx = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_transaction WHERE OXID = :id',
+            'SELECT * FROM oe_payments_transaction WHERE OXID = :id',
             ['id' => $transactionId]
         );
 
@@ -299,7 +299,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify
         $dbTx = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_transaction WHERE OXID = :id',
+            'SELECT * FROM oe_payments_transaction WHERE OXID = :id',
             ['id' => $transactionId]
         );
 
@@ -357,13 +357,13 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     }
 
     // =========================================================================
-    // TEST: osc_payment_contract capture/refund (Sprint 8)
+    // TEST: oe_payments_contract capture/refund (Sprint 8)
     // =========================================================================
-    // Note: osc_payment_order_state was DROPPED in Sprint 8.
+    // Note: oe_payments_order_state was DROPPED in Sprint 8.
     // Capture/refund tracking tests moved to ContractCaptureRefundTest.php
 
     // =========================================================================
-    // TEST: osc_payment_customer
+    // TEST: oe_payments_customer
     // =========================================================================
 
     /**
@@ -376,7 +376,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $stripeCustomerId = 'cus_' . $this->testRunId;
 
         // Insert customer payment profile
-        $this->connection->insert('osc_payment_customer', [
+        $this->connection->insert('oe_payments_customer', [
             'OXID' => $customerId,
             'OXUSERID' => $userId,
             'OXPAYMENTCUSTOMERID' => $stripeCustomerId,
@@ -392,7 +392,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify customer record
         $dbCustomer = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_customer WHERE OXUSERID = :userId',
+            'SELECT * FROM oe_payments_customer WHERE OXUSERID = :userId',
             ['userId' => $userId]
         );
 
@@ -413,7 +413,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $userId = $this->createTestUser();
         $customerId = $this->createPaymentCustomerId('link_user');
 
-        $this->connection->insert('osc_payment_customer', [
+        $this->connection->insert('oe_payments_customer', [
             'OXID' => $customerId,
             'OXUSERID' => $userId,
             'OXPAYMENTCUSTOMERID' => 'cus_link_' . $this->testRunId,
@@ -424,7 +424,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         // Join query to verify linkage
         $result = $this->connection->fetchAssociative(
             'SELECT pc.*, u.OXFNAME, u.OXLNAME, u.OXUSERNAME
-             FROM osc_payment_customer pc
+             FROM oe_payments_customer pc
              JOIN oxuser u ON pc.OXUSERID = u.OXID
              WHERE pc.OXID = :id',
             ['id' => $customerId]
@@ -436,7 +436,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     }
 
     // =========================================================================
-    // TEST: osc_payment_sessions
+    // TEST: oe_payments_sessions
     // =========================================================================
 
     /**
@@ -449,7 +449,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $stripeSessionId = 'cs_test_' . $this->testRunId;
 
         // Insert session record
-        $this->connection->insert('osc_payment_sessions', [
+        $this->connection->insert('oe_payments_sessions', [
             'OXID' => $sessionId,
             'OXPROVIDER' => 'stripe',
             'OXSESSIONID' => $stripeSessionId,
@@ -467,7 +467,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify session record
         $dbSession = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_sessions WHERE OXSESSIONID = :sessionId',
+            'SELECT * FROM oe_payments_sessions WHERE OXSESSIONID = :sessionId',
             ['sessionId' => $stripeSessionId]
         );
 
@@ -488,7 +488,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $sessionId = $this->createSessionId('expiry');
         $expiredTime = date('Y-m-d H:i:s', strtotime('-1 hour'));
 
-        $this->connection->insert('osc_payment_sessions', [
+        $this->connection->insert('oe_payments_sessions', [
             'OXID' => $sessionId,
             'OXPROVIDER' => 'stripe',
             'OXSESSIONID' => 'cs_expired_' . $this->testRunId,
@@ -498,7 +498,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // Verify the session expiry time is stored correctly
         $dbSession = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_sessions WHERE OXID = :id',
+            'SELECT * FROM oe_payments_sessions WHERE OXID = :id',
             ['id' => $sessionId]
         );
 
@@ -526,10 +526,10 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         // 1. Create user (oxuser)
         $userId = $this->createTestUser('flow_' . $flowId);
 
-        // 2. Create payment customer profile (osc_payment_customer)
+        // 2. Create payment customer profile (oe_payments_customer)
         $paymentCustomerId = $this->createPaymentCustomerId('flow');
         $stripeCustomerId = 'cus_flow_' . $flowId;
-        $this->connection->insert('osc_payment_customer', [
+        $this->connection->insert('oe_payments_customer', [
             'OXID' => $paymentCustomerId,
             'OXUSERID' => $userId,
             'OXPAYMENTCUSTOMERID' => $stripeCustomerId,
@@ -538,10 +538,10 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
             'OXUPDATED' => date('Y-m-d H:i:s'),
         ]);
 
-        // 3. Create session (osc_payment_sessions)
+        // 3. Create session (oe_payments_sessions)
         $sessionId = $this->createSessionId('flow');
         $stripeSessionId = 'cs_flow_' . $flowId;
-        $this->connection->insert('osc_payment_sessions', [
+        $this->connection->insert('oe_payments_sessions', [
             'OXID' => $sessionId,
             'OXPROVIDER' => 'stripe',
             'OXSESSIONID' => $stripeSessionId,
@@ -554,7 +554,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         // 4. Create order (oxorder) - must be created before contract transitions to NOT_FINISHED
         $orderId = $this->createTestOrder($userId, 599.99, 'EUR');
 
-        // 5. Create contract (osc_payment_contract)
+        // 5. Create contract (oe_payments_contract)
         $contractId = $this->createContractId('flow');
         $providerOrderId = 'pi_flow_' . $flowId;
         $contract = $this->createContract($contractId, $userId);
@@ -565,7 +565,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $contract->transitionToPending();
         $this->contractRepository->save($contract);
 
-        // 6. Fulfill conditions (updates osc_payment_contract)
+        // 6. Fulfill conditions (updates oe_payments_contract)
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, [
             'authorizationId' => 'auth_flow_' . $flowId,
         ]);
@@ -579,8 +579,8 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $contract->commitToOrder($orderId);
         $this->contractRepository->save($contract);
 
-        // 8. Create authorization transaction (osc_payment_transaction)
-        // Note: osc_payment_order_state was DROPPED in Sprint 8
+        // 8. Create authorization transaction (oe_payments_transaction)
+        // Note: oe_payments_order_state was DROPPED in Sprint 8
         $authTxId = $this->createTransactionId('flow_auth');
         $authTx = new Transaction(
             $authTxId,
@@ -598,7 +598,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->transactionRepository->save($authTx);
 
         // 9. Simulate capture (webhook) - add capture transaction and update contract
-        // Sprint 8: Capture tracking now on osc_payment_contract, not osc_payment_order_state
+        // Sprint 8: Capture tracking now on oe_payments_contract, not oe_payments_order_state
         $contract->setCapturedAmount(599.99);
         $contract->setCapturedAt(new \DateTimeImmutable());
         $this->contractRepository->save($contract);
@@ -634,34 +634,34 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         );
         $this->assertNotFalse($dbUser, 'oxuser record should exist');
 
-        // Verify osc_payment_customer
+        // Verify oe_payments_customer
         $dbCustomer = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_customer WHERE OXUSERID = :userId',
+            'SELECT * FROM oe_payments_customer WHERE OXUSERID = :userId',
             ['userId' => $userId]
         );
-        $this->assertNotFalse($dbCustomer, 'osc_payment_customer record should exist');
+        $this->assertNotFalse($dbCustomer, 'oe_payments_customer record should exist');
         $this->assertEquals($stripeCustomerId, $dbCustomer['OXPAYMENTCUSTOMERID']);
 
-        // Verify osc_payment_sessions
+        // Verify oe_payments_sessions
         $dbSession = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_sessions WHERE OXID = :id',
+            'SELECT * FROM oe_payments_sessions WHERE OXID = :id',
             ['id' => $sessionId]
         );
-        $this->assertNotFalse($dbSession, 'osc_payment_sessions record should exist');
+        $this->assertNotFalse($dbSession, 'oe_payments_sessions record should exist');
 
-        // Verify osc_payment_contract
+        // Verify oe_payments_contract
         $dbContract = $this->connection->fetchAssociative(
-            'SELECT * FROM osc_payment_contract WHERE OXID = :id',
+            'SELECT * FROM oe_payments_contract WHERE OXID = :id',
             ['id' => $contractId]
         );
-        $this->assertNotFalse($dbContract, 'osc_payment_contract record should exist');
+        $this->assertNotFalse($dbContract, 'oe_payments_contract record should exist');
         $this->assertEquals('fulfilled', $dbContract['OXSTATE']);
         $this->assertEquals($orderId, $dbContract['OXORDERID']);
         $this->assertEquals($userId, $dbContract['OXUSERID']);
         $this->assertEquals($providerOrderId, $dbContract['OXPROVIDERORDERID']);
         $this->assertNotNull($dbContract['OXFULFILLEDAT']);
 
-        // Sprint 8: Verify capture tracking on contract (replaces osc_payment_order_state)
+        // Sprint 8: Verify capture tracking on contract (replaces oe_payments_order_state)
         $this->assertEquals(599.99, (float)$dbContract['OXCAPTUREDAMOUNT'], 'Contract should track captured amount');
         $this->assertNotNull($dbContract['OXCAPTUREDAT'], 'Contract should have capture timestamp');
 
@@ -674,10 +674,10 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertEquals($userId, $dbOrder['OXUSERID']);
         $this->assertEquals(599.99, (float)$dbOrder['OXTOTALORDERSUM']);
 
-        // Note: osc_payment_order_state was DROPPED in Sprint 8
-        // Capture/refund tracking is now on osc_payment_contract (verified above)
+        // Note: oe_payments_order_state was DROPPED in Sprint 8
+        // Capture/refund tracking is now on oe_payments_contract (verified above)
 
-        // Verify osc_payment_transaction (should have 2: auth + capture)
+        // Verify oe_payments_transaction (should have 2: auth + capture)
         $dbTransactions = $this->transactionRepository->findByOrderId($orderId);
         $this->assertCount(2, $dbTransactions, 'Should have 2 transactions');
 
@@ -706,7 +706,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         return substr(self::TEST_PREFIX . 'tx_' . $this->testRunId . '_' . $suffix, 0, 32);
     }
 
-    // Note: createOrderStateId removed in Sprint 8 (osc_payment_order_state dropped)
+    // Note: createOrderStateId removed in Sprint 8 (oe_payments_order_state dropped)
 
     private function createPaymentCustomerId(string $suffix): string
     {

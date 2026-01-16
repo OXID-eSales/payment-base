@@ -37,7 +37,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
             ->expects($this->once())
             ->method('insert')
             ->with(
-                'osc_payment_webhooklogs',
+                'oe_payments_webhooklogs',
                 $this->callback(function (array $data) {
                     return isset($data['OXPROVIDER']) && $data['OXPROVIDER'] === 'stripe';
                 })
@@ -70,7 +70,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
             ->expects($this->once())
             ->method('insert')
             ->with(
-                'osc_payment_webhooklogs',
+                'oe_payments_webhooklogs',
                 $this->callback(function (array $data) use ($payload) {
                     return isset($data['OXPAYLOAD'])
                         && $data['OXPAYLOAD'] === json_encode($payload);
@@ -104,7 +104,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
             ->expects($this->once())
             ->method('insert')
             ->with(
-                'osc_payment_webhooklogs',
+                'oe_payments_webhooklogs',
                 $this->callback(function (array $data) {
                     return isset($data['OXPROCESSEDAT'])
                         && $data['OXPROCESSEDAT'] === '2025-12-02 15:45:00';
@@ -228,7 +228,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
             ->expects($this->once())
             ->method('insert')
             ->with(
-                'osc_payment_webhooklogs',
+                'oe_payments_webhooklogs',
                 $this->callback(function (array $data) {
                     // OXPROVIDER can be null or missing
                     return !isset($data['OXPROVIDER']) || $data['OXPROVIDER'] === null;
