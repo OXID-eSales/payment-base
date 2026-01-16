@@ -338,7 +338,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     }
 
     /**
-     * Set a private property value using reflection
+     * Set a private property value using reflection.
      *
      * @param ReflectionClass<object> $reflection
      */
