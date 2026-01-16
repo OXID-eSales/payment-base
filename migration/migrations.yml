@@ -1,0 +1,4 @@
+name: PAYMENT_COMPONENT
+migrations_namespace: OxidEsales\PaymentComponent\Migrations
+table_name: oxmigrations_payment_component
+migrations_directory: data

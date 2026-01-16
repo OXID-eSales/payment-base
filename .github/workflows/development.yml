@@ -240,9 +240,17 @@ jobs:
           make up
           sleep 2
 
-      - name: Install component dependencies
+      - name: Install shop dependencies
         run: |
           docker compose exec -T php composer update --no-interaction
+
+      - name: Install component dev dependencies
+        run: |
+          docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      - name: Run database migrations
+        run: |
+          docker compose exec -T php bash -c "cd /var/www/test-module && vendor/bin/doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=migration/migrations-db.php --no-interaction --allow-no-migration"
 
       - name: Run integration tests with shop bootstrap
         run: |
