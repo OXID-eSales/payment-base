@@ -1,4 +1,4 @@
-name: Unit Tests & Code Quality
+name: Development
 
 on:
   push:
@@ -8,10 +8,6 @@ on:
     branches:
       - main
       - master
-
-env:
-  PHP_VERSION: '8.3'
-  MYSQL_VERSION: '8.0'
 
 jobs:
   pre-commit-checks:
@@ -60,7 +56,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:${{ env.MYSQL_VERSION }}
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: example
@@ -95,7 +91,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ env.PHP_VERSION }}
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, gd
           coverage: none
           tools: composer:v2
