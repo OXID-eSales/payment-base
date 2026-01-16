@@ -250,7 +250,11 @@ jobs:
 
       - name: Run database migrations
         run: |
-          docker compose exec -T php bash -c "cd /var/www/test-module && composer migrations"
+          # Run migrations using Doctrine within the OXID shop context
+          # This avoids the need for a standalone migrations-db.php file
+          docker compose exec -T php php vendor/bin/doctrine-migrations migrate \
+            --configuration=/var/www/test-module/migration/migrations.yml \
+            --no-interaction --allow-no-migration
 
       - name: Run integration tests with shop bootstrap
         run: |
