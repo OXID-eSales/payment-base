@@ -15,15 +15,16 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Migration: Create support tables (order_state, customer, idempotency, sessions)
+ * Migration: Create support tables (customer, idempotency, sessions, webhooklogs)
  *
  * Essential support tables for payment lifecycle management.
+ * Note: order_state table was removed - capture/refund tracking is now in oe_payments_contract.
  */
 final class Version20251031140200 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create payment support tables - order_state, customer, idempotency, sessions, webhook_logs (provider-agnostic)';
+        return 'Create payment support tables - customer, idempotency, sessions, webhook_logs (provider-agnostic)';
     }
 
     /**
@@ -35,7 +36,6 @@ final class Version20251031140200 extends AbstractMigration
     {
         $this->platform->registerDoctrineTypeMapping('enum', 'string');
 
-        $this->createPaymentOrderStateTable($schema);
         $this->createPaymentCustomerTable($schema);
         $this->createPaymentIdempotencyTable($schema);
         $this->createPaymentSessionsTable($schema);
@@ -56,100 +56,6 @@ final class Version20251031140200 extends AbstractMigration
         if ($schema->hasTable('oe_payments_customer')) {
             $schema->dropTable('oe_payments_customer');
         }
-        if ($schema->hasTable('oe_payments_order_state')) {
-            $schema->dropTable('oe_payments_order_state');
-        }
-    }
-
-    /**
-     * @throws SchemaException
-     */
-    private function createPaymentOrderStateTable(Schema $schema): void
-    {
-        $tableName = 'oe_payments_order_state';
-
-        if ($schema->hasTable($tableName)) {
-            return;
-        }
-
-        $table = $schema->createTable($tableName);
-
-        $table->addColumn('OXID', Types::STRING, [
-            'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NOT NULL',
-            'comment' => 'State record ID'
-        ]);
-
-        $table->addColumn('OXORDERID', Types::STRING, [
-            'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NOT NULL',
-            'comment' => 'FK to oxorder.OXID (1:1)'
-        ]);
-
-        $table->addColumn('OXCONTRACTID', Types::STRING, [
-            'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NULL',
-            'notnull' => false,
-            'comment' => 'FK to oe_payments_contract.OXID (contract-aware)'
-        ]);
-
-        $table->addColumn('OXPAYMENTSTATE', Types::STRING, [
-            'columnDefinition' => 'VARCHAR(32) NOT NULL',
-            'comment' => 'NOT_FINISHED, 500, 600, OK, ERROR'
-        ]);
-
-        $table->addColumn('OXPROVIDERORDERID', Types::STRING, [
-            'columnDefinition' => 'VARCHAR(128) NULL',
-            'notnull' => false,
-            'comment' => 'Provider order ID'
-        ]);
-
-        $table->addColumn('OXWEBHOOKWAITSINCE', Types::DATETIME_MUTABLE, [
-            'notnull' => false,
-            'comment' => 'Waiting for webhook since timestamp'
-        ]);
-
-        $table->addColumn('OXWEBHOOKTIMEOUT', Types::INTEGER, [
-            'notnull' => false,
-            'comment' => 'Webhook timeout in seconds'
-        ]);
-
-        $table->addColumn('OXLASTPAYMENTATTEMPT', Types::DATETIME_MUTABLE, [
-            'notnull' => false,
-            'comment' => 'Last payment attempt timestamp'
-        ]);
-
-        $table->addColumn('OXPAYMENTATTEMPTCOUNT', Types::INTEGER, [
-            'notnull' => true,
-            'default' => 0,
-            'comment' => 'Number of payment attempts'
-        ]);
-
-        $table->addColumn('OXCREATED', Types::DATETIME_MUTABLE, [
-            'columnDefinition' => 'DATETIME NOT NULL'
-        ]);
-
-        $table->addColumn('OXUPDATED', Types::DATETIME_MUTABLE, [
-            'columnDefinition' => 'DATETIME NOT NULL'
-        ]);
-
-        $table->setPrimaryKey(['OXID']);
-        $table->addUniqueIndex(['OXORDERID'], 'UK_ORDER');
-        $table->addIndex(['OXPAYMENTSTATE'], 'IDX_PAYMENT_STATE');
-        $table->addIndex(['OXPROVIDERORDERID'], 'IDX_PROVIDER_ORDER');
-        $table->addIndex(['OXCONTRACTID'], 'IDX_CONTRACT');
-
-        // Note: FK to oxorder removed to allow TRUNCATE during demodata installation
-        // Referential integrity maintained at application level
-        // Unique index UK_ORDER ensures 1:1 relationship and query performance
-
-        $table->addForeignKeyConstraint(
-            'oe_payments_contract',
-            ['OXCONTRACTID'],
-            ['OXID'],
-            ['onDelete' => 'SET NULL'],
-            'FK_ORDER_STATE_CONTRACT'
-        );
-
-        $table->addOption('engine', 'InnoDB');
-        $table->addOption('charset', 'utf8mb4');
     }
 
     /**
@@ -364,6 +270,12 @@ final class Version20251031140200 extends AbstractMigration
             'comment' => 'Event type (payment_intent.succeeded, etc.)'
         ]);
 
+        $table->addColumn('OXPROVIDER', Types::STRING, [
+            'columnDefinition' => 'VARCHAR(32) COLLATE latin1_general_ci NULL',
+            'notnull' => false,
+            'comment' => 'Payment provider: stripe, paypal, unzer, adyen, klarna, amazonpay'
+        ]);
+
         $table->addColumn('OXCONTRACTID', Types::STRING, [
             'columnDefinition' => 'CHAR(32) COLLATE latin1_general_ci NULL',
             'notnull' => false,
@@ -385,6 +297,16 @@ final class Version20251031140200 extends AbstractMigration
             'comment' => 'Error message if processing failed'
         ]);
 
+        $table->addColumn('OXPAYLOAD', Types::TEXT, [
+            'notnull' => false,
+            'comment' => 'Webhook payload (JSON)'
+        ]);
+
+        $table->addColumn('OXPROCESSEDAT', Types::DATETIME_MUTABLE, [
+            'notnull' => false,
+            'comment' => 'When webhook was processed'
+        ]);
+
         $table->setPrimaryKey(['OXID']);
         $table->addUniqueIndex(['OXEVENTID'], 'UK_EVENT_ID');
         $table->addIndex(['OXCONTRACTID'], 'IDX_CONTRACT');
@@ -396,7 +318,7 @@ final class Version20251031140200 extends AbstractMigration
             ['OXCONTRACTID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],
-            'FK_WEBHOOK_CONTRACT'
+            'FK_OE_WEBHOOK_CONTRACT'
         );
 
         $table->addOption('engine', 'InnoDB');

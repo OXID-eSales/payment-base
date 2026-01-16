@@ -40,6 +40,34 @@ if ($shopBootstrap === null) {
 // Load shop bootstrap (includes shop's autoloader)
 require_once $shopBootstrap;
 
+// Register autoloader for migration classes (not auto-discovered by composer in path repos)
+$possibleMigrationDirs = [
+    '/var/www/extensions/payment-component/migration/data',
+    dirname(__DIR__) . '/migration/data',
+    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-component/migration/data',
+];
+
+foreach ($possibleMigrationDirs as $migrationDir) {
+    if (is_dir($migrationDir)) {
+        spl_autoload_register(static function (string $class) use ($migrationDir): void {
+            $prefix = 'OxidEsales\\PaymentComponent\\Migrations\\';
+            $prefixLength = strlen($prefix);
+
+            if (strncmp($class, $prefix, $prefixLength) !== 0) {
+                return;
+            }
+
+            $relativeClass = substr($class, $prefixLength);
+            $file = $migrationDir . '/' . $relativeClass . '.php';
+
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        });
+        break;
+    }
+}
+
 // Register autoloader for test classes (autoload-dev is not loaded in production installs)
 // Try multiple possible test directories
 $possibleTestDirs = [

@@ -169,7 +169,7 @@ final class Version20251031140100 extends AbstractMigration
             ['OXCONTRACTID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],
-            'FK_CONTRACT'
+            'FK_OE_TX_CONTRACT'
         );
 
         $table->addForeignKeyConstraint(
@@ -177,7 +177,7 @@ final class Version20251031140100 extends AbstractMigration
             ['OXPARENTTRANSACTIONID'],
             ['OXID'],
             ['onDelete' => 'SET NULL'],
-            'FK_PARENT_TX'
+            'FK_OE_TX_PARENT'
         );
 
         $table->addOption('engine', 'InnoDB');

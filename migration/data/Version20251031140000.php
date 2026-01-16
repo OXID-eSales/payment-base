@@ -195,6 +195,31 @@ final class Version20251031140000 extends AbstractMigration
             'comment' => 'When payment was captured (contract fulfilled)'
         ]);
 
+        // Capture/refund tracking (previously in order_state, consolidated here)
+        $table->addColumn('OXCAPTUREDAMOUNT', Types::DECIMAL, [
+            'precision' => 10,
+            'scale' => 2,
+            'notnull' => false,
+            'comment' => 'Captured payment amount'
+        ]);
+
+        $table->addColumn('OXREFUNDEDAMOUNT', Types::DECIMAL, [
+            'precision' => 10,
+            'scale' => 2,
+            'notnull' => false,
+            'comment' => 'Total refunded amount (accumulates)'
+        ]);
+
+        $table->addColumn('OXCAPTUREDAT', Types::DATETIME_MUTABLE, [
+            'notnull' => false,
+            'comment' => 'When payment was captured'
+        ]);
+
+        $table->addColumn('OXREFUNDEDAT', Types::DATETIME_MUTABLE, [
+            'notnull' => false,
+            'comment' => 'When last refund was processed'
+        ]);
+
         $table->addColumn('OXEXPIRESAT', Types::DATETIME_MUTABLE, [
             'notnull' => false,
             'comment' => 'Contract expiration (default: +24 hours)'
