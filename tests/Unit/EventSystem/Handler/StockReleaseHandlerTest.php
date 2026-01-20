@@ -9,13 +9,15 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCancelledEvent;
+use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractExpiredEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFailedEvent;
+use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFulfilledEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
 use OxidEsales\PaymentComponent\EventSystem\Handler\StockReleaseHandler;
-use OxidEsales\PaymentComponent\Service\StockManagementServiceInterface;
+use OxidEsales\PaymentComponent\Service\Exception\StockReleaseException;
+use OxidEsales\PaymentComponent\Service\StockServiceInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -25,246 +27,161 @@ use PHPUnit\Framework\MockObject\MockObject;
 class StockReleaseHandlerTest extends TestCase
 {
     private StockReleaseHandler $handler;
-    /** @var StockManagementServiceInterface&MockObject */
-    private $stockManagement;
+    /** @var StockServiceInterface&MockObject */
+    private StockServiceInterface $stockService;
 
     protected function setUp(): void
     {
-        $this->stockManagement = $this->createMock(StockManagementServiceInterface::class);
+        $this->stockService = $this->createMock(StockServiceInterface::class);
 
         $this->handler = new StockReleaseHandler(
-            $this->stockManagement
+            $this->stockService,
+            true // enabled by default
         );
     }
 
-    public function testReleasesStockOnContractFailed(): void
-    {
-        // Arrange: Contract with reserved stock
-        $contract = $this->createMock(PaymentContract::class);
-        $stockCondition = $this->createMock(ContractCondition::class);
-
-        $stockCondition->expects($this->once())
-            ->method('getType')
-            ->willReturn(ContractCondition::TYPE_STOCK_RESERVED);
-
-        $stockCondition->expects($this->once())
-            ->method('getData')
-            ->willReturn([
-                'products' => [
-                    ['productId' => 'PROD-001', 'quantity' => 2],
-                    ['productId' => 'PROD-002', 'quantity' => 1],
-                ],
-            ]);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([$stockCondition]);
-
-        $context = new EventContext();
-
-        $event = new ContractFailedEvent($contract, $context, 'payment_declined', 'Payment declined');
-
-        // Expect: Stock released for each product
-        $callCount = 0;
-        $this->stockManagement->expects($this->exactly(2))
-            ->method('releaseStock')
-            ->willReturnCallback(function ($productId, $quantity) use (&$callCount) {
-                if ($callCount === 0) {
-                    $this->assertEquals('PROD-001', $productId);
-                    $this->assertEquals(2, $quantity);
-                } elseif ($callCount === 1) {
-                    $this->assertEquals('PROD-002', $productId);
-                    $this->assertEquals(1, $quantity);
-                }
-                $callCount++;
-            });
-
-        // Act
-        $this->handler->handle($event);
-    }
+    // =========================================================================
+    // Event handling tests - ContractCancelledEvent
+    // =========================================================================
 
     public function testReleasesStockOnContractCancelled(): void
     {
-        // Arrange: Cancelled contract with reserved stock
-        $contract = $this->createMock(PaymentContract::class);
-        $stockCondition = $this->createMock(ContractCondition::class);
-
-        $stockCondition->expects($this->once())
-            ->method('getType')
-            ->willReturn(ContractCondition::TYPE_STOCK_RESERVED);
-
-        $stockCondition->expects($this->once())
-            ->method('getData')
-            ->willReturn([
-                'products' => [
-                    ['productId' => 'PROD-003', 'quantity' => 5],
-                ],
-            ]);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([$stockCondition]);
-
+        $contract = $this->createMockContract();
         $context = new EventContext();
+        $event = new ContractCancelledEvent($contract, $context, 'User cancelled');
 
-        $event = new ContractCancelledEvent($contract, $context, 'User cancelled payment');
+        $this->stockService->expects($this->once())
+            ->method('releaseForContract')
+            ->with($contract);
 
-        // Expect: Stock released
-        $this->stockManagement->expects($this->once())
-            ->method('releaseStock')
-            ->with('PROD-003', 5);
-
-        // Act
         $this->handler->handle($event);
     }
 
-    public function testSkipsWhenNoContractInContext(): void
+    // =========================================================================
+    // Event handling tests - ContractExpiredEvent
+    // =========================================================================
+
+    public function testReleasesStockOnContractExpired(): void
     {
-        // This test is no longer valid since ContractFailedEvent requires a contract
-        // Skipping this test as the event cannot be constructed without a contract
-        $this->markTestSkipped('Event constructor requires contract, cannot test null contract scenario');
-    }
-
-    public function testSkipsWhenNoStockReservationCondition(): void
-    {
-        // Arrange: Contract without stock reservation
-        $contract = $this->createMock(PaymentContract::class);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([]);
-
+        $contract = $this->createMockContract();
         $context = new EventContext();
+        $event = new ContractExpiredEvent($contract, $context, time());
 
-        $event = new ContractFailedEvent($contract, $context, 'payment_error', 'Payment error');
+        $this->stockService->expects($this->once())
+            ->method('releaseForContract')
+            ->with($contract);
 
-        // Expect: No stock operations
-        $this->stockManagement->expects($this->never())
-            ->method('releaseStock');
-
-        // Act
         $this->handler->handle($event);
     }
 
-    public function testSkipsWhenStockConditionHasNoProducts(): void
+    // =========================================================================
+    // Event handling tests - ContractFailedEvent
+    // =========================================================================
+
+    public function testReleasesStockOnContractFailed(): void
     {
-        // Arrange: Stock condition without products data
-        $contract = $this->createMock(PaymentContract::class);
-        $stockCondition = $this->createMock(ContractCondition::class);
-
-        $stockCondition->expects($this->once())
-            ->method('getType')
-            ->willReturn(ContractCondition::TYPE_STOCK_RESERVED);
-
-        $stockCondition->expects($this->once())
-            ->method('getData')
-            ->willReturn([]);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([$stockCondition]);
-
+        $contract = $this->createMockContract();
         $context = new EventContext();
+        $event = new ContractFailedEvent($contract, $context, 'payment_declined', 'Payment declined');
 
-        $event = new ContractCancelledEvent($contract, $context, 'Cancelled');
+        $this->stockService->expects($this->once())
+            ->method('releaseForContract')
+            ->with($contract);
 
-        // Expect: No stock operations
-        $this->stockManagement->expects($this->never())
-            ->method('releaseStock');
-
-        // Act
         $this->handler->handle($event);
     }
 
-    public function testHandlerIgnoresOtherEventTypes(): void
+    // =========================================================================
+    // Handler should NOT release on FULFILLED
+    // =========================================================================
+
+    public function testDoesNotReleaseStockOnContractFulfilled(): void
     {
-        // Arrange: Different event type
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $event = new ContractFulfilledEvent($contract, $context, 'order123');
+
+        $this->stockService->expects($this->never())
+            ->method('releaseForContract');
+
+        $this->handler->handle($event);
+    }
+
+    // =========================================================================
+    // Handler ignores other events
+    // =========================================================================
+
+    public function testIgnoresUnrelatedEvents(): void
+    {
         $event = new \stdClass();
 
-        // Act
-        $this->handler->handle($event);
+        $this->stockService->expects($this->never())
+            ->method('releaseForContract');
 
-        // Assert: No interactions with dependencies
-        $this->stockManagement->expects($this->never())->method('releaseStock');
+        $this->handler->handle($event);
     }
 
-    public function testReleasesStockForMultipleProducts(): void
+    // =========================================================================
+    // Error handling - throw exception on failure (strict consistency)
+    // =========================================================================
+
+    public function testThrowsExceptionOnStockReleaseFailure(): void
     {
-        // Arrange: Contract with multiple products
-        $contract = $this->createMock(PaymentContract::class);
-        $stockCondition = $this->createMock(ContractCondition::class);
-
-        $stockCondition->expects($this->once())
-            ->method('getType')
-            ->willReturn(ContractCondition::TYPE_STOCK_RESERVED);
-
-        $stockCondition->expects($this->once())
-            ->method('getData')
-            ->willReturn([
-                'products' => [
-                    ['productId' => 'PROD-010', 'quantity' => 3],
-                    ['productId' => 'PROD-011', 'quantity' => 7],
-                    ['productId' => 'PROD-012', 'quantity' => 1],
-                ],
-            ]);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([$stockCondition]);
+        $contract = $this->createMockContract();
+        $contract->method('getId')->willReturn('contract123');
 
         $context = new EventContext();
+        $event = new ContractCancelledEvent($contract, $context, 'User cancelled');
 
-        $event = new ContractFailedEvent($contract, $context, 'timeout', 'Timeout');
+        $this->stockService->expects($this->once())
+            ->method('releaseForContract')
+            ->with($contract)
+            ->willThrowException(new StockReleaseException('contract123', 'Database error'));
 
-        // Expect: All products released
-        $callCount = 0;
-        $this->stockManagement->expects($this->exactly(3))
-            ->method('releaseStock')
-            ->willReturnCallback(function ($productId, $quantity) use (&$callCount) {
-                if ($callCount === 0) {
-                    $this->assertEquals('PROD-010', $productId);
-                    $this->assertEquals(3, $quantity);
-                } elseif ($callCount === 1) {
-                    $this->assertEquals('PROD-011', $productId);
-                    $this->assertEquals(7, $quantity);
-                } elseif ($callCount === 2) {
-                    $this->assertEquals('PROD-012', $productId);
-                    $this->assertEquals(1, $quantity);
-                }
-                $callCount++;
+        $this->expectException(StockReleaseException::class);
+        $this->expectExceptionMessage('contract123');
+
+        $this->handler->handle($event);
+    }
+
+    // =========================================================================
+    // Configuration tests
+    // =========================================================================
+
+    public function testSkipsWhenDisabled(): void
+    {
+        // Create handler with disabled flag
+        $handler = new StockReleaseHandler(
+            $this->stockService,
+            false // disabled
+        );
+
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $event = new ContractCancelledEvent($contract, $context, 'User cancelled');
+
+        // When disabled, should not release stock
+        $this->stockService->expects($this->never())
+            ->method('releaseForContract');
+
+        $handler->handle($event);
+    }
+
+    // =========================================================================
+    // Helper methods
+    // =========================================================================
+
+    private function createMockContract(): PaymentContractInterface&MockObject
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn('contract123');
+        $contract->method('getMetadata')
+            ->willReturnCallback(fn($key) => match ($key) {
+                'stock_reserved' => true,
+                'stock_reserved_items' => ['prod1' => 2],
+                default => null,
             });
 
-        // Act
-        $this->handler->handle($event);
-    }
-
-    public function testHandlesEmptyProductsArray(): void
-    {
-        // Arrange: Stock condition with empty products array
-        $contract = $this->createMock(PaymentContract::class);
-        $stockCondition = $this->createMock(ContractCondition::class);
-
-        $stockCondition->expects($this->once())
-            ->method('getType')
-            ->willReturn(ContractCondition::TYPE_STOCK_RESERVED);
-
-        $stockCondition->expects($this->once())
-            ->method('getData')
-            ->willReturn(['products' => []]);
-
-        $contract->expects($this->once())
-            ->method('getConditions')
-            ->willReturn([$stockCondition]);
-
-        $context = new EventContext();
-
-        $event = new ContractCancelledEvent($contract, $context, 'User action');
-
-        // Expect: No stock operations (empty array)
-        $this->stockManagement->expects($this->never())
-            ->method('releaseStock');
-
-        // Act
-        $this->handler->handle($event);
+        return $contract;
     }
 }

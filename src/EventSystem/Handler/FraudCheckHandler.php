@@ -9,47 +9,46 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\EventSystem\Handler;
 
+use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
 use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\FraudScoringServiceInterface;
+use OxidEsales\PaymentComponent\Service\FraudCheckServiceInterface;
 
 /**
- * Handles fraud checking on payment initiation.
+ * Handles fraud checking on payment authorization.
  *
- * Calculates a risk score based on various fraud indicators:
- * - Address mismatch (billing vs shipping)
- * - Disposable email domains
- * - High order values
- * - IP address patterns
+ * Sprint 2: Performs fraud check via FraudCheckServiceInterface.
+ * The interface is in payment-component, but implementations (e.g., Stripe Radar)
+ * are in the provider modules.
  *
- * Risk Score Actions:
- * - 0-49: Auto-approve (fulfill fraud_check condition)
- * - 50-79: Manual review required (mark contract for review)
- * - 80-100: Auto-reject (fail contract)
+ * Binary pass/fail only (no manual review):
+ * - Passed: Fulfills TYPE_FRAUD_CHECK condition
+ * - Failed: Fails the contract (contract will be cancelled)
+ *
+ * Can be disabled via configuration. When disabled, the condition is
+ * immediately fulfilled without checking fraud.
  *
  * @since 1.0.0
  */
 class FraudCheckHandler implements HandlerInterface
 {
-    private const RISK_THRESHOLD_REJECT = 80;
-    private const RISK_THRESHOLD_REVIEW = 50;
-
     public function __construct(
-        private ContractRepositoryInterface $contractRepository,
-        private FraudScoringServiceInterface $fraudScoring
+        private readonly ContractRepositoryInterface $contractRepository,
+        private readonly FraudCheckServiceInterface $fraudCheckService,
+        private readonly bool $enabled = true
     ) {
     }
 
     public static function getHandledEventClass(): string
     {
-        return PaymentInitiatedEvent::class;
+        return PaymentAuthorizedEvent::class;
     }
 
     public function handle(object $event): void
     {
-        if (!$event instanceof PaymentInitiatedEvent) {
+        if (!$event instanceof PaymentAuthorizedEvent) {
             return;
         }
 
@@ -60,31 +59,39 @@ class FraudCheckHandler implements HandlerInterface
             return;
         }
 
-        $riskScore = $this->fraudScoring->calculateRiskScore([
-            'amount' => $event->getAmount(),
-            'currency' => $event->getCurrency(),
-            'billingAddress' => $context->get('billingAddress'),
-            'shippingAddress' => $context->get('shippingAddress'),
-            'email' => $context->get('email'),
-            'ipAddress' => $context->get('ipAddress'),
-        ]);
-
-        if ($riskScore >= self::RISK_THRESHOLD_REJECT) {
-            // High risk: Reject transaction
-            $contract->fail('High fraud risk detected (score: ' . $riskScore . ')');
-        } elseif ($riskScore >= self::RISK_THRESHOLD_REVIEW) {
-            // Medium risk: Require manual review
-            $context->set('requiresManualReview', true);
-            $context->set('riskScore', $riskScore);
-        } else {
-            // Low risk: Auto-approve
+        if (!$this->enabled) {
+            // When disabled, immediately fulfill condition without checking fraud
             $contract->fulfillCondition(
                 ContractCondition::TYPE_FRAUD_CHECK,
                 [
-                    'riskScore' => $riskScore,
-                    'checkedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+                    'skipped' => true,
+                    'reason' => 'Fraud check disabled in configuration',
                 ]
             );
+            $this->contractRepository->save($contract);
+            return;
+        }
+
+        // Perform fraud check
+        $result = $this->fraudCheckService->check($contract);
+
+        if ($result->isPassed()) {
+            // Passed: Fulfill the fraud check condition
+            $contract->fulfillCondition(
+                ContractCondition::TYPE_FRAUD_CHECK,
+                [
+                    'checkedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                    'passed' => true,
+                    'score' => $result->score,
+                ]
+            );
+        } else {
+            // Failed: Fail the contract
+            $contract->fail(sprintf(
+                'Fraud check failed (score: %.2f): %s',
+                $result->score,
+                $result->reason
+            ));
         }
 
         $this->contractRepository->save($contract);

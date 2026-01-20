@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Handler\ContractCreationHandler;
+use OxidEsales\PaymentComponent\EventSystem\Handler\GenericContractCreationHandler;
 use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
@@ -19,14 +19,14 @@ class ContractCreationHandlerTest extends TestCase
     private ContractRepository $repository;
     private EventDispatcher $dispatcher;
     private ContractService $service;
-    private ContractCreationHandler $handler;
+    private GenericContractCreationHandler $handler;
 
     protected function setUp(): void
     {
         $this->repository = new ContractRepository();
         $this->dispatcher = new EventDispatcher();
         $this->service = new ContractService($this->repository);
-        $this->handler = new ContractCreationHandler(
+        $this->handler = new GenericContractCreationHandler(
             $this->service,
             $this->dispatcher
         );

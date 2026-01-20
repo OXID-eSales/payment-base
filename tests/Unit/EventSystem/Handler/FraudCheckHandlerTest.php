@@ -10,12 +10,13 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
 
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Handler\FraudCheckHandler;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\FraudScoringServiceInterface;
+use OxidEsales\PaymentComponent\Service\FraudCheckServiceInterface;
+use OxidEsales\PaymentComponent\Service\Result\FraudCheckResult;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -26,71 +27,54 @@ class FraudCheckHandlerTest extends TestCase
 {
     private FraudCheckHandler $handler;
     /** @var ContractRepositoryInterface&MockObject */
-    private $contractRepository;
-    /** @var FraudScoringServiceInterface&MockObject */
-    private $fraudScoring;
+    private ContractRepositoryInterface $contractRepository;
+    /** @var FraudCheckServiceInterface&MockObject */
+    private FraudCheckServiceInterface $fraudCheckService;
 
     protected function setUp(): void
     {
         $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
-        $this->fraudScoring = $this->createMock(FraudScoringServiceInterface::class);
+        $this->fraudCheckService = $this->createMock(FraudCheckServiceInterface::class);
 
         $this->handler = new FraudCheckHandler(
             $this->contractRepository,
-            $this->fraudScoring
+            $this->fraudCheckService,
+            true // enabled by default
         );
     }
 
-    public function testLowRiskOrderPassesFraudCheck(): void
+    // =========================================================================
+    // Event handling tests
+    // =========================================================================
+
+    public function testHandlesPaymentAuthorizedEvent(): void
     {
-        // Arrange: Low risk score
-        $contract = $this->createMock(PaymentContract::class);
+        $this->assertEquals(PaymentAuthorizedEvent::class, FraudCheckHandler::getHandledEventClass());
+    }
+
+    public function testFulfillsConditionOnPassedFraudCheck(): void
+    {
+        $contract = $this->createMockContract();
         $context = new EventContext();
         $context->set('contract', $contract);
-        $context->set('billingAddress', ['street' => 'Test', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('shippingAddress', ['street' => 'Test', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('email', 'valid@example.com');
-        $context->set('ipAddress', '192.168.1.1');
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 50.00, 'EUR', '/return', '/cancel');
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
 
-        $this->fraudScoring->expects($this->once())
-            ->method('calculateRiskScore')
-            ->willReturn(20); // Low risk
+        $this->fraudCheckService->expects($this->once())
+            ->method('check')
+            ->with($contract)
+            ->willReturn(FraudCheckResult::passed(0.25));
 
         $contract->expects($this->once())
             ->method('fulfillCondition')
             ->with(
                 ContractCondition::TYPE_FRAUD_CHECK,
-                $this->isType('array')
+                $this->callback(fn($data) =>
+                    isset($data['checkedAt']) &&
+                    $data['passed'] === true &&
+                    $data['score'] === 0.25
+                )
             );
-
-        $this->contractRepository->expects($this->once())
-            ->method('save')
-            ->with($contract);
-
-        // Act
-        $this->handler->handle($event);
-
-        // Assert: Fraud check condition fulfilled
-    }
-
-    public function testMismatchedAddressesTriggerReview(): void
-    {
-        // Arrange: Medium risk score (requires review)
-        $contract = $this->createMock(PaymentContract::class);
-        $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('billingAddress', ['street' => 'Billing', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('shippingAddress', ['street' => 'Shipping', 'city' => 'Munich', 'zip' => '80331', 'country' => 'DE']);
-        $context->set('email', 'customer@example.com');
-        $context->set('ipAddress', '192.168.1.1');
-
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 100.00, 'EUR', '/return', '/cancel');
-
-        $this->fraudScoring->expects($this->once())
-            ->method('calculateRiskScore')
-            ->willReturn(50); // Medium risk
 
         $contract->expects($this->never())
             ->method('fail');
@@ -99,94 +83,166 @@ class FraudCheckHandlerTest extends TestCase
             ->method('save')
             ->with($contract);
 
-        // Act
         $this->handler->handle($event);
-
-        // Assert: Contract marked for manual review (check context)
-        $this->assertTrue($context->get('requiresManualReview'));
     }
 
-    public function testHighValueNewCustomerRequiresReview(): void
+    public function testFailsContractOnFailedFraudCheck(): void
     {
-        // Arrange: High value order
-        $contract = $this->createMock(PaymentContract::class);
+        $contract = $this->createMockContract();
         $context = new EventContext();
         $context->set('contract', $contract);
-        $context->set('billingAddress', ['street' => 'Test', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('shippingAddress', ['street' => 'Test', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('email', 'new@example.com');
-        $context->set('ipAddress', '192.168.1.1');
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 1000.00, 'EUR', '/return', '/cancel');
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
 
-        $this->fraudScoring->expects($this->once())
-            ->method('calculateRiskScore')
-            ->willReturn(60); // Medium-high risk
-
-        $this->contractRepository->expects($this->once())
-            ->method('save')
-            ->with($contract);
-
-        // Act
-        $this->handler->handle($event);
-
-        // Assert: Requires manual review
-        $this->assertTrue($context->get('requiresManualReview'));
-    }
-
-    public function testSuspiciousEmailBlocked(): void
-    {
-        // Arrange: Very high risk score (block)
-        $contract = $this->createMock(PaymentContract::class);
-        $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('billingAddress', ['street' => 'Test', 'city' => 'Berlin', 'zip' => '10115', 'country' => 'DE']);
-        $context->set('shippingAddress', ['street' => 'Other', 'city' => 'Munich', 'zip' => '80331', 'country' => 'DE']);
-        $context->set('email', 'test@tempmail.com');
-        $context->set('ipAddress', '192.168.1.1');
-
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 200.00, 'EUR', '/return', '/cancel');
-
-        $this->fraudScoring->expects($this->once())
-            ->method('calculateRiskScore')
-            ->willReturn(85); // High risk
+        $this->fraudCheckService->expects($this->once())
+            ->method('check')
+            ->with($contract)
+            ->willReturn(FraudCheckResult::failed(0.85, 'High risk score from Stripe Radar'));
 
         $contract->expects($this->once())
             ->method('fail')
-            ->with($this->stringContains('High fraud risk'));
+            ->with($this->stringContains('Fraud check failed'));
+
+        $contract->expects($this->never())
+            ->method('fulfillCondition');
 
         $this->contractRepository->expects($this->once())
             ->method('save')
             ->with($contract);
 
-        // Act
         $this->handler->handle($event);
-
-        // Assert: Contract failed due to high risk
     }
 
-    public function testHandlerIgnoresNonPaymentInitiatedEvents(): void
+    // =========================================================================
+    // Handler ignores other events
+    // =========================================================================
+
+    public function testIgnoresNonPaymentAuthorizedEvents(): void
     {
-        // Arrange: Different event type
         $event = new \stdClass();
 
-        // Act
-        $this->handler->handle($event);
+        $this->fraudCheckService->expects($this->never())
+            ->method('check');
 
-        // Assert: No interactions with dependencies
-        $this->contractRepository->expects($this->never())->method('save');
+        $this->contractRepository->expects($this->never())
+            ->method('save');
+
+        $this->handler->handle($event);
     }
 
-    public function testHandlerSkipsWhenNoContractInContext(): void
+    public function testSkipsWhenNoContractInContext(): void
     {
-        // Arrange: Event without contract in context
         $context = new EventContext();
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 50.00, 'EUR', '/return', '/cancel');
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
 
-        // Act
+        $this->fraudCheckService->expects($this->never())
+            ->method('check');
+
+        $this->contractRepository->expects($this->never())
+            ->method('save');
+
         $this->handler->handle($event);
+    }
 
-        // Assert: No fraud scoring performed
-        $this->fraudScoring->expects($this->never())->method('calculateRiskScore');
+    // =========================================================================
+    // Configuration tests
+    // =========================================================================
+
+    public function testSkipsWhenDisabled(): void
+    {
+        // Create handler with disabled flag
+        $handler = new FraudCheckHandler(
+            $this->contractRepository,
+            $this->fraudCheckService,
+            false // disabled
+        );
+
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
+
+        // When disabled, should immediately fulfill condition without checking fraud
+        $this->fraudCheckService->expects($this->never())
+            ->method('check');
+
+        $contract->expects($this->once())
+            ->method('fulfillCondition')
+            ->with(
+                ContractCondition::TYPE_FRAUD_CHECK,
+                $this->callback(fn($data) => $data['skipped'] === true)
+            );
+
+        $this->contractRepository->expects($this->once())
+            ->method('save')
+            ->with($contract);
+
+        $handler->handle($event);
+    }
+
+    // =========================================================================
+    // Edge cases
+    // =========================================================================
+
+    public function testPassesWithScoreExactlyAtThreshold(): void
+    {
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
+
+        // Score at exactly 0.7 (the threshold) should be determined by FraudCheckService
+        // The handler trusts the service's pass/fail decision
+        $this->fraudCheckService->expects($this->once())
+            ->method('check')
+            ->with($contract)
+            ->willReturn(FraudCheckResult::passed(0.70));
+
+        $contract->expects($this->once())
+            ->method('fulfillCondition')
+            ->with(ContractCondition::TYPE_FRAUD_CHECK, $this->isType('array'));
+
+        $this->contractRepository->expects($this->once())
+            ->method('save');
+
+        $this->handler->handle($event);
+    }
+
+    public function testFailsWithScoreJustAboveThreshold(): void
+    {
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+
+        $event = new PaymentAuthorizedEvent($context, 'pi_123', 'order_123', 100.0, 'EUR');
+
+        // Score at 0.71 (just above threshold) should fail
+        $this->fraudCheckService->expects($this->once())
+            ->method('check')
+            ->with($contract)
+            ->willReturn(FraudCheckResult::failed(0.71, 'Score exceeds threshold'));
+
+        $contract->expects($this->once())
+            ->method('fail')
+            ->with($this->stringContains('Fraud check failed'));
+
+        $this->contractRepository->expects($this->once())
+            ->method('save');
+
+        $this->handler->handle($event);
+    }
+
+    // =========================================================================
+    // Helper methods
+    // =========================================================================
+
+    private function createMockContract(): PaymentContractInterface&MockObject
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn('contract123');
+
+        return $contract;
     }
 }

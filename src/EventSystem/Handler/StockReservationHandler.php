@@ -9,87 +9,82 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\StockManagementServiceInterface;
 use DateTimeImmutable;
-use RuntimeException;
+use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentComponent\Service\Exception\InsufficientStockException;
+use OxidEsales\PaymentComponent\Service\StockServiceInterface;
 
 /**
- * Handles stock reservation on payment initiation.
+ * Handles stock reservation on contract creation (DRAFT state).
  *
- * Reserves stock for all products in the basket when payment is initiated.
- * Stock is temporarily reserved for 15 minutes to prevent overselling during
- * the payment process.
+ * Sprint 2: Reserves stock via contract-aware StockServiceInterface.
+ * Stock is decremented directly in OXARTICLES.OXSTOCK when contract is created,
+ * before Stripe redirect. If insufficient stock, contract creation fails.
  *
  * On success: Fulfills TYPE_STOCK_RESERVED condition
  * On failure: Fails the contract with stock error message
+ *
+ * Can be disabled via configuration. When disabled, the condition is
+ * immediately fulfilled without reserving stock (OXID handles stock normally).
  *
  * @since 1.0.0
  */
 class StockReservationHandler implements HandlerInterface
 {
-    private const RESERVATION_TIMEOUT_SECONDS = 900; // 15 minutes
-
     public function __construct(
-        private ContractRepositoryInterface $contractRepository,
-        private StockManagementServiceInterface $stockManagement
+        private readonly ContractRepositoryInterface $contractRepository,
+        private readonly StockServiceInterface $stockService,
+        private readonly bool $enabled = true
     ) {
     }
 
     public static function getHandledEventClass(): string
     {
-        return PaymentInitiatedEvent::class;
+        return ContractCreatedEvent::class;
     }
 
     public function handle(object $event): void
     {
-        if (!$event instanceof PaymentInitiatedEvent) {
+        if (!$event instanceof ContractCreatedEvent) {
             return;
         }
 
-        $context = $event->getContext();
-        $contract = $context->get('contract');
-        $basket = $context->get('basket');
+        $contract = $event->getContract();
 
-        if (!$contract instanceof PaymentContractInterface || !is_iterable($basket)) {
+        if (!$this->enabled) {
+            // When disabled, immediately fulfill condition without reserving stock
+            $contract->fulfillCondition(
+                ContractCondition::TYPE_STOCK_RESERVED,
+                [
+                    'skipped' => true,
+                    'reason' => 'Stock reservation disabled in configuration',
+                ]
+            );
+            $this->contractRepository->save($contract);
             return;
         }
 
         try {
-            $reservedProducts = [];
-
-            /** @var array{productId: string, quantity: int} $item */
-            foreach ($basket as $item) {
-                $productId = $item['productId'];
-                $quantity = $item['quantity'];
-
-                $this->stockManagement->reserveStock(
-                    $productId,
-                    $quantity,
-                    self::RESERVATION_TIMEOUT_SECONDS
-                );
-
-                $reservedProducts[] = [
-                    'productId' => $productId,
-                    'quantity' => $quantity,
-                ];
-            }
+            // Reserve stock for all items in the contract
+            $this->stockService->reserveForContract($contract);
 
             // Fulfill stock reservation condition
             $contract->fulfillCondition(
                 ContractCondition::TYPE_STOCK_RESERVED,
                 [
                     'reservedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
-                    'products' => $reservedProducts,
-                    'timeoutSeconds' => self::RESERVATION_TIMEOUT_SECONDS,
                 ]
             );
-        } catch (RuntimeException $e) {
+        } catch (InsufficientStockException $e) {
             // Insufficient stock: Fail the contract
-            $contract->fail('Stock reservation failed: ' . $e->getMessage());
+            $contract->fail(sprintf(
+                'Insufficient stock for product %s (requested: %d, available: %d)',
+                $e->getProductId(),
+                $e->getRequested(),
+                $e->getAvailable()
+            ));
         }
 
         $this->contractRepository->save($contract);

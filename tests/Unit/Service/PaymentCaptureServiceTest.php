@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
 
+use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Service\PaymentCaptureService;
+use OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException;
+use OxidEsales\PaymentComponent\Service\Result\CaptureResult;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
 use OxidEsales\PaymentComponent\Adapter\Request\CapturePaymentRequest;
@@ -15,9 +18,11 @@ use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
-use DomainException;
-use RuntimeException;
 
+/**
+ * @covers \OxidEsales\PaymentComponent\Service\PaymentCaptureService
+ * @covers \OxidEsales\PaymentComponent\Service\AbstractPaymentCaptureService
+ */
 class PaymentCaptureServiceTest extends TestCase
 {
     private ContractRepositoryInterface&MockObject $contractRepository;
@@ -77,11 +82,11 @@ class PaymentCaptureServiceTest extends TestCase
             ->method('info')
             ->with('Payment captured successfully', $this->arrayHasKey('contractId'));
 
-        $result = $this->service->capturePayment($contractId);
+        $result = $this->service->capture($contractId);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('ch_123', $result['captureId']);
-        $this->assertEquals($amount, $result['amount']);
+        $this->assertInstanceOf(CaptureResult::class, $result);
+        $this->assertEquals('ch_123', $result->captureId);
+        $this->assertEquals($amount, $result->amountCaptured);
     }
 
     // 2. Capture partial amount
@@ -113,10 +118,10 @@ class PaymentCaptureServiceTest extends TestCase
         $contract->expects($this->once())
             ->method('fulfill');
 
-        $result = $this->service->capturePayment($contractId, $partialAmount);
+        $result = $this->service->capture($contractId, $partialAmount);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals($partialAmount, $result['amount']);
+        $this->assertInstanceOf(CaptureResult::class, $result);
+        $this->assertEquals($partialAmount, $result->amountCaptured);
     }
 
     // 3. Cannot capture already fulfilled contract
@@ -132,10 +137,10 @@ class PaymentCaptureServiceTest extends TestCase
             ->with($contractId)
             ->willReturn($contract);
 
-        $this->expectException(DomainException::class);
+        $this->expectException(CaptureFailedException::class);
         $this->expectExceptionMessage('Payment already captured');
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // 4. Cannot capture without authorization
@@ -154,10 +159,10 @@ class PaymentCaptureServiceTest extends TestCase
             ->with($contractId)
             ->willReturn($contract);
 
-        $this->expectException(DomainException::class);
+        $this->expectException(CaptureFailedException::class);
         $this->expectExceptionMessage('No authorization found for this contract');
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // 5. Cannot capture uncommitted contract
@@ -173,10 +178,10 @@ class PaymentCaptureServiceTest extends TestCase
             ->with($contractId)
             ->willReturn($contract);
 
-        $this->expectException(DomainException::class);
+        $this->expectException(CaptureFailedException::class);
         $this->expectExceptionMessage('Contract must be committed before capture');
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // 6. Handle contract not found
@@ -190,10 +195,10 @@ class PaymentCaptureServiceTest extends TestCase
             ->with($contractId)
             ->willReturn(null);
 
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('Contract not found: nonexistent');
+        $this->expectException(CaptureFailedException::class);
+        $this->expectExceptionMessage('Contract not found');
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // 7. Handle provider API error
@@ -220,10 +225,10 @@ class PaymentCaptureServiceTest extends TestCase
             ->method('error')
             ->with('Payment capture failed', $this->arrayHasKey('error'));
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Capture failed: Provider error: Insufficient funds');
+        $this->expectException(CaptureFailedException::class);
+        $this->expectExceptionMessage('Provider error: Insufficient funds');
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // 8. Logs capture operation
@@ -245,14 +250,13 @@ class PaymentCaptureServiceTest extends TestCase
             ->method('info')
             ->with(
                 'Payment captured successfully',
-                $this->callback(function ($context) use ($contractId, $amount, $providerOrderId) {
+                $this->callback(function ($context) use ($contractId, $amount) {
                     return $context['contractId'] === $contractId
-                        && $context['amount'] === $amount
-                        && $context['providerOrderId'] === $providerOrderId;
+                        && $context['amount'] === $amount;
                 })
             );
 
-        $this->service->capturePayment($contractId);
+        $this->service->capture($contractId);
     }
 
     // Helper methods
@@ -286,7 +290,7 @@ class PaymentCaptureServiceTest extends TestCase
             amountCaptured: $amount,
             currency: 'EUR',
             status: 'succeeded',
-            capturedAt: new \DateTime()
+            capturedAt: new DateTimeImmutable()
         );
     }
 }

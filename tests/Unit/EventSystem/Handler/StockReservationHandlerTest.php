@@ -9,16 +9,17 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
 
+use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Handler\StockReservationHandler;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\StockManagementServiceInterface;
+use OxidEsales\PaymentComponent\Service\Exception\InsufficientStockException;
+use OxidEsales\PaymentComponent\Service\StockServiceInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use RuntimeException;
 
 /**
  * @covers \OxidEsales\PaymentComponent\EventSystem\Handler\StockReservationHandler
@@ -27,161 +28,68 @@ class StockReservationHandlerTest extends TestCase
 {
     private StockReservationHandler $handler;
     /** @var ContractRepositoryInterface&MockObject */
-    private $contractRepository;
-    /** @var StockManagementServiceInterface&MockObject */
-    private $stockManagement;
+    private ContractRepositoryInterface $contractRepository;
+    /** @var StockServiceInterface&MockObject */
+    private StockServiceInterface $stockService;
 
     protected function setUp(): void
     {
         $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
-        $this->stockManagement = $this->createMock(StockManagementServiceInterface::class);
+        $this->stockService = $this->createMock(StockServiceInterface::class);
 
         $this->handler = new StockReservationHandler(
             $this->contractRepository,
-            $this->stockManagement
+            $this->stockService,
+            true // enabled by default
         );
     }
 
-    public function testReservesStockOnPaymentInitiation(): void
+    // =========================================================================
+    // Event handling tests
+    // =========================================================================
+
+    public function testHandlesContractCreatedEvent(): void
     {
-        // Arrange: Basket with 2 products
-        $contract = $this->createMock(PaymentContract::class);
+        $this->assertEquals(ContractCreatedEvent::class, StockReservationHandler::getHandledEventClass());
+    }
+
+    public function testReservesStockOnContractCreated(): void
+    {
+        $contract = $this->createMockContract();
         $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('basket', [
-            ['productId' => 'PROD-001', 'quantity' => 2],
-            ['productId' => 'PROD-002', 'quantity' => 1],
-        ]);
+        $event = new ContractCreatedEvent($contract, $context);
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 100.00, 'EUR', '/return', '/cancel');
-
-        // Expect: Stock reserved for each product (15 minutes = 900 seconds)
-        $callCount = 0;
-        $this->stockManagement->expects($this->exactly(2))
-            ->method('reserveStock')
-            ->willReturnCallback(function ($productId, $quantity, $timeout) use (&$callCount) {
-                $this->assertEquals(900, $timeout);
-                if ($callCount === 0) {
-                    $this->assertEquals('PROD-001', $productId);
-                    $this->assertEquals(2, $quantity);
-                } elseif ($callCount === 1) {
-                    $this->assertEquals('PROD-002', $productId);
-                    $this->assertEquals(1, $quantity);
-                }
-                $callCount++;
-            });
+        $this->stockService->expects($this->once())
+            ->method('reserveForContract')
+            ->with($contract);
 
         $contract->expects($this->once())
             ->method('fulfillCondition')
             ->with(
                 ContractCondition::TYPE_STOCK_RESERVED,
-                $this->callback(function ($data) {
-                    return isset($data['reservedAt'])
-                        && isset($data['products'])
-                        && count($data['products']) === 2;
-                })
+                $this->callback(fn($data) => isset($data['reservedAt']))
             );
 
         $this->contractRepository->expects($this->once())
             ->method('save')
             ->with($contract);
 
-        // Act
         $this->handler->handle($event);
     }
 
-    public function testHandlesBasketWithSingleProduct(): void
+    public function testFailsContractOnInsufficientStock(): void
     {
-        // Arrange: Basket with 1 product
-        $contract = $this->createMock(PaymentContract::class);
+        $contract = $this->createMockContract();
         $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('basket', [
-            ['productId' => 'PROD-003', 'quantity' => 5],
-        ]);
+        $event = new ContractCreatedEvent($contract, $context);
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 50.00, 'EUR', '/return', '/cancel');
+        $exception = new InsufficientStockException('prod1', 5, 2);
 
-        // Expect: Stock reserved
-        $this->stockManagement->expects($this->once())
-            ->method('reserveStock')
-            ->with('PROD-003', 5, 900);
+        $this->stockService->expects($this->once())
+            ->method('reserveForContract')
+            ->with($contract)
+            ->willThrowException($exception);
 
-        $contract->expects($this->once())
-            ->method('fulfillCondition')
-            ->with(ContractCondition::TYPE_STOCK_RESERVED, $this->isType('array'));
-
-        $this->contractRepository->expects($this->once())
-            ->method('save')
-            ->with($contract);
-
-        // Act
-        $this->handler->handle($event);
-    }
-
-    public function testSkipsWhenNoBasketInContext(): void
-    {
-        // Arrange: Event without basket
-        $contract = $this->createMock(PaymentContract::class);
-        $context = new EventContext();
-        $context->set('contract', $contract);
-
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 50.00, 'EUR', '/return', '/cancel');
-
-        // Expect: No stock operations performed
-        $this->stockManagement->expects($this->never())
-            ->method('reserveStock');
-
-        $contract->expects($this->never())
-            ->method('fulfillCondition');
-
-        $this->contractRepository->expects($this->never())
-            ->method('save');
-
-        // Act
-        $this->handler->handle($event);
-    }
-
-    public function testSkipsWhenNoContractInContext(): void
-    {
-        // Arrange: Event without contract
-        $context = new EventContext();
-        $context->set('basket', [
-            ['productId' => 'PROD-004', 'quantity' => 1],
-        ]);
-
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 50.00, 'EUR', '/return', '/cancel');
-
-        // Expect: No operations performed
-        $this->stockManagement->expects($this->never())
-            ->method('reserveStock');
-
-        $this->contractRepository->expects($this->never())
-            ->method('save');
-
-        // Act
-        $this->handler->handle($event);
-    }
-
-    public function testFailsContractWhenInsufficientStock(): void
-    {
-        // Arrange: Basket with insufficient stock
-        $contract = $this->createMock(PaymentContract::class);
-        $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('basket', [
-            ['productId' => 'PROD-005', 'quantity' => 100],
-        ]);
-
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 500.00, 'EUR', '/return', '/cancel');
-
-        // Expect: Stock reservation throws exception
-        $this->stockManagement->expects($this->once())
-            ->method('reserveStock')
-            ->with('PROD-005', 100, 900)
-            ->willThrowException(new RuntimeException('Insufficient stock for product PROD-005 (requested: 100)'));
-
-        // Expect: Contract failed
         $contract->expects($this->once())
             ->method('fail')
             ->with($this->stringContains('Insufficient stock'));
@@ -193,73 +101,81 @@ class StockReservationHandlerTest extends TestCase
             ->method('save')
             ->with($contract);
 
-        // Act
         $this->handler->handle($event);
     }
 
-    public function testHandlerIgnoresNonPaymentInitiatedEvents(): void
+    // =========================================================================
+    // Handler ignores other events
+    // =========================================================================
+
+    public function testIgnoresNonContractCreatedEvents(): void
     {
-        // Arrange: Different event type
         $event = new \stdClass();
 
-        // Act
-        $this->handler->handle($event);
+        $this->stockService->expects($this->never())
+            ->method('reserveForContract');
 
-        // Assert: No interactions with dependencies
-        $this->stockManagement->expects($this->never())->method('reserveStock');
-        $this->contractRepository->expects($this->never())->method('save');
+        $this->contractRepository->expects($this->never())
+            ->method('save');
+
+        $this->handler->handle($event);
     }
 
-    public function testHandlesEmptyBasket(): void
+    // =========================================================================
+    // Configuration tests
+    // =========================================================================
+
+    public function testSkipsWhenDisabled(): void
     {
-        // Arrange: Empty basket array
-        $contract = $this->createMock(PaymentContract::class);
+        // Create handler with disabled flag
+        $handler = new StockReservationHandler(
+            $this->contractRepository,
+            $this->stockService,
+            false // disabled
+        );
+
+        $contract = $this->createMockContract();
         $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('basket', []);
+        $event = new ContractCreatedEvent($contract, $context);
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 0.00, 'EUR', '/return', '/cancel');
-
-        // Expect: No stock operations, but condition fulfilled
-        $this->stockManagement->expects($this->never())
-            ->method('reserveStock');
+        // When disabled, should immediately fulfill condition without reserving stock
+        $this->stockService->expects($this->never())
+            ->method('reserveForContract');
 
         $contract->expects($this->once())
             ->method('fulfillCondition')
-            ->with(ContractCondition::TYPE_STOCK_RESERVED, $this->isType('array'));
+            ->with(
+                ContractCondition::TYPE_STOCK_RESERVED,
+                $this->callback(fn($data) => $data['skipped'] === true)
+            );
 
         $this->contractRepository->expects($this->once())
             ->method('save')
             ->with($contract);
 
-        // Act
-        $this->handler->handle($event);
+        $handler->handle($event);
     }
 
-    public function testReservesStockWithCorrectTimeout(): void
+    // =========================================================================
+    // Helper methods
+    // =========================================================================
+
+    private function createMockContract(): PaymentContractInterface&MockObject
     {
-        // Arrange: Basket with product
-        $contract = $this->createMock(PaymentContract::class);
-        $context = new EventContext();
-        $context->set('contract', $contract);
-        $context->set('basket', [
-            ['productId' => 'PROD-006', 'quantity' => 3],
+        $basketSnapshot = BasketSnapshot::fromArray([
+            'items' => [
+                ['productId' => 'prod1', 'quantity' => 2],
+            ],
+            'totalGross' => 100.0,
+            'totalNet' => 84.0,
+            'totalVat' => 16.0,
+            'currency' => 'EUR',
         ]);
 
-        $event = new PaymentInitiatedEvent($context, 'pm_test', 75.00, 'EUR', '/return', '/cancel');
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getBasketSnapshot')->willReturn($basketSnapshot);
+        $contract->method('getId')->willReturn('contract123');
 
-        // Expect: 900 seconds (15 minutes) timeout
-        $this->stockManagement->expects($this->once())
-            ->method('reserveStock')
-            ->with('PROD-006', 3, 900);
-
-        $contract->expects($this->once())
-            ->method('fulfillCondition');
-
-        $this->contractRepository->expects($this->once())
-            ->method('save');
-
-        // Act
-        $this->handler->handle($event);
+        return $contract;
     }
 }

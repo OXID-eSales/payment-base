@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
 
+use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Service\PaymentRefundService;
+use OxidEsales\PaymentComponent\Service\Exception\RefundFailedException;
+use OxidEsales\PaymentComponent\Service\Result\RefundResult;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
@@ -16,9 +19,11 @@ use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
-use DomainException;
-use RuntimeException;
 
+/**
+ * @covers \OxidEsales\PaymentComponent\Service\PaymentRefundService
+ * @covers \OxidEsales\PaymentComponent\Service\AbstractPaymentRefundService
+ */
 class PaymentRefundServiceTest extends TestCase
 {
     private ContractRepositoryInterface&MockObject $contractRepository;
@@ -79,13 +84,13 @@ class PaymentRefundServiceTest extends TestCase
             ->method('logRefund')
             ->with($contractId, $capturedAmount, 're_123', '');
 
-        $result = $this->service->refundPayment($contractId);
+        $result = $this->service->refund($contractId);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('re_123', $result['refundId']);
-        $this->assertEquals($capturedAmount, $result['amount']);
-        $this->assertEquals($capturedAmount, $result['totalRefunded']);
-        $this->assertEquals(0.00, $result['availableForRefund']);
+        $this->assertInstanceOf(RefundResult::class, $result);
+        $this->assertEquals('re_123', $result->refundId);
+        $this->assertEquals($capturedAmount, $result->amountRefunded);
+        $this->assertEquals($capturedAmount, $result->totalRefunded);
+        $this->assertEquals(0.00, $result->availableForRefund);
     }
 
     // 2. Process partial refund
@@ -104,12 +109,12 @@ class PaymentRefundServiceTest extends TestCase
         $refundResponse = $this->createRefundResponse('re_456', $partialAmount);
         $this->paymentAdapter->method('refundPayment')->willReturn($refundResponse);
 
-        $result = $this->service->refundPayment($contractId, $partialAmount);
+        $result = $this->service->refund($contractId, $partialAmount);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals($partialAmount, $result['amount']);
-        $this->assertEquals($partialAmount, $result['totalRefunded']);
-        $this->assertEquals(70.00, $result['availableForRefund']);
+        $this->assertInstanceOf(RefundResult::class, $result);
+        $this->assertEquals($partialAmount, $result->amountRefunded);
+        $this->assertEquals($partialAmount, $result->totalRefunded);
+        $this->assertEquals(70.00, $result->availableForRefund);
     }
 
     // 3. Cannot refund uncaptured payment
@@ -125,10 +130,10 @@ class PaymentRefundServiceTest extends TestCase
             ->with($contractId)
             ->willReturn($contract);
 
-        $this->expectException(DomainException::class);
+        $this->expectException(RefundFailedException::class);
         $this->expectExceptionMessage('Can only refund fulfilled (captured) payments');
 
-        $this->service->refundPayment($contractId);
+        $this->service->refund($contractId);
     }
 
     // 4. Cannot refund more than captured amount
@@ -143,10 +148,10 @@ class PaymentRefundServiceTest extends TestCase
         $this->contractRepository->method('findById')->willReturn($contract);
         $this->transactionRepository->method('getTotalRefundedForContract')->willReturn(0.00);
 
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('Cannot refund 150. Available: 100');
+        $this->expectException(RefundFailedException::class);
+        $this->expectExceptionMessage('Cannot refund 150.00. Available: 100.00');
 
-        $this->service->refundPayment($contractId, $requestedAmount);
+        $this->service->refund($contractId, $requestedAmount);
     }
 
     // 5. Cannot refund already fully refunded payment
@@ -162,10 +167,10 @@ class PaymentRefundServiceTest extends TestCase
             ->method('getTotalRefundedForContract')
             ->willReturn($capturedAmount); // Already fully refunded
 
-        $this->expectException(DomainException::class);
+        $this->expectException(RefundFailedException::class);
         $this->expectExceptionMessage('Refund amount must be positive');
 
-        $this->service->refundPayment($contractId);
+        $this->service->refund($contractId);
     }
 
     // 6. Track multiple partial refunds
@@ -187,12 +192,12 @@ class PaymentRefundServiceTest extends TestCase
         $refundResponse = $this->createRefundResponse('re_789', $secondRefund);
         $this->paymentAdapter->method('refundPayment')->willReturn($refundResponse);
 
-        $result = $this->service->refundPayment($contractId, $secondRefund);
+        $result = $this->service->refund($contractId, $secondRefund);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals($secondRefund, $result['amount']);
-        $this->assertEquals(50.00, $result['totalRefunded']); // €30 + €20
-        $this->assertEquals(50.00, $result['availableForRefund']); // €100 - €50
+        $this->assertInstanceOf(RefundResult::class, $result);
+        $this->assertEquals($secondRefund, $result->amountRefunded);
+        $this->assertEquals(50.00, $result->totalRefunded); // €30 + €20
+        $this->assertEquals(50.00, $result->availableForRefund); // €100 - €50
     }
 
     // 7. Handle contract not found
@@ -206,10 +211,10 @@ class PaymentRefundServiceTest extends TestCase
             ->with($contractId)
             ->willReturn(null);
 
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('Contract not found: nonexistent');
+        $this->expectException(RefundFailedException::class);
+        $this->expectExceptionMessage('Contract not found');
 
-        $this->service->refundPayment($contractId);
+        $this->service->refund($contractId);
     }
 
     // 8. Handle provider API error
@@ -232,10 +237,10 @@ class PaymentRefundServiceTest extends TestCase
             ->method('error')
             ->with('Refund failed', $this->arrayHasKey('error'));
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Refund failed: Provider error: Refund not allowed');
+        $this->expectException(RefundFailedException::class);
+        $this->expectExceptionMessage('Provider error: Refund not allowed');
 
-        $this->service->refundPayment($contractId);
+        $this->service->refund($contractId);
     }
 
     // 9. Logs refund operation
@@ -265,7 +270,25 @@ class PaymentRefundServiceTest extends TestCase
                 })
             );
 
-        $this->service->refundPayment($contractId, $amount, $reason);
+        $this->service->refund($contractId, $amount, $reason);
+    }
+
+    // 10. Cannot refund without provider order ID
+    public function testCannotRefundWithoutProviderOrderId(): void
+    {
+        $contractId = 'contract123';
+
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn($contractId);
+        $contract->method('getState')->willReturn(ContractState::fulfilled());
+        $contract->method('getProviderOrderId')->willReturn(null);
+
+        $this->contractRepository->method('findById')->willReturn($contract);
+
+        $this->expectException(RefundFailedException::class);
+        $this->expectExceptionMessage('Cannot refund: Contract has no provider order ID');
+
+        $this->service->refund($contractId);
     }
 
     // Helper methods
@@ -299,7 +322,7 @@ class PaymentRefundServiceTest extends TestCase
             amountRefunded: $amount,
             currency: 'EUR',
             status: 'succeeded',
-            refundedAt: new \DateTime()
+            refundedAt: new DateTimeImmutable()
         );
     }
 }
