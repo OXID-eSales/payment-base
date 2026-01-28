@@ -73,7 +73,7 @@ abstract class AbstractPaymentCaptureService
                 ? $response->capturedAt
                 : DateTimeImmutable::createFromInterface($response->capturedAt);
 
-            return new CaptureResult(
+            return CaptureResult::create(
                 captureId: $response->captureId,
                 amountCaptured: $response->amountCaptured,
                 currency: $response->currency,

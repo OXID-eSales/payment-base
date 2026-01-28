@@ -84,7 +84,7 @@ final class ContractTransitionedToPendingEventTest extends TestCase
 
     public function testGetConditions_ReturnsConditions(): void
     {
-        $conditions = ['payment_authorized' => true, 'stock_reserved' => false];
+        $conditions = ['payment_authorized' => true, 'fraud_check' => false];
         $event = new ContractTransitionedToPendingEvent($this->contract, $this->context, $conditions);
 
         $this->assertEquals($conditions, $event->getConditions());

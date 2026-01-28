@@ -104,7 +104,7 @@ class ContractCreationHandlerTest extends TestCase
             'basket' => $basket,
             'conditionTypes' => [
                 ContractCondition::TYPE_PAYMENT_AUTHORIZED,
-                ContractCondition::TYPE_STOCK_RESERVED,
+                ContractCondition::TYPE_COMPLIANCE_CHECK,
             ],
         ]);
 
@@ -125,7 +125,7 @@ class ContractCreationHandlerTest extends TestCase
 
         $this->assertCount(2, $conditions);
         $this->assertEquals(ContractCondition::TYPE_PAYMENT_AUTHORIZED, $conditions[0]->getType());
-        $this->assertEquals(ContractCondition::TYPE_STOCK_RESERVED, $conditions[1]->getType());
+        $this->assertEquals(ContractCondition::TYPE_COMPLIANCE_CHECK, $conditions[1]->getType());
     }
 
     public function testHandleSavesContract(): void

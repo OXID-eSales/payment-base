@@ -77,7 +77,7 @@ abstract class AbstractPaymentRefundService
                 'totalRefunded' => $newTotalRefunded,
             ]);
 
-            return new RefundResult(
+            return RefundResult::create(
                 refundId: $response->refundId,
                 amountRefunded: $response->amountRefunded,
                 currency: $response->currency,

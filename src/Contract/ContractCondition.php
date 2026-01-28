@@ -13,7 +13,6 @@ class ContractCondition
 {
     public const TYPE_PAYMENT_AUTHORIZED = 'payment_authorized';
     public const TYPE_FRAUD_CHECK = 'fraud_check';
-    public const TYPE_STOCK_RESERVED = 'stock_reserved';
     public const TYPE_COMPLIANCE_CHECK = 'compliance_check';
     public const TYPE_ADDRESS_VALIDATED = 'address_validated';
 
@@ -110,7 +109,6 @@ class ContractCondition
         $validTypes = [
             self::TYPE_PAYMENT_AUTHORIZED,
             self::TYPE_FRAUD_CHECK,
-            self::TYPE_STOCK_RESERVED,
             self::TYPE_COMPLIANCE_CHECK,
             self::TYPE_ADDRESS_VALIDATED,
         ];
@@ -134,14 +132,6 @@ class ContractCondition
     public static function fraudCheck(): self
     {
         return new self(self::TYPE_FRAUD_CHECK);
-    }
-
-    /**
-     * Factory method for stock reserved condition
-     */
-    public static function stockReserved(): self
-    {
-        return new self(self::TYPE_STOCK_RESERVED);
     }
 
     /**

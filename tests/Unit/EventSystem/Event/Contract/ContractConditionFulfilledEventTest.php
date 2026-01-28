@@ -77,15 +77,15 @@ final class ContractConditionFulfilledEventTest extends TestCase
 
     public function testGetConditionType_ReturnsConditionType(): void
     {
-        $event = new ContractConditionFulfilledEvent($this->contract, $this->context, 'stock_reserved', ['productId' => '123']);
+        $event = new ContractConditionFulfilledEvent($this->contract, $this->context, 'compliance_check', ['checkId' => '123']);
 
-        $this->assertEquals('stock_reserved', $event->getConditionType());
+        $this->assertEquals('compliance_check', $event->getConditionType());
     }
 
     public function testGetConditionData_ReturnsConditionData(): void
     {
-        $conditionData = ['productId' => '123', 'quantity' => 5];
-        $event = new ContractConditionFulfilledEvent($this->contract, $this->context, 'stock_reserved', $conditionData);
+        $conditionData = ['checkId' => '123', 'status' => 'passed'];
+        $event = new ContractConditionFulfilledEvent($this->contract, $this->context, 'compliance_check', $conditionData);
 
         $this->assertEquals($conditionData, $event->getConditionData());
     }

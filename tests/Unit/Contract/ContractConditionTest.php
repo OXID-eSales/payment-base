@@ -76,14 +76,14 @@ class ContractConditionTest extends TestCase
 
     public function testToArray(): void
     {
-        $condition = new ContractCondition(ContractCondition::TYPE_STOCK_RESERVED);
-        $condition->fulfill(['reservationId' => 'res123']);
+        $condition = new ContractCondition(ContractCondition::TYPE_COMPLIANCE_CHECK);
+        $condition->fulfill(['checkId' => 'check123']);
 
         $array = $condition->toArray();
 
-        $this->assertEquals(ContractCondition::TYPE_STOCK_RESERVED, $array['type']);
+        $this->assertEquals(ContractCondition::TYPE_COMPLIANCE_CHECK, $array['type']);
         $this->assertEquals(ContractCondition::STATUS_FULFILLED, $array['status']);
-        $this->assertEquals(['reservationId' => 'res123'], $array['data']);
+        $this->assertEquals(['checkId' => 'check123'], $array['data']);
         $this->assertIsString($array['fulfilledAt']);
         $this->assertNull($array['failureReason']);
     }
@@ -111,7 +111,6 @@ class ContractConditionTest extends TestCase
         $types = [
             ContractCondition::TYPE_PAYMENT_AUTHORIZED,
             ContractCondition::TYPE_FRAUD_CHECK,
-            ContractCondition::TYPE_STOCK_RESERVED,
             ContractCondition::TYPE_COMPLIANCE_CHECK,
             ContractCondition::TYPE_ADDRESS_VALIDATED,
         ];
