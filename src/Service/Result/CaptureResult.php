@@ -51,6 +51,8 @@ final readonly class CaptureResult
      * Create a successful capture result (simple form).
      *
      * Used by AbstractPaymentCaptureService for contract-based captures.
+     *
+     * @param array<string, mixed> $providerData
      */
     public static function create(
         string $captureId,

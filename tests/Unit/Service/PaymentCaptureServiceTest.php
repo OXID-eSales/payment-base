@@ -85,8 +85,8 @@ class PaymentCaptureServiceTest extends TestCase
         $result = $this->service->capture($contractId);
 
         $this->assertInstanceOf(CaptureResult::class, $result);
-        $this->assertEquals('ch_123', $result->captureId);
-        $this->assertEquals($amount, $result->amountCaptured);
+        $this->assertEquals('ch_123', $result->getCaptureId());
+        $this->assertEquals($amount, $result->getAmountCaptured());
     }
 
     // 2. Capture partial amount
@@ -121,7 +121,7 @@ class PaymentCaptureServiceTest extends TestCase
         $result = $this->service->capture($contractId, $partialAmount);
 
         $this->assertInstanceOf(CaptureResult::class, $result);
-        $this->assertEquals($partialAmount, $result->amountCaptured);
+        $this->assertEquals($partialAmount, $result->getAmountCaptured());
     }
 
     // 3. Cannot capture already fulfilled contract

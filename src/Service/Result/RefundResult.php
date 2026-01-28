@@ -57,6 +57,8 @@ final readonly class RefundResult
      * Create a successful refund result (simple form).
      *
      * Used by AbstractPaymentRefundService for contract-based refunds.
+     *
+     * @param array<string, mixed> $providerData
      */
     public static function create(
         string $refundId,
