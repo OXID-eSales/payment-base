@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Service\Factory;
 
-use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\PaymentComponent\Service\FileLogger;
 use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
 use Symfony\Component\Filesystem\Path;
@@ -23,6 +22,9 @@ use Symfony\Component\Filesystem\Path;
  * - OCP: Open for extension via abstract methods
  * - DIP: Depends on FileLoggerInterface abstraction
  * - Template Method: Algorithm skeleton in base class
+ *
+ * Note: Subclasses must implement getShopDirectory() to provide the shop path.
+ * This allows platform-specific implementations (OXID, Shopware, etc.).
  *
  * @since 2.0.0
  */
@@ -43,6 +45,15 @@ abstract class AbstractFileLoggerFactory
     abstract protected function getPrefix(): string;
 
     /**
+     * Get the shop directory path.
+     *
+     * Platform-specific implementations must provide this.
+     *
+     * @return string Absolute path to shop directory
+     */
+    abstract protected function getShopDirectory(): string;
+
+    /**
      * Create the file logger.
      *
      * Template method: uses abstract methods to get file path and prefix.
@@ -52,9 +63,9 @@ abstract class AbstractFileLoggerFactory
      */
     public function create(): FileLoggerInterface
     {
-        $shopDir = Registry::getConfig()->getConfigParam('sShopDir');
+        $shopDir = $this->getShopDirectory();
 
-        if (!is_string($shopDir)) {
+        if (empty($shopDir)) {
             throw new \RuntimeException('Shop directory not configured');
         }
 

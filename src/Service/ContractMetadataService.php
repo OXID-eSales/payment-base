@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Service;
 
-use OxidEsales\Eshop\Application\Model\User;
-use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
 
@@ -25,6 +23,9 @@ use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
  * - OCP: Can be extended for different metadata sources
  * - DIP: Depends on abstractions
  * - ISP: Focused interface for metadata operations only
+ *
+ * Note: This is a provider-agnostic implementation that uses $_SESSION directly.
+ * Platform-specific implementations can extend this class to use platform session APIs.
  *
  * @since 2.0.0
  */
@@ -102,47 +103,35 @@ class ContractMetadataService implements ContractMetadataServiceInterface
     }
 
     /**
-     * Get address hash from OXID session.
+     * Get address hash from PHP session.
+     *
+     * Uses standard $_SESSION superglobal for provider-agnostic implementation.
      */
     protected function getAddressHashFromSession(): ?string
     {
-        // Check both session (for tests) and OXID Registry
         if (isset($_SESSION['sDelAddrMD5']) && !empty($_SESSION['sDelAddrMD5'])) {
             return (string) $_SESSION['sDelAddrMD5'];
         }
-
-        // Try OXID Registry session
-        try {
-            $session = Registry::getSession();
-            $hash = $session->getVariable('sDelAddrMD5');
-            return !empty($hash) ? (string) $hash : null;
-        } catch (\Throwable) {
-            return null;
-        }
+        return null;
     }
 
     /**
-     * Get delivery address ID from session.
+     * Get delivery address ID from PHP session.
+     *
+     * Uses standard $_SESSION superglobal for provider-agnostic implementation.
      */
     protected function getDeliveryAddressIdFromSession(): ?string
     {
-        // Check both session (for tests) and OXID Registry
         if (isset($_SESSION['deladrid']) && !empty($_SESSION['deladrid'])) {
             return (string) $_SESSION['deladrid'];
         }
-
-        // Try OXID Registry session
-        try {
-            $session = Registry::getSession();
-            $id = $session->getVariable('deladrid');
-            return !empty($id) ? (string) $id : null;
-        } catch (\Throwable) {
-            return null;
-        }
+        return null;
     }
 
     /**
      * Compute address hash from basket user.
+     *
+     * Uses duck typing to work with any basket object that has getBasketUser().
      */
     protected function computeAddressHashFromBasket(object $basket): ?string
     {
@@ -150,13 +139,11 @@ class ContractMetadataService implements ContractMetadataServiceInterface
             return null;
         }
 
-        /** @var User|null $user */
         $user = $basket->getBasketUser();
-        if ($user === null) {
+        if ($user === null || !is_object($user)) {
             return null;
         }
 
-        // @phpstan-ignore-next-line Backward compatibility check for older OXID versions
         if (!method_exists($user, 'getEncodedDeliveryAddress')) {
             return null;
         }

@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Adapter;
 
-use OxidEsales\Eshop\Application\Model\Basket;
-
 /**
  * Interface for session operations.
  *
@@ -36,9 +34,9 @@ interface SessionAdapterInterface
     /**
      * Get the current basket from session.
      *
-     * @return Basket|null Current basket or null if not set
+     * @return object|null Current basket or null if not set
      */
-    public function getBasket(): ?Basket;
+    public function getBasket(): ?object;
 
     /**
      * Set a session variable.
