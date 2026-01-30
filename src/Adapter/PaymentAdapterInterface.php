@@ -22,7 +22,7 @@ use OxidEsales\PaymentComponent\Adapter\Request\ThreeDSecureRequest;
 use OxidEsales\PaymentComponent\Adapter\Response\PaymentResponse;
 use OxidEsales\PaymentComponent\Adapter\Response\CaptureResponse;
 use OxidEsales\PaymentComponent\Adapter\Response\RefundResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\VoidResponse;
+use OxidEsales\PaymentComponent\Adapter\Response\CancellationResponse;
 use OxidEsales\PaymentComponent\Adapter\Response\PaymentDetailsResponse;
 use OxidEsales\PaymentComponent\Adapter\Response\AuthorizationResponse;
 use OxidEsales\PaymentComponent\Adapter\Response\PaymentMethodResponse;
@@ -85,10 +85,10 @@ interface PaymentAdapterInterface
      * Void (cancel) an authorized payment before capture.
      *
      * @param VoidPaymentRequest $request Void request
-     * @return VoidResponse Void result
+     * @return CancellationResponse Cancellation result
      * @throws PaymentAdapterException On provider errors
      */
-    public function voidPayment(VoidPaymentRequest $request): VoidResponse;
+    public function voidPayment(VoidPaymentRequest $request): CancellationResponse;
 
     /**
      * Get payment details by provider payment ID.
@@ -128,10 +128,10 @@ interface PaymentAdapterInterface
      * Void (cancel) an authorization before capture.
      *
      * @param VoidAuthorizationRequest $request Void request
-     * @return VoidResponse Void result
+     * @return CancellationResponse Cancellation result
      * @throws PaymentAdapterException On provider errors
      */
-    public function voidAuthorization(VoidAuthorizationRequest $request): VoidResponse;
+    public function voidAuthorization(VoidAuthorizationRequest $request): CancellationResponse;
 
     /**
      * Reauthorize an expired authorization.

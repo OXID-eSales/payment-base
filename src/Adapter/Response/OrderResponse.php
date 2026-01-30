@@ -18,7 +18,7 @@ use DateTimeImmutable;
  *
  * @since 1.0.0
  */
-final readonly class OrderResponse
+readonly class OrderResponse
 {
     /**
      * @param string $orderId Shop-internal order ID

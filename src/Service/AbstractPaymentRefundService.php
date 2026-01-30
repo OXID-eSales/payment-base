@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Service;
 
-use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
 use OxidEsales\PaymentComponent\Adapter\Request\RefundPaymentRequest;
 use OxidEsales\PaymentComponent\Adapter\Response\RefundResponse;
@@ -17,7 +16,6 @@ use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\Exception\RefundFailedException;
-use OxidEsales\PaymentComponent\Service\Result\RefundResult;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,13 +44,15 @@ abstract class AbstractPaymentRefundService
     /**
      * Refund a captured payment (full or partial).
      *
+     * Sprint 31: Returns array with RefundResponse and business fields.
+     *
      * @param string $contractId The contract ID to refund
      * @param float|null $amount Optional partial amount to refund (null = full remaining amount)
      * @param string $reason Optional reason for the refund
-     * @return RefundResult Refund result
+     * @return array{response: RefundResponse, totalRefunded: float, availableForRefund: float}
      * @throws RefundFailedException If refund fails
      */
-    final public function refund(string $contractId, ?float $amount = null, string $reason = ''): RefundResult
+    final public function refund(string $contractId, ?float $amount = null, string $reason = ''): array
     {
         $contract = $this->loadContract($contractId);
         $this->validateStateForRefund($contract);
@@ -77,17 +77,11 @@ abstract class AbstractPaymentRefundService
                 'totalRefunded' => $newTotalRefunded,
             ]);
 
-            return RefundResult::create(
-                refundId: $response->refundId,
-                amountRefunded: $response->amountRefunded,
-                currency: $response->currency,
-                totalRefunded: $newTotalRefunded,
-                availableForRefund: $newAvailableForRefund,
-                refundedAt: $response->refundedAt instanceof DateTimeImmutable
-                    ? $response->refundedAt
-                    : DateTimeImmutable::createFromMutable($response->refundedAt),
-                providerData: $response->providerData ?? []
-            );
+            return [
+                'response' => $response,
+                'totalRefunded' => $newTotalRefunded,
+                'availableForRefund' => $newAvailableForRefund,
+            ];
         } catch (RefundFailedException $e) {
             throw $e;
         } catch (Throwable $e) {
@@ -223,11 +217,14 @@ abstract class AbstractPaymentRefundService
         RefundResponse $response,
         string $reason
     ): void {
-        $this->transactionRepository->logRefund(
-            $contract->getId() ?? 'unknown',
-            $response->amountRefunded,
-            $response->refundId,
-            $reason
-        );
+        // Only log if we have valid refund data
+        if ($response->amountRefunded !== null && $response->refundId !== null) {
+            $this->transactionRepository->logRefund(
+                $contract->getId() ?? 'unknown',
+                $response->amountRefunded,
+                $response->refundId,
+                $reason
+            );
+        }
     }
 }

@@ -7,7 +7,6 @@ namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
 use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Service\PaymentCaptureService;
 use OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException;
-use OxidEsales\PaymentComponent\Service\Result\CaptureResult;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
 use OxidEsales\PaymentComponent\Adapter\Request\CapturePaymentRequest;
@@ -84,9 +83,9 @@ class PaymentCaptureServiceTest extends TestCase
 
         $result = $this->service->capture($contractId);
 
-        $this->assertInstanceOf(CaptureResult::class, $result);
-        $this->assertEquals('ch_123', $result->getCaptureId());
-        $this->assertEquals($amount, $result->getAmountCaptured());
+        $this->assertInstanceOf(CaptureResponse::class, $result);
+        $this->assertEquals('ch_123', $result->captureId);
+        $this->assertEquals($amount, $result->amountCaptured);
     }
 
     // 2. Capture partial amount
@@ -120,8 +119,8 @@ class PaymentCaptureServiceTest extends TestCase
 
         $result = $this->service->capture($contractId, $partialAmount);
 
-        $this->assertInstanceOf(CaptureResult::class, $result);
-        $this->assertEquals($partialAmount, $result->getAmountCaptured());
+        $this->assertInstanceOf(CaptureResponse::class, $result);
+        $this->assertEquals($partialAmount, $result->amountCaptured);
     }
 
     // 3. Cannot capture already fulfilled contract
@@ -284,7 +283,7 @@ class PaymentCaptureServiceTest extends TestCase
 
     private function createMockCaptureResponse(string $captureId, float $amount): CaptureResponse
     {
-        return new CaptureResponse(
+        return CaptureResponse::success(
             providerPaymentId: 'pi_test',
             captureId: $captureId,
             amountCaptured: $amount,

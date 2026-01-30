@@ -9,14 +9,12 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Service;
 
-use DateTimeImmutable;
 use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
 use OxidEsales\PaymentComponent\Adapter\Request\CapturePaymentRequest;
 use OxidEsales\PaymentComponent\Adapter\Response\CaptureResponse;
 use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException;
-use OxidEsales\PaymentComponent\Service\Result\CaptureResult;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,12 +42,14 @@ abstract class AbstractPaymentCaptureService
     /**
      * Capture an authorized payment.
      *
+     * Sprint 31: Returns CaptureResponse directly (no Result wrapper).
+     *
      * @param string $contractId The contract ID to capture
      * @param float|null $amount Optional partial amount to capture (null = full amount)
-     * @return CaptureResult Capture result
+     * @return CaptureResponse Capture response
      * @throws CaptureFailedException If capture fails
      */
-    final public function capture(string $contractId, ?float $amount = null): CaptureResult
+    final public function capture(string $contractId, ?float $amount = null): CaptureResponse
     {
         $contract = $this->loadContract($contractId);
         $this->validateContract($contract);
@@ -68,18 +68,7 @@ abstract class AbstractPaymentCaptureService
                 'captureId' => $response->captureId,
             ]);
 
-            // Convert DateTimeInterface to DateTimeImmutable if needed
-            $capturedAt = $response->capturedAt instanceof DateTimeImmutable
-                ? $response->capturedAt
-                : DateTimeImmutable::createFromInterface($response->capturedAt);
-
-            return CaptureResult::create(
-                captureId: $response->captureId,
-                amountCaptured: $response->amountCaptured,
-                currency: $response->currency,
-                capturedAt: $capturedAt,
-                providerData: $response->providerData ?? []
-            );
+            return $response;
         } catch (CaptureFailedException $e) {
             throw $e;
         } catch (Throwable $e) {

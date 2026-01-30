@@ -75,7 +75,7 @@ class FraudCheckHandler implements HandlerInterface
         // Perform fraud check
         $result = $this->fraudCheckService->check($contract);
 
-        if ($result->isPassed()) {
+        if ($result->isSuccessful()) {
             // Passed: Fulfill the fraud check condition
             $contract->fulfillCondition(
                 ContractCondition::TYPE_FRAUD_CHECK,

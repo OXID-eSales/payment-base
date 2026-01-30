@@ -16,7 +16,7 @@ use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent
 use OxidEsales\PaymentComponent\EventSystem\Handler\FraudCheckHandler;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\FraudCheckServiceInterface;
-use OxidEsales\PaymentComponent\Service\Result\FraudCheckResult;
+use OxidEsales\PaymentComponent\Adapter\Response\FraudCheckResponse;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -63,7 +63,7 @@ class FraudCheckHandlerTest extends TestCase
         $this->fraudCheckService->expects($this->once())
             ->method('check')
             ->with($contract)
-            ->willReturn(FraudCheckResult::passed(0.25));
+            ->willReturn(FraudCheckResponse::success(0.25));
 
         $contract->expects($this->once())
             ->method('fulfillCondition')
@@ -97,7 +97,7 @@ class FraudCheckHandlerTest extends TestCase
         $this->fraudCheckService->expects($this->once())
             ->method('check')
             ->with($contract)
-            ->willReturn(FraudCheckResult::failed(0.85, 'High risk score from Stripe Radar'));
+            ->willReturn(FraudCheckResponse::failure(0.85, 'High risk score from Stripe Radar'));
 
         $contract->expects($this->once())
             ->method('fail')
@@ -198,7 +198,7 @@ class FraudCheckHandlerTest extends TestCase
         $this->fraudCheckService->expects($this->once())
             ->method('check')
             ->with($contract)
-            ->willReturn(FraudCheckResult::passed(0.70));
+            ->willReturn(FraudCheckResponse::success(0.70));
 
         $contract->expects($this->once())
             ->method('fulfillCondition')
@@ -222,7 +222,7 @@ class FraudCheckHandlerTest extends TestCase
         $this->fraudCheckService->expects($this->once())
             ->method('check')
             ->with($contract)
-            ->willReturn(FraudCheckResult::failed(0.71, 'Score exceeds threshold'));
+            ->willReturn(FraudCheckResponse::failure(0.71, 'Score exceeds threshold'));
 
         $contract->expects($this->once())
             ->method('fail')
