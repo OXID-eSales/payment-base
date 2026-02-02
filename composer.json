@@ -1,7 +1,7 @@
 {
     "name": "oxid-esales/payment-component",
     "description": "Provider-agnostic payment component with smart-contract architecture",
-    "type": "library",
+    "type": "composer-plugin",
     "license": "GPL-3.0-only",
     "authors": [
         {
@@ -11,11 +11,13 @@
     ],
     "require": {
         "php": "^8.1",
+        "composer-plugin-api": "^2.0",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
         "psr/event-dispatcher": "^1.0",
         "doctrine/dbal": "^2.13 || ^3.0"
     },
     "require-dev": {
+        "composer/composer": "^2.0",
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0",
         "squizlabs/php_codesniffer": "^3.7",
@@ -35,12 +37,6 @@
         }
     },
     "scripts": {
-        "post-install-cmd": [
-            "vendor/oxid-esales/payment-component/bin/composer-post-update.sh"
-        ],
-        "post-update-cmd": [
-            "vendor/oxid-esales/payment-component/bin/composer-post-update.sh"
-        ],
         "phpcs": "phpcs --standard=tests/phpcs.xml --warning-severity=0 src/",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "phpmd": "phpmd src/ text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict",
@@ -51,6 +47,9 @@
         ],
         "test": "phpunit -c phpunit.xml",
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit"
+    },
+    "extra": {
+        "class": "OxidEsales\\PaymentComponent\\Composer\\MigrationPlugin"
     },
     "config": {
         "sort-packages": true,
