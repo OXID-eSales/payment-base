@@ -35,6 +35,12 @@
         }
     },
     "scripts": {
+        "post-install-cmd": [
+            "vendor/oxid-esales/payment-component/bin/composer-post-update.sh"
+        ],
+        "post-update-cmd": [
+            "vendor/oxid-esales/payment-component/bin/composer-post-update.sh"
+        ],
         "phpcs": "phpcs --standard=tests/phpcs.xml --warning-severity=0 src/",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "phpmd": "phpmd src/ text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict",
@@ -44,8 +50,7 @@
             "@phpmd"
         ],
         "test": "phpunit -c phpunit.xml",
-        "test-unit": "phpunit -c phpunit.xml --testsuite Unit",
-        "migrations": "echo 'Use: vendor/bin/doctrine-migrations migrate --configuration=migration/migrations.yml --db-configuration=<path-to-db-config> --no-interaction' or run within OXID shop context"
+        "test-unit": "phpunit -c phpunit.xml --testsuite Unit"
     },
     "config": {
         "sort-packages": true,
