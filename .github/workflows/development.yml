@@ -36,8 +36,9 @@ jobs:
       - name: Clone the shop
         run: git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.4.x --single-branch source
 
-      - name: Cache current installation
-        uses: actions/cache@v4
+      - name: Restore cache (if exists)
+        id: cache-restore
+        uses: actions/cache/restore@v4
         with:
           path: |
             ./*
@@ -106,6 +107,13 @@ jobs:
         run: |
           docker compose exec -T php bin/oe-console oe:database:reset \
             --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
+
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
 
       - name: Show docker log
         if: always()
