@@ -98,6 +98,9 @@ jobs:
             --json '{"type":"path", "url":"./test-module", "options": {"symlink": true}}'
           docker compose exec -T \
             php composer require ${{ env.PACKAGE_NAME }}:* --no-interaction --no-update
+          
+          docker compose exec -T \
+            php composer config --no-plugins allow-plugins.oxid-esales/payment-component true
 
       - name: Install dependencies
         run: |
@@ -273,10 +276,6 @@ jobs:
       - name: Install component dev dependencies
         run: |
           docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
-
-      - name: Run database migrations
-        run: |
-          docker compose exec -T php php vendor/bin/doctrine-migrations migrate --configuration=vendor/oxid-esales/payment-component/migration/migrations.yml --db-configuration=vendor/oxid-esales/oxideshop-doctrine-migration-wrapper/src/migrations-db.php --no-interaction --allow-no-migration
 
       - name: Run integration tests with shop bootstrap
         run: |
