@@ -79,6 +79,19 @@ class MigrationPlugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+        // Check if shop config exists and has real DB credentials (not placeholders)
+        $shopConfigFile = dirname($vendorDir) . '/source/config.inc.php';
+        if (!file_exists($shopConfigFile)) {
+            $this->io->write('<comment>Skipping payment-component migrations: shop not configured yet</comment>');
+            return;
+        }
+
+        $configContent = file_get_contents($shopConfigFile);
+        if ($configContent && strpos($configContent, '<dbHost>') !== false) {
+            $this->io->write('<comment>Skipping payment-component migrations: shop not configured yet</comment>');
+            return;
+        }
+
         $this->io->write('<info>Running payment-component database migrations...</info>');
 
         $command = sprintf(
