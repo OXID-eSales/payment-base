@@ -56,7 +56,7 @@ class MigrationPlugin implements PluginInterface, EventSubscriberInterface
         }
 
         if (!$this->checkPhpVersion()) {
-            $this->io->write('<comment>Skipping payment-component migrations: PHP 8.3+ required</comment>');
+            $this->io->write('<comment>Skipping payment-component migrations: PHP 8.2+ required</comment>');
             return;
         }
 

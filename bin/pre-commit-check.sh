@@ -122,10 +122,11 @@ get_changed_files_local() {
     cd "$MODULE_ROOT" || return
     local files=""
     # Get files changed from HEAD (excluding deleted files with --diff-filter=d)
-    files=$(git diff --diff-filter=d --name-only HEAD 2>/dev/null | grep -E '\.php$' | grep -vE '^tests/' | tr '\n' ' ')
+    # Also exclude src/Composer (Composer plugin uses runtime-only classes)
+    files=$(git diff --diff-filter=d --name-only HEAD 2>/dev/null | grep -E '\.php$' | grep -vE '^tests/|^src/Composer/' | tr '\n' ' ')
     # If no uncommitted changes, get files from last commit
     if [ -z "$files" ]; then
-        files=$(git diff-tree --no-commit-id --diff-filter=d --name-only -r HEAD 2>/dev/null | grep -E '\.php$' | grep -vE '^tests/' | tr '\n' ' ')
+        files=$(git diff-tree --no-commit-id --diff-filter=d --name-only -r HEAD 2>/dev/null | grep -E '\.php$' | grep -vE '^tests/|^src/Composer/' | tr '\n' ' ')
     fi
     echo "$files"
 }

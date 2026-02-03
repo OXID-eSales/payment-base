@@ -11,6 +11,7 @@ parameters:
     excludePaths:
         - tests
         - vendor
+        - src/Composer
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
