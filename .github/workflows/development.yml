@@ -119,7 +119,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
 
       - name: Upload configuration artifacts
         if: always()
@@ -190,7 +190,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
@@ -242,7 +242,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component

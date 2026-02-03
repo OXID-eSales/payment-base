@@ -20,6 +20,25 @@ Payment Component is a universal, event-driven payment library that enables seam
 composer require oxid-esales/payment-component
 ```
 
+## Migrations
+oxid-esales/oxid-shop-doctrine-migration-wrapper is required to run migrations.
+
+```bash
+composer require oxid-esales/oxid-shop-doctrine-migration-wrapper
+```
+
+Migrations are running automatically on composer install/update via ComposerPlugin ./src/Composer/MigrationPlugin.php
+
+```bash
+composer update oxid-esales/payment-component 
+```
+
+## Force Migrations
+To run migrations manually use:
+```bash
+./bin/run-migrations.sh
+```
+
 ## Requirements
 
 - PHP 8.1+
