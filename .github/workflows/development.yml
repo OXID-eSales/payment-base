@@ -36,14 +36,6 @@ jobs:
       - name: Clone the shop
         run: git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.4.x --single-branch source
 
-      - name: Restore cache (if exists)
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
-
       - name: Prepare container configuration
         run: |
           make setup
@@ -250,7 +242,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
