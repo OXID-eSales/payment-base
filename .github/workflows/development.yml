@@ -105,7 +105,7 @@ jobs:
 
       - name: Run composer update to activate migrations
         run: |
-          docker compose exec -T php composer update --no-interaction
+          docker compose exec -T php composer update oxid-esales/payment-component --no-interaction
 
       - name: Show docker log
         if: always()
@@ -143,7 +143,7 @@ jobs:
   styles:
     strategy:
       matrix:
-        php: [ '8.3' ]
+        php: [ '8.2' ]
     runs-on: [arc-runner-set]
     steps:
       - name: Checkout current component
@@ -184,7 +184,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        php: [  '8.3' ]
+        php: [  '8.2' ]
         mysql: [ '5.7' ]
     needs: [ install_shop_with_module ]
     runs-on: [arc-runner-set]
@@ -236,7 +236,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        php: [  '8.3' ]
+        php: [  '8.2' ]
         mysql: [ '5.7' ]
     needs: [ install_shop_with_module ]
     runs-on: [arc-runner-set]
@@ -272,6 +272,10 @@ jobs:
       - name: Install component dev dependencies
         run: |
           docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      - name: Kick off migrations with composer update
+        run: |
+          docker compose exec -T php composer update oxid-esales/payment-component --no-interaction
 
       - name: Run integration tests with shop bootstrap
         run: |

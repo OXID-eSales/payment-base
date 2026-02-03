@@ -118,7 +118,7 @@ class MigrationPlugin implements PluginInterface, EventSubscriberInterface
 
     private function checkPhpVersion(): bool
     {
-        return PHP_MAJOR_VERSION > 8 || (PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION >= 3);
+        return PHP_MAJOR_VERSION > 8 || (PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION >= 2);
     }
 
     private function isPaymentComponentInstalled(): bool
