@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 env:
   PACKAGE_NAME: 'oxid-esales/payment-component'
-  PHP_VERSION: '8.3'
+  PHP_VERSION: '8.2'
   MYSQL_VERSION: '5.7'
   TEMPLATE_ENGINE: 'twig'
 
@@ -42,7 +42,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
 
       - name: Prepare container configuration
         run: |
@@ -116,7 +116,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
 
       - name: Show docker log
         if: always()
@@ -198,7 +198,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
