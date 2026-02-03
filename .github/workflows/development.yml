@@ -103,6 +103,10 @@ jobs:
           docker compose exec -T php bin/oe-console oe:database:reset \
             --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
 
+      - name: Run composer update to activate migrations
+        run: |
+          docker compose exec -T php composer update --no-interaction
+
       - name: Show docker log
         if: always()
         run: |
@@ -180,7 +184,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        php: [  '8.2' ]
+        php: [  '8.3' ]
         mysql: [ '5.7' ]
     needs: [ install_shop_with_module ]
     runs-on: [arc-runner-set]
@@ -232,7 +236,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        php: [  '8.2' ]
+        php: [  '8.3' ]
         mysql: [ '5.7' ]
     needs: [ install_shop_with_module ]
     runs-on: [arc-runner-set]
