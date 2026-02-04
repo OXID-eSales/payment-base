@@ -51,7 +51,7 @@ abstract class AbstractWebhookProcessor
      * @param WebhookRequest $request The incoming webhook request
      * @return WebhookResult Processing result
      */
-    final public function process(WebhookRequest $request): WebhookResult
+    public function process(WebhookRequest $request): WebhookResult
     {
         // Step 1: Parse and validate request (throws WebhookSignatureException on failure)
         try {

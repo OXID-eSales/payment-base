@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentComponent\Webhook;
  *
  * @since Sprint 13
  */
-final readonly class WebhookEvent
+readonly class WebhookEvent
 {
     /**
      * @param string $id Event ID (e.g., 'evt_xxx')

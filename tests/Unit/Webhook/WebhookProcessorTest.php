@@ -9,14 +9,14 @@ use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\EventSystem\Event\Payment\WebhookReceivedEvent;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepository;
 use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyChecker;
 use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyCheckerInterface;
+use OxidEsales\PaymentComponent\Webhook\WebhookLog;
 use OxidEsales\PaymentComponent\Webhook\WebhookProcessor;
 use OxidEsales\PaymentComponent\Webhook\WebhookProcessorInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -25,11 +25,11 @@ use Psr\Log\LoggerInterface;
  */
 final class WebhookProcessorTest extends TestCase
 {
-    private ContractRepositoryInterface $contractRepository;
-    private EventDispatcherInterface $eventDispatcher;
-    private WebhookIdempotencyCheckerInterface $idempotencyChecker;
-    private WebhookLogRepositoryInterface $logRepository;
-    private LoggerInterface $logger;
+    private ContractRepositoryInterface&MockObject $contractRepository;
+    private EventDispatcher $eventDispatcher;
+    private WebhookIdempotencyCheckerInterface&MockObject $idempotencyChecker;
+    private WebhookLogRepositoryInterface&MockObject $logRepository;
+    private LoggerInterface&MockObject $logger;
     private WebhookProcessorInterface $processor;
     private array $dispatchedEvents = [];
 
@@ -37,10 +37,10 @@ final class WebhookProcessorTest extends TestCase
     {
         parent::setUp();
 
-        $this->contractRepository = new ContractRepository();
+        $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
         $this->eventDispatcher = new EventDispatcher();
-        $this->logRepository = new WebhookLogRepository();
-        $this->idempotencyChecker = new WebhookIdempotencyChecker($this->logRepository);
+        $this->logRepository = $this->createMock(WebhookLogRepositoryInterface::class);
+        $this->idempotencyChecker = $this->createMock(WebhookIdempotencyCheckerInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->dispatchedEvents = [];
@@ -65,7 +65,11 @@ final class WebhookProcessorTest extends TestCase
     {
         $paymentIntentId = 'pi_test_123';
         $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
+
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->method('findByProviderOrderId')
+            ->with($paymentIntentId)
+            ->willReturn($contract);
 
         $webhookData = [
             'id' => 'evt_test_success',
@@ -92,7 +96,12 @@ final class WebhookProcessorTest extends TestCase
     {
         $paymentIntentId = 'pi_find_me_123';
         $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
+
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->expects($this->once())
+            ->method('findByProviderOrderId')
+            ->with($paymentIntentId)
+            ->willReturn($contract);
 
         $webhookData = [
             'id' => 'evt_find_contract',
@@ -115,22 +124,11 @@ final class WebhookProcessorTest extends TestCase
     public function testSkipsDuplicateWebhooks(): void
     {
         $eventId = 'evt_duplicate_123';
-        $paymentIntentId = 'pi_duplicate_123';
-        $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
 
-        $webhookData = [
-            'id' => $eventId,
-            'type' => 'payment_intent.succeeded',
-            'data' => [
-                'object' => [
-                    'id' => $paymentIntentId,
-                ],
-            ],
-        ];
-
-        $this->processor->process($webhookData);
-        $this->assertCount(1, $this->dispatchedEvents);
+        $this->idempotencyChecker->expects($this->once())
+            ->method('isProcessed')
+            ->with($eventId)
+            ->willReturn(true);
 
         $this->logger->expects($this->once())
             ->method('info')
@@ -139,12 +137,33 @@ final class WebhookProcessorTest extends TestCase
                 $this->arrayHasKey('eventId')
             );
 
+        $webhookData = [
+            'id' => $eventId,
+            'type' => 'payment_intent.succeeded',
+            'data' => [
+                'object' => [
+                    'id' => 'pi_duplicate_123',
+                ],
+            ],
+        ];
+
         $this->processor->process($webhookData);
-        $this->assertCount(1, $this->dispatchedEvents);
+
+        $this->assertCount(0, $this->dispatchedEvents);
     }
 
     public function testHandlesUnknownContract(): void
     {
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->method('findByProviderOrderId')->willReturn(null);
+
+        $this->logger->expects($this->once())
+            ->method('warning')
+            ->with(
+                $this->stringContains('Contract not found'),
+                $this->arrayHasKey('paymentIntentId')
+            );
+
         $webhookData = [
             'id' => 'evt_unknown_contract',
             'type' => 'payment_intent.succeeded',
@@ -155,13 +174,6 @@ final class WebhookProcessorTest extends TestCase
             ],
         ];
 
-        $this->logger->expects($this->once())
-            ->method('warning')
-            ->with(
-                $this->stringContains('Contract not found'),
-                $this->arrayHasKey('paymentIntentId')
-            );
-
         $this->processor->process($webhookData);
 
         $this->assertCount(0, $this->dispatchedEvents);
@@ -171,7 +183,9 @@ final class WebhookProcessorTest extends TestCase
     {
         $paymentIntentId = 'pi_failed_123';
         $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
+
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->method('findByProviderOrderId')->willReturn($contract);
 
         $webhookData = [
             'id' => 'evt_payment_failed',
@@ -199,7 +213,9 @@ final class WebhookProcessorTest extends TestCase
     {
         $paymentIntentId = 'pi_refund_123';
         $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
+
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->method('findByProviderOrderId')->willReturn($contract);
 
         $webhookData = [
             'id' => 'evt_refunded',
@@ -225,7 +241,17 @@ final class WebhookProcessorTest extends TestCase
         $eventId = 'evt_logging_test';
         $paymentIntentId = 'pi_logging_123';
         $contract = $this->createContract($paymentIntentId);
-        $this->contractRepository->save($contract);
+
+        $this->idempotencyChecker->method('isProcessed')->willReturn(false);
+        $this->contractRepository->method('findByProviderOrderId')->willReturn($contract);
+
+        $this->logRepository->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function (WebhookLog $log) use ($eventId, $contract) {
+                return $log->getEventId() === $eventId
+                    && $log->getContractId() === $contract->getId()
+                    && $log->getStatus() === 'processed';
+            }));
 
         $webhookData = [
             'id' => $eventId,
@@ -238,13 +264,6 @@ final class WebhookProcessorTest extends TestCase
         ];
 
         $this->processor->process($webhookData);
-
-        $log = $this->logRepository->findByEventId($eventId);
-        $this->assertNotNull($log);
-        $this->assertSame($eventId, $log->getEventId());
-        $this->assertSame('processed', $log->getStatus());
-        $this->assertSame('payment_intent.succeeded', $log->getEventType());
-        $this->assertSame($contract->getId(), $log->getContractId());
     }
 
     private function createContract(string $providerOrderId): PaymentContract

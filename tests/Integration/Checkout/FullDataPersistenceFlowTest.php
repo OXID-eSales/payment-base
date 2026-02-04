@@ -17,7 +17,7 @@ use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
-use OxidEsales\PaymentComponent\Repository\DoctrineTransactionRepository;
+use OxidEsales\PaymentComponent\Repository\TransactionRepository;
 use OxidEsales\PaymentComponent\Transaction\Transaction;
 
 /**
@@ -53,7 +53,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
     private Connection $connection;
     private DoctrineContractRepository $contractRepository;
-    private DoctrineTransactionRepository $transactionRepository;
+    private TransactionRepository $transactionRepository;
     private string $testRunId;
 
     public function setUp(): void
@@ -68,7 +68,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->connection = $connectionProvider->get();
 
         $this->contractRepository = new DoctrineContractRepository($this->connection);
-        $this->transactionRepository = new DoctrineTransactionRepository($this->connection);
+        $this->transactionRepository = new TransactionRepository($this->connection);
     }
 
     public function tearDown(): void

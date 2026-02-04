@@ -20,7 +20,7 @@ namespace OxidEsales\PaymentComponent\Adapter\Request;
  *
  * @since 1.0.0
  */
-final readonly class CreateOrderRequest
+readonly class CreateOrderRequest
 {
     /**
      * @param string $sessionId Session identifier for retrieving basket

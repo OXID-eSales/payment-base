@@ -209,7 +209,140 @@ else
 fi
 echo ""
 
-# 4. PHPMD (PHP Mess Detector)
+# 4. Dead Code Detection
+echo ">>> Running Dead Code Detection..."
+run_dead_code_check() {
+    local module_path="$1"
+    local dead_code_found=0
+    local stripe_dir="$module_path/../stripe"
+
+    # Find all PHP class/interface/trait definitions in src/
+    # Then check if they are referenced anywhere in the codebase
+    cd "$module_path" || return 1
+
+    # Get all class/interface/trait names from src/
+    local definitions=$(grep -rhoP '(?<=^class |^interface |^trait |^abstract class |^final class )[A-Za-z0-9_]+' src/ 2>/dev/null | sort -u)
+
+    for name in $definitions; do
+        # Skip common patterns loaded externally
+        case "$name" in
+            *Plugin|*Command|*Controller)
+                continue
+                ;;
+        esac
+
+        # Count references in payment-component src/
+        local ref_count=$(grep -r --include="*.php" -l "\b$name\b" src/ 2>/dev/null | wc -l)
+
+        # If only found once (the definition file), check other locations
+        if [ "$ref_count" -le 1 ]; then
+            # Check payment-component config files
+            local config_ref=$(grep -r "$name" *.yaml 2>/dev/null | wc -l)
+            if [ "$config_ref" -eq 0 ]; then
+                # Check stripe module src/ (payment-component is a library for stripe)
+                local stripe_ref=0
+                if [ -d "$stripe_dir/src" ]; then
+                    stripe_ref=$(grep -r --include="*.php" -l "\b$name\b" "$stripe_dir/src/" 2>/dev/null | wc -l)
+                fi
+                if [ "$stripe_ref" -eq 0 ]; then
+                    # Check stripe services.yaml
+                    local stripe_yaml_ref=0
+                    if [ -f "$stripe_dir/services.yaml" ]; then
+                        stripe_yaml_ref=$(grep -c "$name" "$stripe_dir/services.yaml" 2>/dev/null || echo 0)
+                    fi
+                    if [ "$stripe_yaml_ref" -eq 0 ]; then
+                        # Check tests in both modules
+                        local test_ref=$(grep -r --include="*.php" -l "\b$name\b" tests/ 2>/dev/null | wc -l)
+                        local stripe_test_ref=0
+                        if [ -d "$stripe_dir/tests" ]; then
+                            stripe_test_ref=$(grep -r --include="*.php" -l "\b$name\b" "$stripe_dir/tests/" 2>/dev/null | wc -l)
+                        fi
+                        if [ "$test_ref" -eq 0 ] && [ "$stripe_test_ref" -eq 0 ]; then
+                            echo "  Potentially unused: $name"
+                            dead_code_found=1
+                        fi
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    return $dead_code_found
+}
+
+if [ "$ENVIRONMENT" = "github" ]; then
+    run_dead_code_check "$MODULE_ROOT"
+    DEADCODE_STATUS=$?
+else
+    # Run dead code check inside Docker
+    # Note: payment-component is a library consumed by stripe module, so we check both
+    docker compose exec -w /var/www/extensions/payment-component -T php bash -c '
+        dead_code_found=0
+        STRIPE_DIR="../stripe"
+
+        # Get all class/interface/trait names from src/
+        definitions=$(grep -rhoP "(?<=^class |^interface |^trait |^abstract class |^final class )[A-Za-z0-9_]+" src/ 2>/dev/null | sort -u)
+
+        for name in $definitions; do
+            # Skip common patterns loaded externally
+            case "$name" in
+                *Plugin|*Command|*Controller)
+                    continue
+                    ;;
+            esac
+
+            # Count references in payment-component src/
+            ref_count=$(grep -r --include="*.php" -l "\b$name\b" src/ 2>/dev/null | wc -l)
+
+            if [ "$ref_count" -le 1 ]; then
+                # Check payment-component config files
+                config_ref=$(grep -rl "$name" *.yaml 2>/dev/null | wc -l)
+                if [ "$config_ref" -eq 0 ]; then
+                    # Check stripe module src/ (payment-component is a library for stripe)
+                    stripe_ref=0
+                    if [ -d "$STRIPE_DIR/src" ]; then
+                        stripe_ref=$(grep -r --include="*.php" -l "\b$name\b" "$STRIPE_DIR/src/" 2>/dev/null | wc -l)
+                    fi
+                    if [ "$stripe_ref" -eq 0 ]; then
+                        # Check stripe services.yaml
+                        stripe_yaml_ref=0
+                        if [ -f "$STRIPE_DIR/services.yaml" ]; then
+                            stripe_yaml_ref=$(grep -c "$name" "$STRIPE_DIR/services.yaml" 2>/dev/null || echo 0)
+                        fi
+                        if [ "$stripe_yaml_ref" -eq 0 ]; then
+                            # Check tests in both modules
+                            test_ref=$(grep -r --include="*.php" -l "\b$name\b" tests/ 2>/dev/null | wc -l)
+                            stripe_test_ref=0
+                            if [ -d "$STRIPE_DIR/tests" ]; then
+                                stripe_test_ref=$(grep -r --include="*.php" -l "\b$name\b" "$STRIPE_DIR/tests/" 2>/dev/null | wc -l)
+                            fi
+                            if [ "$test_ref" -eq 0 ] && [ "$stripe_test_ref" -eq 0 ]; then
+                                echo "  Potentially unused: $name"
+                                dead_code_found=1
+                            fi
+                        fi
+                    fi
+                fi
+            fi
+        done
+
+        exit $dead_code_found
+    '
+    DEADCODE_STATUS=$?
+fi
+
+if [ $DEADCODE_STATUS -ne 0 ]; then
+    echo -e "${YELLOW}⚠ Potential dead code found (review above)${NC}"
+    # Note: Don't fail the build for dead code, just warn
+    # To make it strict, uncomment below:
+    # OVERALL_STATUS=1
+    # FAILED_CHECKS+=("Dead Code Detection")
+else
+    echo -e "${GREEN}✓ No obvious dead code detected${NC}"
+fi
+echo ""
+
+# 5. PHPMD (PHP Mess Detector)
 echo ">>> Running PHPMD..."
 if [ "$ENVIRONMENT" = "github" ]; then
     cd "$MODULE_ROOT" && composer run phpmd

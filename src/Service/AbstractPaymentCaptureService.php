@@ -49,7 +49,7 @@ abstract class AbstractPaymentCaptureService
      * @return CaptureResponse Capture response
      * @throws CaptureFailedException If capture fails
      */
-    final public function capture(string $contractId, ?float $amount = null): CaptureResponse
+    public function capture(string $contractId, ?float $amount = null): CaptureResponse
     {
         $contract = $this->loadContract($contractId);
         $this->validateContract($contract);

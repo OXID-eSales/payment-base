@@ -9,10 +9,11 @@ use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -23,13 +24,13 @@ use PHPUnit\Framework\TestCase;
  */
 class ContractConditionResolverHandlerTest extends TestCase
 {
-    private ContractRepository $repository;
+    private ContractRepositoryInterface&MockObject $repository;
     private EventDispatcher $dispatcher;
     private ContractConditionResolverHandler $handler;
 
     protected function setUp(): void
     {
-        $this->repository = new ContractRepository();
+        $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->dispatcher = new EventDispatcher();
         $this->handler = new ContractConditionResolverHandler(
             $this->repository,
@@ -70,7 +71,6 @@ class ContractConditionResolverHandlerTest extends TestCase
         );
 
         $contract = $this->createTestContract();
-        $this->repository->save($contract);
 
         $context = new EventContext(['test' => 'data']);
         $event = new ContractCreatedEvent($contract, $context);
@@ -85,7 +85,6 @@ class ContractConditionResolverHandlerTest extends TestCase
     public function testContractRemainsInDraftAfterHandler(): void
     {
         $contract = $this->createTestContract();
-        $this->repository->save($contract);
 
         $context = new EventContext(['test' => 'data']);
         $event = new ContractCreatedEvent($contract, $context);
@@ -110,7 +109,6 @@ class ContractConditionResolverHandlerTest extends TestCase
         ]);
 
         $contract = new PaymentContract(1, 'user123', $snapshot);
-        $this->repository->save($contract);
 
         $context = new EventContext(['test' => 'data']);
         $event = new ContractCreatedEvent($contract, $context);
@@ -135,7 +133,6 @@ class ContractConditionResolverHandlerTest extends TestCase
         $contract = $this->createTestContract();
         $contract->transitionToNotFinished('order_123');
         $contract->transitionToPending();
-        $this->repository->save($contract);
 
         $context = new EventContext(['test' => 'data']);
         $event = new ContractCreatedEvent($contract, $context);

@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
 
 use OxidEsales\PaymentComponent\Service\ContractService;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class ContractServiceTest extends TestCase
 {
-    private ContractRepository $repository;
+    private ContractRepositoryInterface&MockObject $repository;
     private ContractService $service;
 
     protected function setUp(): void
     {
-        $this->repository = new ContractRepository();
+        $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->service = new ContractService($this->repository);
     }
 
@@ -37,6 +38,10 @@ class ContractServiceTest extends TestCase
     {
         $basket = $this->createMockBasket();
 
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($this->isInstanceOf(PaymentContract::class));
+
         $contract = $this->service->createContract('user123', $basket);
 
         $this->assertInstanceOf(PaymentContract::class, $contract);
@@ -49,6 +54,9 @@ class ContractServiceTest extends TestCase
     public function testCreateContractWithCustomConditions(): void
     {
         $basket = $this->createMockBasket();
+
+        $this->repository->expects($this->once())
+            ->method('save');
 
         $contract = $this->service->createContract(
             'user123',
@@ -63,7 +71,24 @@ class ContractServiceTest extends TestCase
     public function testFindActiveContractByUser(): void
     {
         $basket = $this->createMockBasket();
-        $contract = $this->service->createContract('user123', $basket);
+
+        $contract = new PaymentContract(
+            1,
+            'user123',
+            BasketSnapshot::fromArray([
+                'items' => [],
+                'discounts' => [],
+                'totalGross' => 100.0,
+                'totalNet' => 84.03,
+                'totalVat' => 15.97,
+                'currency' => 'EUR',
+            ])
+        );
+
+        $this->repository->expects($this->once())
+            ->method('findActiveByUserId')
+            ->with('user123')
+            ->willReturn($contract);
 
         $found = $this->service->findActiveContractByUser('user123');
 
@@ -73,6 +98,11 @@ class ContractServiceTest extends TestCase
 
     public function testFindActiveContractByUserReturnsNullWhenNotFound(): void
     {
+        $this->repository->expects($this->once())
+            ->method('findActiveByUserId')
+            ->with('nonexistent')
+            ->willReturn(null);
+
         $found = $this->service->findActiveContractByUser('nonexistent');
 
         $this->assertNull($found);
@@ -92,17 +122,23 @@ class ContractServiceTest extends TestCase
 
         $contract = new PaymentContract(1, 'user123', $snapshot);
 
+        // Create an expired contract
         $expiredData = $contract->toArray();
         $expiredData['expiresAt'] = '2020-01-01 12:00:00';
         $expiredContract = PaymentContract::fromArray($expiredData);
 
-        $this->repository->save($expiredContract);
+        $this->repository->expects($this->once())
+            ->method('findExpired')
+            ->willReturn([$expiredContract]);
+
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function (PaymentContract $c) {
+                return $c->getState()->isExpired();
+            }));
 
         $count = $this->service->cleanupExpiredContracts();
 
         $this->assertEquals(1, $count);
-
-        $found = $this->repository->findById($expiredContract->getId());
-        $this->assertTrue($found->getState()->equals($found->getState()::expired()));
     }
 }

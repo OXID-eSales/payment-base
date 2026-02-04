@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
  *
  * @since 1.0.0
  */
-final class OrderPaymentStateService implements OrderPaymentStateServiceInterface
+class OrderPaymentStateService implements OrderPaymentStateServiceInterface
 {
     public function __construct(
         private readonly Connection $connection,

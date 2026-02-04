@@ -9,21 +9,22 @@ use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractTransitionedT
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractReadyToCommitEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class PaymentAuthorizationHandlerTest extends TestCase
 {
-    private ContractRepository $repository;
+    private ContractRepositoryInterface&MockObject $repository;
     private EventDispatcher $dispatcher;
     private PaymentAuthorizationHandler $handler;
 
     protected function setUp(): void
     {
-        $this->repository = new ContractRepository();
+        $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->dispatcher = new EventDispatcher();
         $this->handler = new PaymentAuthorizationHandler(
             $this->repository,
@@ -54,7 +55,10 @@ class PaymentAuthorizationHandlerTest extends TestCase
     public function testFulfillsPaymentAuthorizedCondition(): void
     {
         $contract = $this->createTestContract();
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($contract);
 
         $context = new EventContext([
             'authorizationId' => 'auth_123',
@@ -69,16 +73,16 @@ class PaymentAuthorizationHandlerTest extends TestCase
 
         $this->handler->handle($event);
 
-        $updated = $this->repository->findById($contract->getId());
-        $conditions = $updated->getConditions();
-
+        $conditions = $contract->getConditions();
         $this->assertTrue($conditions[0]->isFulfilled());
     }
 
     public function testSetsProviderOrderId(): void
     {
         $contract = $this->createTestContract();
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save');
 
         $context = new EventContext([
             'authorizationId' => 'auth_123',
@@ -94,9 +98,7 @@ class PaymentAuthorizationHandlerTest extends TestCase
 
         $this->handler->handle($event);
 
-        $updated = $this->repository->findById($contract->getId());
-
-        $this->assertEquals('pi_456', $updated->getProviderOrderId());
+        $this->assertEquals('pi_456', $contract->getProviderOrderId());
     }
 
     public function testEmitsReadyToCommitWhenAllFulfilled(): void
@@ -111,7 +113,9 @@ class PaymentAuthorizationHandlerTest extends TestCase
         );
 
         $contract = $this->createTestContract();
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save');
 
         $context = new EventContext([
             'authorizationId' => 'auth_123',
@@ -156,7 +160,9 @@ class PaymentAuthorizationHandlerTest extends TestCase
         $contract->addCondition(new ContractCondition(ContractCondition::TYPE_FRAUD_CHECK));
         $contract->transitionToNotFinished('order_123');
         $contract->transitionToPending();
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save');
 
         $context = new EventContext([
             'authorizationId' => 'auth_123',

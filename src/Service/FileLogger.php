@@ -15,7 +15,7 @@ namespace OxidEsales\PaymentComponent\Service;
  * Writes log entries to a specified file with timestamps.
  * Used for reconciliation logs, webhook logs, etc.
  */
-final class FileLogger implements FileLoggerInterface
+class FileLogger implements FileLoggerInterface
 {
     public function __construct(
         private readonly string $logFilePath,

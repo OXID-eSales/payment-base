@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentComponent\Webhook;
  *
  * @since Sprint 13
  */
-final readonly class WebhookResult
+readonly class WebhookResult
 {
     public function __construct(
         public bool $success,

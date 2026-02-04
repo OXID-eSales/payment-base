@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentComponent\Webhook;
  *
  * @since Sprint 13
  */
-final readonly class WebhookRequest
+readonly class WebhookRequest
 {
     public function __construct(
         public string $payload,

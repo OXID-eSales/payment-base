@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  *
  * @since 1.0.0
  */
-final class ContractFulfillmentService implements ContractFulfillmentServiceInterface
+class ContractFulfillmentService implements ContractFulfillmentServiceInterface
 {
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,

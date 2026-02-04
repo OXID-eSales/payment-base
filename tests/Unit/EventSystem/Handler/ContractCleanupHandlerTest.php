@@ -8,20 +8,21 @@ use OxidEsales\PaymentComponent\EventSystem\Handler\ContractCleanupHandler;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCancelledEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractExpiredEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class ContractCleanupHandlerTest extends TestCase
 {
-    private ContractRepository $repository;
+    private ContractRepositoryInterface&MockObject $repository;
     private ContractCleanupHandler $handler;
 
     protected function setUp(): void
     {
-        $this->repository = new ContractRepository();
+        $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->handler = new ContractCleanupHandler($this->repository);
     }
 
@@ -51,39 +52,40 @@ class ContractCleanupHandlerTest extends TestCase
     {
         $contract = $this->createPendingContract();
         $contract->cancel('User requested cancellation');
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($contract);
 
         $context = new EventContext(['userId' => 'user123']);
         $event = new ContractCancelledEvent($contract, $context, 'User requested cancellation');
 
         $this->handler->handle($event);
 
-        $updated = $this->repository->findById($contract->getId());
-
-        $this->assertTrue($updated->getState()->isCancelled());
+        $this->assertTrue($contract->getState()->isCancelled());
     }
 
     public function testExpiresContractOnExpiredEvent(): void
     {
         $contract = $this->createPendingContract();
         $contract->expire();
-        $this->repository->save($contract);
+
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($contract);
 
         $context = new EventContext(['system' => 'cron']);
         $event = new ContractExpiredEvent($contract, $context, time());
 
         $this->handler->handle($event);
 
-        $updated = $this->repository->findById($contract->getId());
-
-        $this->assertTrue($updated->getState()->isExpired());
+        $this->assertTrue($contract->getState()->isExpired());
     }
 
     public function testReleasesReservationsOnCleanup(): void
     {
         $contract = $this->createPendingContract();
         $contract->cancel('Payment declined');
-        $this->repository->save($contract);
 
         $reservationsReleased = false;
 
@@ -111,16 +113,17 @@ class ContractCleanupHandlerTest extends TestCase
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, []);
         $contract->commitToOrder('order_123');
         $contract->fulfill();
-        $this->repository->save($contract);
+
+        // Repository save should not be called for fulfilled contracts
+        $this->repository->expects($this->never())
+            ->method('save');
 
         $context = new EventContext(['test' => 'data']);
         $event = new ContractCancelledEvent($contract, $context, 'Attempt to cancel');
 
         $this->handler->handle($event);
 
-        $updated = $this->repository->findById($contract->getId());
-
-        $this->assertTrue($updated->getState()->isFulfilled());
-        $this->assertFalse($updated->getState()->isCancelled());
+        $this->assertTrue($contract->getState()->isFulfilled());
+        $this->assertFalse($contract->getState()->isCancelled());
     }
 }

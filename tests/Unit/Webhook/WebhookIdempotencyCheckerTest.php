@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepository;
+use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyChecker;
+use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,18 +15,23 @@ use PHPUnit\Framework\TestCase;
  */
 final class WebhookIdempotencyCheckerTest extends TestCase
 {
-    private WebhookLogRepository $logRepository;
+    private WebhookLogRepositoryInterface&MockObject $logRepository;
     private WebhookIdempotencyChecker $checker;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->logRepository = new WebhookLogRepository();
+        $this->logRepository = $this->createMock(WebhookLogRepositoryInterface::class);
         $this->checker = new WebhookIdempotencyChecker($this->logRepository);
     }
 
     public function testAllowsFirstProcessing(): void
     {
+        $this->logRepository->expects($this->once())
+            ->method('existsByEventId')
+            ->with('evt_new_123')
+            ->willReturn(false);
+
         $isProcessed = $this->checker->isProcessed('evt_new_123');
 
         $this->assertFalse($isProcessed);
@@ -34,7 +41,11 @@ final class WebhookIdempotencyCheckerTest extends TestCase
     {
         $eventId = 'evt_duplicate_123';
 
-        $this->checker->markAsProcessed($eventId);
+        $this->logRepository->expects($this->once())
+            ->method('existsByEventId')
+            ->with($eventId)
+            ->willReturn(true);
+
         $isProcessed = $this->checker->isProcessed($eventId);
 
         $this->assertTrue($isProcessed);
@@ -44,16 +55,22 @@ final class WebhookIdempotencyCheckerTest extends TestCase
     {
         $eventId = 'evt_mark_processed';
 
-        $this->assertFalse($this->checker->isProcessed($eventId));
+        $this->logRepository->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function (WebhookLog $log) use ($eventId) {
+                return $log->getEventId() === $eventId;
+            }));
 
         $this->checker->markAsProcessed($eventId);
-
-        $this->assertTrue($this->checker->isProcessed($eventId));
     }
 
     public function testDifferentWebhooksAreIndependent(): void
     {
-        $this->checker->markAsProcessed('evt_1');
+        $this->logRepository->expects($this->exactly(2))
+            ->method('existsByEventId')
+            ->willReturnCallback(function (string $eventId) {
+                return $eventId === 'evt_1';
+            });
 
         $isProcessed1 = $this->checker->isProcessed('evt_1');
         $isProcessed2 = $this->checker->isProcessed('evt_2');
@@ -66,21 +83,10 @@ final class WebhookIdempotencyCheckerTest extends TestCase
     {
         $eventId = 'evt_persistent';
 
-        $this->checker->markAsProcessed($eventId);
-
-        $exists = $this->logRepository->existsByEventId($eventId);
-        $this->assertTrue($exists);
-    }
-
-    public function testDetectsProcessedEventFromRepository(): void
-    {
-        $eventId = 'evt_from_db';
+        $this->logRepository->expects($this->once())
+            ->method('save')
+            ->with($this->isInstanceOf(WebhookLog::class));
 
         $this->checker->markAsProcessed($eventId);
-
-        $newChecker = new WebhookIdempotencyChecker($this->logRepository);
-        $isProcessed = $newChecker->isProcessed($eventId);
-
-        $this->assertTrue($isProcessed);
     }
 }

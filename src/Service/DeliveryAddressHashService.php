@@ -36,7 +36,7 @@ namespace OxidEsales\PaymentComponent\Service;
  *
  * @since 2.0.0
  */
-final class DeliveryAddressHashService implements DeliveryAddressHashServiceInterface
+class DeliveryAddressHashService implements DeliveryAddressHashServiceInterface
 {
     private const REQUEST_KEY = 'sDeliveryAddressMD5';
 

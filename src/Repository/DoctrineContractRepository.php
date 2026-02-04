@@ -127,6 +127,23 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         }
     }
 
+    public function findByOrderId(string $orderId): ?PaymentContractInterface
+    {
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';
+
+        try {
+            $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
+
+            if ($data === false) {
+                return null;
+            }
+
+            return $this->hydrateContract($data);
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
     /**
      * @return array<int, PaymentContractInterface>
      */

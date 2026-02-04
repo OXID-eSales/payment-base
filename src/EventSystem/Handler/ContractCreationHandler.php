@@ -52,7 +52,7 @@ abstract class ContractCreationHandler implements HandlerInterface
      * 6. Set contract on context
      * 7. Dispatch provider-specific event
      */
-    final public function handle(object $event): void
+    public function handle(object $event): void
     {
         // Check if event is the right type for this handler
         if (!is_a($event, static::getHandledEventClass(), false)) {

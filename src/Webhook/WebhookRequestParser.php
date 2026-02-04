@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentComponent\Webhook;
  *
  * @since Sprint 13
  */
-final class WebhookRequestParser implements WebhookRequestParserInterface
+class WebhookRequestParser implements WebhookRequestParserInterface
 {
     private const SIGNATURE_HEADER = 'Stripe-Signature';
 

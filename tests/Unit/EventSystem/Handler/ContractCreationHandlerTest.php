@@ -9,21 +9,23 @@ use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\Repository\ContractRepository;
+use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\ContractService;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class ContractCreationHandlerTest extends TestCase
 {
-    private ContractRepository $repository;
+    private ContractRepositoryInterface&MockObject $repository;
     private EventDispatcher $dispatcher;
     private ContractService $service;
     private GenericContractCreationHandler $handler;
 
     protected function setUp(): void
     {
-        $this->repository = new ContractRepository();
+        $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->dispatcher = new EventDispatcher();
         $this->service = new ContractService($this->repository);
         $this->handler = new GenericContractCreationHandler(
@@ -50,6 +52,10 @@ class ContractCreationHandlerTest extends TestCase
             'basket' => $basket,
         ]);
 
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->with($this->isInstanceOf(PaymentContract::class));
+
         $event = new PaymentInitiatedEvent(
             $context,
             'stripe',
@@ -75,6 +81,9 @@ class ContractCreationHandlerTest extends TestCase
             'userId' => 'user123',
             'basket' => $basket,
         ]);
+
+        $this->repository->expects($this->once())
+            ->method('save');
 
         $event = new PaymentInitiatedEvent(
             $context,
@@ -108,6 +117,9 @@ class ContractCreationHandlerTest extends TestCase
             ],
         ]);
 
+        $this->repository->expects($this->once())
+            ->method('save');
+
         $event = new PaymentInitiatedEvent(
             $context,
             'stripe',
@@ -136,6 +148,13 @@ class ContractCreationHandlerTest extends TestCase
             'basket' => $basket,
         ]);
 
+        $savedContract = null;
+        $this->repository->expects($this->once())
+            ->method('save')
+            ->willReturnCallback(function (PaymentContract $contract) use (&$savedContract) {
+                $savedContract = $contract;
+            });
+
         $event = new PaymentInitiatedEvent(
             $context,
             'stripe',
@@ -148,11 +167,8 @@ class ContractCreationHandlerTest extends TestCase
         $this->handler->handle($event);
 
         $contract = $event->getContext()->getContract();
-        $this->assertNotNull($contract);
-        $found = $this->repository->findById($contract->getId());
-
-        $this->assertNotNull($found);
-        $this->assertEquals($contract->getId(), $found->getId());
+        $this->assertNotNull($savedContract);
+        $this->assertEquals($contract->getId(), $savedContract->getId());
     }
 
     public function testHandleEmitsContractCreatedEvent(): void

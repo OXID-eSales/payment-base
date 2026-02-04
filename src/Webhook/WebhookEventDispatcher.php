@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
  *
  * @since Sprint 13
  */
-final class WebhookEventDispatcher implements WebhookEventDispatcherInterface
+class WebhookEventDispatcher implements WebhookEventDispatcherInterface
 {
     /** @var array<WebhookEventHandlerInterface> */
     private array $handlers = [];

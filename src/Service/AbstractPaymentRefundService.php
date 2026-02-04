@@ -52,7 +52,7 @@ abstract class AbstractPaymentRefundService
      * @return array{response: RefundResponse, totalRefunded: float, availableForRefund: float}
      * @throws RefundFailedException If refund fails
      */
-    final public function refund(string $contractId, ?float $amount = null, string $reason = ''): array
+    public function refund(string $contractId, ?float $amount = null, string $reason = ''): array
     {
         $contract = $this->loadContract($contractId);
         $this->validateStateForRefund($contract);
