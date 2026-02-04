@@ -12,7 +12,7 @@ namespace OxidEsales\PaymentComponent\Tests\Integration\Repository;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Repository\TransactionRepository;
+use OxidEsales\PaymentComponent\Repository\DoctrineTransactionRepository;
 use OxidEsales\PaymentComponent\Transaction\Transaction;
 
 /**
@@ -20,7 +20,7 @@ use OxidEsales\PaymentComponent\Transaction\Transaction;
  */
 class DoctrineTransactionRepositoryTest extends IntegrationTestCase
 {
-    private TransactionRepository $repository;
+    private DoctrineTransactionRepository $repository;
     private Connection $connection;
 
     public function setUp(): void
