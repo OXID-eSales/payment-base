@@ -17,7 +17,6 @@ use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Contract\ContractCondition;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
-use OxidEsales\PaymentComponent\Repository\TransactionRepository;
 use OxidEsales\PaymentComponent\Transaction\Transaction;
 
 /**
