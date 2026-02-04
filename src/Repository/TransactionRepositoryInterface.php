@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Repository;
 
-use OxidEsales\PaymentComponent\Transaction\Transaction;
+use OxidEsales\PaymentComponent\Contract\Transaction;
 
 /**
  * Repository interface for Transaction persistence

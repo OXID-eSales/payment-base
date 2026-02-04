@@ -12,8 +12,8 @@ namespace OxidEsales\PaymentComponent\Tests\Integration\Repository;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
+use OxidEsales\PaymentComponent\Contract\Transaction;
 use OxidEsales\PaymentComponent\Repository\DoctrineTransactionRepository;
-use OxidEsales\PaymentComponent\Transaction\Transaction;
 
 /**
  * @group database
@@ -30,7 +30,7 @@ class DoctrineTransactionRepositoryTest extends IntegrationTestCase
         $container = ContainerFactory::getInstance()->getContainer();
         $connectionProvider = $container->get(\OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
-        $this->repository = new TransactionRepository($this->connection);
+        $this->repository = new DoctrineTransactionRepository($this->connection);
 
         $this->cleanupTestData();
         $this->createTestContracts();
