@@ -47,6 +47,11 @@ interface PaymentContractInterface extends ModelInterface
     public function getConditions(): array;
 
     /**
+     * Cancel the contract.
+     */
+    public function cancel(string $reason = ''): void;
+
+    /**
      * Expire the contract (timeout).
      */
     public function expire(): void;
