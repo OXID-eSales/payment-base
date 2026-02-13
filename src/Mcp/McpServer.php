@@ -32,16 +32,18 @@ class McpServer implements McpServerInterface
         }
     }
 
-    public function handleJsonRpc(string $rawJsonRpc, AgentContext $agentContext): array
+    public function handleJsonRpc(string $rawJsonRpc, AgentContextInterface $agentContext): array
     {
         $request = $this->parseRequest($rawJsonRpc);
         if ($request === null) {
             return $this->errorResponse(null, -32700, 'Parse error');
         }
 
-        $method = $request['method'] ?? '';
-        $id = $request['id'] ?? null;
-        $params = $request['params'] ?? [];
+        $method = is_string($request['method'] ?? null) ? $request['method'] : '';
+        $rawId = $request['id'] ?? null;
+        $id = is_int($rawId) || is_string($rawId) ? $rawId : null;
+        /** @var array<string, mixed> $params */
+        $params = is_array($request['params'] ?? null) ? $request['params'] : [];
 
         return match ($method) {
             'initialize' => $this->handleInitialize($id, $params),
@@ -58,7 +60,11 @@ class McpServer implements McpServerInterface
     {
         try {
             $decoded = json_decode($rawJsonRpc, true, 512, JSON_THROW_ON_ERROR);
-            return is_array($decoded) ? $decoded : null;
+            if (!is_array($decoded)) {
+                return null;
+            }
+            /** @var array<string, mixed> $decoded */
+            return $decoded;
         } catch (\JsonException) {
             return null;
         }
@@ -106,10 +112,11 @@ class McpServer implements McpServerInterface
     private function handleToolsCall(
         int|string|null $id,
         array $params,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array {
-        $toolName = $params['name'] ?? '';
-        $arguments = $params['arguments'] ?? [];
+        $toolName = is_string($params['name'] ?? null) ? $params['name'] : '';
+        /** @var array<string, mixed> $arguments */
+        $arguments = is_array($params['arguments'] ?? null) ? $params['arguments'] : [];
 
         if (!isset($this->tools[$toolName])) {
             return $this->errorResponse($id, -32602, "Unknown tool: {$toolName}");
@@ -122,8 +129,8 @@ class McpServer implements McpServerInterface
                     ['type' => 'text', 'text' => json_encode($result, JSON_THROW_ON_ERROR)],
                 ],
             ]);
-        } catch (\Throwable $e) {
-            return $this->errorResponse($id, -32000, $e->getMessage());
+        } catch (\Throwable) {
+            return $this->errorResponse($id, -32000, 'Tool execution failed');
         }
     }
 

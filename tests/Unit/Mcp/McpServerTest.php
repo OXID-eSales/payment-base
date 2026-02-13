@@ -170,6 +170,6 @@ class McpServerTest extends TestCase
         $response = $server->handleJsonRpc($request, $this->agentContext);
 
         $this->assertSame(-32000, $response['error']['code']);
-        $this->assertSame('Tool crashed', $response['error']['message']);
+        $this->assertSame('Tool execution failed', $response['error']['message']);
     }
 }

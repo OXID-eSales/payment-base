@@ -114,7 +114,7 @@ class TestableCheckoutService extends AbstractAcpCheckoutService
 {
     public array $lastPaymentData = [];
 
-    public function createCheckout(array $arguments, AgentContext $agentContext): array
+    public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
     {
         return ['id' => 'test_contract'];
     }
@@ -122,7 +122,7 @@ class TestableCheckoutService extends AbstractAcpCheckoutService
     protected function completePayment(
         PaymentContractInterface $contract,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array {
         $this->lastPaymentData = $paymentData;
         return $this->formatter->formatOrder($contract, 'https://example.com/order/1');

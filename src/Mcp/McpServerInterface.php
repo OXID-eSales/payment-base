@@ -12,8 +12,8 @@ interface McpServerInterface
      * Supported methods: initialize, tools/list, tools/call
      *
      * @param string $rawJsonRpc Raw JSON-RPC request body
-     * @param AgentContext $agentContext Authenticated agent
+     * @param AgentContextInterface $agentContext Authenticated agent
      * @return array<string, mixed> JSON-RPC 2.0 response
      */
-    public function handleJsonRpc(string $rawJsonRpc, AgentContext $agentContext): array;
+    public function handleJsonRpc(string $rawJsonRpc, AgentContextInterface $agentContext): array;
 }

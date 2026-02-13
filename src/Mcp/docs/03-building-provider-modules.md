@@ -38,12 +38,12 @@ Extend `AbstractAcpCheckoutService` and implement:
 namespace MyVendor\MyProvider\Mcp\Service;
 
 use OxidEsales\PaymentComponent\Mcp\Acp\AbstractAcpCheckoutService;
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
 use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 
 class MyProviderCheckoutService extends AbstractAcpCheckoutService
 {
-    public function createCheckout(array $arguments, AgentContext $agentContext): array
+    public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
     {
         $items = $arguments['items'] ?? [];
         $buyer = $arguments['buyer'] ?? [];
@@ -59,7 +59,7 @@ class MyProviderCheckoutService extends AbstractAcpCheckoutService
     protected function completePayment(
         PaymentContractInterface $contract,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array {
         $token = $paymentData['token'];
 

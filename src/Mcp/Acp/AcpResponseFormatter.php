@@ -93,10 +93,10 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
                     'id' => $item['articleId'] ?? $item['id'] ?? '',
                     'quantity' => (int) ($item['quantity'] ?? 1),
                 ],
-                'base_amount' => $this->toMinorUnits($item['grossPrice'] ?? $item['price'] ?? 0.0),
-                'subtotal' => $this->toMinorUnits($item['netPrice'] ?? $item['price'] ?? 0.0),
-                'tax' => $this->toMinorUnits($item['vatValue'] ?? 0.0),
-                'total' => $this->toMinorUnits($item['grossPrice'] ?? $item['price'] ?? 0.0),
+                'base_amount' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
+                'subtotal' => $this->toMinorUnits((float) ($item['netPrice'] ?? $item['price'] ?? 0.0)),
+                'tax' => $this->toMinorUnits((float) ($item['vatValue'] ?? 0.0)),
+                'total' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
             ];
         }
         return $lineItems;

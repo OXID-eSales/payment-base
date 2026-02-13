@@ -6,7 +6,7 @@ namespace OxidEsales\PaymentComponent\Mcp\Acp;
 
 use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
 use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\ContractServiceInterface;
 
@@ -30,7 +30,7 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         return $this->formatter->formatCheckout($contract);
     }
 
-    public function updateCheckout(string $checkoutId, array $data, AgentContext $agentContext): array
+    public function updateCheckout(string $checkoutId, array $data, AgentContextInterface $agentContext): array
     {
         $contract = $this->contractRepository->findById($checkoutId);
         if ($contract === null) {
@@ -82,19 +82,19 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
      *
      * @param PaymentContractInterface $contract Validated, non-terminal contract
      * @param array<string, mixed> $paymentData Token, provider, billing address
-     * @param AgentContext $agentContext Authenticated agent
+     * @param AgentContextInterface $agentContext Authenticated agent
      * @return array<string, mixed> ACP order response or error
      */
     abstract protected function completePayment(
         PaymentContractInterface $contract,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array;
 
     public function completeCheckout(
         string $checkoutId,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array {
         $contract = $this->contractRepository->findById($checkoutId);
         if ($contract === null) {

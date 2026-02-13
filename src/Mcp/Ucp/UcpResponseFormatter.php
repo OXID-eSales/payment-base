@@ -61,9 +61,9 @@ class UcpResponseFormatter implements UcpResponseFormatterInterface
                 'id' => 'li_' . ($index + 1),
                 'product_id' => $item['articleId'] ?? $item['id'] ?? '',
                 'quantity' => (int) ($item['quantity'] ?? 1),
-                'unit_price' => $this->toMinorUnits($item['grossPrice'] ?? $item['price'] ?? 0.0),
+                'unit_price' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
                 'total' => $this->toMinorUnits(
-                    ($item['grossPrice'] ?? $item['price'] ?? 0.0) * (int) ($item['quantity'] ?? 1)
+                    (float) ($item['grossPrice'] ?? $item['price'] ?? 0.0) * (int) ($item['quantity'] ?? 1)
                 ),
             ];
         }

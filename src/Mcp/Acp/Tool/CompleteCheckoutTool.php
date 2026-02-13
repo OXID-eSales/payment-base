@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Mcp\Acp\Tool;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
 use OxidEsales\PaymentComponent\Mcp\Acp\AcpCheckoutServiceInterface;
 use OxidEsales\PaymentComponent\Mcp\McpToolInterface;
 
@@ -66,11 +66,14 @@ class CompleteCheckoutTool implements McpToolInterface
         ];
     }
 
-    public function execute(array $arguments, AgentContext $agentContext): array
+    public function execute(array $arguments, AgentContextInterface $agentContext): array
     {
+        /** @var array<string, mixed> $paymentData */
+        $paymentData = is_array($arguments['payment_data'] ?? null) ? $arguments['payment_data'] : [];
+
         return $this->checkoutService->completeCheckout(
             $arguments['checkout_id'],
-            $arguments['payment_data'],
+            $paymentData,
             $agentContext
         );
     }

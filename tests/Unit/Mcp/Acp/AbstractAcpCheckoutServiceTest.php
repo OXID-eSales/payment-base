@@ -10,6 +10,7 @@ use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentComponent\Mcp\Acp\AbstractAcpCheckoutService;
 use OxidEsales\PaymentComponent\Mcp\Acp\AcpResponseFormatterInterface;
 use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentComponent\Service\ContractServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -40,7 +41,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
             $this->eventDispatcher,
             $this->formatter
         ) extends AbstractAcpCheckoutService {
-            public function createCheckout(array $arguments, AgentContext $agentContext): array
+            public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
             {
                 return ['stub' => true];
             }
@@ -48,7 +49,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
             protected function completePayment(
                 PaymentContractInterface $contract,
                 array $paymentData,
-                AgentContext $agentContext
+                AgentContextInterface $agentContext
             ): array {
                 return ['order' => 'created'];
             }

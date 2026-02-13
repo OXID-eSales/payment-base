@@ -7,7 +7,7 @@ namespace OxidEsales\PaymentComponent\Mcp;
 /**
  * Immutable value object representing an authenticated AI agent.
  */
-readonly class AgentContext
+readonly class AgentContext implements AgentContextInterface
 {
     /**
      * @param array<string, mixed> $metadata

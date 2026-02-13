@@ -20,6 +20,8 @@ class ContractCondition
     public const STATUS_FULFILLED = 'fulfilled';
     public const STATUS_FAILED = 'failed';
 
+    private static ?ConditionTypeRegistryInterface $registry = null;
+
     private string $type;
     private string $status;
 
@@ -104,8 +106,25 @@ class ContractCondition
         return $this->failureReason;
     }
 
+    /**
+     * Inject the registry at boot time (called from DI container).
+     * When null, falls back to hardcoded types for backward compatibility.
+     */
+    public static function setConditionTypeRegistry(?ConditionTypeRegistryInterface $registry): void
+    {
+        self::$registry = $registry;
+    }
+
     private function validateType(string $type): void
     {
+        if (self::$registry !== null) {
+            if (!self::$registry->isValid($type)) {
+                throw new InvalidArgumentException("Invalid condition type: {$type}");
+            }
+            return;
+        }
+
+        // Fallback: hardcoded types (backward compatibility when no DI container)
         $validTypes = [
             self::TYPE_PAYMENT_AUTHORIZED,
             self::TYPE_FRAUD_CHECK,
@@ -148,6 +167,22 @@ class ContractCondition
     public static function addressValidated(): self
     {
         return new self(self::TYPE_ADDRESS_VALIDATED);
+    }
+
+    /**
+     * Factory method for agent identity verified condition
+     */
+    public static function agentIdentityVerified(): self
+    {
+        return new self(Provider\AgentConditionTypeProvider::TYPE_AGENT_IDENTITY_VERIFIED);
+    }
+
+    /**
+     * Factory method for agent consent confirmed condition
+     */
+    public static function agentConsentConfirmed(): self
+    {
+        return new self(Provider\AgentConditionTypeProvider::TYPE_AGENT_CONSENT_CONFIRMED);
     }
 
     /**

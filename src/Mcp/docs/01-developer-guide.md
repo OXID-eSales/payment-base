@@ -72,7 +72,7 @@ Tools implement `McpToolInterface` and are collected via Symfony's tagged iterat
 - `getName(): string` — tool identifier
 - `getDescription(): string` — human-readable description
 - `getInputSchema(): array` — JSON Schema for arguments
-- `execute(array $arguments, AgentContext $agentContext): array` — business logic
+- `execute(array $arguments, AgentContextInterface $agentContext): array` — tool logic
 
 ## ACP Tool Reference
 
@@ -537,7 +537,7 @@ Implement `createCheckout()` and the abstract `completePayment()`:
 ```php
 class MyProviderCheckoutService extends AbstractAcpCheckoutService
 {
-    public function createCheckout(array $arguments, AgentContext $agentContext): array
+    public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
     {
         // Create contract from ACP arguments
         // Dispatch provider-specific event
@@ -547,7 +547,7 @@ class MyProviderCheckoutService extends AbstractAcpCheckoutService
     protected function completePayment(
         PaymentContractInterface $contract,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array {
         // Extract token from $paymentData['token']
         // Confirm payment with provider SDK
@@ -604,13 +604,14 @@ CreateCheckoutTool:
 
 ## Source File Index
 
-### `src/Mcp/` — 29 files
+### `src/Mcp/` — 30 files
 
 | File | Description |
 |------|-------------|
 | `McpServer.php` | JSON-RPC 2.0 router — handles `initialize`, `tools/list`, `tools/call` |
 | `McpServerInterface.php` | Interface for MCP server |
 | `McpToolInterface.php` | Interface each tool implements (`getName`, `getInputSchema`, `execute`) |
+| `AgentContextInterface.php` | Interface for authenticated agent context |
 | `AgentContext.php` | Value object carrying authenticated agent ID and token |
 | **Auth/** | |
 | `McpAuthGuard.php` | Bearer token authentication with `hash_equals()` |

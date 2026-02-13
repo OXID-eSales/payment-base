@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Mcp\Acp;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
 
 interface AcpCheckoutServiceInterface
 {
@@ -12,10 +12,10 @@ interface AcpCheckoutServiceInterface
      * Create a new checkout session from ACP request data.
      *
      * @param array<string, mixed> $arguments ACP create_checkout input
-     * @param AgentContext $agentContext Authenticated agent
+     * @param AgentContextInterface $agentContext Authenticated agent
      * @return array<string, mixed> ACP checkout response
      */
-    public function createCheckout(array $arguments, AgentContext $agentContext): array;
+    public function createCheckout(array $arguments, AgentContextInterface $agentContext): array;
 
     /**
      * Get checkout session status.
@@ -30,7 +30,7 @@ interface AcpCheckoutServiceInterface
      * @param array<string, mixed> $data Update fields
      * @return array<string, mixed> ACP checkout response or error
      */
-    public function updateCheckout(string $checkoutId, array $data, AgentContext $agentContext): array;
+    public function updateCheckout(string $checkoutId, array $data, AgentContextInterface $agentContext): array;
 
     /**
      * Complete checkout with delegated payment token.
@@ -41,7 +41,7 @@ interface AcpCheckoutServiceInterface
     public function completeCheckout(
         string $checkoutId,
         array $paymentData,
-        AgentContext $agentContext
+        AgentContextInterface $agentContext
     ): array;
 
     /**
