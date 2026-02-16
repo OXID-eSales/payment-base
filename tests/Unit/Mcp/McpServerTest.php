@@ -172,4 +172,57 @@ class McpServerTest extends TestCase
         $this->assertSame(-32000, $response['error']['code']);
         $this->assertSame('Tool execution failed', $response['error']['message']);
     }
+
+    /**
+     * Sprint 56: Exception details exposed in error data field for debugging.
+     * The message stays generic ("Tool execution failed") but data contains
+     * exception_class, exception_message, and tool_name.
+     */
+    public function testToolExceptionIncludesDetailsInDataField(): void
+    {
+        $mockTool = $this->createMock(McpToolInterface::class);
+        $mockTool->method('getName')->willReturn('failing_tool');
+        $mockTool->method('execute')
+            ->willThrowException(new \RuntimeException("Product with ID 'abc' not found"));
+
+        $server = new McpServer([$mockTool], 'test-server', '1.0.0');
+
+        $request = json_encode([
+            'jsonrpc' => '2.0',
+            'id' => 7,
+            'method' => 'tools/call',
+            'params' => ['name' => 'failing_tool', 'arguments' => ['id' => 'abc']],
+        ]);
+
+        $response = $server->handleJsonRpc($request, $this->agentContext);
+
+        $this->assertSame(-32000, $response['error']['code']);
+        $this->assertSame('Tool execution failed', $response['error']['message']);
+        $this->assertArrayHasKey('data', $response['error']);
+        $this->assertSame('RuntimeException', $response['error']['data']['exception_class']);
+        $this->assertSame("Product with ID 'abc' not found", $response['error']['data']['exception_message']);
+        $this->assertSame('failing_tool', $response['error']['data']['tool_name']);
+    }
+
+    /**
+     * Sprint 56: Error responses without exceptions should NOT have a data field.
+     * This verifies backwards compatibility — existing errors like unknown tool
+     * or unknown method don't include an empty data array.
+     */
+    public function testErrorResponseWithoutExceptionHasNoDataField(): void
+    {
+        $server = new McpServer([], 'test-server', '1.0.0');
+
+        $request = json_encode([
+            'jsonrpc' => '2.0',
+            'id' => 8,
+            'method' => 'tools/call',
+            'params' => ['name' => 'nonexistent', 'arguments' => []],
+        ]);
+
+        $response = $server->handleJsonRpc($request, $this->agentContext);
+
+        $this->assertSame(-32602, $response['error']['code']);
+        $this->assertArrayNotHasKey('data', $response['error']);
+    }
 }

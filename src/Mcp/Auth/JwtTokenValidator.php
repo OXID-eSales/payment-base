@@ -9,12 +9,10 @@ class JwtTokenValidator implements TokenValidatorInterface
     /**
      * @param string $issuer Expected JWT issuer (iss claim)
      * @param string $audience Expected JWT audience (aud claim)
-     * @param string $jwksUri URI to fetch JSON Web Key Set
      */
     public function __construct(
         private readonly string $issuer,
-        private readonly string $audience,
-        private readonly string $jwksUri
+        private readonly string $audience
     ) {
     }
 

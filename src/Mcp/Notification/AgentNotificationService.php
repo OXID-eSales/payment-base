@@ -17,7 +17,7 @@ class AgentNotificationService implements AgentNotificationServiceInterface
     ) {
     }
 
-    public function notify(string $contractId, AgentNotificationPayload $payload): AgentNotificationResult
+    public function notify(string $contractId, AgentNotificationPayloadInterface $payload): AgentNotificationResult
     {
         $callbackUrl = $this->callbackRegistry->getCallbackUrl($contractId);
         if ($callbackUrl === null) {

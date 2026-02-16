@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentComponent\Mcp\Notification;
 
-readonly class AgentNotificationPayload
+readonly class AgentNotificationPayload implements AgentNotificationPayloadInterface
 {
     /**
      * @param array<string, mixed> $metadata

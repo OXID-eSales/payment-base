@@ -9,5 +9,5 @@ interface AgentNotificationServiceInterface
     /**
      * Send a notification to the agent associated with a contract.
      */
-    public function notify(string $contractId, AgentNotificationPayload $payload): AgentNotificationResult;
+    public function notify(string $contractId, AgentNotificationPayloadInterface $payload): AgentNotificationResult;
 }

@@ -28,7 +28,6 @@ class ApcuRateLimiter implements RateLimiterInterface
 
         $key = $this->keyPrefix . $identifier;
 
-        /** @var int|false $count */
         $success = false;
         $count = apcu_inc($key, 1, $success);
 

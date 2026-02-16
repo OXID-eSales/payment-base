@@ -129,8 +129,12 @@ class McpServer implements McpServerInterface
                     ['type' => 'text', 'text' => json_encode($result, JSON_THROW_ON_ERROR)],
                 ],
             ]);
-        } catch (\Throwable) {
-            return $this->errorResponse($id, -32000, 'Tool execution failed');
+        } catch (\Throwable $e) {
+            return $this->errorResponse($id, -32000, 'Tool execution failed', [
+                'exception_class' => get_class($e),
+                'exception_message' => $e->getMessage(),
+                'tool_name' => $toolName,
+            ]);
         }
     }
 
@@ -148,17 +152,24 @@ class McpServer implements McpServerInterface
     }
 
     /**
+     * @param array<string, mixed> $data Optional error data (JSON-RPC 2.0 spec compliant)
      * @return array<string, mixed>
      */
-    private function errorResponse(int|string|null $id, int $code, string $message): array
+    private function errorResponse(int|string|null $id, int $code, string $message, array $data = []): array
     {
+        $error = [
+            'code' => $code,
+            'message' => $message,
+        ];
+
+        if ($data !== []) {
+            $error['data'] = $data;
+        }
+
         return [
             'jsonrpc' => '2.0',
             'id' => $id,
-            'error' => [
-                'code' => $code,
-                'message' => $message,
-            ],
+            'error' => $error,
         ];
     }
 }
