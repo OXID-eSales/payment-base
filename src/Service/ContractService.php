@@ -117,10 +117,20 @@ class ContractService implements ContractServiceInterface
             }
 
             $unitPrice = 0.0;
+            $netPrice = 0.0;
+            $vatValue = 0.0;
             if (method_exists($basketItem, 'getUnitPrice')) {
                 $priceObj = $basketItem->getUnitPrice();
-                if (is_object($priceObj) && method_exists($priceObj, 'getBruttoPrice')) {
-                    $unitPrice = (float) $priceObj->getBruttoPrice();
+                if (is_object($priceObj)) {
+                    if (method_exists($priceObj, 'getBruttoPrice')) {
+                        $unitPrice = (float) $priceObj->getBruttoPrice();
+                    }
+                    if (method_exists($priceObj, 'getNettoPrice')) {
+                        $netPrice = (float) $priceObj->getNettoPrice();
+                    }
+                    if (method_exists($priceObj, 'getVatValue')) {
+                        $vatValue = (float) $priceObj->getVatValue();
+                    }
                 }
             }
 
@@ -141,6 +151,8 @@ class ContractService implements ContractServiceInterface
                 'quantity' => $amount,
                 'unitPrice' => $unitPrice,
                 'totalPrice' => $unitPrice * $amount,
+                'netPrice' => $netPrice * $amount,
+                'vatValue' => $vatValue * $amount,
             ];
         }
 

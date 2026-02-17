@@ -21,7 +21,7 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
     {
         $snapshot = $contract->getBasketSnapshot();
 
-        return [
+        $response = [
             'id' => $contract->getId(),
             'status' => $this->mapContractStateToAcpStatus($contract->getStateValue()),
             'currency' => strtolower($snapshot->getCurrency()),
@@ -29,6 +29,13 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
             'totals' => $this->formatTotals($snapshot),
             'payment_providers' => $this->paymentProviders,
         ];
+
+        $checkoutUrl = $contract->getProviderRedirectUrl();
+        if ($checkoutUrl !== null && $checkoutUrl !== '') {
+            $response['checkout_url'] = $checkoutUrl;
+        }
+
+        return $response;
     }
 
     public function formatOrder(PaymentContractInterface $contract, string $orderPermalink): array
@@ -87,16 +94,27 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
     {
         $lineItems = [];
         foreach ($snapshot->getItems() as $index => $item) {
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $grossPrice = (float) ($item['totalPrice'] ?? $item['grossPrice'] ?? 0.0);
+            $netPrice = (float) ($item['netPrice'] ?? $grossPrice);
+            $vatValue = (float) ($item['vatValue'] ?? 0.0);
+
+            if ($grossPrice === 0.0 && isset($item['unitPrice'])) {
+                $grossPrice = (float) $item['unitPrice'] * $quantity;
+                $netPrice = $grossPrice;
+            }
+
             $lineItems[] = [
                 'id' => 'li_' . ($index + 1),
                 'item' => [
-                    'id' => $item['articleId'] ?? $item['id'] ?? '',
-                    'quantity' => (int) ($item['quantity'] ?? 1),
+                    'id' => $item['productId'] ?? $item['articleId'] ?? $item['id'] ?? '',
+                    'title' => $item['title'] ?? '',
+                    'quantity' => $quantity,
                 ],
-                'base_amount' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
-                'subtotal' => $this->toMinorUnits((float) ($item['netPrice'] ?? $item['price'] ?? 0.0)),
-                'tax' => $this->toMinorUnits((float) ($item['vatValue'] ?? 0.0)),
-                'total' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
+                'base_amount' => $this->toMinorUnits($grossPrice),
+                'subtotal' => $this->toMinorUnits($netPrice),
+                'tax' => $this->toMinorUnits($vatValue),
+                'total' => $this->toMinorUnits($grossPrice),
             ];
         }
         return $lineItems;

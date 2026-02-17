@@ -29,6 +29,8 @@ interface PaymentContractInterface extends ModelInterface
 
     public function getProviderOrderId(): ?string;
 
+    public function getProviderRedirectUrl(): ?string;
+
     public function getCreatedAt(): DateTimeInterface;
 
     public function getUpdatedAt(): DateTimeInterface;
