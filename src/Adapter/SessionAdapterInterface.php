@@ -53,4 +53,18 @@ interface SessionAdapterInterface
      * @return mixed Variable value or null if not set
      */
     public function getVariable(string $name): mixed;
+
+    /**
+     * Set the session basket.
+     *
+     * @param object $basket Basket object
+     */
+    public function setBasket(object $basket): void;
+
+    /**
+     * Set the session user.
+     *
+     * @param object $user User object
+     */
+    public function setUser(object $user): void;
 }
