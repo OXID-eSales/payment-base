@@ -148,7 +148,7 @@ class DoctrineTransactionRepository implements TransactionRepositoryInterface
         }
 
         // Generate unique ID for refund transaction
-        $refundTransactionId = 'refund_' . uniqid() . '_' . time();
+        $refundTransactionId = 'refund_' . bin2hex(random_bytes(16));
 
         /** @phpstan-ignore-next-line */
         $transaction = new Transaction(

@@ -22,7 +22,7 @@ class WebhookLog
         ?string $id = null
     ) {
         // Allow ID to be provided (for hydration from DB) or auto-generate (for new instances)
-        $this->id = $id ?? uniqid('webhook_log_', true);
+        $this->id = $id ?? 'webhook_log_' . bin2hex(random_bytes(16));
     }
 
     public function getId(): string

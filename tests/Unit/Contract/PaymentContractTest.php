@@ -499,4 +499,169 @@ class PaymentContractTest extends TestCase
         $this->assertTrue($contract->getState()->isAuthorized());
         $this->assertEquals('authorized', $contract->getStateValue());
     }
+
+    // ==========================================
+    // Sprint 47: Fix 8 - State guards (STRP-99)
+    // ==========================================
+
+    public function testSetCapturedAmountInCommittedState(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        // Restore to committed via fromArray
+        $data = $contract->toArray();
+        $data['state'] = 'committed';
+        $committed = PaymentContract::fromArray($data);
+
+        $committed->setCapturedAmount(100.0);
+
+        $this->assertEquals(100.0, $committed->getCapturedAmount());
+    }
+
+    public function testSetCapturedAmountInFulfilledState(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $contract->setCapturedAmount(50.0);
+
+        $this->assertEquals(50.0, $contract->getCapturedAmount());
+    }
+
+    public function testSetCapturedAmountInDraftStateThrows(): void
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('COMMITTED or FULFILLED');
+
+        $contract->setCapturedAmount(100.0);
+    }
+
+    public function testSetCapturedAmountInPendingStateThrows(): void
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_123');
+        $contract->transitionToPending();
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('COMMITTED or FULFILLED');
+
+        $contract->setCapturedAmount(100.0);
+    }
+
+    public function testSetCapturedAmountRejectsNegative(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->setCapturedAmount(-1.0);
+    }
+
+    public function testSetCapturedAmountRejectsZero(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->setCapturedAmount(0.0);
+    }
+
+    public function testSetCapturedAmountRejectsInfinity(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->setCapturedAmount(INF);
+    }
+
+    public function testAddRefundedAmountInFulfilledState(): void
+    {
+        $contract = $this->createFulfilledContract();
+        $contract->setCapturedAmount(100.0);
+
+        $contract->addRefundedAmount(50.0);
+
+        $this->assertEquals(50.0, $contract->getRefundedAmount());
+    }
+
+    public function testAddRefundedAmountAccumulates(): void
+    {
+        $contract = $this->createFulfilledContract();
+        $contract->setCapturedAmount(100.0);
+
+        $contract->addRefundedAmount(30.0);
+        $contract->addRefundedAmount(20.0);
+
+        $this->assertEquals(50.0, $contract->getRefundedAmount());
+    }
+
+    public function testAddRefundedAmountInDraftStateThrows(): void
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('FULFILLED');
+
+        $contract->addRefundedAmount(10.0);
+    }
+
+    public function testAddRefundedAmountInCommittedStateThrows(): void
+    {
+        $data = $this->createFulfilledContract()->toArray();
+        $data['state'] = 'committed';
+        $committed = PaymentContract::fromArray($data);
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('FULFILLED');
+
+        $committed->addRefundedAmount(10.0);
+    }
+
+    public function testAddRefundedAmountRejectsNegative(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->addRefundedAmount(-5.0);
+    }
+
+    public function testAddRefundedAmountRejectsZero(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->addRefundedAmount(0.0);
+    }
+
+    public function testAddRefundedAmountRejectsNan(): void
+    {
+        $contract = $this->createFulfilledContract();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('positive finite');
+
+        $contract->addRefundedAmount(NAN);
+    }
+
+    private function createFulfilledContract(): PaymentContract
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_123');
+        $contract->transitionToPending();
+        $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
+        $contract->commitToOrder('order_123');
+        $contract->fulfill();
+        return $contract;
+    }
 }

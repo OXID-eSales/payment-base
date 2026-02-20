@@ -105,10 +105,16 @@ class BasketSnapshot
             throw new InvalidArgumentException("Required field '{$key}' is missing");
         }
         $value = $data[$key];
-        if (is_float($value) || is_int($value)) {
-            return (float) $value;
+        if (!is_float($value) && !is_int($value)) {
+            throw new InvalidArgumentException("Field '{$key}' must be a number");
         }
-        throw new InvalidArgumentException("Field '{$key}' must be a number");
+        $result = (float) $value;
+        if (!is_finite($result) || $result < 0) {
+            throw new InvalidArgumentException(
+                "Field '{$key}' must be a finite non-negative number, got: {$result}"
+            );
+        }
+        return $result;
     }
 
     /**
@@ -121,6 +127,11 @@ class BasketSnapshot
         }
         if (!is_string($data['currency'])) {
             throw new InvalidArgumentException('Field \'currency\' must be a string');
+        }
+        if (preg_match('/^[A-Z]{3}$/', $data['currency']) !== 1) {
+            throw new InvalidArgumentException(
+                'Field \'currency\' must be a valid ISO 4217 code (3 uppercase letters)'
+            );
         }
         return $data['currency'];
     }

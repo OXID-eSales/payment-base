@@ -380,6 +380,12 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
     public function setCapturedAmount(float $amount): void
     {
+        if (!$this->state->isCommitted() && !$this->state->isFulfilled()) {
+            throw new DomainException('Can only set captured amount in COMMITTED or FULFILLED state');
+        }
+        if (!is_finite($amount) || $amount <= 0) {
+            throw new InvalidArgumentException('Captured amount must be a positive finite number');
+        }
         $this->capturedAmount = $amount;
         $this->touch();
     }
@@ -391,6 +397,12 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
     public function addRefundedAmount(float $amount): void
     {
+        if (!$this->state->isFulfilled()) {
+            throw new DomainException('Can only add refunded amount in FULFILLED state');
+        }
+        if (!is_finite($amount) || $amount <= 0) {
+            throw new InvalidArgumentException('Refund amount must be a positive finite number');
+        }
         $this->refundedAmount = ($this->refundedAmount ?? 0.0) + $amount;
         $this->touch();
     }

@@ -151,7 +151,11 @@ abstract class AbstractPaymentRefundService
     protected function calculateRefundAmounts(PaymentContractInterface $contract, ?float $amount): array
     {
         $contractId = $contract->getId() ?? 'unknown';
-        $totalCaptured = $contract->getBasketSnapshot()->getTotalGross();
+        $capturedAmount = $contract->getCapturedAmount();
+        if ($capturedAmount === null || $capturedAmount <= 0) {
+            throw new RefundFailedException($contractId, 'Nothing to refund: no captured amount recorded');
+        }
+        $totalCaptured = $capturedAmount;
         $alreadyRefunded = $this->transactionRepository->getTotalRefundedForContract($contractId);
         $availableForRefund = $totalCaptured - $alreadyRefunded;
 
@@ -170,6 +174,13 @@ abstract class AbstractPaymentRefundService
      */
     protected function validateRefundAmount(string $contractId, float $refundAmount, float $availableForRefund): void
     {
+        if (!is_finite($refundAmount)) {
+            throw new RefundFailedException(
+                $contractId,
+                'Refund amount must be a finite number'
+            );
+        }
+
         if ($refundAmount > $availableForRefund) {
             throw new RefundFailedException(
                 $contractId,

@@ -15,7 +15,7 @@ abstract class AbstractModel implements ModelInterface
 
     protected function generateId(string $prefix = 'id'): string
     {
-        return uniqid($prefix . '_', true);
+        return $prefix . '_' . bin2hex(random_bytes(16));
     }
 
     /**
