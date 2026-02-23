@@ -13,6 +13,7 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
+use OxidEsales\PaymentComponent\Contract\ContractCondition;
 use OxidEsales\PaymentComponent\Contract\PaymentContract;
 use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
 use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
@@ -68,8 +69,9 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
      */
     public function contractStoresCapturedAmount(): void
     {
-        // Given: A contract
+        // Given: A committed contract
         $contract = $this->createTestContract();
+        $this->transitionToCommitted($contract);
         $this->contractRepository->save($contract);
 
         // When: Set captured amount
@@ -91,6 +93,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
     {
         // Given: A fulfilled contract
         $contract = $this->createTestContract();
+        $this->transitionToFulfilled($contract);
         $contract->setCapturedAmount(100.00);
         $this->contractRepository->save($contract);
 
@@ -111,8 +114,9 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
      */
     public function multipleRefundsAccumulate(): void
     {
-        // Given: A contract with existing refund
+        // Given: A fulfilled contract with existing refund
         $contract = $this->createTestContract();
+        $this->transitionToFulfilled($contract);
         $contract->setCapturedAmount(100.00);
         $contract->addRefundedAmount(20.00);
         $this->contractRepository->save($contract);
@@ -155,8 +159,9 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
      */
     public function partialRefundDoesNotExceedCaptured(): void
     {
-        // Given: A captured contract
+        // Given: A fulfilled and captured contract
         $contract = $this->createTestContract();
+        $this->transitionToFulfilled($contract);
         $contract->setCapturedAmount(100.00);
         $this->contractRepository->save($contract);
 
@@ -193,6 +198,28 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
             $basketSnapshot,
             $contractId
         );
+    }
+
+    /**
+     * Transition contract to COMMITTED state (required for setCapturedAmount).
+     */
+    private function transitionToCommitted(PaymentContract $contract): void
+    {
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_' . substr(uniqid(), -4));
+        $contract->transitionToPending();
+        $contract->setProvider('test', 'pi_' . substr(uniqid(), -4));
+        $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, ['authId' => 'auth_test']);
+        $contract->commitToOrder('order_' . substr(uniqid(), -4));
+    }
+
+    /**
+     * Transition contract to FULFILLED state (required for addRefundedAmount).
+     */
+    private function transitionToFulfilled(PaymentContract $contract): void
+    {
+        $this->transitionToCommitted($contract);
+        $contract->fulfill();
     }
 
     private function cleanupTestData(): void
