@@ -91,6 +91,9 @@ class ContractState
 
     public static function fromValue(string $value): self
     {
+        if ($value === '') {
+            throw new InvalidArgumentException('Invalid contract state: empty string');
+        }
         return new self($value);
     }
 

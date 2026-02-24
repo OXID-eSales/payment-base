@@ -42,7 +42,7 @@ class FileLogger implements FileLoggerInterface
     {
         $logDir = dirname($this->logFilePath);
         if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
+            mkdir($logDir, 0750, true);
         }
     }
 

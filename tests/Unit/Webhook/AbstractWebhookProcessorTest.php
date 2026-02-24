@@ -24,6 +24,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for AbstractWebhookProcessor Template Method pattern.
  *
+ * Updated in Sprint 64g: Uses claimEvent() for atomic idempotency
+ * instead of the TOCTOU-vulnerable existsByEventId() + save() pattern.
+ *
  * @covers \OxidEsales\PaymentComponent\Webhook\AbstractWebhookProcessor
  */
 class AbstractWebhookProcessorTest extends TestCase
@@ -55,13 +58,9 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->with('evt_123')
-            ->willReturn(false);
-
-        $this->logRepository->expects($this->once())
-            ->method('save')
-            ->with($this->isInstanceOf(WebhookLog::class));
+            ->method('claimEvent')
+            ->with('evt_123', 'test_provider', 'payment_intent.succeeded')
+            ->willReturn(true);
 
         $this->logRepository->expects($this->once())
             ->method('updateStatus')
@@ -95,12 +94,9 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->with('evt_123')
-            ->willReturn(true); // Already processed
-
-        $this->logRepository->expects($this->never())
-            ->method('save');
+            ->method('claimEvent')
+            ->with('evt_123', 'test_provider', 'payment_intent.succeeded')
+            ->willReturn(false); // Already claimed
 
         $this->logger->expects($this->once())
             ->method('info')
@@ -117,7 +113,7 @@ class AbstractWebhookProcessorTest extends TestCase
         // Assert
         $this->assertTrue($result->isSuccess());
         $this->assertSame('skipped', $result->action);
-        $this->assertSame('Already processed', $result->error);
+        $this->assertStringContainsString('Already processed', $result->error ?? '');
     }
 
     public function testProcessReturnsFailureOnInvalidSignature(): void
@@ -131,10 +127,7 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->never())
-            ->method('existsByEventId');
-
-        $this->logRepository->expects($this->never())
-            ->method('save');
+            ->method('claimEvent');
 
         $processor = $this->createTestProcessorWithSignatureFailure('Invalid webhook signature');
 
@@ -147,15 +140,14 @@ class AbstractWebhookProcessorTest extends TestCase
         $this->assertStringContainsString('Invalid webhook signature', $result->error ?? '');
     }
 
-    public function testProcessLogsWebhookOnReceive(): void
+    public function testProcessClaimsEventAtomically(): void
     {
         // Arrange
-        $receivedAt = new DateTimeImmutable('2026-01-21 10:00:00');
         $request = new WebhookRequest(
             payload: '{"id":"evt_456","type":"charge.refunded"}',
             signature: 'valid_signature',
             remoteIp: '192.168.1.1',
-            receivedAt: $receivedAt
+            receivedAt: new DateTimeImmutable('2026-01-21 10:00:00')
         );
 
         $event = new WebhookEvent(
@@ -166,28 +158,14 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->willReturn(false);
-
-        $savedLog = null;
-        $this->logRepository->expects($this->once())
-            ->method('save')
-            ->with($this->callback(function (WebhookLog $log) use (&$savedLog) {
-                $savedLog = $log;
-                return true;
-            }));
+            ->method('claimEvent')
+            ->with('evt_456', 'test_provider', 'charge.refunded')
+            ->willReturn(true);
 
         $processor = $this->createTestProcessor($event, WebhookResult::success('refunded'));
 
         // Act
         $processor->process($request);
-
-        // Assert
-        $this->assertNotNull($savedLog);
-        $this->assertSame('evt_456', $savedLog->getEventId());
-        $this->assertSame('charge.refunded', $savedLog->getEventType());
-        $this->assertSame('test_provider', $savedLog->getProvider());
-        $this->assertSame('received', $savedLog->getStatus());
     }
 
     public function testProcessUpdatesStatusOnSuccess(): void
@@ -208,8 +186,8 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->willReturn(false);
+            ->method('claimEvent')
+            ->willReturn(true);
 
         $this->logRepository->expects($this->once())
             ->method('updateStatus')
@@ -242,8 +220,8 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->willReturn(false);
+            ->method('claimEvent')
+            ->willReturn(true);
 
         $this->logRepository->expects($this->once())
             ->method('updateStatus')
@@ -276,8 +254,8 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->willReturn(false);
+            ->method('claimEvent')
+            ->willReturn(true);
 
         $this->logRepository->expects($this->once())
             ->method('updateStatus')
@@ -322,8 +300,8 @@ class AbstractWebhookProcessorTest extends TestCase
         );
 
         $this->logRepository->expects($this->once())
-            ->method('existsByEventId')
-            ->willReturn(false);
+            ->method('claimEvent')
+            ->willReturn(true);
 
         // updateStatus(eventId, status, error, contractId)
         $this->logRepository->expects($this->once())

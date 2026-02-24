@@ -516,6 +516,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $contract->providerRedirectUrl = self::extractOptionalString($data, 'providerRedirectUrl');
         $contract->metadata = self::extractMetadata($data);
         $contract->conditions = self::extractConditions($data);
+        self::validateStateConsistency($contract->state, $contract->conditions);
         $contract->expiresAt = self::extractOptionalDateTime($data, 'expiresAt');
         $contract->createdAt = self::extractDateTime($data, 'createdAt');
         $contract->updatedAt = self::extractDateTime($data, 'updatedAt');
@@ -655,5 +656,36 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         }
         /** @var array<string, mixed> */
         return $data['metadata'];
+    }
+
+    /**
+     * Sprint 68a (H5): Detect impossible state/condition combinations.
+     *
+     * Defensive warning — does NOT block (DB is source of truth).
+     * Inconsistency indicates a bug or data corruption.
+     *
+     * @param array<int, ContractCondition> $conditions
+     */
+    private static function validateStateConsistency(ContractState $state, array $conditions): void
+    {
+        if (!$state->isFulfilled() || empty($conditions)) {
+            return;
+        }
+
+        $unfulfilled = array_filter(
+            $conditions,
+            fn(ContractCondition $c): bool => !$c->isFulfilled()
+        );
+
+        if (!empty($unfulfilled)) {
+            trigger_error(
+                sprintf(
+                    'PaymentContract state/condition inconsistency: state=%s but %d conditions unfulfilled',
+                    $state->getValue(),
+                    count($unfulfilled)
+                ),
+                E_USER_WARNING
+            );
+        }
     }
 }

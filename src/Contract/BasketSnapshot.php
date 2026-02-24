@@ -9,6 +9,23 @@ use InvalidArgumentException;
 
 class BasketSnapshot
 {
+    /** Sprint 69b (H6): Only these item fields are persisted — PII stripped */
+    private const ITEM_WHITELIST = [
+        'artnum',
+        'articleId',
+        'productId',
+        'title',
+        'quantity',
+        'price',
+        'grossPrice',
+        'netPrice',
+        'totalPrice',
+        'unitPrice',
+        'vat',
+        'vatValue',
+        'amount',
+    ];
+
     /**
      * @var array<int, array<string, mixed>>
      */
@@ -68,15 +85,27 @@ class BasketSnapshot
      */
     private static function extractItems(array $data): array
     {
-        if (!isset($data['items'])) {
-            return [];
-        }
-        if (!is_array($data['items'])) {
+        if (!isset($data['items']) || !is_array($data['items'])) {
             return [];
         }
         /** @var array<int, array<string, mixed>> $items */
         $items = $data['items'];
-        return $items;
+        return self::sanitizeItems($items);
+    }
+
+    /**
+     * Sprint 69b (H6): Whitelist-filter item fields to strip PII.
+     *
+     * @param array<int, array<string, mixed>> $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function sanitizeItems(array $items): array
+    {
+        $whitelist = array_flip(self::ITEM_WHITELIST);
+        return array_map(
+            fn(array $item): array => array_intersect_key($item, $whitelist),
+            $items
+        );
     }
 
     /**

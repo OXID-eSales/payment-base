@@ -31,6 +31,13 @@ use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
  */
 class ContractMetadataService implements ContractMetadataServiceInterface
 {
+    private ?AddressHmacServiceInterface $addressHmacService;
+
+    public function __construct(?AddressHmacServiceInterface $addressHmacService = null)
+    {
+        $this->addressHmacService = $addressHmacService;
+    }
+
     /**
      * @inheritDoc
      */
@@ -47,6 +54,11 @@ class ContractMetadataService implements ContractMetadataServiceInterface
         // Store the hash in contract metadata
         if (!empty($addressHash)) {
             $contract->setMetadata('delivery_address_hash', $addressHash);
+
+            // Sprint 68b (M9): HMAC-sign the hash to prevent forgery
+            if ($this->addressHmacService !== null) {
+                $contract->setMetadata('delivery_address_hmac', $this->addressHmacService->sign($addressHash));
+            }
         }
 
         // Also store delivery address ID if present
@@ -91,6 +103,35 @@ class ContractMetadataService implements ContractMetadataServiceInterface
     {
         $hash = $contract->getMetadata('delivery_address_hash');
         return is_string($hash) ? $hash : null;
+    }
+
+    /**
+     * Get delivery address hash with HMAC verification.
+     *
+     * Sprint 68b (M9): Returns hash only if HMAC validates.
+     * Falls back to unverified hash for contracts created before HMAC was added.
+     */
+    public function getVerifiedDeliveryAddressHash(PaymentContractInterface $contract): ?string
+    {
+        $hash = $this->getDeliveryAddressHash($contract);
+        if ($hash === null) {
+            return null;
+        }
+
+        $hmac = $contract->getMetadata('delivery_address_hmac');
+        if (!is_string($hmac) || $hmac === '') {
+            return $hash; // backwards compat: contracts created before HMAC
+        }
+
+        if ($this->addressHmacService === null) {
+            return $hash; // no HMAC service configured
+        }
+
+        if (!$this->addressHmacService->verify($hash, $hmac)) {
+            return null; // tampered — reject
+        }
+
+        return $hash;
     }
 
     /**

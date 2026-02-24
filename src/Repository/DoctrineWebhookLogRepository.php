@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentComponent\Repository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use OxidEsales\PaymentComponent\Webhook\WebhookLog;
 use RuntimeException;
 
@@ -56,6 +57,24 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
             $this->connection->insert(self::TABLE_NAME, $data);
         } catch (Exception $e) {
             throw new RuntimeException('Failed to save webhook log: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    public function claimEvent(string $eventId, string $provider, string $eventType): bool
+    {
+        try {
+            $this->connection->insert(self::TABLE_NAME, [
+                'OXID' => bin2hex(random_bytes(16)),
+                'OXEVENTID' => $eventId,
+                'OXPROVIDER' => $provider,
+                'OXEVENTTYPE' => $eventType,
+                'OXSTATUS' => 'claimed',
+                'OXRECEIVEDAT' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+            ]);
+
+            return true;
+        } catch (UniqueConstraintViolationException) {
+            return false;
         }
     }
 

@@ -34,7 +34,8 @@ abstract class AbstractWebhookProcessor
 {
     public function __construct(
         protected readonly WebhookLogRepositoryInterface $logRepository,
-        protected readonly LoggerInterface $logger
+        protected readonly LoggerInterface $logger,
+        protected readonly WebhookPayloadSanitizer $sanitizer = new WebhookPayloadSanitizer()
     ) {
     }
 
@@ -64,17 +65,14 @@ abstract class AbstractWebhookProcessor
             return WebhookResult::failure('signature_invalid', $e->getMessage());
         }
 
-        // Step 2: Check idempotency
-        if ($this->isAlreadyProcessed($event->id)) {
+        // Step 2+3: Atomic claim (replaces TOCTOU-vulnerable existsByEventId + save)
+        if (!$this->logRepository->claimEvent($event->id, $this->getProviderName(), $event->type)) {
             $this->logger->info('Webhook already processed, skipping', [
                 'eventId' => $event->id,
                 'eventType' => $event->type,
             ]);
-            return WebhookResult::skipped('Already processed');
+            return WebhookResult::skipped('Already processed: ' . $event->id);
         }
-
-        // Step 3: Log webhook received
-        $this->logWebhookReceived($event, $request);
 
         // Step 4: Process event
         try {
@@ -117,7 +115,7 @@ abstract class AbstractWebhookProcessor
         );
         $log->setEventType($event->type);
         $log->setProvider($this->getProviderName());
-        $log->setPayload($event->data);
+        $log->setPayload($this->sanitizer->sanitize($event->data));
 
         $this->logRepository->save($log);
     }
