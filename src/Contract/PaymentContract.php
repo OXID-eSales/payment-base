@@ -51,7 +51,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         BasketSnapshot $basketSnapshot,
         ?string $id = null
     ) {
-        $this->id = $id ?? $this->generateId('contract');
+        $this->id = $id ?? bin2hex(random_bytes(16));
         $this->shopId = $shopId;
         $this->userId = $userId;
         $this->basketSnapshot = $basketSnapshot;

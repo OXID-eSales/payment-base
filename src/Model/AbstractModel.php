@@ -13,9 +13,9 @@ abstract class AbstractModel implements ModelInterface
         return $this->id;
     }
 
-    protected function generateId(string $prefix = 'id'): string
+    protected function generateId(): string
     {
-        return $prefix . '_' . bin2hex(random_bytes(16));
+        return bin2hex(random_bytes(16));
     }
 
     /**

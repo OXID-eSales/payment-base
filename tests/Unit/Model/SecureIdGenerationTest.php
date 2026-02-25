@@ -13,11 +13,11 @@ use PHPUnit\Framework\TestCase;
  * Sprint 47: Fix 4 - Verify CSPRNG ID generation (STRP-99).
  *
  * Tests that generated IDs use cryptographically secure random bytes
- * instead of uniqid().
+ * and fit within OXID's char(32) column constraint.
  */
 class SecureIdGenerationTest extends TestCase
 {
-    public function testPaymentContractIdIsSufficientlyLong(): void
+    public function testPaymentContractIdIs32Chars(): void
     {
         $snapshot = BasketSnapshot::fromArray([
             'items' => [],
@@ -31,9 +31,7 @@ class SecureIdGenerationTest extends TestCase
         $contract = new PaymentContract(1, 'user123', $snapshot);
         $id = $contract->getId();
 
-        // contract_ prefix (9) + 32 hex chars = 41 minimum
-        $this->assertGreaterThanOrEqual(36, strlen($id));
-        $this->assertStringStartsWith('contract_', $id);
+        $this->assertSame(32, strlen($id));
     }
 
     public function testPaymentContractIdContainsHexChars(): void
@@ -50,9 +48,7 @@ class SecureIdGenerationTest extends TestCase
         $contract = new PaymentContract(1, 'user123', $snapshot);
         $id = $contract->getId();
 
-        // Extract the random part after prefix
-        $randomPart = substr($id, strlen('contract_'));
-        $this->assertMatchesRegularExpression('/^[0-9a-f]+$/', $randomPart);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $id);
     }
 
     public function testConsecutiveIdsAreDifferent(): void
@@ -72,7 +68,7 @@ class SecureIdGenerationTest extends TestCase
         $this->assertNotEquals($contract1->getId(), $contract2->getId());
     }
 
-    public function testWebhookLogIdIsSufficientlyLong(): void
+    public function testWebhookLogIdIs32Chars(): void
     {
         $log = new WebhookLog(
             'evt_test_123',
@@ -82,9 +78,8 @@ class SecureIdGenerationTest extends TestCase
 
         $id = $log->getId();
 
-        // webhook_log_ prefix (12) + 32 hex chars = 44 minimum
-        $this->assertGreaterThanOrEqual(36, strlen($id));
-        $this->assertStringStartsWith('webhook_log_', $id);
+        $this->assertSame(32, strlen($id));
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $id);
     }
 
     public function testWebhookLogConsecutiveIdsAreDifferent(): void
