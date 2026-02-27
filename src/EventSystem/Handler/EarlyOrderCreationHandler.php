@@ -104,7 +104,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $basket = $event->getBasketSnapshot();
         $context = $event->getContext();
 
-        $paymentId = 'oxidstripe';
+        $contextPaymentId = $context->get('paymentId');
+        $paymentId = is_string($contextPaymentId) ? $contextPaymentId : 'unknown_payment';
         $sessionId = (string) $context->get('sessionId', 'contract_' . $contract->getId());
 
         $this->logEvent('EarlyOrderCreationHandler: Creating order', [

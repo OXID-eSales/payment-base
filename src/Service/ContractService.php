@@ -188,36 +188,64 @@ class ContractService implements ContractServiceInterface
     {
         $discounts = [];
 
-        if (!method_exists($basket, 'getDiscounts')) {
-            return $discounts;
+        // Extract basket-level and item-level discounts
+        if (method_exists($basket, 'getDiscounts')) {
+            $basketDiscounts = $basket->getDiscounts();
+            if (is_array($basketDiscounts)) {
+                foreach ($basketDiscounts as $discount) {
+                    if (!is_object($discount)) {
+                        continue;
+                    }
+
+                    $name = 'Discount';
+                    if (property_exists($discount, 'sDiscount')) {
+                        /** @phpstan-ignore-next-line */
+                        $name = (string) $discount->sDiscount;
+                    }
+
+                    $amount = 0.0;
+                    if (property_exists($discount, 'dDiscount')) {
+                        /** @phpstan-ignore-next-line */
+                        $amount = (float) $discount->dDiscount;
+                    }
+
+                    $discounts[] = [
+                        'name' => $name,
+                        'amount' => $amount,
+                    ];
+                }
+            }
         }
 
-        $basketDiscounts = $basket->getDiscounts();
-        if (!is_array($basketDiscounts)) {
-            return $discounts;
-        }
+        // Extract voucher discounts (OXID separates vouchers from basket discounts)
+        if (method_exists($basket, 'getVouchers')) {
+            $vouchers = $basket->getVouchers();
+            if (is_array($vouchers)) {
+                foreach ($vouchers as $voucher) {
+                    if (!is_object($voucher)) {
+                        continue;
+                    }
 
-        foreach ($basketDiscounts as $discount) {
-            if (!is_object($discount)) {
-                continue;
+                    $name = 'Voucher';
+                    if (property_exists($voucher, 'sVoucherId')) {
+                        /** @phpstan-ignore-next-line */
+                        $name = 'Voucher: ' . (string) $voucher->sVoucherId;
+                    }
+
+                    $amount = 0.0;
+                    if (property_exists($voucher, 'dVoucherdiscount')) {
+                        /** @phpstan-ignore-next-line */
+                        $amount = (float) $voucher->dVoucherdiscount;
+                    }
+
+                    if ($amount > 0.0) {
+                        $discounts[] = [
+                            'name' => $name,
+                            'amount' => $amount,
+                        ];
+                    }
+                }
             }
-
-            $name = 'Discount';
-            if (property_exists($discount, 'sDiscount')) {
-                /** @phpstan-ignore-next-line */
-                $name = (string) $discount->sDiscount;
-            }
-
-            $amount = 0.0;
-            if (property_exists($discount, 'dDiscount')) {
-                /** @phpstan-ignore-next-line */
-                $amount = (float) $discount->dDiscount;
-            }
-
-            $discounts[] = [
-                'name' => $name,
-                'amount' => $amount,
-            ];
         }
 
         return $discounts;

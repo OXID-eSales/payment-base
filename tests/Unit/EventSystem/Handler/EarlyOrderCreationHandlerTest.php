@@ -95,7 +95,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
     public function testHandlerCreatesOrderOnContractDraftCompletedEvent(): void
     {
         $contract = $this->createDraftContract();
-        $context = new EventContext();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
         $event = new ContractDraftCompletedEvent($contract, $context);
 
         $this->shopOrderService
@@ -118,7 +118,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
     public function testHandlerDispatchesEvents(): void
     {
         $contract = $this->createDraftContract();
-        $context = new EventContext();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
         $event = new ContractDraftCompletedEvent($contract, $context);
 
         $this->shopOrderService
@@ -167,6 +167,44 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->handler->handle($event);
     }
 
+    public function testHandlerUsesPaymentIdFromContext(): void
+    {
+        $contract = $this->createDraftContract();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
+        $event = new ContractDraftCompletedEvent($contract, $context);
+
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->with($this->callback(function ($request) {
+                $this->assertInstanceOf(\OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class, $request);
+                $this->assertEquals('oe_payments_stripe_wallet', $request->paymentId);
+                return true;
+            }))
+            ->willReturn($this->createOrderResponse('555'));
+
+        $this->handler->handle($event);
+    }
+
+    public function testHandlerFallsBackToUnknownWhenNoPaymentIdInContext(): void
+    {
+        $contract = $this->createDraftContract();
+        $context = new EventContext();
+        $event = new ContractDraftCompletedEvent($contract, $context);
+
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->with($this->callback(function ($request) {
+                $this->assertInstanceOf(\OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class, $request);
+                $this->assertEquals('unknown_payment', $request->paymentId);
+                return true;
+            }))
+            ->willReturn($this->createOrderResponse('666'));
+
+        $this->handler->handle($event);
+    }
+
     public function testHandlerDoesNothingForWrongEventType(): void
     {
         $wrongEvent = new \stdClass();
@@ -185,7 +223,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
     public function testHandlerLinksContractToOrder(): void
     {
         $contract = $this->createDraftContract();
-        $context = new EventContext();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
         $event = new ContractDraftCompletedEvent($contract, $context);
 
         $this->shopOrderService
@@ -202,7 +240,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $contract = $this->createDraftContract();
         $this->assertTrue($contract->getState()->isDraft());
 
-        $context = new EventContext();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
         $event = new ContractDraftCompletedEvent($contract, $context);
 
         $this->shopOrderService
