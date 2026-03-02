@@ -235,6 +235,28 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->assertEquals('999', $contract->getOrderId());
     }
 
+    public function testHandlerPassesNotFinishedAsInitialStatus(): void
+    {
+        $contract = $this->createDraftContract();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
+        $event = new ContractDraftCompletedEvent($contract, $context);
+
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->with($this->callback(function ($request) {
+                $this->assertInstanceOf(
+                    \OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class,
+                    $request
+                );
+                $this->assertSame('NOT_FINISHED', $request->initialStatus);
+                return true;
+            }))
+            ->willReturn($this->createOrderResponse('777'));
+
+        $this->handler->handle($event);
+    }
+
     public function testHandlerTransitionsContractToPending(): void
     {
         $contract = $this->createDraftContract();

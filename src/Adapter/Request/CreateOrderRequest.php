@@ -29,6 +29,7 @@ readonly class CreateOrderRequest
      * @param string|null $paymentTransactionId External payment transaction ID (e.g., PaymentIntent ID)
      * @param string|null $orderRemark Customer's order remark/comment
      * @param array<string, mixed> $metadata Additional metadata to store with order
+     * @param string|null $initialStatus Initial order status (e.g., 'NOT_FINISHED' for early orders)
      */
     public function __construct(
         public string $sessionId,
@@ -36,7 +37,8 @@ readonly class CreateOrderRequest
         public string $paymentId,
         public ?string $paymentTransactionId = null,
         public ?string $orderRemark = null,
-        public array $metadata = []
+        public array $metadata = [],
+        public ?string $initialStatus = null
     ) {
     }
 }

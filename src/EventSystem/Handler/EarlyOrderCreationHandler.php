@@ -123,7 +123,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
             orderRemark: null,
             metadata: [
                 'contract_id' => $contract->getId(),
-            ]
+            ],
+            initialStatus: 'NOT_FINISHED'
         );
 
         $orderResponse = $this->shopOrderService->createOrder($request);

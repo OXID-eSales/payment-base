@@ -175,6 +175,34 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     }
 
     /**
+     * @return array<int, PaymentContractInterface>
+     */
+    public function findStaleNotFinished(int $minutesOld): array
+    {
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
+                WHERE OXSTATE IN (:states)
+                AND OXCREATED < DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+                ORDER BY OXCREATED ASC';
+
+        try {
+            $rows = $this->connection->fetchAllAssociative(
+                $sql,
+                [
+                    'states' => ['draft', 'not_finished', 'pending'],
+                    'minutes' => $minutesOld,
+                ],
+                [
+                    'states' => Connection::PARAM_STR_ARRAY,
+                ]
+            );
+
+            return array_map(fn($row) => $this->hydrateContract($row), $rows);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
      * @throws Exception
      */
     private function saveContract(PaymentContractInterface $contract): void

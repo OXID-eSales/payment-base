@@ -42,4 +42,15 @@ interface ShopOrderServiceInterface
      * @throws \OxidEsales\PaymentComponent\Adapter\Exception\ShopOrderException
      */
     public function createOrder(CreateOrderRequest $request): OrderResponse;
+
+    /**
+     * Delete a NOT_FINISHED order.
+     *
+     * Only deletes the order if its status is NOT_FINISHED (early order that was
+     * never committed). Returns true if the order was deleted, false otherwise.
+     *
+     * @param string $orderId The order ID to delete
+     * @return bool True if order was deleted, false if not found or not NOT_FINISHED
+     */
+    public function deleteNotFinishedOrder(string $orderId): bool;
 }
