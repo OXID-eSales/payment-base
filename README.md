@@ -334,7 +334,7 @@ The component is designed to support any payment provider with REST/SOAP API and
 
 ## License
 
-GPL-3.0-only - See [LICENSE](LICENSE) for details.
+proprietary - See [LICENSE](LICENSE) for details.
 
 ## Credits
 

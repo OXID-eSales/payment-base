@@ -565,5 +565,5 @@ Common data available in event context:
 
 ---
 
-**License:** GPL-3.0
+**License:** proprietary
 **Copyright:** OXID eSales AG

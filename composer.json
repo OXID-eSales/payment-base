@@ -2,7 +2,7 @@
     "name": "oxid-esales/payment-component",
     "description": "Provider-agnostic payment component with smart-contract architecture",
     "type": "composer-plugin",
-    "license": "GPL-3.0-only",
+    "license": "proprietary",
     "authors": [
         {
             "name": "OXID eSales AG",
