@@ -49,6 +49,7 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\Request\\\\#',  // Request DTOs
         '#\\\\Response\\\\#', // Response DTOs
         '#\\\\Result\\\\#',   // Result value objects
+        '#\\\\Return\\\\#',   // Return resolution DTOs (Sprint A)
         '#\\\\Transaction\\\\#', // Transaction entities
         '#\\\\Webhook\\\\#',  // Webhook entities
         '#\\\\Order\\\\#',    // Order entities
