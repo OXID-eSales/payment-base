@@ -11,7 +11,6 @@ parameters:
     excludePaths:
         - tests
         - vendor
-        - src/Composer
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
@@ -26,3 +25,8 @@ parameters:
         - '#Parameter .* expects int, mixed given#'
         # Method returns mixed from external calls
         - '#should return .* but returns mixed#'
+        # OXID core classes not in PC's composer deps (shop context required at runtime)
+        - '#Call to static method (getRequest|getSession|getLogger|getUtilsView|getConfig|getLang)\(\) on an unknown class OxidEsales\\Eshop\\Core\\Registry#'
+        - '#unknown class OxidEsales\\Eshop\\Application\\(Controller|Model)\\#'
+        - '#Cannot call method \w+\(\) on mixed#'
+        - '#Used function oxNew not found#'

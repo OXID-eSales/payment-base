@@ -1,7 +1,7 @@
 {
     "name": "oxid-esales/payment-component",
-    "description": "Provider-agnostic payment component with smart-contract architecture",
-    "type": "composer-plugin",
+    "description": "Provider-agnostic payment component with smart-contract architecture and shared admin Payment tab",
+    "type": "oxideshop-module",
     "license": "proprietary",
     "authors": [
         {
@@ -11,7 +11,6 @@
     ],
     "require": {
         "php": "^8.1",
-        "composer-plugin-api": "^2.0",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
         "psr/event-dispatcher": "^1.0",
         "doctrine/dbal": "^2.13 || ^3.0"
@@ -49,7 +48,9 @@
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit"
     },
     "extra": {
-        "class": "OxidEsales\\PaymentComponent\\Composer\\MigrationPlugin"
+        "oxideshop": {
+            "target-directory": "oe_payment_component"
+        }
     },
     "config": {
         "sort-packages": true,

@@ -1,0 +1,36 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  # --------------------------------------------------------------
+  # Admin — shared "Payment" tab (Sprint I).
+  #
+  # PSP modules inject panel providers tagged `oe.payment.admin_panel`.
+  # The registry iterates them; the first supporting provider renders
+  # its body inside the shared wrapper template.
+  # --------------------------------------------------------------
+
+  OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface:
+    class: OxidEsales\PaymentComponent\Admin\PaymentPanelRegistry
+    arguments:
+      - !tagged_iterator oe.payment.admin_panel
+    public: true
+
+  OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher:
+    arguments:
+      - '@OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface'
+    public: true
+
+  # Admin controller — instantiated by OXID via metadata.php `controllers`
+  # map, not via the `oxid.view_controller` tag. We register it as a
+  # container service anyway so tests / diagnostic harnesses can resolve it
+  # with DI, but OXID's runtime creates its own instance via oxNew-style
+  # dispatch and lazy-fetches dependencies through ContainerFactory.
+  OxidEsales\PaymentComponent\Admin\PaymentAdminController:
+    arguments:
+      - '@OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface'
+      - '@OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher'
+    public: true

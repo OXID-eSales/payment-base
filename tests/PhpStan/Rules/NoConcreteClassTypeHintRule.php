@@ -53,6 +53,8 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\Transaction\\\\#', // Transaction entities
         '#\\\\Webhook\\\\#',  // Webhook entities
         '#\\\\Order\\\\#',    // Order entities
+        '#\\\\Admin\\\\Panel\\\\#', // Sprint I admin-panel DTOs (context + renderable)
+        '#\\\\Admin\\\\PaymentAdminActionDispatcher$#', // Sprint I admin action dispatcher
 
         // Test classes
         '#Test$#',

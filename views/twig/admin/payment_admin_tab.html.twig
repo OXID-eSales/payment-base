@@ -1,0 +1,114 @@
+{% include "headitem.html.twig" with {title: "GENERAL_ADMIN_TITLE"|translate} %}
+
+{#  ==========================================================================
+    Sprint I — shared "Payment" admin tab (payment-component).
+
+    Controller: OxidEsales\PaymentComponent\Admin\PaymentAdminController
+    Controller key: PaymentAdmin
+
+    Regression invariants (do not remove):
+    - `<form id="transfer">` with `cl="PaymentAdmin"` — OXID's tab-switcher
+      reads this element to navigate. Without it, the iframe dead-ends
+      (2026-04-23 Task 3).
+    - `bottomnaviitem.html.twig` + `bottomitem.html.twig` includes — emit
+      the admin bottom nav and close `</body></html>`.
+
+    Template variables exposed by `oView`:
+    - hasProvider(): bool
+    - getProviderKey(): ?string (e.g. "stripe", "paypal")
+    - getPanelTemplatePath(): ?string (namespaced twig path)
+    - getPanelViewData(): array
+    - getOrder(): ?Order
+    ========================================================================== #}
+
+<style>
+    .pc-admin,
+    .pc-admin * { box-sizing: border-box !important; }
+    .pc-admin {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        font-size: 13px !important;
+        color: #1a1a2e !important;
+        padding: 16px !important;
+        max-width: 960px !important;
+        background: transparent !important;
+    }
+    .pc-admin h2 { font-size: 15px !important; margin: 0 0 12px 0 !important; }
+    .pc-admin .pc-card {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 6px !important;
+        background: #fff !important;
+        padding: 16px !important;
+        margin-bottom: 16px !important;
+    }
+    .pc-admin .pc-alert {
+        border: 1px solid transparent !important;
+        border-radius: 6px !important;
+        padding: 12px 14px !important;
+        margin-bottom: 16px !important;
+    }
+    .pc-admin .pc-alert-info    { background: #eff6ff !important; border-color: #bfdbfe !important; color: #1e40af !important; }
+    .pc-admin .pc-alert-success { background: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #14532d !important; }
+    .pc-admin .pc-alert-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; }
+    .pc-admin .pc-alert-danger  { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b !important; }
+    .pc-admin[data-provider="stripe"] .pc-btn-primary { background: #635bff !important; color: #fff !important; }
+    .pc-admin[data-provider="paypal"] .pc-btn-primary { background: #0070ba !important; color: #fff !important; }
+    .pc-admin .pc-btn {
+        display: inline-block !important;
+        padding: 8px 14px !important;
+        border-radius: 6px !important;
+        border: 1px solid transparent !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        font-size: 13px !important;
+    }
+    .pc-admin .pc-btn-primary { background: #1a1a2e !important; color: #fff !important; }
+    .pc-admin .pc-btn-primary:hover { filter: brightness(1.12) !important; }
+    .pc-admin .pc-btn-warning { background: #f59e0b !important; color: #fff !important; }
+    .pc-admin .pc-btn-warning:hover { background: #d97706 !important; }
+    .pc-admin .pc-btn-danger-outline { background: #fff !important; color: #dc2626 !important; border: 1px solid #fca5a5 !important; }
+    .pc-admin .pc-btn-danger-outline:hover { background: #fef2f2 !important; }
+    .pc-admin table { border: none !important; background: none !important; width: 100% !important; border-collapse: collapse !important; }
+    .pc-admin td, .pc-admin th { border: none !important; background: none !important; padding: 4px 8px !important; text-align: left !important; }
+    .pc-admin .pc-card-header { font-weight: 600 !important; font-size: 14px !important; margin: 0 0 12px 0 !important; padding-bottom: 8px !important; border-bottom: 1px solid #e5e7eb !important; }
+    .pc-admin .pc-card-body { margin-top: 8px !important; }
+    .pc-admin .pc-details { width: 100% !important; }
+    .pc-admin .pc-details .pc-label { color: #6b7280 !important; white-space: nowrap !important; padding-right: 12px !important; vertical-align: top !important; }
+    .pc-admin .pc-details .pc-value { font-weight: 500 !important; }
+    .pc-admin .pc-muted { color: #6b7280 !important; }
+    .pc-admin code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace !important; background: #f3f4f6 !important; padding: 1px 6px !important; border-radius: 3px !important; font-size: 12px !important; }
+    .pc-admin .pc-table { width: 100% !important; font-size: 12px !important; }
+    .pc-admin .pc-table th { color: #374151 !important; font-weight: 600 !important; border-bottom: 1px solid #e5e7eb !important; }
+    .pc-admin .pc-table tbody tr { border-bottom: 1px solid #f3f4f6 !important; }
+    .pc-admin .pc-table .text-right { text-align: right !important; }
+    .pc-admin .pc-badge { display: inline-block !important; padding: 2px 8px !important; border-radius: 10px !important; font-size: 11px !important; font-weight: 500 !important; }
+    .pc-admin .pc-badge-blue   { background: #dbeafe !important; color: #1e40af !important; }
+    .pc-admin .pc-badge-green  { background: #dcfce7 !important; color: #166534 !important; }
+    .pc-admin .pc-badge-orange { background: #ffedd5 !important; color: #9a3412 !important; }
+    .pc-admin .pc-badge-gray   { background: #f3f4f6 !important; color: #374151 !important; }
+    .pc-admin .pc-empty { color: #6b7280 !important; padding: 24px 0 !important; text-align: center !important; font-style: italic !important; }
+    .pc-admin .pc-form-row { display: flex !important; gap: 12px !important; flex-wrap: wrap !important; }
+    .pc-admin .pc-form-group { flex: 1 1 220px !important; margin-bottom: 12px !important; }
+    .pc-admin .pc-form-label { display: block !important; font-weight: 500 !important; margin-bottom: 4px !important; color: #374151 !important; }
+    .pc-admin .pc-form-input,
+    .pc-admin .pc-form-select { width: 100% !important; padding: 6px 10px !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; font-size: 13px !important; background: #fff !important; }
+</style>
+
+<form name="transfer" id="transfer" action="{{ oViewConf.getSelfLink() }}" method="post">
+    {{ oViewConf.getHiddenSid()|raw }}
+    <input type="hidden" name="oxid" value="{{ oxid }}">
+    <input type="hidden" name="cl" value="PaymentAdmin">
+</form>
+
+<div class="pc-admin" data-provider="{{ oView.getProviderKey() ?: 'none' }}" data-testid="payment-admin-tab">
+    {% if oView.hasProvider() %}
+        {% set panel = oView.getPanelViewData() %}
+        {% include oView.getPanelTemplatePath() with panel %}
+    {% else %}
+        <div class="pc-alert pc-alert-info" data-testid="payment-no-provider">
+            {{ translate({ ident: "PAYMENT_ADMIN_NO_PROVIDER" }) }}
+        </div>
+    {% endif %}
+</div>
+
+{% include "bottomnaviitem.html.twig" %}
+{% include "bottomitem.html.twig" %}
