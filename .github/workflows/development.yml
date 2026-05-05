@@ -90,22 +90,73 @@ jobs:
             --json '{"type":"path", "url":"./test-module", "options": {"symlink": true}}'
           docker compose exec -T \
             php composer require ${{ env.PACKAGE_NAME }}:* --no-interaction --no-update
-          
-          docker compose exec -T \
-            php composer config --no-plugins allow-plugins.oxid-esales/payment-component true
 
       - name: Install dependencies
         run: |
-          docker compose exec -T php composer update --no-interaction
+          docker compose exec -T php composer update --with-all-dependencies --no-interaction
 
+      # Sprint 93 — workaround for a CI-environment-specific bug in
+      # `oxid-esales/oxideshop-unified-namespace-generator` (commit
+      # 8a7b5c4 on b-7.4.x at the time of writing). The generator's
+      # `Generator::createUnifiedNamespaceSubDirectory()` calls
+      # `Symfony\Component\Filesystem\Path::join($outputDir, $subNs)`
+      # where `$subNs` is `"OxidEsales\\Eshop\\Core"`. On the CI
+      # runner image that call leaves the backslashes in place — the
+      # `canonicalize()` `str_replace('\\', '/', …)` does not run —
+      # so 519 `Eshop\` shim files end up in directories literally
+      # named `OxidEsales\Eshop\Core` (one component) instead of the
+      # nested `OxidEsales/Eshop/Core/` hierarchy that PSR-4 autoload
+      # expects. `bin/oe-console` then fatals at bootstrap.php:184
+      # with `Class "OxidEsales\Eshop\Core\ConfigFile" not found`.
+      #
+      # Local Docker reproduces the correct (forward-slash) layout
+      # with the same code + Symfony 6.4.37, so this is environmental.
+      # Until the upstream is patched (issue tracked separately), we
+      # rename the backslash-named directories into the forward-slash
+      # hierarchy ourselves. Pure file rename, no generator
+      # invocation, no autoload manipulation.
+      - name: Workaround — rename backslash-named generator dirs
+        run: |
+          docker compose exec -T php sh -c '
+            cd /var/www/vendor/oxid-esales/oxideshop-unified-namespace-generator/generated
+            for src in $(find . -mindepth 1 -maxdepth 1 -type d -name "*\\\\*" | sort -r); do
+              target=$(echo "${src#./}" | sed "s|\\\\|/|g")
+              mkdir -p "$(dirname "$target")"
+              if [ -d "$target" ]; then
+                cp -rT "$src" "$target" && rm -rf "$src"
+              else
+                mv "$src" "$target"
+              fi
+            done
+            ls -la /var/www/vendor/oxid-esales/oxideshop-unified-namespace-generator/generated/OxidEsales/Eshop/Core/ConfigFile.php
+          '
+
+      # Sprint 93 — `oe:database:reset` MUST run before
+      # `oe:module:install`. `oe:module:install` writes module config
+      # via `ModuleConfigurationDao->save()`, which fires the cache-
+      # invalidation subscriber, which loads `oxconfig` from the
+      # database. Without the schema, that load fatals with
+      # "Table 'example.oxconfig' doesn't exist".
       - name: Reset database
         run: |
           docker compose exec -T php bin/oe-console oe:database:reset \
             --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
 
-      - name: Run composer update to activate migrations
+      # Sprint 93 / Sprint I §86–95 — payment-component is itself an
+      # oxideshop-module now and must be installed and activated as
+      # a real module, not just composer-required. The OXID composer
+      # plugin already runs `Installing module oxid-esales/payment-component
+      # package.` during `composer update` (visible in the install log)
+      # so the explicit `oe:module:install` here is the documented
+      # safety net for environments where the plugin's BootstrapModuleInstaller
+      # had to run before the DB existed.
+      - name: Install + activate payment-component module
         run: |
-          docker compose exec -T php composer update oxid-esales/payment-component --no-interaction
+          docker compose exec -T php ls -la /var/www/test-module
+          docker compose exec -T php ls -la /var/www/bin
+          docker compose exec -T php ls -la /var/www/vendor/bin
+          docker compose exec -T php bin/oe-console oe:module:install /var/www/test-module
+          docker compose exec -T php bin/oe-console oe:module:activate oe_payment_component
 
       - name: Show docker log
         if: always()
@@ -275,7 +326,7 @@ jobs:
 
       - name: Kick off migrations with composer update
         run: |
-          docker compose exec -T php composer update oxid-esales/payment-component --no-interaction
+          docker compose exec -T php composer require oxid-esales/payment-component --no-interaction
 
       - name: Run integration tests with shop bootstrap
         run: |

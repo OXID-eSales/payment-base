@@ -34,3 +34,29 @@ services:
       - '@OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher'
     public: true
+
+  # Sprint 93 — register the contract repository here too (it's
+  # also bound in stripe-wallet's services.yaml, but PC needs the
+  # binding in its OWN services.yaml so `oe:module:activate
+  # oe_payment_component` succeeds standalone. OXID's
+  # ServicesYamlValidator compiles this file in isolation when
+  # activating the module, before any PSP module's services.yaml has
+  # merged in.
+  OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface:
+    class: OxidEsales\PaymentComponent\Repository\DoctrineContractRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+    public: true
+
+  OxidEsales\PaymentComponent\Repository\DoctrineContractRepository:
+    alias: OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface
+    public: true
+
+  # Sprint 93 — `doctrine.dbal.connection` is a factory wrapper
+  # around OXID's ConnectionProviderInterface (which IS in core).
+  # Defined identically in stripe-wallet's services.yaml; needed
+  # here too so PC standalone activation can wire DoctrineContractRepository.
+  doctrine.dbal.connection:
+    class: Doctrine\DBAL\Connection
+    factory: ['@OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface', 'get']
+    public: false
