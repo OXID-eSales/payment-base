@@ -1,5 +1,5 @@
 {
-    "name": "oxid-esales/payment-component",
+    "name": "oxid-esales/payment-base",
     "description": "Provider-agnostic payment component with smart-contract architecture and shared admin Payment tab",
     "type": "oxideshop-module",
     "license": "proprietary",
@@ -26,13 +26,13 @@
     },
     "autoload": {
         "psr-4": {
-            "OxidEsales\\PaymentComponent\\": "src/",
-            "OxidEsales\\PaymentComponent\\Migrations\\": "migration/data/"
+            "OxidEsales\\PaymentBase\\": "src/",
+            "OxidEsales\\PaymentBase\\Migrations\\": "migration/data/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "OxidEsales\\PaymentComponent\\Tests\\": "tests/"
+            "OxidEsales\\PaymentBase\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -49,7 +49,7 @@
     },
     "extra": {
         "oxideshop": {
-            "target-directory": "oe_payment_component"
+            "target-directory": "oe_payment_base"
         }
     },
     "config": {

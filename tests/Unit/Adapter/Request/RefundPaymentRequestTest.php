@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Adapter\Request;
+namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
-use OxidEsales\PaymentComponent\Adapter\Request\RefundPaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Adapter\Request\RefundPaymentRequest
+ * @covers \OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest
  */
 final class RefundPaymentRequestTest extends TestCase
 {

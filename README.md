@@ -1,10 +1,10 @@
-# Payment Component
+# Payment Base
 
 **Provider-agnostic payment foundation with Smart-Contract Architecture for e-commerce platforms.**
 
 ## Overview
 
-Payment Component is a universal, event-driven payment library that enables seamless integration of multiple payment providers (Stripe, PayPal, Unzer, Adyen, etc.) with **95% code reusability**. Built on the Smart-Contract Architecture pattern where "Place Order" creates a contract, not an order—orders are created only when conditions are fulfilled.
+Payment Base is a universal, event-driven payment library that enables seamless integration of multiple payment providers (Stripe, PayPal, Unzer, Adyen, etc.) with **95% code reusability**. Built on the Smart-Contract Architecture pattern where "Place Order" creates a contract, not an order—orders are created only when conditions are fulfilled.
 
 ### Key Benefits
 
@@ -17,7 +17,7 @@ Payment Component is a universal, event-driven payment library that enables seam
 ## Installation
 
 ```bash
-composer require oxid-esales/payment-component
+composer require oxid-esales/payment-base
 ```
 
 ## Migrations
@@ -30,7 +30,7 @@ composer require oxid-esales/oxid-shop-doctrine-migration-wrapper
 Migrations are running automatically on composer install/update via ComposerPlugin ./src/Composer/MigrationPlugin.php
 
 ```bash
-composer update oxid-esales/payment-component 
+composer update oxid-esales/payment-base
 ```
 
 ## Force Migrations
@@ -147,8 +147,8 @@ src/
 Create an adapter implementing `PaymentAdapterInterface`:
 
 ```php
-use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
-use OxidEsales\PaymentComponent\Adapter\Response\AuthorizationResponse;
+use OxidEsales\PaymentBase\Adapter\PaymentAdapterInterface;
+use OxidEsales\PaymentBase\Adapter\Response\AuthorizationResponse;
 
 class StripeAdapter implements PaymentAdapterInterface
 {
@@ -182,8 +182,8 @@ class StripeAdapter implements PaymentAdapterInterface
 ### Creating a Payment Contract
 
 ```php
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 
 // Capture basket state immutably
 $basketSnapshot = BasketSnapshot::fromBasket($basket);
@@ -206,7 +206,7 @@ $contractRepository->save($contract);
 ### Handling Webhooks
 
 ```php
-use OxidEsales\PaymentComponent\Webhook\AbstractWebhookHandler;
+use OxidEsales\PaymentBase\Webhook\AbstractWebhookHandler;
 
 class StripeWebhookHandler extends AbstractWebhookHandler
 {
@@ -239,8 +239,8 @@ class StripeWebhookHandler extends AbstractWebhookHandler
 ### Event Handling
 
 ```php
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractReadyToCommitEvent;
-use OxidEsales\PaymentComponent\EventSystem\SubscriberInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractReadyToCommitEvent;
+use OxidEsales\PaymentBase\EventSystem\SubscriberInterface;
 
 class OrderCreationSubscriber implements SubscriberInterface
 {
@@ -319,7 +319,7 @@ vendor/bin/phpstan analyse
 
 ## Supported Providers
 
-The component is designed to support any payment provider with REST/SOAP API and webhooks:
+The Payment Base is designed to support any payment provider with REST/SOAP API and webhooks:
 
 - Stripe
 - PayPal

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract\Provider;
+namespace OxidEsales\PaymentBase\Contract\Provider;
 
-use OxidEsales\PaymentComponent\Contract\ConditionTypeProviderInterface;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\ConditionTypeProviderInterface;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
 
 class CoreConditionTypeProvider implements ConditionTypeProviderInterface
 {

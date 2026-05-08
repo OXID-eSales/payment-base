@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Webhook\WebhookRequest;
-use OxidEsales\PaymentComponent\Webhook\WebhookRequestParser;
-use OxidEsales\PaymentComponent\Webhook\WebhookRequestParserInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookRequest;
+use OxidEsales\PaymentBase\Webhook\WebhookRequestParser;
+use OxidEsales\PaymentBase\Webhook\WebhookRequestParserInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookRequestParser
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookRequestParser
  * @group sprint-13
  * @group webhook
  */

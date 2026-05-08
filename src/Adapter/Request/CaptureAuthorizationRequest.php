@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Request;
+namespace OxidEsales\PaymentBase\Adapter\Request;
 
 /**
  * Request for capturing a previously authorized payment.

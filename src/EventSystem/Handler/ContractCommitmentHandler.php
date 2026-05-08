@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCommittedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractReadyToCommitEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\OrderPaymentStateServiceInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractReadyToCommitEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 
 /**
  * Shared contract-commitment: on ContractReadyToCommitEvent, flip the existing

@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Repository;
+namespace OxidEsales\PaymentBase\Repository;
 
-use OxidEsales\PaymentComponent\Contract\IdempotencyRecord;
+use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 
 /**
  * Repository interface for idempotency records.

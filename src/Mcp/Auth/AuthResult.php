@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Auth;
+namespace OxidEsales\PaymentBase\Mcp\Auth;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
 
 readonly class AuthResult
 {

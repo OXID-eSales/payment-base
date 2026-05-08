@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service\Exception;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service\Exception;
 
-use OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException;
+use OxidEsales\PaymentBase\Service\Exception\CaptureFailedException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException
+ * @covers \OxidEsales\PaymentBase\Service\Exception\CaptureFailedException
  */
 class CaptureFailedExceptionTest extends TestCase
 {

@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
 /**
  * Service interface for logging payment requests.
  *
- * Sprint 27: Moved from Stripe to payment-component.
+ * Sprint 27: Moved from Stripe to payment-base.
  * Sprint 8: Facade pattern - wraps legacy RequestLog model.
  * Can swap implementation later without changing handlers.
  *

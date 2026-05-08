@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\Transaction;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\TransactionRecordingHandler;
-use OxidEsales\PaymentComponent\Repository\TransactionRepositoryInterface;
+use OxidEsales\PaymentBase\Contract\Transaction;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\TransactionRecordingHandler;
+use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
 final class TransactionRecordingHandlerTest extends TestCase

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Auth;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Auth;
 
 use LogicException;
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
-use OxidEsales\PaymentComponent\Mcp\Auth\AuthResult;
+use OxidEsales\PaymentBase\Mcp\AgentContext;
+use OxidEsales\PaymentBase\Mcp\Auth\AuthResult;
 use PHPUnit\Framework\TestCase;
 
 class AuthResultTest extends TestCase

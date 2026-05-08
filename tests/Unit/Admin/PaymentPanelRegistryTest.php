@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Admin;
+namespace OxidEsales\PaymentBase\Tests\Unit\Admin;
 
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelProviderInterface;
-use OxidEsales\PaymentComponent\Admin\PaymentPanelRegistry;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelRenderable;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use PHPUnit\Framework\TestCase;
 
 /**

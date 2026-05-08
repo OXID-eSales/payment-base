@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
 /**
  * Interface for delivery address hash management.
  *
- * Sprint 27: Moved from Stripe to payment-component.
+ * Sprint 27: Moved from Stripe to payment-base.
  * Sprint 20: Encapsulates $_REQUEST modification for delivery address validation.
  *
  * OXID's Order::validateDeliveryAddress() reads from $_REQUEST['sDeliveryAddressMD5'].

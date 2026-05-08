@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractDraftCompletedEvent;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 
 /**
  * Handles contract creation and dispatches draft completed event.

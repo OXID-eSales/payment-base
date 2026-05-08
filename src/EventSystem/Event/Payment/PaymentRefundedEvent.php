@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Payment;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Payment;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 
 readonly class PaymentRefundedEvent implements PaymentRefundedEventInterface
 {

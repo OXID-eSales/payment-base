@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Handler;
+namespace OxidEsales\PaymentBase\Mcp\Handler;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCancelledEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCommittedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFailedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFulfilledEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\HandlerInterface;
-use OxidEsales\PaymentComponent\Mcp\Notification\AgentNotificationPayload;
-use OxidEsales\PaymentComponent\Mcp\Notification\AgentNotificationServiceInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCancelledEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractFailedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractFulfilledEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
+use OxidEsales\PaymentBase\Mcp\Notification\AgentNotificationPayload;
+use OxidEsales\PaymentBase\Mcp\Notification\AgentNotificationServiceInterface;
 
 class AgentNotificationHandler implements HandlerInterface
 {

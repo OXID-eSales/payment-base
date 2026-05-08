@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Repository;
+namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Contract\Transaction;
-use OxidEsales\PaymentComponent\Repository\DoctrineTransactionRepository;
+use OxidEsales\PaymentBase\Contract\Transaction;
+use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 
 /**
  * @group database

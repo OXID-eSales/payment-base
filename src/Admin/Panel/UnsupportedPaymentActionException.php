@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Panel;
+namespace OxidEsales\PaymentBase\Admin\Panel;
 
 /**
  * Thrown when the admin tries to dispatch an action for an order that

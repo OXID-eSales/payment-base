@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Notification;
+namespace OxidEsales\PaymentBase\Mcp\Notification;
 
 readonly class AgentNotificationResult
 {

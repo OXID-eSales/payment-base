@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Contract\SecurityValidationResultInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\SecurityValidationResultInterface;
 
 /**
  * Interface for security validation of returning users from payment providers.

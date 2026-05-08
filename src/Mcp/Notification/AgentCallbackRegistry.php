@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Notification;
+namespace OxidEsales\PaymentBase\Mcp\Notification;
 
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
 class AgentCallbackRegistry implements AgentCallbackRegistryInterface
 {

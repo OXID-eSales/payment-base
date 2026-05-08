@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Ucp;
+namespace OxidEsales\PaymentBase\Mcp\Ucp;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 interface UcpResponseFormatterInterface
 {

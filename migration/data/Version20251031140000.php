@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Migrations;
+namespace OxidEsales\PaymentBase\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaException;

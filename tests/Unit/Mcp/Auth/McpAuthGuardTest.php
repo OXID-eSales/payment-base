@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Auth;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Auth;
 
-use OxidEsales\PaymentComponent\Mcp\Auth\McpAuthGuard;
+use OxidEsales\PaymentBase\Mcp\Auth\McpAuthGuard;
 use PHPUnit\Framework\TestCase;
 
 class McpAuthGuardTest extends TestCase

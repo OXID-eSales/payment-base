@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Contract;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Contract;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
 
 readonly class ContractTransitionedToPendingEvent implements ContractTransitionedToPendingEventInterface
 {

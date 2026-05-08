@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Core\Events;
+namespace OxidEsales\PaymentBase\Core\Events;
 
 /**
- * Module lifecycle hooks for `oe_payment_component`.
+ * Module lifecycle hooks for `oe_payment_base`.
  *
  * Intentionally a no-op:
  *
  * - Database schema is owned by Doctrine migrations under
  *   `migration/data/`. CI invokes them via `doctrine-migrations
- *   migrate --configuration=vendor/oxid-esales/payment-component/migration/migrations.yml`
+ *   migrate --configuration=vendor/oxid-esales/payment-base/migration/migrations.yml`
  *   as part of the existing shop-install workflow. Local devs run the
  *   same command or `bin/oe-console oe:migrations:migrate` depending
  *   on the project.

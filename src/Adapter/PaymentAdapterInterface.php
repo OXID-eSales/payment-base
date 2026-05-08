@@ -7,27 +7,27 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter;
+namespace OxidEsales\PaymentBase\Adapter;
 
-use OxidEsales\PaymentComponent\Adapter\Request\CreatePaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\CapturePaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\RefundPaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\VoidPaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\AuthorizePaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\CaptureAuthorizationRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\VoidAuthorizationRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\ReauthorizePaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\CreatePaymentMethodRequest;
-use OxidEsales\PaymentComponent\Adapter\Request\ThreeDSecureRequest;
-use OxidEsales\PaymentComponent\Adapter\Response\PaymentResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\CaptureResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\RefundResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\CancellationResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\PaymentDetailsResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\AuthorizationResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\PaymentMethodResponse;
-use OxidEsales\PaymentComponent\Adapter\Response\ThreeDSecureResponse;
-use OxidEsales\PaymentComponent\Adapter\Exception\PaymentAdapterException;
+use OxidEsales\PaymentBase\Adapter\Request\CreatePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\CapturePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\VoidPaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\AuthorizePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\CaptureAuthorizationRequest;
+use OxidEsales\PaymentBase\Adapter\Request\VoidAuthorizationRequest;
+use OxidEsales\PaymentBase\Adapter\Request\ReauthorizePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\CreatePaymentMethodRequest;
+use OxidEsales\PaymentBase\Adapter\Request\ThreeDSecureRequest;
+use OxidEsales\PaymentBase\Adapter\Response\PaymentResponse;
+use OxidEsales\PaymentBase\Adapter\Response\CaptureResponse;
+use OxidEsales\PaymentBase\Adapter\Response\RefundResponse;
+use OxidEsales\PaymentBase\Adapter\Response\CancellationResponse;
+use OxidEsales\PaymentBase\Adapter\Response\PaymentDetailsResponse;
+use OxidEsales\PaymentBase\Adapter\Response\AuthorizationResponse;
+use OxidEsales\PaymentBase\Adapter\Response\PaymentMethodResponse;
+use OxidEsales\PaymentBase\Adapter\Response\ThreeDSecureResponse;
+use OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException;
 
 /**
  * Unified interface for all payment provider adapters.

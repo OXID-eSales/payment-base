@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Acp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Acp;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Mcp\Acp\AcpResponseFormatter;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Mcp\Acp\AcpResponseFormatter;
 use PHPUnit\Framework\TestCase;
 
 class AcpResponseFormatterTest extends TestCase

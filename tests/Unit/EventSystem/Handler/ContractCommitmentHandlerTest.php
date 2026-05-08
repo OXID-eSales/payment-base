@@ -7,19 +7,19 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCommittedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractReadyToCommitEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\EventSystem\Handler\ContractCommitmentHandler;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\OrderPaymentStateServiceInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractReadyToCommitEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\EventSystem\Handler\ContractCommitmentHandler;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 final class ContractCommitmentHandlerTest extends TestCase

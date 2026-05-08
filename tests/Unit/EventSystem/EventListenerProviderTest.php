@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem;
 
-use OxidEsales\PaymentComponent\EventSystem\EventListenerProvider;
-use OxidEsales\PaymentComponent\EventSystem\EventListenerProviderInterface;
-use OxidEsales\PaymentComponent\EventSystem\Handler\HandlerInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface;
+use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 
 class EventListenerProviderTest extends TestCase

@@ -75,13 +75,13 @@ run_command() {
         cd "$MODULE_ROOT" && eval "$1"
     else
         # Local: Run in Docker container
-        docker compose exec -w /var/www/extensions/payment-component -T php bash -c "$1"
+        docker compose exec -w /var/www/extensions/payment-base -T php bash -c "$1"
     fi
 }
 
 # Helper function to run phpcs in Docker with correct path
 run_phpcs_docker() {
-    docker compose exec -w /var/www/extensions/payment-component -T php \
+    docker compose exec -w /var/www/extensions/payment-base -T php \
         /var/www/vendor/bin/phpcs --standard=tests/phpcs.xml --warning-severity=0 src/
 }
 
@@ -90,7 +90,7 @@ run_phpstan_docker() {
     local files="$1"
     if [ -n "$files" ]; then
         echo "Running PHPStan on changed files: $files"
-        docker compose exec -w /var/www/extensions/payment-component -T php \
+        docker compose exec -w /var/www/extensions/payment-base -T php \
             vendor/bin/phpstan analyse -c tests/PhpStan/phpstan.neon --level=max $files --memory-limit=1G
     else
         echo "No PHP files to check with PHPStan"
@@ -104,8 +104,8 @@ run_phpmd_docker() {
     if [ -n "$files" ]; then
         echo "Running PHPMD on changed files: $files"
         # Check if phpmd is available in module's vendor, otherwise skip
-        if docker compose exec -w /var/www/extensions/payment-component -T php test -f vendor/bin/phpmd 2>/dev/null; then
-            docker compose exec -w /var/www/extensions/payment-component -T php \
+        if docker compose exec -w /var/www/extensions/payment-base -T php test -f vendor/bin/phpmd 2>/dev/null; then
+            docker compose exec -w /var/www/extensions/payment-base -T php \
                 vendor/bin/phpmd $files text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict
         else
             echo "PHPMD not available - skipping (add phpmd/phpmd to require-dev to enable)"
@@ -157,7 +157,7 @@ else
     if [ "$FULL_TESTS" = true ]; then
         echo ">>> Running PHPUnit Tests (Full: Unit + Integration)..."
         echo -e "${YELLOW}Note: Integration tests require OXID shop context.${NC}"
-        echo -e "${YELLOW}Run from shop root with: docker compose exec php vendor/bin/phpunit -c extensions/payment-component/phpunit.xml${NC}"
+        echo -e "${YELLOW}Run from shop root with: docker compose exec php vendor/bin/phpunit -c extensions/payment-base/phpunit.xml${NC}"
         echo ""
         # In standalone mode, --full still only runs unit tests safely
         # Integration tests need IntegrationTestCase from OXID shop
@@ -174,7 +174,7 @@ else
         PHPUNIT_STATUS=$?
     else
         # Local: Run in Docker with component's own phpunit.xml (standalone mode)
-        docker compose exec -w /var/www/extensions/payment-component -T php \
+        docker compose exec -w /var/www/extensions/payment-base -T php \
             vendor/bin/phpunit -c phpunit.xml $TESTSUITE_ARG
         PHPUNIT_STATUS=$?
     fi
@@ -231,15 +231,15 @@ run_dead_code_check() {
                 ;;
         esac
 
-        # Count references in payment-component src/
+        # Count references in payment-base src/
         local ref_count=$(grep -r --include="*.php" -l "\b$name\b" src/ 2>/dev/null | wc -l)
 
         # If only found once (the definition file), check other locations
         if [ "$ref_count" -le 1 ]; then
-            # Check payment-component config files
+            # Check payment-base config files
             local config_ref=$(grep -r "$name" *.yaml 2>/dev/null | wc -l)
             if [ "$config_ref" -eq 0 ]; then
-                # Check stripe module src/ (payment-component is a library for stripe)
+                # Check stripe module src/ (payment-base is a library for stripe)
                 local stripe_ref=0
                 if [ -d "$stripe_dir/src" ]; then
                     stripe_ref=$(grep -r --include="*.php" -l "\b$name\b" "$stripe_dir/src/" 2>/dev/null | wc -l)
@@ -275,8 +275,8 @@ if [ "$ENVIRONMENT" = "github" ]; then
     DEADCODE_STATUS=$?
 else
     # Run dead code check inside Docker
-    # Note: payment-component is a library consumed by stripe module, so we check both
-    docker compose exec -w /var/www/extensions/payment-component -T php bash -c '
+    # Note: payment-base is a library consumed by stripe module, so we check both
+    docker compose exec -w /var/www/extensions/payment-base -T php bash -c '
         dead_code_found=0
         STRIPE_DIR="../stripe"
 
@@ -291,14 +291,14 @@ else
                     ;;
             esac
 
-            # Count references in payment-component src/
+            # Count references in payment-base src/
             ref_count=$(grep -r --include="*.php" -l "\b$name\b" src/ 2>/dev/null | wc -l)
 
             if [ "$ref_count" -le 1 ]; then
-                # Check payment-component config files
+                # Check payment-base config files
                 config_ref=$(grep -rl "$name" *.yaml 2>/dev/null | wc -l)
                 if [ "$config_ref" -eq 0 ]; then
-                    # Check stripe module src/ (payment-component is a library for stripe)
+                    # Check stripe module src/ (payment-base is a library for stripe)
                     stripe_ref=0
                     if [ -d "$STRIPE_DIR/src" ]; then
                         stripe_ref=$(grep -r --include="*.php" -l "\b$name\b" "$STRIPE_DIR/src/" 2>/dev/null | wc -l)

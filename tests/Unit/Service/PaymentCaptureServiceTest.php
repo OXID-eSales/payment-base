@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Service\PaymentCaptureService;
-use OxidEsales\PaymentComponent\Service\Exception\CaptureFailedException;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
-use OxidEsales\PaymentComponent\Adapter\Request\CapturePaymentRequest;
-use OxidEsales\PaymentComponent\Adapter\Response\CaptureResponse;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Contract\ContractState;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Service\PaymentCaptureService;
+use OxidEsales\PaymentBase\Service\Exception\CaptureFailedException;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Adapter\PaymentAdapterInterface;
+use OxidEsales\PaymentBase\Adapter\Request\CapturePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Response\CaptureResponse;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\PaymentCaptureService
- * @covers \OxidEsales\PaymentComponent\Service\AbstractPaymentCaptureService
+ * @covers \OxidEsales\PaymentBase\Service\PaymentCaptureService
+ * @covers \OxidEsales\PaymentBase\Service\AbstractPaymentCaptureService
  */
 class PaymentCaptureServiceTest extends TestCase
 {

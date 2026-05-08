@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Return;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Return;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\Return\ReturnResolution;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\Return\ReturnResolution;
 
 /**
  * Unified "shopper-just-came-back-from-the-PSP" event. Replaces Stripe's and

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Acp;
+namespace OxidEsales\PaymentBase\Mcp\Acp;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 class AcpResponseFormatter implements AcpResponseFormatterInterface
 {

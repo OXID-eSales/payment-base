@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Webhook\WebhookEvent;
+use OxidEsales\PaymentBase\Webhook\WebhookEvent;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookEvent
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookEvent
  * @group sprint-13
  * @group webhook
  */

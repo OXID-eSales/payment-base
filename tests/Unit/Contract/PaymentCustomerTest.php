@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Contract\PaymentCustomer;
-use OxidEsales\PaymentComponent\Model\ModelInterface;
+use OxidEsales\PaymentBase\Contract\PaymentCustomer;
+use OxidEsales\PaymentBase\Model\ModelInterface;
 use PHPUnit\Framework\TestCase;
 
 class PaymentCustomerTest extends TestCase

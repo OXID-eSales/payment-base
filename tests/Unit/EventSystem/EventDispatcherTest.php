@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem;
 
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 
 class EventDispatcherTest extends TestCase

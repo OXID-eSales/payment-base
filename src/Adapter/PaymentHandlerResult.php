@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter;
+namespace OxidEsales\PaymentBase\Adapter;
 
 /**
  * Result returned by payment handlers

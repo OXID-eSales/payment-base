@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract\Provider;
+namespace OxidEsales\PaymentBase\Contract\Provider;
 
-use OxidEsales\PaymentComponent\Contract\ConditionTypeProviderInterface;
+use OxidEsales\PaymentBase\Contract\ConditionTypeProviderInterface;
 
 class AgentConditionTypeProvider implements ConditionTypeProviderInterface
 {

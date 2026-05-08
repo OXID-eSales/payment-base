@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Notification;
+namespace OxidEsales\PaymentBase\Mcp\Notification;
 
-use OxidEsales\PaymentComponent\Mcp\Http\HttpClientInterface;
-use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
+use OxidEsales\PaymentBase\Mcp\Http\HttpClientInterface;
+use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
 class AgentNotificationService implements AgentNotificationServiceInterface
 {
@@ -52,7 +52,7 @@ class AgentNotificationService implements AgentNotificationServiceInterface
     {
         $headers = [
             'Content-Type' => 'application/json',
-            'User-Agent' => 'OxidPaymentComponent/1.0',
+            'User-Agent' => 'OxidPaymentBase/1.0',
         ];
 
         if ($signature !== '') {

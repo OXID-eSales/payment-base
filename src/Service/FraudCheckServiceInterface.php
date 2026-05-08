@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
-use OxidEsales\PaymentComponent\Adapter\Response\FraudCheckResponse;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 /**
  * Interface for fraud check services.
  *
  * Sprint 2: Contract-aware fraud checking interface.
- * Interface lives in payment-component, implementation in provider modules.
+ * Interface lives in payment-base, implementation in provider modules.
  *
  * Sprint 31: Returns FraudCheckResponse instead of FraudCheckResult.
  *

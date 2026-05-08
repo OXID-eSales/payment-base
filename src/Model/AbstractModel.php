@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Model;
+namespace OxidEsales\PaymentBase\Model;
 
 abstract class AbstractModel implements ModelInterface
 {

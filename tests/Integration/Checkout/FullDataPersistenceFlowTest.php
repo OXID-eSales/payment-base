@@ -7,24 +7,24 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Checkout;
+namespace OxidEsales\PaymentBase\Tests\Integration\Checkout;
 
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\Transaction;
-use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
-use OxidEsales\PaymentComponent\Repository\DoctrineTransactionRepository;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\Transaction;
+use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
+use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 
 /**
  * Full Data Persistence Flow Test
  *
  * Tests that ALL relevant oe_payments_* tables are populated during the checkout flow
- * as documented in: docs/payment-component/puml/04-02-payment-smart-contract-flow-standard.puml
+ * as documented in: docs/payment-base/puml/04-02-payment-smart-contract-flow-standard.puml
  *
  * Tables tested:
  * - oe_payments_contract    : Contract state machine (includes capture/refund tracking since Sprint 8)

@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
 /**
  * Advances the contract state machine DRAFT/NOT_FINISHED → PENDING when the

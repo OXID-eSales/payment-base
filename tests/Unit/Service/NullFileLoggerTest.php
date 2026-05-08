@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
-use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
-use OxidEsales\PaymentComponent\Service\NullFileLogger;
+use OxidEsales\PaymentBase\Service\FileLoggerInterface;
+use OxidEsales\PaymentBase\Service\NullFileLogger;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\NullFileLogger
+ * @covers \OxidEsales\PaymentBase\Service\NullFileLogger
  */
 class NullFileLoggerTest extends TestCase
 {

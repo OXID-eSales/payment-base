@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Contract\IdempotencyRecord;
+use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Sprint 42: Idempotency implementation.
  *
- * @covers \OxidEsales\PaymentComponent\Contract\IdempotencyRecord
+ * @covers \OxidEsales\PaymentBase\Contract\IdempotencyRecord
  * @group sprint-42
  * @group idempotency
  */

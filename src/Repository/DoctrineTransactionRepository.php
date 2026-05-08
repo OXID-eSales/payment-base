@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Repository;
+namespace OxidEsales\PaymentBase\Repository;
 
 use Doctrine\DBAL\Connection;
-use OxidEsales\PaymentComponent\Contract\Transaction;
+use OxidEsales\PaymentBase\Contract\Transaction;
 use RuntimeException;
 
 /**

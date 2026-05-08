@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractState;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFulfilledEvent;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\ContractFulfillmentService;
-use OxidEsales\PaymentComponent\Service\ContractFulfillmentServiceInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractFulfilledEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\ContractFulfillmentService;
+use OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
  * - SRP (only handles contract fulfillment)
  * - DRY (single implementation for all fulfillment operations)
  *
- * @covers \OxidEsales\PaymentComponent\Service\ContractFulfillmentService
+ * @covers \OxidEsales\PaymentBase\Service\ContractFulfillmentService
  * @group sprint-18
  */
 class ContractFulfillmentServiceTest extends TestCase
@@ -392,8 +392,8 @@ class ContractFulfillmentServiceTest extends TestCase
         );
 
         // Add condition for state transitions
-        $contract->addCondition(new \OxidEsales\PaymentComponent\Contract\ContractCondition(
-            \OxidEsales\PaymentComponent\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED
+        $contract->addCondition(new \OxidEsales\PaymentBase\Contract\ContractCondition(
+            \OxidEsales\PaymentBase\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED
         ));
 
         switch ($state) {
@@ -406,14 +406,14 @@ class ContractFulfillmentServiceTest extends TestCase
                 $contract->setProvider('stripe', 'pi_test');
                 $contract->transitionToNotFinished('order-123');
                 $contract->transitionToPending();
-                $contract->fulfillCondition(\OxidEsales\PaymentComponent\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED);
+                $contract->fulfillCondition(\OxidEsales\PaymentBase\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED);
                 $contract->commitToOrder('order-123');
                 break;
             case 'fulfilled':
                 $contract->setProvider('stripe', 'pi_test');
                 $contract->transitionToNotFinished('order-123');
                 $contract->transitionToPending();
-                $contract->fulfillCondition(\OxidEsales\PaymentComponent\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED);
+                $contract->fulfillCondition(\OxidEsales\PaymentBase\Contract\ContractCondition::TYPE_PAYMENT_AUTHORIZED);
                 $contract->commitToOrder('order-123');
                 $contract->fulfill();
                 break;

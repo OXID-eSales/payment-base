@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Http;
+namespace OxidEsales\PaymentBase\Mcp\Http;
 
 /**
  * APCu-based fixed-window rate limiter.

@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Event\Request;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Event\Request;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\AbstractProviderRequestEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\CancelAuthorizationRequestedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\CaptureRequestedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\RefundRequestedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\VoidAuthorizationRequestedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\CancelAuthorizationRequestedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\CaptureRequestedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\VoidAuthorizationRequestedEvent;
 use PHPUnit\Framework\TestCase;
 
 final class AbstractProviderRequestEventTest extends TestCase

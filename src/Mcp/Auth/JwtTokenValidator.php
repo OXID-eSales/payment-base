@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Auth;
+namespace OxidEsales\PaymentBase\Mcp\Auth;
 
 class JwtTokenValidator implements TokenValidatorInterface
 {

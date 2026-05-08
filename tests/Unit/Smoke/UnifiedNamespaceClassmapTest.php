@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Smoke;
+namespace OxidEsales\PaymentBase\Tests\Unit\Smoke;
 
 use PHPUnit\Framework\TestCase;
 
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 final class UnifiedNamespaceClassmapTest extends TestCase
 {
     private const PACKAGE_ROOT = __DIR__ . '/../../..';
-    private const MODULE_ID = 'oe_payment_component';
+    private const MODULE_ID = 'oe_payment_base';
 
     public function testComposerJsonDeclaresPackageAsOxideshopModule(): void
     {
@@ -42,25 +42,25 @@ final class UnifiedNamespaceClassmapTest extends TestCase
         self::assertSame(
             'oxideshop-module',
             $composer['type'] ?? null,
-            'payment-component composer.json `type` must stay '
+            'payment-base composer.json `type` must stay '
             . '`oxideshop-module` so the OXID composer plugin installs '
             . 'it under source/modules/. See Sprint 93 / Sprint I §47.'
         );
         self::assertSame(
             self::MODULE_ID,
             $composer['extra']['oxideshop']['target-directory'] ?? null,
-            'payment-component composer.json must declare '
+            'payment-base composer.json must declare '
             . '`extra.oxideshop.target-directory: ' . self::MODULE_ID . '` '
             . 'so the OXID composer plugin knows where to install it.'
         );
     }
 
-    public function testMetadataPhpDeclaresPaymentComponentModuleId(): void
+    public function testMetadataPhpDeclaresPaymentBaseModuleId(): void
     {
         $metadataPath = self::PACKAGE_ROOT . '/metadata.php';
         self::assertFileExists(
             $metadataPath,
-            'payment-component must ship metadata.php — it is now an '
+            'payment-base must ship metadata.php — it is now an '
             . 'oxideshop-module, not a composer-plugin. See Sprint 93.'
         );
 

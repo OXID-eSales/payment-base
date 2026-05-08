@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract;
+namespace OxidEsales\PaymentBase\Contract;
 
 use DateTimeInterface;
-use OxidEsales\PaymentComponent\Model\ModelInterface;
+use OxidEsales\PaymentBase\Model\ModelInterface;
 
 /**
  * Payment contract capturing purchase intent before order creation.

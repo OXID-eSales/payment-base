@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Repository;
+namespace OxidEsales\PaymentBase\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
-use OxidEsales\PaymentComponent\Contract\IdempotencyRecord;
+use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 
 /**
  * Doctrine DBAL implementation of IdempotencyRepositoryInterface.

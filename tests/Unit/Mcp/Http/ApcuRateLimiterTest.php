@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Http;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Http;
 
-use OxidEsales\PaymentComponent\Mcp\Http\ApcuRateLimiter;
+use OxidEsales\PaymentBase\Mcp\Http\ApcuRateLimiter;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Mcp\Http\ApcuRateLimiter
+ * @covers \OxidEsales\PaymentBase\Mcp\Http\ApcuRateLimiter
  */
 class ApcuRateLimiterTest extends TestCase
 {

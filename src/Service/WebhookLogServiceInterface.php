@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 
 /**
  * Service interface for webhook log operations.

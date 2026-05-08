@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 
 /**
  * Abstract base class for all event handlers.

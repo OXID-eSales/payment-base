@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Payment;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Payment;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
 
 interface PaymentEventInterface extends EventInterface
 {

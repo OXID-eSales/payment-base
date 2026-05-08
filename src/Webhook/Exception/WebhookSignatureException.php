@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Webhook\Exception;
+namespace OxidEsales\PaymentBase\Webhook\Exception;
 
 use Exception;
 

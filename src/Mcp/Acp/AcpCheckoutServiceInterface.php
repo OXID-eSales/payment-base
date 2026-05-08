@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Acp;
+namespace OxidEsales\PaymentBase\Mcp\Acp;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
 
 interface AcpCheckoutServiceInterface
 {

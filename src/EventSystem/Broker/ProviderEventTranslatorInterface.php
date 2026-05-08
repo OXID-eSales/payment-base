@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Broker;
+namespace OxidEsales\PaymentBase\EventSystem\Broker;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\AbstractProviderRequestEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEvent;
 
 /**
  * One implementation per payment provider. Declares which `providerName` the

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter;
+namespace OxidEsales\PaymentBase\Adapter;
 
 /**
  * Interface for payment handler adapters.

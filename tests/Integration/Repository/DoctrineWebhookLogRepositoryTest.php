@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Repository;
+namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
-use OxidEsales\PaymentComponent\Repository\DoctrineWebhookLogRepository;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
+use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 
 /**
  * @group database

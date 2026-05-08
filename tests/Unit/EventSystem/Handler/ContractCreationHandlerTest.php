@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Handler\GenericContractCreationHandler;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\ContractService;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use OxidEsales\PaymentBase\EventSystem\Handler\GenericContractCreationHandler;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\ContractService;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 

@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\Transaction;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
-use OxidEsales\PaymentComponent\Repository\TransactionRepositoryInterface;
+use OxidEsales\PaymentBase\Contract\Transaction;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
+use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 
 /**
  * Writes an `authorization` row into `oe_payments_transaction` when a payment

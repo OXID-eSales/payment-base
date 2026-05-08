@@ -1,5 +1,5 @@
 table_storage:
-  table_name: oxmigrations_payment_component
+  table_name: oxmigrations_payment_base
 
 migrations_paths:
-  'OxidEsales\PaymentComponent\Migrations': data
+  'OxidEsales\PaymentBase\Migrations': data

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Acp\Tool;
+namespace OxidEsales\PaymentBase\Mcp\Acp\Tool;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
-use OxidEsales\PaymentComponent\Mcp\Acp\AcpCheckoutServiceInterface;
-use OxidEsales\PaymentComponent\Mcp\McpToolInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Mcp\Acp\AcpCheckoutServiceInterface;
+use OxidEsales\PaymentBase\Mcp\McpToolInterface;
 
 class CancelCheckoutTool implements McpToolInterface
 {

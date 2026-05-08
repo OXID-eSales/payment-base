@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter;
+namespace OxidEsales\PaymentBase\Adapter;
 
-use OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest;
-use OxidEsales\PaymentComponent\Adapter\Response\OrderResponse;
+use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
+use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 
 /**
  * Shop-agnostic order service interface.
@@ -39,7 +39,7 @@ interface ShopOrderServiceInterface
      *
      * @param CreateOrderRequest $request Order creation parameters
      * @return OrderResponse Created order details
-     * @throws \OxidEsales\PaymentComponent\Adapter\Exception\ShopOrderException
+     * @throws \OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException
      */
     public function createOrder(CreateOrderRequest $request): OrderResponse;
 

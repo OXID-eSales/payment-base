@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-use OxidEsales\PaymentComponent\Admin\PaymentAdminController;
-use OxidEsales\PaymentComponent\Core\Events\ModuleLifecycle;
+use OxidEsales\PaymentBase\Admin\PaymentAdminController;
+use OxidEsales\PaymentBase\Core\Events\ModuleLifecycle;
 
 $sMetadataVersion = '2.1';
 
 $aModule = [
-    'id'          => 'oe_payment_component',
+    'id'          => 'oe_payment_base',
     'title'       => [
         'de' => 'OXID Payment Component',
         'en' => 'OXID Payment Component',
@@ -38,7 +38,7 @@ $aModule = [
         'PaymentAdmin' => PaymentAdminController::class,
     ],
     'templates'   => [
-        '@oe_payment_component/admin/payment_admin_tab' => 'views/twig/admin/payment_admin_tab.html.twig',
+        '@oe_payment_base/admin/payment_admin_tab' => 'views/twig/admin/payment_admin_tab.html.twig',
     ],
     'events'      => [
         'onActivate'   => ModuleLifecycle::class . '::onActivate',

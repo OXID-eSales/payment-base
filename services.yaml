@@ -12,15 +12,15 @@ services:
   # its body inside the shared wrapper template.
   # --------------------------------------------------------------
 
-  OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface:
-    class: OxidEsales\PaymentComponent\Admin\PaymentPanelRegistry
+  OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface:
+    class: OxidEsales\PaymentBase\Admin\PaymentPanelRegistry
     arguments:
       - !tagged_iterator oe.payment.admin_panel
     public: true
 
-  OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher:
+  OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher:
     arguments:
-      - '@OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
     public: true
 
   # Admin controller — instantiated by OXID via metadata.php `controllers`
@@ -28,28 +28,28 @@ services:
   # container service anyway so tests / diagnostic harnesses can resolve it
   # with DI, but OXID's runtime creates its own instance via oxNew-style
   # dispatch and lazy-fetches dependencies through ContainerFactory.
-  OxidEsales\PaymentComponent\Admin\PaymentAdminController:
+  OxidEsales\PaymentBase\Admin\PaymentAdminController:
     arguments:
-      - '@OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface'
-      - '@OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface'
-      - '@OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher'
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      - '@OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher'
     public: true
 
   # Sprint 93 — register the contract repository here too (it's
   # also bound in stripe-wallet's services.yaml, but PC needs the
   # binding in its OWN services.yaml so `oe:module:activate
-  # oe_payment_component` succeeds standalone. OXID's
+  # oe_payment_base` succeeds standalone. OXID's
   # ServicesYamlValidator compiles this file in isolation when
   # activating the module, before any PSP module's services.yaml has
   # merged in.
-  OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface:
-    class: OxidEsales\PaymentComponent\Repository\DoctrineContractRepository
+  OxidEsales\PaymentBase\Repository\ContractRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineContractRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
     public: true
 
-  OxidEsales\PaymentComponent\Repository\DoctrineContractRepository:
-    alias: OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface
+  OxidEsales\PaymentBase\Repository\DoctrineContractRepository:
+    alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
     public: true
 
   # Sprint 93 — `doctrine.dbal.connection` is a factory wrapper

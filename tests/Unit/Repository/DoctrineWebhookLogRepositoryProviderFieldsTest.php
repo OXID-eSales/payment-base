@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Repository;
+namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use OxidEsales\PaymentComponent\Repository\DoctrineWebhookLogRepository;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
 
 /**

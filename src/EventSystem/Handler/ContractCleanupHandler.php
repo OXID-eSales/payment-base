@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractTerminatedEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTerminatedEventInterface;
 
 /**
  * Handles contract termination events (cancellation and expiration).

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp;
+namespace OxidEsales\PaymentBase\Mcp;
 
 /**
  * Authenticated AI agent context.

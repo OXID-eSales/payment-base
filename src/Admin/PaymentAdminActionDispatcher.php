@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin;
+namespace OxidEsales\PaymentBase\Admin;
 
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
-use OxidEsales\PaymentComponent\Admin\Panel\UnsupportedPaymentActionException;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
 
 /**
  * Routes admin actions (refund, capture, cancel, …) from the shared

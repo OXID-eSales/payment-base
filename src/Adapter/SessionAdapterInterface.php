@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter;
+namespace OxidEsales\PaymentBase\Adapter;
 
 /**
  * Interface for session operations.
  *
- * Sprint 27: Moved from Stripe to payment-component.
+ * Sprint 27: Moved from Stripe to payment-base.
  * Sprint 20: Created to remove Registry::getSession() calls from handlers.
  * Allows handlers to be unit tested without triggering OXID container builds.
  *

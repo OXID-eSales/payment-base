@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Event\Return;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Event\Return;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
-use OxidEsales\PaymentComponent\Return\ReturnResolution;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
+use OxidEsales\PaymentBase\Return\ReturnResolution;
 use PHPUnit\Framework\TestCase;
 
 final class CheckoutReturnCompletedEventTest extends TestCase

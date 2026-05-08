@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service\Factory;
+namespace OxidEsales\PaymentBase\Service\Factory;
 
-use OxidEsales\PaymentComponent\Adapter\PaymentAdapterInterface;
+use OxidEsales\PaymentBase\Adapter\PaymentAdapterInterface;
 
 /**
  * Interface for payment adapter factories.

@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Contract;
+namespace OxidEsales\PaymentBase\Admin\Contract;
 
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 
 interface PaymentPanelRegistryInterface
 {

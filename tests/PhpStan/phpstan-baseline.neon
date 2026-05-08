@@ -13,6 +13,6 @@ parameters:
         # outside this package's scope; PHPStan can't see those
         # consumers when analysing PC standalone.
         -
-            message: '#Trait OxidEsales\\PaymentComponent\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.#'
+            message: '#Trait OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.#'
             path: ../../src/Controller/HandlesCheckoutReturn.php
             count: 1

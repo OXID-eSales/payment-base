@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem;
+namespace OxidEsales\PaymentBase\EventSystem;
 
-use OxidEsales\PaymentComponent\EventSystem\Handler\HandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
 
 /**
  * Manages event listeners and provides them to EventDispatcher.

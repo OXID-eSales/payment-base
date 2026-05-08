@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Event\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Event\Contract;
 
 use PHPUnit\Framework\TestCase;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 final class ContractCreatedEventTest extends TestCase
 {

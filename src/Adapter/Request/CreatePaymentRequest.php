@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Request;
+namespace OxidEsales\PaymentBase\Adapter\Request;
 
 /**
  * Provider-agnostic request for creating a payment.

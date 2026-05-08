@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Webhook;
+namespace OxidEsales\PaymentBase\Webhook;
 
 /**
  * Interface for parsing raw webhook HTTP requests.

@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Adapter\Exception;
+namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Exception;
 
-use OxidEsales\PaymentComponent\Adapter\Exception\PaymentAdapterException;
+use OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Adapter\Exception\PaymentAdapterException
+ * @covers \OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException
  */
 final class PaymentAdapterExceptionTest extends TestCase
 {

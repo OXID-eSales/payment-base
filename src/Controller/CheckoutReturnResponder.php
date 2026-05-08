@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Controller;
+namespace OxidEsales\PaymentBase\Controller;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Return\ReturnResolverInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;

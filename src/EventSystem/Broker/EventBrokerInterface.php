@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Broker;
+namespace OxidEsales\PaymentBase\EventSystem\Broker;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\AbstractProviderRequestEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEvent;
 
 /**
  * Routes a provider-neutral `AbstractProviderRequestEvent` to the active
  * provider's concrete event (via a registered `ProviderEventTranslatorInterface`)
- * and dispatches the translated event through the standard payment-component
+ * and dispatches the translated event through the standard payment-base
  * dispatcher.
  *
  * Provider resolution precedence:

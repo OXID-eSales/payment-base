@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
+use OxidEsales\PaymentBase\Mcp\AgentContext;
 use PHPUnit\Framework\TestCase;
 
 class AgentContextTest extends TestCase

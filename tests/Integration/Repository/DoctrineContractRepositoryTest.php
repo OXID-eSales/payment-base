@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Repository;
+namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 
 use DateTime;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 
 /**
  * @group database

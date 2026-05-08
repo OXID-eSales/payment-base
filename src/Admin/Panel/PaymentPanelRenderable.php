@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Panel;
+namespace OxidEsales\PaymentBase\Admin\Panel;
 
 /**
  * Immutable DTO returned by every panel provider.

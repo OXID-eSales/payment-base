@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Response;
+namespace OxidEsales\PaymentBase\Adapter\Response;
 
 /**
  * Normalized response for 3D Secure authentication result.

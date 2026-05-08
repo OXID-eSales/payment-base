@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

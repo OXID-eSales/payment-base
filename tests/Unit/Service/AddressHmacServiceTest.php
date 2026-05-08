@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use InvalidArgumentException;
-use OxidEsales\PaymentComponent\Service\AddressHmacService;
+use OxidEsales\PaymentBase\Service\AddressHmacService;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Sprint 68b: M9 — Address HMAC binding.
  *
- * @covers \OxidEsales\PaymentComponent\Service\AddressHmacService
+ * @covers \OxidEsales\PaymentBase\Service\AddressHmacService
  * @group sprint-68b
  * @group security
  */

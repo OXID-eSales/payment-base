@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Broker;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Broker;
 
-use OxidEsales\PaymentComponent\EventSystem\Broker\EventBroker;
-use OxidEsales\PaymentComponent\EventSystem\Broker\ProviderEventTranslatorInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\AbstractProviderRequestEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\RefundRequestedEvent;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\EventSystem\Broker\EventBroker;
+use OxidEsales\PaymentBase\EventSystem\Broker\ProviderEventTranslatorInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use PHPUnit\Framework\TestCase;
 
 final class EventBrokerTest extends TestCase

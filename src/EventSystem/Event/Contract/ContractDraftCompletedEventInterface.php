@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Contract;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Contract;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 
 /**
  * Interface for ContractDraftCompletedEvent.

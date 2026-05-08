@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\WebhookLogService;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Service\WebhookLogService;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\WebhookLogService
+ * @covers \OxidEsales\PaymentBase\Service\WebhookLogService
  */
 final class WebhookLogServiceTest extends TestCase
 {

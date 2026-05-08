@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Admin;
+namespace OxidEsales\PaymentBase\Tests\Unit\Admin;
 
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelRenderable;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
 use PHPUnit\Framework\TestCase;
 
 final class PaymentPanelRenderableTest extends TestCase

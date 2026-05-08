@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Controller;
+namespace OxidEsales\PaymentBase\Controller;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Return\ReturnResolverInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 
 /**
  * Sprint E trait — thin delegation to {@see CheckoutReturnResponder}.

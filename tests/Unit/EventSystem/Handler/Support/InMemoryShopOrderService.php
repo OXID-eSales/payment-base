@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler\Support;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler\Support;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest;
-use OxidEsales\PaymentComponent\Adapter\Response\OrderResponse;
-use OxidEsales\PaymentComponent\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
+use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
+use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 
 /**
  * In-memory implementation of ShopOrderServiceInterface for testing.

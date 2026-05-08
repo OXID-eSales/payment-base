@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Migrations;
+namespace OxidEsales\PaymentBase\Tests\Integration\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use OxidEsales\PaymentComponent\Migrations\Version20251031140000;
+use OxidEsales\PaymentBase\Migrations\Version20251031140000;
 use Psr\Log\NullLogger;
 
 class PaymentContractsMigrationTest extends MigrationTestBase

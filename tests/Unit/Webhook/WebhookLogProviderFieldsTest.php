@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
 
 /**

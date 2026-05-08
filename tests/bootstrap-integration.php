@@ -7,14 +7,14 @@
  * It loads the shop's bootstrap and registers the test classes autoloader.
  *
  * Usage from shop root:
- *   vendor/bin/phpunit -c vendor/oxid-esales/payment-component/tests/phpunit-integration.xml
+ *   vendor/bin/phpunit -c vendor/oxid-esales/payment-base/tests/phpunit-integration.xml
  */
 
 declare(strict_types=1);
 
 // Find the shop bootstrap - try multiple possible locations
 $possibleBootstraps = [
-    // When running from shop root (vendor/oxid-esales/payment-component/tests/)
+    // When running from shop root (vendor/oxid-esales/payment-base/tests/)
     dirname(__DIR__, 4) . '/source/bootstrap.php',
     // Docker SDK environment (shop source at /var/www/source/)
     '/var/www/source/bootstrap.php',
@@ -42,15 +42,15 @@ require_once $shopBootstrap;
 
 // Register autoloader for migration classes (not auto-discovered by composer in path repos)
 $possibleMigrationDirs = [
-    '/var/www/extensions/payment-component/migration/data',
+    '/var/www/extensions/payment-base/migration/data',
     dirname(__DIR__) . '/migration/data',
-    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-component/migration/data',
+    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-base/migration/data',
 ];
 
 foreach ($possibleMigrationDirs as $migrationDir) {
     if (is_dir($migrationDir)) {
         spl_autoload_register(static function (string $class) use ($migrationDir): void {
-            $prefix = 'OxidEsales\\PaymentComponent\\Migrations\\';
+            $prefix = 'OxidEsales\\PaymentBase\\Migrations\\';
             $prefixLength = strlen($prefix);
 
             if (strncmp($class, $prefix, $prefixLength) !== 0) {
@@ -73,14 +73,14 @@ foreach ($possibleMigrationDirs as $migrationDir) {
 $possibleTestDirs = [
     __DIR__,
     '/var/www/test-module/tests',
-    '/var/www/extensions/payment-component/tests',
-    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-component/tests',
+    '/var/www/extensions/payment-base/tests',
+    dirname(__DIR__, 4) . '/vendor/oxid-esales/payment-base/tests',
 ];
 
 foreach ($possibleTestDirs as $testDir) {
     if (is_dir($testDir)) {
         spl_autoload_register(static function (string $class) use ($testDir): void {
-            $prefix = 'OxidEsales\\PaymentComponent\\Tests\\';
+            $prefix = 'OxidEsales\\PaymentBase\\Tests\\';
             $prefixLength = strlen($prefix);
 
             if (strncmp($class, $prefix, $prefixLength) !== 0) {

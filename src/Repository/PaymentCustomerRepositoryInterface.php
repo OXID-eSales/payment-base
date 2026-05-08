@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Repository;
+namespace OxidEsales\PaymentBase\Repository;
 
-use OxidEsales\PaymentComponent\Contract\PaymentCustomer;
+use OxidEsales\PaymentBase\Contract\PaymentCustomer;
 
 /**
  * Repository interface for payment customer records.

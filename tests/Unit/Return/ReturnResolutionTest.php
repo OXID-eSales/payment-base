@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Return;
+namespace OxidEsales\PaymentBase\Tests\Unit\Return;
 
 use InvalidArgumentException;
-use OxidEsales\PaymentComponent\Return\ReturnResolution;
+use OxidEsales\PaymentBase\Return\ReturnResolution;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 

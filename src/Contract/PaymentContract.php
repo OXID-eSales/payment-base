@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract;
+namespace OxidEsales\PaymentBase\Contract;
 
 use DateTime;
 use DateInterval;
@@ -10,7 +10,7 @@ use DateTimeInterface;
 use DomainException;
 use InvalidArgumentException;
 use LogicException;
-use OxidEsales\PaymentComponent\Model\AbstractModel;
+use OxidEsales\PaymentBase\Model\AbstractModel;
 
 class PaymentContract extends AbstractModel implements PaymentContractInterface
 {

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Request;
+namespace OxidEsales\PaymentBase\Adapter\Request;
 
 /**
  * Request for creating and saving a payment method (vaulting).

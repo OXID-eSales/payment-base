@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Return;
+namespace OxidEsales\PaymentBase\Return;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 
 /**
  * Per-provider: given a contract + the request context, ask the PSP what
@@ -19,7 +19,7 @@ use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
  *
  * Resolvers are **pure data producers**. They do not transition the contract,
  * they do not save, they do not dispatch events. That work lives in shared
- * `payment-component` handlers (Sprint B: `ContractPendingTransitioner`,
+ * `payment-base` handlers (Sprint B: `ContractPendingTransitioner`,
  * `EarlyOrderCreationHandler`, `ContractCommitmentHandler`).
  *
  * PSP-specific inputs (Stripe's `checkoutSessionId`, PayPal's

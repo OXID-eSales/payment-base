@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service\Factory;
+namespace OxidEsales\PaymentBase\Service\Factory;
 
-use OxidEsales\PaymentComponent\Service\FileLogger;
-use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
+use OxidEsales\PaymentBase\Service\FileLogger;
+use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 use Symfony\Component\Filesystem\Path;
 
 /**

@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Contract;
+namespace OxidEsales\PaymentBase\Tests\Integration\Contract;
 
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 
 /**
  * Sprint 8: Contract Capture/Refund Tracking Tests
@@ -28,8 +28,8 @@ use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
  * - OXCAPTUREDAT
  * - OXREFUNDEDAT
  *
- * @covers \OxidEsales\PaymentComponent\Contract\PaymentContract
- * @covers \OxidEsales\PaymentComponent\Repository\DoctrineContractRepository
+ * @covers \OxidEsales\PaymentBase\Contract\PaymentContract
+ * @covers \OxidEsales\PaymentBase\Repository\DoctrineContractRepository
  * @group integration
  * @group contract
  * @group sprint-8

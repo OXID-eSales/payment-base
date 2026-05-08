@@ -7,24 +7,24 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin;
+namespace OxidEsales\PaymentBase\Admin;
 
 use OxidEsales\Eshop\Application\Controller\Admin\AdminDetailsController;
 use OxidEsales\Eshop\Application\Model\Order;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelProviderInterface;
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelRenderable;
-use OxidEsales\PaymentComponent\Admin\Panel\UnsupportedPaymentActionException;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
+use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
 /**
  * The one and only admin controller for the shared "Payment" tab.
  *
- * Resolves the active payment-component contract for the edited order,
+ * Resolves the active payment-base contract for the edited order,
  * hands the resulting {@see PaymentPanelContext} to the
  * {@see PaymentPanelRegistryInterface}, and renders the wrapper template
  * around the provider's panel. When no registered PSP supports the order
@@ -47,7 +47,7 @@ class PaymentAdminController extends AdminDetailsController
     /**
      * @var string OXID core declares this untyped — must stay untyped here.
      */
-    protected $_sThisTemplate = '@oe_payment_component/admin/payment_admin_tab';
+    protected $_sThisTemplate = '@oe_payment_base/admin/payment_admin_tab';
 
     /** @var Order|null */
     protected ?Order $loadedOrder = null;

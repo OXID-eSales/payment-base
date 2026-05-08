@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Payment;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Payment;
 
 interface WebhookReceivedEventInterface extends PaymentEventInterface
 {

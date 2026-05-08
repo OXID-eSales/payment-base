@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem;
 
-use OxidEsales\PaymentComponent\EventSystem\EventListenerProviderInterface;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;

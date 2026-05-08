@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Request;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
 
 /**
  * Base class for provider-agnostic request events that the broker routes to
@@ -18,7 +18,7 @@ use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
  *
  * External plugins (stock, returns, CRM, fraud) subclass this to introduce
  * their own domain-specific request events without forking
- * `payment-component`. The broker + `ProviderEventTranslatorInterface`
+ * `payment-base`. The broker + `ProviderEventTranslatorInterface`
  * contract stay stable — that is the public extension surface (OCP).
  *
  * Subclasses are deliberately thin: carry `EventContext` + a nullable

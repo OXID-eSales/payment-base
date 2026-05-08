@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Webhook;
+namespace OxidEsales\PaymentBase\Webhook;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 
 class WebhookIdempotencyChecker implements WebhookIdempotencyCheckerInterface
 {

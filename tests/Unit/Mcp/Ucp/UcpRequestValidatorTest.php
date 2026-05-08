@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Ucp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Ucp;
 
-use OxidEsales\PaymentComponent\Mcp\Ucp\UcpRequestValidator;
+use OxidEsales\PaymentBase\Mcp\Ucp\UcpRequestValidator;
 use PHPUnit\Framework\TestCase;
 
 class UcpRequestValidatorTest extends TestCase

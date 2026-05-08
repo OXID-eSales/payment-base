@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract;
+namespace OxidEsales\PaymentBase\Contract;
 
 /**
  * Interface for security validation results.

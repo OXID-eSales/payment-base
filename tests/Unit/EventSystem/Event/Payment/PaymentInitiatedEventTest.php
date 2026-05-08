@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Event\Payment;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Event\Payment;
 
 use PHPUnit\Framework\TestCase;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentInitiatedEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 
 final class PaymentInitiatedEventTest extends TestCase
 {

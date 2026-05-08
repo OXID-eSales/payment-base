@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Request;
+namespace OxidEsales\PaymentBase\Adapter\Request;
 
 /**
  * Request for initiating 3D Secure / Strong Customer Authentication (SCA).

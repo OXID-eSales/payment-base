@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     PHPUnit configuration for Integration Tests
-    Run from OXID shop context with: vendor/bin/phpunit -c vendor/oxid-esales/payment-component/tests/phpunit-integration.xml
+    Run from OXID shop context with: vendor/bin/phpunit -c vendor/oxid-esales/payment-base/tests/phpunit-integration.xml
 -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"

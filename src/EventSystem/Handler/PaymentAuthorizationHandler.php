@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractReadyToCommitEvent;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractReadyToCommitEvent;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
 
 /**
  * Handles payment authorization events.

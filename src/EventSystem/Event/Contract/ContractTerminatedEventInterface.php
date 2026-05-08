@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Contract;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Contract;
 
 /**
  * Interface for events representing contract termination without fulfillment.

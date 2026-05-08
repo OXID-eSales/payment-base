@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Adapter\Response\OrderResponse;
-use OxidEsales\PaymentComponent\Adapter\ShopOrderServiceInterface;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractDraftCompletedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\OrderCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EarlyOrderCreationHandler;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
+use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -177,7 +177,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
             ->expects($this->once())
             ->method('createOrder')
             ->with($this->callback(function ($request) {
-                $this->assertInstanceOf(\OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class, $request);
+                $this->assertInstanceOf(\OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest::class, $request);
                 $this->assertEquals('oe_payments_stripe_wallet', $request->paymentId);
                 return true;
             }))
@@ -196,7 +196,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
             ->expects($this->once())
             ->method('createOrder')
             ->with($this->callback(function ($request) {
-                $this->assertInstanceOf(\OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class, $request);
+                $this->assertInstanceOf(\OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest::class, $request);
                 $this->assertEquals('unknown_payment', $request->paymentId);
                 return true;
             }))
@@ -246,7 +246,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
             ->method('createOrder')
             ->with($this->callback(function ($request) {
                 $this->assertInstanceOf(
-                    \OxidEsales\PaymentComponent\Adapter\Request\CreateOrderRequest::class,
+                    \OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest::class,
                     $request
                 );
                 $this->assertSame('NOT_FINISHED', $request->initialStatus);

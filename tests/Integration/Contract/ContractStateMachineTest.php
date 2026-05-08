@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Integration\Contract;
+namespace OxidEsales\PaymentBase\Tests\Integration\Contract;
 
 use DomainException;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\ContractState;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -27,8 +27,8 @@ use PHPUnit\Framework\TestCase;
  *              ↓              ↓              ↓               ↓
  *           FAILED         FAILED       CANCELLED       EXPIRED
  *
- * @covers \OxidEsales\PaymentComponent\Contract\PaymentContract
- * @covers \OxidEsales\PaymentComponent\Contract\ContractState
+ * @covers \OxidEsales\PaymentBase\Contract\PaymentContract
+ * @covers \OxidEsales\PaymentBase\Contract\ContractState
  * @group sprint-14
  * @group contract
  * @group state-machine

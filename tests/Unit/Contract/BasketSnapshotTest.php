@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 
 class BasketSnapshotTest extends TestCase

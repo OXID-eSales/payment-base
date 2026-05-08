@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
-use OxidEsales\PaymentComponent\Webhook\AbstractWebhookProcessor;
-use OxidEsales\PaymentComponent\Webhook\Exception\WebhookSignatureException;
-use OxidEsales\PaymentComponent\Webhook\WebhookEvent;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
-use OxidEsales\PaymentComponent\Webhook\WebhookRequest;
-use OxidEsales\PaymentComponent\Webhook\WebhookResult;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor;
+use OxidEsales\PaymentBase\Webhook\Exception\WebhookSignatureException;
+use OxidEsales\PaymentBase\Webhook\WebhookEvent;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Webhook\WebhookRequest;
+use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
  * Updated in Sprint 64g: Uses claimEvent() for atomic idempotency
  * instead of the TOCTOU-vulnerable existsByEventId() + save() pattern.
  *
- * @covers \OxidEsales\PaymentComponent\Webhook\AbstractWebhookProcessor
+ * @covers \OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor
  */
 class AbstractWebhookProcessorTest extends TestCase
 {

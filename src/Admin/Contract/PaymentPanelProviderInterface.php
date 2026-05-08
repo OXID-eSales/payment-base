@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Contract;
+namespace OxidEsales\PaymentBase\Admin\Contract;
 
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelRenderable;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
 
 /**
- * Implemented by PSP modules to inject a panel into payment-component's
+ * Implemented by PSP modules to inject a panel into payment-base's
  * shared "Payment" admin tab.
  *
  * Providers register under the `oe.payment.admin_panel` tag; the

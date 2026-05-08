@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Panel;
+namespace OxidEsales\PaymentBase\Admin\Panel;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 /**
  * Immutable context passed to every {@see PaymentPanelProviderInterface}.

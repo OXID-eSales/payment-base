@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Contract;
+namespace OxidEsales\PaymentBase\Contract;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Model\AbstractModel;
-use OxidEsales\PaymentComponent\Model\ModelInterface;
+use OxidEsales\PaymentBase\Model\AbstractModel;
+use OxidEsales\PaymentBase\Model\ModelInterface;
 
 /**
  * Payment customer entity for provider customer ID mapping.

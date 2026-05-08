@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use OxidEsales\PaymentComponent\Service\OrderPaymentStateService;
-use OxidEsales\PaymentComponent\Service\OrderPaymentStateServiceInterface;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateService;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

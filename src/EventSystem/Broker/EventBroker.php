@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Broker;
+namespace OxidEsales\PaymentBase\EventSystem\Broker;
 
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Request\AbstractProviderRequestEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEvent;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 

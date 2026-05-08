@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Return;
+namespace OxidEsales\PaymentBase\Return;
 
 use InvalidArgumentException;
 

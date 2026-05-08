@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Ucp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Ucp;
 
-use OxidEsales\PaymentComponent\Mcp\Ucp\UcpCapability;
-use OxidEsales\PaymentComponent\Mcp\Ucp\UcpCapabilityNegotiationService;
+use OxidEsales\PaymentBase\Mcp\Ucp\UcpCapability;
+use OxidEsales\PaymentBase\Mcp\Ucp\UcpCapabilityNegotiationService;
 use PHPUnit\Framework\TestCase;
 
 class UcpCapabilityNegotiationServiceTest extends TestCase

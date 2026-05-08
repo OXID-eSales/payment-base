@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Admin;
+namespace OxidEsales\PaymentBase\Tests\Unit\Admin;
 
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelProviderInterface;
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface;
-use OxidEsales\PaymentComponent\Admin\PaymentAdminActionDispatcher;
-use OxidEsales\PaymentComponent\Admin\PaymentAdminController;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelRenderable;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher;
+use OxidEsales\PaymentBase\Admin\PaymentAdminController;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -149,7 +149,7 @@ final class TestablePaymentAdminController extends PaymentAdminController
         return (string) $this->_sThisTemplate;
     }
 
-    protected function buildPanelContext(): ?\OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext
+    protected function buildPanelContext(): ?\OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext
     {
         if ($this->stubOrderId === null) {
             return null;

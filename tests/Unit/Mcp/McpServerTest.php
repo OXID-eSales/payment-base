@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp;
 
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
-use OxidEsales\PaymentComponent\Mcp\McpServer;
-use OxidEsales\PaymentComponent\Mcp\McpToolInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContext;
+use OxidEsales\PaymentBase\Mcp\McpServer;
+use OxidEsales\PaymentBase\Mcp\McpToolInterface;
 use PHPUnit\Framework\TestCase;
 
 class McpServerTest extends TestCase

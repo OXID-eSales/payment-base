@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Adapter\Request;
+namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
 use PHPUnit\Framework\TestCase;
-use OxidEsales\PaymentComponent\Adapter\Request\CreatePaymentRequest;
+use OxidEsales\PaymentBase\Adapter\Request\CreatePaymentRequest;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Adapter\Request\CreatePaymentRequest
+ * @covers \OxidEsales\PaymentBase\Adapter\Request\CreatePaymentRequest
  */
 class CreatePaymentRequestTest extends TestCase
 {

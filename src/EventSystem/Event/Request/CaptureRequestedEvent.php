@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Event\Request;
+namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
 
 /**
  * Provider-neutral "capture a previously-authorized payment" event.

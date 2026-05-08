@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Composer post-update script for payment-component
+# Composer post-update script for payment-base
 # Runs database migrations after composer update/install
 #
 # Prerequisites:
@@ -28,10 +28,10 @@ if [ ! -d "vendor/oxid-esales/oxideshop-doctrine-migration-wrapper" ]; then
     exit 0
 fi
 
-echo "Running payment-component database migrations..."
+echo "Running payment-base database migrations..."
 
 php vendor/bin/doctrine-migrations migrate \
-    --configuration=vendor/oxid-esales/payment-component/migration/migrations.yml \
+    --configuration=vendor/oxid-esales/payment-base/migration/migrations.yml \
     --db-configuration=vendor/oxid-esales/oxideshop-doctrine-migration-wrapper/src/migrations-db.php \
     --no-interaction \
     --allow-no-migration

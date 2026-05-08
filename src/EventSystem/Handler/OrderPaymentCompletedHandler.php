@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractFulfilledEvent;
-use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
-use OxidEsales\PaymentComponent\Service\OrderPaymentStateServiceInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractFulfilledEvent;
+use OxidEsales\PaymentBase\Service\FileLoggerInterface;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Event handler that updates OXPAID on orders when contracts are fulfilled.
  *
- * Sprint 27: Moved from Stripe to payment-component (provider-agnostic).
+ * Sprint 27: Moved from Stripe to payment-base (provider-agnostic).
  * Sprint 14: Properly implements event-driven architecture.
  * Listens for ContractFulfilledEvent and updates the order's payment timestamp.
  *

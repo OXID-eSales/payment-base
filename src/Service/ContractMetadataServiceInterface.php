@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Service;
+namespace OxidEsales\PaymentBase\Service;
 
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 
 /**
  * Service interface for managing contract metadata.
  *
- * Sprint 27: Moved from Stripe to payment-component.
+ * Sprint 27: Moved from Stripe to payment-base.
  * Sprint 21: Extract business logic from StripeContractCreationHandler.
  *
  * SOLID Principles:

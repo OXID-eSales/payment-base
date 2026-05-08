@@ -3,7 +3,7 @@ name: Development
 on: [ push, pull_request ]
 
 env:
-  PACKAGE_NAME: 'oxid-esales/payment-component'
+  PACKAGE_NAME: 'oxid-esales/payment-base'
   PHP_VERSION: '8.3'
   MYSQL_VERSION: '8.0'
   TEMPLATE_ENGINE: 'twig'
@@ -142,21 +142,21 @@ jobs:
           docker compose exec -T php bin/oe-console oe:database:reset \
             --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
 
-      # Sprint 93 / Sprint I §86–95 — payment-component is itself an
+      # Sprint 93 / Sprint I §86–95 — payment-base is itself an
       # oxideshop-module now and must be installed and activated as
       # a real module, not just composer-required. The OXID composer
-      # plugin already runs `Installing module oxid-esales/payment-component
+      # plugin already runs `Installing module oxid-esales/payment-base
       # package.` during `composer update` (visible in the install log)
       # so the explicit `oe:module:install` here is the documented
       # safety net for environments where the plugin's BootstrapModuleInstaller
       # had to run before the DB existed.
-      - name: Install + activate payment-component module
+      - name: Install + activate payment-base module
         run: |
           docker compose exec -T php ls -la /var/www/test-module
           docker compose exec -T php ls -la /var/www/bin
           docker compose exec -T php ls -la /var/www/vendor/bin
           docker compose exec -T php bin/oe-console oe:module:install /var/www/test-module
-          docker compose exec -T php bin/oe-console oe:module:activate oe_payment_component
+          docker compose exec -T php bin/oe-console oe:module:activate oe_payment_base
 
       - name: Show docker log
         if: always()
@@ -326,7 +326,7 @@ jobs:
 
       - name: Kick off migrations with composer update
         run: |
-          docker compose exec -T php composer require oxid-esales/payment-component --no-interaction
+          docker compose exec -T php composer require oxid-esales/payment-base --no-interaction
 
       - name: Run integration tests with shop bootstrap
         run: |

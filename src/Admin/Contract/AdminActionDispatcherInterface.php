@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin\Contract;
+namespace OxidEsales\PaymentBase\Admin\Contract;
 
 use OxidEsales\Eshop\Application\Model\Order;
 

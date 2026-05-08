@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Auth;
+namespace OxidEsales\PaymentBase\Mcp\Auth;
 
-use OxidEsales\PaymentComponent\Mcp\Http\HttpClientInterface;
+use OxidEsales\PaymentBase\Mcp\Http\HttpClientInterface;
 
 class IntrospectionTokenValidator implements TokenValidatorInterface
 {

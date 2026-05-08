@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem;
+namespace OxidEsales\PaymentBase\EventSystem;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\EventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
 
 interface EventDispatcherInterface
 {

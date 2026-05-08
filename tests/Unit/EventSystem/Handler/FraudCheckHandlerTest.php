@@ -7,21 +7,21 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\FraudCheckHandler;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\FraudCheckServiceInterface;
-use OxidEsales\PaymentComponent\Adapter\Response\FraudCheckResponse;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\FraudCheckHandler;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
+use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
- * @covers \OxidEsales\PaymentComponent\EventSystem\Handler\FraudCheckHandler
+ * @covers \OxidEsales\PaymentBase\EventSystem\Handler\FraudCheckHandler
  */
 class FraudCheckHandlerTest extends TestCase
 {

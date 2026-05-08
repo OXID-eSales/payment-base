@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service\Exception;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service\Exception;
 
-use OxidEsales\PaymentComponent\Service\Exception\RefundFailedException;
+use OxidEsales\PaymentBase\Service\Exception\RefundFailedException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\Exception\RefundFailedException
+ * @covers \OxidEsales\PaymentBase\Service\Exception\RefundFailedException
  */
 class RefundFailedExceptionTest extends TestCase
 {

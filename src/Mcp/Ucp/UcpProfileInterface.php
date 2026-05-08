@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Ucp;
+namespace OxidEsales\PaymentBase\Mcp\Ucp;
 
 interface UcpProfileInterface
 {

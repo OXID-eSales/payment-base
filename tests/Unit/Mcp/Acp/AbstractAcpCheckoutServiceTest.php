@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Mcp\Acp;
+namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Acp;
 
-use OxidEsales\PaymentComponent\Contract\ContractState;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Mcp\Acp\AbstractAcpCheckoutService;
-use OxidEsales\PaymentComponent\Mcp\Acp\AcpResponseFormatterInterface;
-use OxidEsales\PaymentComponent\Mcp\AgentContext;
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\ContractServiceInterface;
+use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Mcp\Acp\AbstractAcpCheckoutService;
+use OxidEsales\PaymentBase\Mcp\Acp\AcpResponseFormatterInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContext;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\ContractServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 

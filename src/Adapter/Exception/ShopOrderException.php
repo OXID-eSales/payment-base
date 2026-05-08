@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Adapter\Exception;
+namespace OxidEsales\PaymentBase\Adapter\Exception;
 
 use RuntimeException;
 use Throwable;

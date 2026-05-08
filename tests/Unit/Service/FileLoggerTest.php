@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Service;
+namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
-use OxidEsales\PaymentComponent\Service\FileLogger;
-use OxidEsales\PaymentComponent\Service\FileLoggerInterface;
+use OxidEsales\PaymentBase\Service\FileLogger;
+use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Service\FileLogger
+ * @covers \OxidEsales\PaymentBase\Service\FileLogger
  * @group sprint-14
  * @group logging
  */

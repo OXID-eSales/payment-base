@@ -7,20 +7,20 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\EventSystem\Handler;
+namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use DateTimeImmutable;
-use OxidEsales\PaymentComponent\Contract\ContractCondition;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentAuthorizedEvent;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Service\FraudCheckServiceInterface;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
 
 /**
  * Handles fraud checking on payment authorization.
  *
  * Sprint 2: Performs fraud check via FraudCheckServiceInterface.
- * The interface is in payment-component, but implementations (e.g., Stripe Radar)
+ * The interface is in payment-base, but implementations (e.g., Stripe Radar)
  * are in the provider modules.
  *
  * Binary pass/fail only (no manual review):

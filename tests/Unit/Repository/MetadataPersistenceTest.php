@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Repository;
+namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use DateTime;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result;
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Repository\DoctrineContractRepository;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\EventSystem\Event\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Event\Contract;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractDraftCompletedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractDraftCompletedEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractEventInterface;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContext;
-use OxidEsales\PaymentComponent\EventSystem\Event\EventContextInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractEventInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
-use OxidEsales\PaymentComponent\Contract\PaymentContract;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\WebhookReceivedEvent;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcher;
-use OxidEsales\PaymentComponent\EventSystem\EventDispatcherInterface;
-use OxidEsales\PaymentComponent\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyChecker;
-use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyCheckerInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
-use OxidEsales\PaymentComponent\Webhook\WebhookProcessor;
-use OxidEsales\PaymentComponent\Webhook\WebhookProcessorInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\WebhookReceivedEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker;
+use OxidEsales\PaymentBase\Webhook\WebhookIdempotencyCheckerInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Webhook\WebhookProcessor;
+use OxidEsales\PaymentBase\Webhook\WebhookProcessorInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookProcessor
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookProcessor
  */
 final class WebhookProcessorTest extends TestCase
 {

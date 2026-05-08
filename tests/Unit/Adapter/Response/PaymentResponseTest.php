@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Adapter\Response;
+namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Response;
 
-use OxidEsales\PaymentComponent\Adapter\Response\PaymentResponse;
+use OxidEsales\PaymentBase\Adapter\Response\PaymentResponse;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Adapter\Response\PaymentResponse
+ * @covers \OxidEsales\PaymentBase\Adapter\Response\PaymentResponse
  */
 final class PaymentResponseTest extends TestCase
 {

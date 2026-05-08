@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Repository\WebhookLogRepositoryInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyChecker;
-use OxidEsales\PaymentComponent\Webhook\WebhookLog;
+use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker;
+use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookIdempotencyChecker
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker
  */
 final class WebhookIdempotencyCheckerTest extends TestCase
 {

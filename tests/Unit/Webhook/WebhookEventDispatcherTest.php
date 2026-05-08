@@ -7,18 +7,18 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Webhook\WebhookEvent;
-use OxidEsales\PaymentComponent\Webhook\WebhookEventDispatcher;
-use OxidEsales\PaymentComponent\Webhook\WebhookEventDispatcherInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookEventHandlerInterface;
-use OxidEsales\PaymentComponent\Webhook\WebhookResult;
+use OxidEsales\PaymentBase\Webhook\WebhookEvent;
+use OxidEsales\PaymentBase\Webhook\WebhookEventDispatcher;
+use OxidEsales\PaymentBase\Webhook\WebhookEventDispatcherInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookEventHandlerInterface;
+use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookEventDispatcher
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookEventDispatcher
  * @group sprint-13
  * @group webhook
  */

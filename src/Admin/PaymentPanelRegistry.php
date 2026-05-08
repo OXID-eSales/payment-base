@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Admin;
+namespace OxidEsales\PaymentBase\Admin;
 
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelProviderInterface;
-use OxidEsales\PaymentComponent\Admin\Contract\PaymentPanelRegistryInterface;
-use OxidEsales\PaymentComponent\Admin\Panel\PaymentPanelContext;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 
 /**
  * Collects every panel provider tagged `oe.payment.admin_panel` and

@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Repository;
+namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use OxidEsales\PaymentComponent\Contract\PaymentCustomer;
-use OxidEsales\PaymentComponent\Repository\DoctrinePaymentCustomerRepository;
+use OxidEsales\PaymentBase\Contract\PaymentCustomer;
+use OxidEsales\PaymentBase\Repository\DoctrinePaymentCustomerRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Sprint 45: Stripe Customer lifecycle.
  *
- * @covers \OxidEsales\PaymentComponent\Repository\DoctrinePaymentCustomerRepository
+ * @covers \OxidEsales\PaymentBase\Repository\DoctrinePaymentCustomerRepository
  * @group sprint-45
  */
 class DoctrinePaymentCustomerRepositoryTest extends TestCase

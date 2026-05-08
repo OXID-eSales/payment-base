@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Contract;
+namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
-use OxidEsales\PaymentComponent\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Tests that BasketSnapshot strips non-whitelisted fields from items.
  *
- * @covers \OxidEsales\PaymentComponent\Contract\BasketSnapshot
+ * @covers \OxidEsales\PaymentBase\Contract\BasketSnapshot
  * @group sprint-69b
  * @group security
  */

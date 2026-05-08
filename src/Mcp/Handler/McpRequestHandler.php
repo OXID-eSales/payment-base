@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Mcp\Handler;
+namespace OxidEsales\PaymentBase\Mcp\Handler;
 
-use OxidEsales\PaymentComponent\EventSystem\Handler\HandlerInterface;
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
-use OxidEsales\PaymentComponent\Mcp\Event\McpRequestReceivedEvent;
-use OxidEsales\PaymentComponent\Mcp\McpServerInterface;
+use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Mcp\Event\McpRequestReceivedEvent;
+use OxidEsales\PaymentBase\Mcp\McpServerInterface;
 
 class McpRequestHandler implements HandlerInterface
 {

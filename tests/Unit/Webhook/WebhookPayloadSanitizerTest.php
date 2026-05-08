@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentComponent\Tests\Unit\Webhook;
+namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
-use OxidEsales\PaymentComponent\Webhook\WebhookPayloadSanitizer;
+use OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Sprint 69a: H7 — Webhook payload PII redaction.
  *
- * @covers \OxidEsales\PaymentComponent\Webhook\WebhookPayloadSanitizer
+ * @covers \OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer
  * @group sprint-69a
  * @group security
  */
