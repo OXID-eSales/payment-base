@@ -1,0 +1,92 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Versandmodul bauen &middot; 1 von 4</span></div>
+          <div class="deck">Prinzipien &middot; was h&auml;ngt sich wo ein</div>
+        </div>
+
+        <h2 class="h-2">Ein Versandmodul ist ein <em class="acc">nachgelagerter Konsument</em>,<br/>genau wie OpalReturns.</h2>
+
+        <p class="lede" style="margin-bottom: 14px; font-size: var(--t-15);">
+          Dasselbe Muster, das OpalReturns hervorgebracht hat, bringt eine Versand-Integration hervor. <strong>Null PSP-Importe.</strong>
+          H&auml;ngen Sie sich an die Events ein, die Payment Base bereits publiziert. Spiegeln Sie die Architektur-Invarianten.
+          Liefern Sie schneller als jedes PSP-gekoppelte Versandmodul es jemals k&ouml;nnte.
+        </p>
+
+        <div class="cols split-7-5" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Die Hook-Karte &middot; was wann feuert</div>
+            <div class="diagram-host" style="height: 100%; min-height: 380px;">
+              <div class="mermaid">
+flowchart TB
+    A1["Kunde legt in den Warenkorb"]
+    A2["Bestellen klicken &rarr; Contract DRAFT"]
+    A3["Bestellung erzeugt (NOT_FINISHED)"]
+    A4["Kunde zahlt beim PSP"]
+    A5["Zahlung autorisiert"]
+    A6["Conditions erf&uuml;llt &rarr; READY_TO_COMMIT"]
+    A7["Bestellung finalisiert &rarr; COMMITTED"]
+    A8["Geld eingezogen &rarr; FULFILLED"]
+    A9["(sp&auml;ter) Refund / Teil-Refund"]
+
+    H1["ShippingRateQuoteHandler<br/>Versand-Rate-Anfrage"]
+    H2["StockReservationHandler<br/>Bestand f&uuml;r Contract reservieren"]
+    H3["ShippingFulfillmentHandler<br/>Versand + Tracking erzeugen"]
+    H4["ShippingRefundHandler<br/>Versand stornieren / &auml;ndern"]
+    H5["StockRestorationHandler<br/>Reservierten Bestand freigeben"]
+
+    A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7 --> A8 --> A9
+    A1 -.-> H1
+    A2 -.-> H2
+    A8 -.-> H3
+    A9 -.-> H4
+    A9 -.-> H5
+
+    style A8 fill:#d1fae5,stroke:#047857,color:#0b1424
+    style H3 fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style H1 fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style H2 fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style H4 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+    style H5 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+              </div>
+            </div>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Modul-Struktur &middot; spiegelt OpalReturns</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+extensions/shipping/
+├── src/
+│   ├── Adapter/
+│   │   ├── CarrierAdapterInterface.php
+│   │   ├── DhlAdapter.php
+│   │   ├── UpsAdapter.php
+│   │   └── FedExAdapter.php
+│   ├── EventSystem/Handler/
+│   │   ├── ShippingFulfillmentHandler.php
+│   │   ├── StockReservationHandler.php
+│   │   ├── StockRestorationHandler.php
+│   │   ├── ShippingRefundHandler.php
+│   │   └── ShippingRateQuoteHandler.php
+│   ├── Service/
+│   │   ├── ShipmentService.php
+│   │   └── TrackingNumberService.php
+│   ├── Admin/
+│   │   └── ShippingPanelProvider.php   # getaggt
+│   └── Repository/
+│       └── ShipmentRepository.php
+└── services.yaml
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Architektur-Invarianten erzwungen</div>
+            <ul class="small" style="margin: 0;">
+              <li><strong>Keine PSP-Importe.</strong> Grep-Guard im pre-commit blockt jede <code>OxidEsales\Payments\Stripe</code>-Referenz.</li>
+              <li><strong>Keine direkten Contract-Mutationen.</strong> Events dispatchen. Handler mutieren.</li>
+              <li><strong>Getaggte Services f&uuml;r PSP-spezifisches Verhalten.</strong> Carrier-Code ist PSP-unabh&auml;ngig.</li>
+              <li><strong>Geteilter Admin-Tab.</strong> Panel beitragen via <code>oe.payment.admin_panel</code> oder dem versandseitigen &Auml;quivalent.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Versandmodul bauen &middot; 1/4</div>
+          <div class="page-num">09 / 12</div>
+        </div>

@@ -1,0 +1,19 @@
+{
+  "$comment": "Pitchmacher theme registry. The deck loads ONE theme at a time. A slide may opt into another theme via data-theme=<id>; the renderer then swaps the active stylesheet for the duration of that slide.",
+  "default": "default",
+  "themes": [
+    {
+      "id": "default",
+      "label": "Default · PayPal navy / OXID amber",
+      "stylesheet": "assets/themes/default/styles.css",
+      "tokens": "assets/themes/default/tokens.css"
+    },
+    {
+      "id": "midnight",
+      "label": "Midnight · dark contrast for dim rooms",
+      "stylesheet": "assets/themes/default/styles.css",
+      "tokens": "assets/themes/midnight/tokens.css",
+      "extends": "default"
+    }
+  ]
+}

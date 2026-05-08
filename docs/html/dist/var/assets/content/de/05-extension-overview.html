@@ -1,0 +1,90 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">PSP-Modul bauen &middot; 1 von 3</span></div>
+          <div class="deck">Die Boundary-Regel &middot; sechs Erweiterungsmechanismen</div>
+        </div>
+
+        <h2 class="h-2">Sechs Erweiterungsmechanismen.<br/><em class="acc">Null Modifikationen</em> am Payment-Base-Kern.</h2>
+
+        <div class="cols split-5-7" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Die Boundary-Regel</div>
+            <div style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 14px 16px; font-size: var(--t-13); line-height: 1.55;">
+              <p style="margin: 0 0 10px;"><strong>K&ouml;nnte es mit einem anderen PSP funktionieren &mdash; geh&ouml;rt es in <code>payment-component</code>.</strong></p>
+              <p style="margin: 0 0 10px;">Ber&uuml;hrt es <code>\Stripe\StripeClient</code> oder PayPal-SDK-Konzepte &mdash; geh&ouml;rt es ins PSP-Modul.</p>
+              <p style="margin: 0;">PayPal und Stripe sind <strong>Peers</strong>. Sie teilen sich nur Payment Base. <em>Architektur-Grep-Guards</em> in jedem PSP <code>pre-commit-check.sh</code> blockieren jeden Kreuzimport.</p>
+            </div>
+
+            <div class="eyebrow" style="color: var(--s2-accent); margin: 18px 0 10px;">Datei-Layout-Konvention</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+extensions/your-psp/
+├── src/
+│   ├── Adapter/        # YourPspAdapter
+│   ├── EventSystem/
+│   │   ├── Event/      # YourPsp...RequestEvent
+│   │   └── Handler/    # YourPsp...Handler
+│   ├── Service/        # YourPsp-Business-Services
+│   └── Webhook/        # YourPspWebhookProcessor
+├── services.yaml       # die Verdrahtung
+└── tests/Unit + Integration
+</pre>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Sechs Mechanismen &middot; w&auml;hlen Sie den kleinsten passenden</div>
+            <div class="phases" style="display: flex; flex-direction: column; gap: 8px;">
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">1</div>
+                <div>
+                  <div style="font-weight: 600;">Event-Handler</div>
+                  <div class="small" style="opacity: 0.75;">Auf ein Contract-/Payment-Event subscriben. <em>Der Standard-Erweiterungspunkt.</em></div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Niedrig</div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">2</div>
+                <div>
+                  <div style="font-weight: 600;">Service-Override per DI</div>
+                  <div class="small" style="opacity: 0.75;">Service-Binding in <code>services.yaml</code> ersetzen oder dekorieren. Vererbung + Symfony-Aliasing.</div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Mittel</div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">3</div>
+                <div>
+                  <div style="font-weight: 600;">Contract-Metadaten</div>
+                  <div class="small" style="opacity: 0.75;">Eigene Daten am Contract via <code>setMetadata()</code>. &Uuml;berlebt den Lebenszyklus.</div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Niedrig</div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">4</div>
+                <div>
+                  <div style="font-weight: 600;">Webhook-Handler-Erweiterung</div>
+                  <div class="small" style="opacity: 0.75;">Neuen PSP-Webhook-Eventtyp behandeln. Erbt <code>AbstractWebhookProcessor</code>.</div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Mittel</div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">5</div>
+                <div>
+                  <div style="font-weight: 600;">Controller-Erweiterung</div>
+                  <div class="small" style="opacity: 0.75;">UI/Logik zu vorhandenen Checkout-/Admin-Seiten. <em>Nur</em> f&uuml;r d&uuml;nne Orchestrierung.</div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Mittel</div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr 100px; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.06); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: var(--s2-accent);">6</div>
+                <div>
+                  <div style="font-weight: 600;">Adapter-Dekoration</div>
+                  <div class="small" style="opacity: 0.75;"><code>StripeAdapter</code>/<code>PayPalAdapter</code> umh&uuml;llen f&uuml;r Marketplace-Header, Logging, Retries.</div>
+                </div>
+                <div class="small" style="text-align: right; opacity: 0.7;">Hoch</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; PSP-Modul bauen &middot; 1/3</div>
+          <div class="page-num">05 / 12</div>
+        </div>

@@ -1,0 +1,99 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Build a Shipment module &middot; 3 of 4</span></div>
+          <div class="deck">Carrier adapters &middot; data model &middot; admin tab contribution</div>
+        </div>
+
+        <h2 class="h-2">Carriers are the new PSPs.<br/><em class="acc">One <code>CarrierAdapterInterface</code></em>, N implementations.</h2>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Carrier abstraction &middot; mirrors PaymentAdapter</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+interface CarrierAdapterInterface
+{
+    public function quoteRate(QuoteRateRequest $r): RateResponse;
+    public function createShipment(ShipmentRequest $r): ShipmentResponse;
+    public function cancelShipment(string $trackingNumber): bool;
+    public function trackShipment(string $trackingNumber): TrackingStatus;
+
+    public function getCarrierName(): string;
+    public function getSupportedCountries(): array;
+    public function supportsFeature(string $feature): bool;
+}
+
+// 3 concrete impls behind a registry, picked by config + region
+class DhlAdapter   implements CarrierAdapterInterface { /* &hellip; */ }
+class UpsAdapter   implements CarrierAdapterInterface { /* &hellip; */ }
+class FedExAdapter implements CarrierAdapterInterface { /* &hellip; */ }
+
+// Tagged registry &mdash; same SOLID pattern as PSPs
+CarrierAdapterRegistry:
+    arguments:
+      - !tagged_iterator shipping.carrier_adapter
+DhlAdapter:
+    tags: [{ name: shipping.carrier_adapter, region: EU }]
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Where data lives</div>
+            <ul class="small" style="margin: 0;">
+              <li><strong>Tracking number.</strong> On the contract via <code>$contract-&gt;setMetadata('tracking_number', &hellip;)</code> &mdash; queryable on the order detail page without a join.</li>
+              <li><strong>Shipment record.</strong> Module&rsquo;s own table (<code>oe_shipping_shipment</code>) keyed on contract ID. Survives the contract.</li>
+              <li><strong>Carrier choice / rate / SLA.</strong> Module&rsquo;s table (<code>oe_shipping_quote</code>). Linked to <code>BasketSnapshot</code> hash for reproducibility.</li>
+              <li><strong>Audit trail.</strong> Reuse <code>oe_payments_transaction</code> for shipping events &mdash; or your own table if domain-distinct.</li>
+            </ul>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Admin tab &middot; contribute, don&rsquo;t replace</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class ShippingPanelProvider implements PanelProviderInterface
+{
+    public function __construct(
+        private readonly ShipmentRepository $repo,
+        private readonly TrackingNumberService $tracking,
+    ) {}
+
+    public function supports(Order $order): bool
+    {
+        return $this->repo->existsByOrderId($order->getId());
+    }
+
+    public function render(Order $order): PanelView
+    {
+        return new PanelView(
+            title: 'Shipment',
+            template: '@shipping/panel.html.twig',
+            data: [
+                'shipment' => $this->repo->findByOrder($order),
+                'tracking' => $this->tracking->urlFor($order),
+            ]
+        );
+    }
+}
+
+# services.yaml
+ShippingPanelProvider:
+    tags:
+      - { name: oe.payment.admin_panel,
+          provider: shipping, priority: 50 }
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">What&rsquo;s on the panel</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li>Carrier name, label PDF download link, tracking number with click-through</li>
+              <li>Last known status from <code>trackShipment()</code> (cached for 5 min)</li>
+              <li>Action buttons: cancel shipment, regenerate label, mark as delivered (admin override)</li>
+              <li>Cost, SLA, weight, dimensions &mdash; what the carrier returned at quote time</li>
+            </ul>
+
+            <div class="callout" style="margin: 0; padding: 12px 14px; font-size: var(--t-13);">
+              <strong>One tab. Every consumer.</strong> Payment Base&rsquo;s &ldquo;Payment&rdquo; tab now hosts: PSP panel(s), OpalReturns
+              panel, Shipping panel. Each is a tagged service. Adding a 5th panel is one YAML entry.
+            </div>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Build a Shipment module &middot; 3/4</div>
+          <div class="page-num">11 / 12</div>
+        </div>

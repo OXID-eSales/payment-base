@@ -1,0 +1,92 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Build a Shipment module &middot; 1 of 4</span></div>
+          <div class="deck">Principles &middot; what hooks where</div>
+        </div>
+
+        <h2 class="h-2">A shipment module is a <em class="acc">downstream consumer</em>,<br/>just like OpalReturns.</h2>
+
+        <p class="lede" style="margin-bottom: 14px; font-size: var(--t-15);">
+          The same pattern that produced OpalReturns produces a shipping integration. <strong>Zero PSP imports.</strong>
+          Hook the events Payment Base already publishes. Mirror the architecture invariants. Ship faster than any PSP-coupled
+          shipping module ever could.
+        </p>
+
+        <div class="cols split-7-5" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">The hook map &middot; what fires when</div>
+            <div class="diagram-host" style="height: 100%; min-height: 380px;">
+              <div class="mermaid">
+flowchart TB
+    A1["Customer adds to basket"]
+    A2["Place Order &rarr; Contract DRAFT"]
+    A3["Order created (NOT_FINISHED)"]
+    A4["User pays at PSP"]
+    A5["Payment authorised"]
+    A6["Conditions met &rarr; READY_TO_COMMIT"]
+    A7["Order finalised &rarr; COMMITTED"]
+    A8["Funds captured &rarr; FULFILLED"]
+    A9["(later) refund / partial refund"]
+
+    H1["ShippingRateQuoteHandler<br/>basket-level rate quote"]
+    H2["StockReservationHandler<br/>reserve stock for the contract"]
+    H3["ShippingFulfillmentHandler<br/>create shipment + tracking"]
+    H4["ShippingRefundHandler<br/>cancel / amend shipment"]
+    H5["StockRestorationHandler<br/>release reserved stock"]
+
+    A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7 --> A8 --> A9
+    A1 -.-> H1
+    A2 -.-> H2
+    A8 -.-> H3
+    A9 -.-> H4
+    A9 -.-> H5
+
+    style A8 fill:#d1fae5,stroke:#047857,color:#0b1424
+    style H3 fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style H1 fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style H2 fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style H4 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+    style H5 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+              </div>
+            </div>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Module structure &middot; mirror OpalReturns</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+extensions/shipping/
+├── src/
+│   ├── Adapter/
+│   │   ├── CarrierAdapterInterface.php
+│   │   ├── DhlAdapter.php
+│   │   ├── UpsAdapter.php
+│   │   └── FedExAdapter.php
+│   ├── EventSystem/Handler/
+│   │   ├── ShippingFulfillmentHandler.php
+│   │   ├── StockReservationHandler.php
+│   │   ├── StockRestorationHandler.php
+│   │   ├── ShippingRefundHandler.php
+│   │   └── ShippingRateQuoteHandler.php
+│   ├── Service/
+│   │   ├── ShipmentService.php
+│   │   └── TrackingNumberService.php
+│   ├── Admin/
+│   │   └── ShippingPanelProvider.php   # tagged
+│   └── Repository/
+│       └── ShipmentRepository.php
+└── services.yaml
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Architecture invariants enforced</div>
+            <ul class="small" style="margin: 0;">
+              <li><strong>No PSP imports.</strong> Grep guard in pre-commit blocks any <code>OxidEsales\Payments\Stripe</code> reference.</li>
+              <li><strong>No direct contract mutations.</strong> Dispatch events. Handlers mutate.</li>
+              <li><strong>Tagged services for PSP-specific behaviour.</strong> Carrier-side code is PSP-independent.</li>
+              <li><strong>Shared admin tab.</strong> Contribute a panel via <code>oe.payment.admin_panel</code> or its shipping-side equivalent.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Build a Shipment module &middot; 1/4</div>
+          <div class="page-num">09 / 12</div>
+        </div>

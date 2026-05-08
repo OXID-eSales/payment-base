@@ -1,0 +1,85 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Pillar 4 &middot; Smart-Contracts</span></div>
+          <div class="deck">State machine + extensible conditions + early order creation</div>
+        </div>
+
+        <h2 class="h-2">A Smart-Contract is the source of truth.<br/><em class="acc">The order is a downstream effect.</em></h2>
+
+        <p class="lede" style="margin-bottom: 14px; font-size: var(--t-15);">
+          When the customer clicks &ldquo;Place Order&rdquo;, Payment Base does <em>not</em> create an order &mdash; it creates a
+          <strong>PaymentContract</strong>. The contract carries an immutable <code>BasketSnapshot</code> and a list of
+          <strong>conditions</strong> that must be fulfilled before commitment. The order is created <em>early</em> (in
+          <code>NOT_FINISHED</code> state) so its order number is available before redirecting to the PSP.
+        </p>
+
+        <div class="cols split-7-5" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Contract lifecycle &middot; with hook points</div>
+            <div class="diagram-host" style="height: 100%; min-height: 380px;">
+              <div class="mermaid">
+flowchart TB
+    D[DRAFT] --> NF[NOT_FINISHED]
+    NF --> P[PENDING]
+    P --> A[AUTHORIZED]
+    A --> R[READY_TO_COMMIT]
+    R --> CO[COMMITTED]
+    CO --> F[FULFILLED]
+
+    A -. condition: payment_authorized .-> R
+    A -. condition: fraud_check .-> R
+    A -. condition: stock_reserved .-> R
+
+    F2[CANCELLED / EXPIRED / FAILED<br/>terminal alternatives]
+
+    style D fill:#fff,stroke:#8390ad
+    style NF fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style P fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style A fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style R fill:#e9d5ff,stroke:#7e22ce,color:#0b1424
+    style CO fill:#d1fae5,stroke:#047857,color:#0b1424
+    style F fill:#d1fae5,stroke:#047857,stroke-width:3px,color:#0b1424
+    style F2 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+              </div>
+            </div>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Why early order creation</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li>Order number available <strong>before</strong> the PSP session is created</li>
+              <li>PSP dashboard (Stripe / PayPal) shows the order number in metadata &mdash; reconciliation works on day 1</li>
+              <li>Order exists before payment completion &mdash; no race with webhooks</li>
+              <li>Order finalisation (<code>COMMITTED</code>) only when <strong>all conditions</strong> are met</li>
+            </ul>
+
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Conditions are extensible</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+$contract->addCondition(
+    new ContractCondition(
+        type: 'subscription_verified',
+        data: ['plan_id' => 'pro_monthly']
+    )
+);
+
+// Later, in your event handler:
+$contract->fulfilCondition(
+    'subscription_verified',
+    ['verified_at' => '2026-05-08T10:23:00Z']
+);
+
+// When ALL conditions are fulfilled:
+//   ContractReadyToCommitEvent dispatched
+//   StripeOrderCreationHandler / your handler finalises
+</pre>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top: 14px;">
+          <strong>The hook points are the state transitions.</strong> Each <code>Contract&hellip;Event</code> is a place your extension can intercept.
+          Your code <em>never</em> mutates a contract directly &mdash; you dispatch an event, a handler mutates. <em>Grep guards in <code>one-page-checkout/bin/pre-commit-check.sh</code> enforce this.</em>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Pillar 4 &middot; Smart-Contracts</div>
+          <div class="page-num">04 / 12</div>
+        </div>

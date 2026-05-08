@@ -1,0 +1,49 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Was Payment Base liefert</span></div>
+          <div class="deck">Vier S&auml;ulen &middot; ein PSP-agnostischer Kern</div>
+        </div>
+
+        <div class="eyebrow">Der anbieter-agnostische Kern</div>
+        <h1 class="h-1">Payment Base liefert<br/><em class="acc">vier S&auml;ulen</em>.</h1>
+
+        <p class="lede" style="margin-bottom: 18px;">
+          Payment Base (<code>oxid-esales/payment-component</code>) ist die Schicht <em>unter</em> jedem PSP-Modul
+          (Stripe, PayPal, &hellip;), unter jedem Retouren-Workflow (OpalReturns) und unter jeder Versand-Integration.
+          PSPs und nachgelagerte Module <strong>importieren sich gegenseitig nie</strong> &mdash; sie teilen sich nur Payment Base.
+        </p>
+
+        <div class="pillars cols-4" style="margin-bottom: 0;">
+          <div class="pillar">
+            <div class="icon">1</div><h4>Admin-Tab &bdquo;Payment&ldquo;</h4>
+            <p>Ein gemeinsamer Tab in der OXID-Admin-Bestelldetail-Seite. PSPs liefern Panels via Tag-Service <code>oe.payment.admin_panel</code> &mdash; <strong>keine PSP-eigenen Admin-Tabs</strong>.</p>
+          </div>
+          <div class="pillar">
+            <div class="icon">2</div><h4>Domain-Modelle</h4>
+            <p><code>PaymentContract</code>-Aggregat, <code>BasketSnapshot</code>-Wertobjekt, <code>Transaction</code>, <code>ContractCondition</code>, <code>ContractState</code>-Enum. Besitzt alle 6 Datenbanktabellen.</p>
+          </div>
+          <div class="pillar">
+            <div class="icon">3</div><h4>Event-System</h4>
+            <p>PSR-14-<code>EventDispatcher</code>, request-skopierter <code>EventContext</code>, <code>HandlerInterface</code>, <strong>30+ Events</strong>. Jeder kann ein neues Event einf&uuml;hren.</p>
+          </div>
+          <div class="pillar">
+            <div class="icon">4</div><h4>Smart-Contracts</h4>
+            <p>State-Maschine <code>DRAFT &rarr; &hellip; &rarr; FULFILLED</code> mit erweiterbaren <strong>Conditions</strong> (<code>payment_authorized</code>, <code>fraud_check</code>, &hellip;). Early-Order-Creation out-of-the-box.</p>
+          </div>
+        </div>
+
+        <div class="cols cols-3" style="gap: 14px; margin-top: 22px;">
+          <div class="callout" style="margin: 0; padding: 14px 16px; font-size: var(--t-13);">
+            <strong>Sechs abstrakte Basisklassen.</strong> <code>ContractCreationHandler</code>, <code>AbstractPaymentCaptureService</code>, <code>AbstractPaymentRefundService</code>, <code>AbstractWebhookProcessor</code>, <code>AbstractHandler</code>, <code>AbstractFileLoggerFactory</code> &mdash; man erbt, man kopiert nicht.
+          </div>
+          <div class="callout" style="margin: 0; padding: 14px 16px; font-size: var(--t-13);">
+            <strong>~25 Interfaces.</strong> <code>PaymentAdapterInterface</code>, <code>ShopAdapterInterface</code>, <code>SessionAdapterInterface</code>, Repository- &amp; Service-Interfaces. Die <em>Boundary-Regel</em>: Anbieter-agnostisches lebt hier.
+          </div>
+          <div class="callout" style="margin: 0; padding: 14px 16px; font-size: var(--t-13);">
+            <strong>Architektur-Invarianten.</strong> PSPs sind Peers. <code>opalreturns</code> ist PSP-agnostisch. Keine direkten Contract-Mutationen in Controllern. Grep-Guards im pre-commit erzwingen die Linien.
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Was es liefert</div>
+          <div class="page-num">02 / 12</div>
+        </div>

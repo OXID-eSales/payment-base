@@ -1,0 +1,20 @@
+{
+  "$schema": "../../src/core/schema/manifest.schema.json",
+  "title": "OXID Payment Base — Platform-agnostic Payment Foundation",
+  "languages": ["en", "de"],
+  "default": "en",
+  "slides": [
+    { "anchor": "cover",                       "step": 0 },
+    { "anchor": "provides-overview",           "step": 1 },
+    { "anchor": "events-deep-dive",            "step": 1 },
+    { "anchor": "smart-contracts",             "step": 1 },
+    { "anchor": "extension-overview",          "step": 2 },
+    { "anchor": "extension-handlers",          "step": 2 },
+    { "anchor": "extension-webhook-admin",     "step": 2 },
+    { "anchor": "opalreturns",                 "step": 3 },
+    { "anchor": "shipment-principles",         "step": 3 },
+    { "anchor": "shipment-handlers",           "step": 3 },
+    { "anchor": "shipment-data-admin",         "step": 3 },
+    { "anchor": "shipment-testing-lifecycle",  "step": 3 }
+  ]
+}

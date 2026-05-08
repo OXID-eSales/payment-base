@@ -1,0 +1,85 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">S&auml;ule 4 &middot; Smart-Contracts</span></div>
+          <div class="deck">State-Maschine + erweiterbare Conditions + fr&uuml;he Order-Erzeugung</div>
+        </div>
+
+        <h2 class="h-2">Ein Smart-Contract ist die Wahrheitsquelle.<br/><em class="acc">Die Bestellung ist ein Folge-Effekt.</em></h2>
+
+        <p class="lede" style="margin-bottom: 14px; font-size: var(--t-15);">
+          Wenn der Kunde &bdquo;Jetzt kaufen&ldquo; klickt, erzeugt Payment Base <em>keine</em> Bestellung &mdash; es erzeugt einen
+          <strong>PaymentContract</strong>. Dieser tr&auml;gt einen unver&auml;nderlichen <code>BasketSnapshot</code> und eine Liste von
+          <strong>Conditions</strong>, die vor dem Commit erf&uuml;llt sein m&uuml;ssen. Die Bestellung wird <em>fr&uuml;h</em> erzeugt
+          (Status <code>NOT_FINISHED</code>), damit ihre Bestellnummer schon vor der PSP-Weiterleitung verf&uuml;gbar ist.
+        </p>
+
+        <div class="cols split-7-5" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Contract-Lebenszyklus &middot; mit Hook-Punkten</div>
+            <div class="diagram-host" style="height: 100%; min-height: 380px;">
+              <div class="mermaid">
+flowchart TB
+    D[DRAFT] --> NF[NOT_FINISHED]
+    NF --> P[PENDING]
+    P --> A[AUTHORIZED]
+    A --> R[READY_TO_COMMIT]
+    R --> CO[COMMITTED]
+    CO --> F[FULFILLED]
+
+    A -. condition: payment_authorized .-> R
+    A -. condition: fraud_check .-> R
+    A -. condition: stock_reserved .-> R
+
+    F2[CANCELLED / EXPIRED / FAILED<br/>terminale Alternativen]
+
+    style D fill:#fff,stroke:#8390ad
+    style NF fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style P fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style A fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style R fill:#e9d5ff,stroke:#7e22ce,color:#0b1424
+    style CO fill:#d1fae5,stroke:#047857,color:#0b1424
+    style F fill:#d1fae5,stroke:#047857,stroke-width:3px,color:#0b1424
+    style F2 fill:#fee2e2,stroke:#b91c1c,color:#0b1424
+              </div>
+            </div>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Warum fr&uuml;he Order-Erzeugung</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li>Bestellnummer <strong>vor</strong> PSP-Session-Erzeugung verf&uuml;gbar</li>
+              <li>PSP-Dashboard (Stripe / PayPal) zeigt die Bestellnummer in den Metadaten &mdash; Reconciliation funktioniert ab Tag 1</li>
+              <li>Bestellung existiert vor Zahlungs-Abschluss &mdash; kein Race mit Webhooks</li>
+              <li>Order-Finalisierung (<code>COMMITTED</code>) erst, wenn <strong>alle Conditions</strong> erf&uuml;llt sind</li>
+            </ul>
+
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Conditions sind erweiterbar</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+$contract->addCondition(
+    new ContractCondition(
+        type: 'subscription_verified',
+        data: ['plan_id' => 'pro_monthly']
+    )
+);
+
+// Sp&auml;ter, in Ihrem Event-Handler:
+$contract->fulfilCondition(
+    'subscription_verified',
+    ['verified_at' => '2026-05-08T10:23:00Z']
+);
+
+// Wenn ALLE Conditions erf&uuml;llt sind:
+//   ContractReadyToCommitEvent dispatcht
+//   StripeOrderCreationHandler / Ihr Handler finalisiert
+</pre>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top: 14px;">
+          <strong>Die Hook-Punkte sind die Zustands&uuml;berg&auml;nge.</strong> Jedes <code>Contract&hellip;Event</code> ist eine Stelle, an der Ihre Erweiterung andocken kann.
+          Ihr Code <em>mutiert</em> nie direkt einen Contract &mdash; Sie dispatchen ein Event, ein Handler mutiert. <em>Grep-Guards in <code>one-page-checkout/bin/pre-commit-check.sh</code> erzwingen das.</em>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; S&auml;ule 4 &middot; Smart-Contracts</div>
+          <div class="page-num">04 / 12</div>
+        </div>

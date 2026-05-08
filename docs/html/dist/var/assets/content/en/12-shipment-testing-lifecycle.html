@@ -1,0 +1,91 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Build a Shipment module &middot; 4 of 4</span></div>
+          <div class="deck">Testing &middot; quality gates &middot; release lifecycle</div>
+        </div>
+
+        <h2 class="h-2">TDD-first. DevOps-first.<br/><em class="acc">The same gates every Payment Base module ships under.</em></h2>
+
+        <div class="cols cols-3" style="gap: 14px; flex: 1 1 0;">
+
+          <div class="col" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #047857; margin-bottom: 10px;">Test pyramid</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li><strong>Unit tests</strong> own logic. Mock interfaces, not final classes &mdash; if a class is final, extract a seam.</li>
+              <li><strong>Integration tests</strong> own the wiring &mdash; Doctrine writes, event chains, DI construction.</li>
+              <li><strong>Playwright</strong> owns the browser surface. One regression spec per user-facing feature that crosses a frame boundary.</li>
+              <li><strong>Coverage must not shrink</strong> between sprints. Enforced in CI.</li>
+            </ul>
+
+            <div class="eyebrow" style="color: #047857; margin-bottom: 10px;">Sample test &middot; handler in isolation</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.06); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 4px; padding: 10px 12px; line-height: 1.4; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-11);">
+public function testReservesEachItem(): void {
+    $inv = $this->createMock(InventoryService::class);
+    $inv->expects($this->exactly(2))
+        ->method('reserve');
+
+    $h = new StockReservationHandler($inv);
+    $h->handle(new ContractCreatedEvent(
+        $contract, new EventContext()
+    ));
+}
+</pre>
+          </div>
+
+          <div class="col" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #b45309; margin-bottom: 10px;">Quality gates &middot; pre-commit</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.06); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 4px; padding: 10px 12px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-11);">
+$ ./bin/pre-commit-check.sh
+
+[1/6] PHPCS  (PSR-12) &hellip; OK
+[2/6] PHPStan (level 6) &hellip; OK
+[3/6] PHPMD &hellip; OK
+[4/6] Unit tests &hellip; OK
+[5/6] Architecture grep guards
+      &mdash; no PSP imports &hellip; OK
+      &mdash; no direct contract mutations
+        in controllers &hellip; OK
+[6/6] Module activation smoke
+      deactivate &rarr; activate &rarr; clear &hellip; OK
+</pre>
+
+            <div class="eyebrow" style="color: #b45309; margin-bottom: 10px;">SOLID enforced</div>
+            <ul class="small" style="margin: 0 0 0;">
+              <li><strong>S</strong> &mdash; one class, one reason to change</li>
+              <li><strong>O</strong> &mdash; tagged registries over <code>switch ($carrier)</code></li>
+              <li><strong>L</strong> &mdash; handlers honour declared input type</li>
+              <li><strong>I</strong> &mdash; small interfaces; split before 10 public methods</li>
+              <li><strong>D</strong> &mdash; constructor inject interfaces</li>
+            </ul>
+          </div>
+
+          <div class="col" style="background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #4338ca; margin-bottom: 10px;">Architecture invariants</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li><strong>Peers, not dependents.</strong> Stripe, PayPal, Shipping module, OpalReturns share Payment Base &mdash; never each other.</li>
+              <li><strong>No direct contract mutations.</strong> Dispatch, don&rsquo;t mutate. Grep guard in <code>one-page-checkout/bin/pre-commit-check.sh</code>.</li>
+              <li><strong>One Payment tab.</strong> Tagged panel providers contribute &mdash; no per-module admin tabs.</li>
+              <li><strong>Shared settings live in Payment Base.</strong> Live/test mode, debug flag, capture mode &mdash; via <code>PaymentConfigServiceInterface</code>.</li>
+              <li><strong>Drop deprecated immediately.</strong> No <code>@deprecated</code> windows on internal code; rename + delete in one commit.</li>
+            </ul>
+
+            <div class="eyebrow" style="color: #4338ca; margin-bottom: 10px;">Release shape</div>
+            <ul class="small" style="margin: 0;">
+              <li>Composer package; semver; per-module CHANGELOG</li>
+              <li>Doctrine migrations shipped with the module if it owns tables</li>
+              <li>Activation smoke (<code>deactivate &rarr; activate &rarr; cache-clear</code>) runs in pre-commit when <code>metadata.php</code> changes</li>
+              <li>Reference impls (Stripe, PayPal, OpalReturns) in CI as integration partners</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div class="callout" style="margin-top: 14px;">
+          <strong>The compounding payoff.</strong> Every new module &mdash; PSP, returns, shipping, BNPL, marketplace &mdash; arrives faster than the one before.
+          The events already exist. The contract lifecycle already exists. The admin tab already exists. The quality gates already exist.
+          <em class="acc">Payment Base is the asset; everything else is a tagged service.</em>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Build a Shipment module &middot; 4/4</div>
+          <div class="page-num">12 / 12</div>
+        </div>

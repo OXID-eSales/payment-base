@@ -1,0 +1,26 @@
+/*
+ * Midnight theme — dark contrast variant. Inherits structure from
+ * `default` (via manifest.json `extends: default`); only the design tokens
+ * are overridden here.
+ */
+:root[data-theme="midnight"] {
+  --ink-900: #f4f6fb;
+  --ink-700: #d3d9e7;
+  --ink-500: #a4adc4;
+  --ink-300: #6f7a98;
+  --ink-100: #2b3245;
+  --paper:   #0e1424;
+  --canvas:  #060a18;
+  --rule:    #1f2740;
+
+  --pp-navy: #6da3ff;
+  --pp-blue: #4dc7ff;
+
+  --s1-accent: #6fa1ff;
+  --s2-accent: #b3a5ff;
+  --s3-accent: #ffc266;
+
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad:  #f87171;
+}

@@ -1,0 +1,89 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Konsument 1 &middot; OpalReturns</span></div>
+          <div class="deck">Ein PSP-agnostisches Retouren-Modul auf Payment Base</div>
+        </div>
+
+        <h2 class="h-2">OpalReturns ist der Beweis:<br/><em class="acc">ein echter Konsument, null PSP-Importe.</em></h2>
+
+        <p class="lede" style="margin-bottom: 14px; font-size: var(--t-15);">
+          OpalReturns wickelt Erstattungs- und Retouren-Workflows &uuml;ber <strong>jeden PSP</strong> ab &mdash; Stripe, PayPal,
+          k&uuml;nftige Anbieter &mdash; ohne PSP-spezifischen Code zu importieren. Architektur-Invariante per Grep-Guard:
+          <em>keine <code>OxidEsales\Payments\Stripe</code>- oder <code>OxidEsales\Payments\PayPal</code>-Referenzen in <code>opalreturns/src/</code></em>.
+        </p>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Wie es einsteckt &middot; drei Integrationspunkte</div>
+            <div class="diagram-host" style="height: 100%; min-height: 360px;">
+              <div class="mermaid">
+flowchart LR
+    subgraph PSP["PSP-Module (Peers)"]
+      ST["Stripe<br/>StripeRefundRequestEvent"]
+      PP["PayPal<br/>PayPalRefundRequestEvent"]
+    end
+
+    subgraph PB["Payment Base &middot; das geteilte R&uuml;ckgrat"]
+      EV["EventDispatcher<br/>(PSR-14)"]
+      PR["PaymentRefundedEvent"]
+      META["Contract-Metadaten<br/>(setMetadata / getMetadata)"]
+    end
+
+    subgraph OR["OpalReturns (PSP-agnostisch)"]
+      RH["ReturnHandler<br/>subscribt PaymentRefundedEvent"]
+      BR["Resolution-Broker<br/>tag: opalreturns.resolution_handler"]
+      ST_RES["StripeResolutionHandler<br/>(in stripe/, nicht opalreturns/)"]
+      PP_RES["PayPalResolutionHandler<br/>(in paypal/, nicht opalreturns/)"]
+    end
+
+    ST --> EV
+    PP --> EV
+    EV --> PR
+    PR --> RH
+    RH --> META
+    RH --> BR
+    BR --> ST_RES
+    BR --> PP_RES
+
+    style PB fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style OR fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style PSP fill:#e9d5ff,stroke:#7e22ce,color:#0b1424
+              </div>
+            </div>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Die drei Muster, die OpalReturns nutzt</div>
+            <div class="phases" style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.05); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: #7e22ce;">A</div>
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 2px;">Subscribe auf <code>PaymentRefundedEvent</code></div>
+                  <div class="small" style="opacity: 0.8;">PSP-agnostisch. Egal ob Stripe oder PayPal &mdash; das Event hat dieselbe Form. OpalReturns&rsquo; <code>ReturnHandler</code> h&auml;ngt sich an und triggert den Retouren-Workflow.</div>
+                </div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.05); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: #7e22ce;">B</div>
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 2px;">Contract-Metadaten f&uuml;r retouren-spezifische Daten</div>
+                  <div class="small" style="opacity: 0.8;">Retourengrund, RMA-Nummer, Wiedereinlagerungs-Geb&uuml;hr &mdash; am Smart-Contract via <code>setMetadata()</code>. &Uuml;berlebt den Lebenszyklus, abrufbar &uuml;ber das Contract-Repository.</div>
+                </div>
+              </div>
+              <div class="phase-row" style="display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.05); border-radius: 6px;">
+                <div style="font-size: var(--t-18); font-weight: 700; color: #7e22ce;">C</div>
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 2px;">Resolution-Broker via getaggte Services</div>
+                  <div class="small" style="opacity: 0.8;">Tag: <code>opalreturns.resolution_handler</code>. PSP-spezifische Resolution-Logik liegt <em>im jeweiligen PSP-Modul</em>, nicht in OpalReturns. Der Broker ist der einzige Fan-Out-Punkt &mdash; gleiches Muster wie <code>oe.payment.admin_panel</code> und <code>oe.payment.event_translator</code>.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="callout" style="margin: 18px 0 0; padding: 12px 14px; font-size: var(--t-13);">
+              <strong>Die Lehre:</strong> ein nachgelagertes Modul greift nie in einen PSP. PSP-spezifischer Code lebt im PSP-Modul unter einem Tag, den das nachgelagerte Modul sammelt. <em>Drei reale Registries</em> heute in Produktion: <code>oe.payment.admin_panel</code>, <code>opalreturns.resolution_handler</code>, <code>oe.payment.event_translator</code>.
+            </div>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Konsument &middot; OpalReturns</div>
+          <div class="page-num">08 / 12</div>
+        </div>

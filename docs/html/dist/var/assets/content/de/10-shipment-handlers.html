@@ -1,0 +1,119 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Versandmodul bauen &middot; 2 von 4</span></div>
+          <div class="deck">Event-Handler &middot; die Versand-Logik</div>
+        </div>
+
+        <h2 class="h-2">Drei Handler tragen den Versand-Fluss.<br/><em class="acc">Alle drei subscriben auf Payment-Base-Events.</em></h2>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">1. Bestand reservieren bei Contract-Erzeugung</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StockReservationHandler implements HandlerInterface
+{
+    public static function getHandledEventClass(): string
+    {
+        return ContractCreatedEvent::class;
+    }
+
+    public function handle(object $event): void
+    {
+        $contract = $event->getContext()->getContract();
+        foreach ($contract->getBasket()->getItems() as $item) {
+            $this->inventory->reserve(
+                articleId: $item->getArticleId(),
+                quantity: $item->getQuantity(),
+                contractId: $contract->getId()
+            );
+        }
+    }
+}
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">2. Versand erzeugen bei Zahlungs-Capture</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class ShippingFulfillmentHandler implements HandlerInterface
+{
+    public function __construct(
+        private readonly CarrierAdapterRegistry $carriers,
+        private readonly ShipmentRepository $shipments,
+        private readonly LoggerInterface $logger,
+    ) {}
+
+    public static function getHandledEventClass(): string
+    {
+        return PaymentCapturedEvent::class;
+    }
+
+    public function handle(object $event): void
+    {
+        $orderId = $event->getContext()->getOrderId();
+        $carrier = $this->carriers->get($this->pickCarrierFor($orderId));
+
+        try {
+            $shipment = $carrier->createShipment(
+                $this->buildRequestFor($orderId)
+            );
+            $this->shipments->save($shipment);
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'Versand-Erzeugung fehlgeschlagen',
+                ['orderId' => $orderId, 'err' => $e->getMessage()]
+            );
+            // Nicht rethrowen &mdash; andere Handler laufen weiter.
+        }
+    }
+}
+</pre>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">3. Bestand freigeben bei Cancel / Expire</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StockRestorationHandler implements HandlerInterface
+{
+    public static function getHandledEventClass(): string
+    {
+        // Multi-Event-Handler registrieren je Event eine Klasse,
+        // oder nutzen einen Alias unter derselben Priorit&auml;t.
+        return ContractCancelledEvent::class;
+    }
+
+    public function handle(object $event): void
+    {
+        $contractId = $event->getContext()->getContract()->getId();
+        $this->inventory->releaseReservation($contractId);
+    }
+}
+
+// services.yaml &middot; gleicher Handler, zwei Events
+StockRestorationHandler:
+    tags:
+      - { name: payment.event_handler, priority: 0 }
+StockRestorationHandlerOnExpiry:
+    class: StockRestorationHandler
+    tags:
+      - { name: payment.event_handler, priority: 0 }
+    # Event-Klasse via Factory ausgew&auml;hlt; behandelt ContractExpiredEvent
+</pre>
+
+            <div class="eyebrow" style="color: var(--s3-accent); margin-bottom: 10px;">Best Practices eingebaut</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li><strong>Idempotenz.</strong> Webhooks k&ouml;nnen doppelt feuern. <code>oe_payments_idempotency</code> via <code>IdempotencyRepositoryInterface</code> pr&uuml;fen, bevor gehandelt wird.</li>
+              <li><strong>Nicht rethrowen.</strong> Ein langsamer Carrier-Aufruf darf den Rest der Kette nicht blockieren.</li>
+              <li><strong>Langsame Arbeit in eine Queue.</strong> Etiketten-Erzeugung via Queue; Event-Handler bleiben schnell.</li>
+              <li><strong>Handler isoliert testen.</strong> Interfaces mocken, nicht Klassen.</li>
+            </ul>
+
+            <div class="callout" style="margin: 0; padding: 12px 14px; font-size: var(--t-13);">
+              <strong>Bemerkenswert ist, was fehlt:</strong> kein <code>StripeClient</code>. Keine <code>PayPalApi</code>. Das Versandmodul ist
+              tats&auml;chlich PSP-agnostisch. F&uuml;gen wir morgen Klarna hinzu, lernt das Versandmodul nichts dar&uuml;ber &mdash; das Event
+              kommt identisch an, weil Payment Base die Event-Form besitzt.
+            </div>
+          </div>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Versandmodul bauen &middot; 2/4</div>
+          <div class="page-num">10 / 12</div>
+        </div>

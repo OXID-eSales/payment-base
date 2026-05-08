@@ -1,0 +1,102 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Build a PSP module &middot; 3 of 3</span></div>
+          <div class="deck">Webhook processor + admin Payment tab contribution</div>
+        </div>
+
+        <h2 class="h-2">Webhooks &amp; admin operations finish the spine.<br/><em class="acc">Both ride the same event bus.</em></h2>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Webhook processor &middot; extends abstract base</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StripeWebhookProcessor
+    extends AbstractWebhookProcessor
+{
+    protected function verifySignature(
+        string $payload, array $headers
+    ): bool {
+        return $this->adapter->verifyWebhookSignature(
+            $payload, $headers['Stripe-Signature'], $this->secret
+        );
+    }
+
+    protected function routeEvent(WebhookEvent $e): void {
+        match ($e->getType()) {
+            'payment_intent.succeeded' =>
+                $this->dispatcher->dispatch(
+                    new PaymentAuthorizedEvent($contract, $ctx)),
+            'charge.refunded' =>
+                $this->dispatcher->dispatch(
+                    new PaymentRefundedEvent($contract, $ctx)),
+            // &hellip;
+        };
+    }
+}
+
+// Idempotency &amp; logging come from the abstract base.
+// Provider-agnostic WebhookLogRepository persists every call.
+</pre>
+
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Capture / Refund services</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StripeCaptureService
+    extends AbstractPaymentCaptureService
+{
+    protected function executeCapture(
+        PaymentContractInterface $c, ?float $amount
+    ): CaptureResponse {
+        return $this->adapter->captureAuthorization(
+            new CaptureAuthorizationRequest(
+                authorizationId: $c->getProviderOrderId(),
+                amount: $amount ? (string) $amount : null,
+            )
+        );
+    }
+}
+// Partial capture: $amount &lt;= PaymentIntent.amount, irreversible
+// Partial refund: total_refunded + amount &lt;= captured
+</pre>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Payment tab &middot; PSP-agnostic, panel-providers contribute</div>
+            <div style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 14px 16px; font-size: var(--t-13); line-height: 1.55; margin-bottom: 14px;">
+              <p style="margin: 0 0 8px;"><strong>One tab. Every PSP.</strong></p>
+              <p style="margin: 0 0 8px;">Payment Base owns the &ldquo;Payment&rdquo; tab on the OXID admin Order Details page (since Sprint I). PSPs <strong>do not</strong> ship per-PSP admin-order tabs.</p>
+              <p style="margin: 0;">Each PSP contributes one or more <strong>panel-provider services</strong>, tagged <code>oe.payment.admin_panel</code>. Payment Base&rsquo;s tab collects them via <code>!tagged_iterator</code>.</p>
+            </div>
+
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+# stripe/services.yaml
+StripeOrderRefundPanelProvider:
+    tags:
+      - { name: oe.payment.admin_panel,
+          provider: stripe, priority: 100 }
+
+# Order Refund flow uses shared admin services
+OrderRefundViewDataProvider:    # cached PI/charge fetch
+    arguments: ['@stripe.adapter']
+OrderActionDispatcher:          # dispatches capture/refund events
+    arguments: ['@event.dispatcher']
+</pre>
+
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Admin operations ride the same events</div>
+            <ul class="small" style="margin: 0;">
+              <li>Admin clicks &ldquo;Capture&rdquo; &rarr; <code>OrderActionDispatcher</code> dispatches <code>StripeCaptureRequestEvent</code></li>
+              <li><code>StripeCaptureRequestHandler</code> (priority 0) executes via the adapter</li>
+              <li><code>oe_payments_transaction</code> records the audit trail; <code>OXPAID</code> updated by <code>OrderPaymentCompletedHandler</code></li>
+              <li>Self-healing on view: <code>reconcilePaymentState()</code> repairs <code>OXPAID</code> if Stripe Dashboard bypassed the webhook chain</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top: 12px;">
+          <strong>The whole spine is reusable.</strong> A second PSP &mdash; PayPal &mdash; ships exactly the same shape:
+          adapter + 4 events + 6 handlers + webhook processor + 1 panel provider. Stripe and PayPal are <em>peers</em>:
+          neither imports the other; both share Payment Base.
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Build a PSP module &middot; 3/3</div>
+          <div class="page-num">07 / 12</div>
+        </div>

@@ -1,0 +1,103 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">PSP-Modul bauen &middot; 2 von 3</span></div>
+          <div class="deck">Adapter + ContractCreationHandler-Template</div>
+        </div>
+
+        <h2 class="h-2"><code>PaymentAdapterInterface</code> implementieren.<br/><code>ContractCreationHandler</code> erweitern. <em class="acc">Das ist das R&uuml;ckgrat.</em></h2>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">1. Adapter &mdash; PSP-SDK br&uuml;cken</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StripeAdapter implements PaymentAdapterInterface
+{
+    public function createPayment(
+        CreatePaymentRequest $req
+    ): PaymentResponse {
+        $pi = $this->stripe->paymentIntents->create([
+            'amount'   => $this->toCents($req->getAmount()),
+            'currency' => strtolower($req->getCurrency()),
+            'metadata' => $req->getMetadata(),
+        ]);
+        return new PaymentResponse(
+            providerPaymentId: $pi->id,
+            status: $this->mapStatus($pi->status),
+            amount: $req->getAmount(),
+            currency: $req->getCurrency(),
+            requiresAction: $pi->status === 'requires_action',
+            clientSecret: $pi->client_secret,
+        );
+    }
+    // capture / refund / authorize / void / 3DS / vault &hellip;
+}
+</pre>
+
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">2. Template-Method-Handler</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+class StripeContractCreationHandler
+    extends ContractCreationHandler
+{
+    protected function afterContractCreated(
+        PaymentContractInterface $c,
+        EventContextInterface $ctx
+    ): void {
+        $c->setMetadata('payment_method', $this->methodFrom($ctx));
+        $ctx->set('contractId', $c->getId());
+    }
+    // Basisklasse macht Repo-Save + Event-Dispatch.
+}
+</pre>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">3. Handler-Kette &middot; Stripe-Handler in Reihenfolge</div>
+            <div class="diagram-host" style="height: 260px; min-height: 260px; margin-bottom: 14px;">
+              <div class="mermaid">
+flowchart TB
+    REQ["StripeCheckoutSessionRequestEvent<br/>vom Controller dispatcht"]
+    H1["StripeContractCreationHandler<br/>Priorit&auml;t 100"]
+    H2["EarlyOrderCreationHandler<br/>(payment-component) Priorit&auml;t 100"]
+    H3["StripeCheckoutSessionHandler<br/>Priorit&auml;t 0"]
+
+    PAY["[Kunde zahlt bei Stripe, kehrt zur&uuml;ck]"]
+
+    H4["StripeCheckoutReturnHandler<br/>Priorit&auml;t 100"]
+    H5["PaymentAuthorizedEventHandler<br/>(payment-component) Priorit&auml;t 90"]
+    H6["FraudCheckHandler<br/>(payment-component) Priorit&auml;t 85"]
+    H7["StripeOrderCreationHandler<br/>Priorit&auml;t 80"]
+
+    REQ --> H1 --> H2 --> H3
+    H3 --> PAY
+    PAY --> H4 --> H5 --> H6 --> H7
+
+    style REQ fill:#dbeafe,stroke:#1e40af,color:#0b1424
+    style PAY fill:#fff,stroke:#8390ad,stroke-dasharray:4
+    style H1 fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style H4 fill:#fef3c7,stroke:#b45309,color:#0b1424
+              </div>
+            </div>
+
+            <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">services.yaml &middot; tagged_iterator</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+StripeContractCreationHandler:
+    tags:
+      - { name: payment.event_handler, priority: 100 }
+
+EventListenerProviderInterface:
+    class: EventListenerProvider
+    arguments:
+      - !tagged_iterator payment.event_handler
+</pre>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top: 12px;">
+          <strong>Ein komplett neuer PSP erfordert null Modifikationen an <code>payment-component</code>.</strong>
+          Neuer Adapter, neue Factory, neue <code>ContractCreationHandler</code>-Subklasse, in <code>services.yaml</code> registrieren.
+          Der Kern bleibt unber&uuml;hrt &mdash; das ist das SOLID-Open/Closed-Versprechen.
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; PSP-Modul bauen &middot; 2/3</div>
+          <div class="page-num">06 / 12</div>
+        </div>

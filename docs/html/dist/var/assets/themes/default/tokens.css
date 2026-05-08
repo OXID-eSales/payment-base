@@ -1,0 +1,35 @@
+/*
+ * Default theme — PayPal navy / OXID amber.
+ *
+ * The full styles file currently lives at ../../../styles.css for backward
+ * compatibility while Sprint 001-T migrates structural CSS into
+ * assets/themes/<id>/styles.css. This file holds **only** the design tokens
+ * a theme is allowed to override. New themes inherit by setting "extends"
+ * in manifest.json — they then ship a tokens.css file that overrides any
+ * subset of these variables.
+ */
+:root[data-theme="default"], :root:not([data-theme]) {
+  /* Ink / paper */
+  --ink-900: #0b1424;
+  --ink-700: #1f2a44;
+  --ink-500: #4a5675;
+  --ink-300: #8390ad;
+  --ink-100: #d6dbe7;
+  --paper:   #ffffff;
+  --canvas:  #f5f6fa;
+  --rule:    #e7eaf1;
+
+  /* Brand */
+  --pp-navy: #003087;
+  --pp-blue: #0070ba;
+
+  /* Step accents */
+  --s1-accent: #1e40af;
+  --s2-accent: #4338ca;
+  --s3-accent: #b45309;
+
+  /* Semantic */
+  --good: #047857;
+  --warn: #b45309;
+  --bad:  #b91c1c;
+}

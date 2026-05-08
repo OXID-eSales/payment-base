@@ -1,0 +1,95 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Pillar 3 &middot; Event system</span></div>
+          <div class="deck">EventDispatcher &middot; EventContext &middot; HandlerInterface</div>
+        </div>
+
+        <h2 class="h-2">Anyone can introduce a new event.<br/><em class="acc">Handlers are tagged services.</em> No central switch statements.</h2>
+
+        <div class="cols split-6-6" style="gap: 18px; flex: 1 1 0;">
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">The three primitives</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+interface EventDispatcherInterface {
+    public function dispatch(EventInterface $event): EventInterface;
+    public function addListener(
+        string $eventClass,
+        callable $listener,
+        int $priority = 0
+    ): void;
+}
+
+interface EventContextInterface {
+    public function get(string $key, mixed $default = null): mixed;
+    public function set(string $key, mixed $value): void;
+    public function getContract(): ?PaymentContractInterface;
+    public function getBasket(): ?object;
+    public function getUser(): ?object;
+}
+
+interface HandlerInterface {
+    public function handle(object $event): void;
+    public static function getHandledEventClass(): string;
+    // Optional: public function getPriority(): int;
+}
+</pre>
+
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Registration &mdash; one line of YAML</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 12px 14px; line-height: 1.45; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-12);">
+Your\Module\Handler\YourHandler:
+    tags:
+        - { name: payment.event_handler, priority: 50 }
+</pre>
+          </div>
+
+          <div class="col" style="justify-content: flex-start;">
+            <div class="eyebrow" style="color: var(--s1-accent); margin-bottom: 10px;">Event hierarchy &middot; 30+ events</div>
+            <div class="diagram-host" style="height: 100%; min-height: 420px;">
+              <div class="mermaid">
+flowchart TB
+    EI["EventInterface"]
+    CEI["ContractEventInterface"]
+    PEI["PaymentEventInterface"]
+    PSP["Provider-specific events<br/>(StripeCheckoutSessionRequest,<br/>StripeRefundRequest,<br/>PayPalCaptureRequest, &#x2026;)"]
+
+    CC["ContractCreatedEvent"]
+    CDC["ContractDraftCompletedEvent"]
+    CTP["ContractTransitionedToPendingEvent"]
+    CCF["ContractConditionFulfilledEvent"]
+    CRC["ContractReadyToCommitEvent"]
+    CCM["ContractCommittedEvent"]
+    CFU["ContractFulfilledEvent"]
+    CTE["ContractCancelled / Expired / FailedEvent"]
+
+    PI["PaymentInitiatedEvent"]
+    PA["PaymentAuthorizedEvent"]
+    PCAP["PaymentCapturedEvent"]
+    PR["PaymentRefundedEvent"]
+    PF["PaymentFailedEvent"]
+    OC["OrderCreatedEvent / OrderCompletedEvent"]
+    WR["WebhookReceivedEvent"]
+
+    EI --> CEI
+    EI --> PEI
+    EI --> PSP
+
+    CEI --> CC & CDC & CTP & CCF & CRC & CCM & CFU & CTE
+    PEI --> PI & PA & PCAP & PR & PF & OC & WR
+
+    style EI fill:#dbeafe,stroke:#1e40af,stroke-width:2px,color:#0b1424
+    style CEI fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style PEI fill:#fef3c7,stroke:#b45309,color:#0b1424
+    style PSP fill:#e9d5ff,stroke:#7e22ce,color:#0b1424
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout" style="margin-top: 14px;">
+          <strong>Priority rules:</strong> 100+ contract creation (core) &middot; 80&ndash;99 order creation (core) &middot; 50&ndash;79 your validation/enrichment &middot; 1&ndash;49 your post-processing &middot; 0 default.
+          <strong>Context is request-scoped:</strong> handler with priority 100 sets it, handler with priority 0 reads it. Never modify the event &mdash; pass via context.
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Pillar 3 &middot; Events</div>
+          <div class="page-num">03 / 12</div>
+        </div>

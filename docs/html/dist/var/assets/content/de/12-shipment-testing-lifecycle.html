@@ -1,0 +1,91 @@
+        <div class="s-head">
+          <div class="badge"><span class="dot"></span><span class="step-label">Versandmodul bauen &middot; 4 von 4</span></div>
+          <div class="deck">Tests &middot; Quality-Gates &middot; Release-Lifecycle</div>
+        </div>
+
+        <h2 class="h-2">TDD-first. DevOps-first.<br/><em class="acc">Dieselben Gates, unter denen jedes Payment-Base-Modul ausgeliefert wird.</em></h2>
+
+        <div class="cols cols-3" style="gap: 14px; flex: 1 1 0;">
+
+          <div class="col" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #047857; margin-bottom: 10px;">Test-Pyramide</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li><strong>Unit-Tests</strong> besitzen die Logik. Interfaces mocken, nicht <code>final</code>-Klassen &mdash; bei einer <code>final</code>-Wand eine Naht extrahieren.</li>
+              <li><strong>Integrations-Tests</strong> besitzen die Verdrahtung &mdash; Doctrine-Writes, Event-Ketten, DI-Konstruktion.</li>
+              <li><strong>Playwright</strong> besitzt die Browser-Oberfl&auml;che. Eine Regression-Spec pro Frame-Boundary-&Uuml;berquerung.</li>
+              <li><strong>Coverage darf nie schrumpfen</strong> zwischen Sprints. Im CI erzwungen.</li>
+            </ul>
+
+            <div class="eyebrow" style="color: #047857; margin-bottom: 10px;">Beispiel &middot; Handler isoliert</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.06); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 4px; padding: 10px 12px; line-height: 1.4; margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-11);">
+public function testReservesEachItem(): void {
+    $inv = $this->createMock(InventoryService::class);
+    $inv->expects($this->exactly(2))
+        ->method('reserve');
+
+    $h = new StockReservationHandler($inv);
+    $h->handle(new ContractCreatedEvent(
+        $contract, new EventContext()
+    ));
+}
+</pre>
+          </div>
+
+          <div class="col" style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #b45309; margin-bottom: 10px;">Quality-Gates &middot; pre-commit</div>
+            <pre class="small" style="background: rgba(11, 20, 36, 0.06); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 4px; padding: 10px 12px; line-height: 1.45; margin: 0 0 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-11);">
+$ ./bin/pre-commit-check.sh
+
+[1/6] PHPCS  (PSR-12) &hellip; OK
+[2/6] PHPStan (Level 6) &hellip; OK
+[3/6] PHPMD &hellip; OK
+[4/6] Unit-Tests &hellip; OK
+[5/6] Architektur-Grep-Guards
+      &mdash; keine PSP-Importe &hellip; OK
+      &mdash; keine direkten Contract-Mutationen
+        in Controllern &hellip; OK
+[6/6] Modul-Aktivierungs-Smoke
+      deaktivieren &rarr; aktivieren &rarr; clear &hellip; OK
+</pre>
+
+            <div class="eyebrow" style="color: #b45309; margin-bottom: 10px;">SOLID erzwungen</div>
+            <ul class="small" style="margin: 0 0 0;">
+              <li><strong>S</strong> &mdash; eine Klasse, ein Grund zur &Auml;nderung</li>
+              <li><strong>O</strong> &mdash; getaggte Registries statt <code>switch ($carrier)</code></li>
+              <li><strong>L</strong> &mdash; Handler ehren ihren deklarierten Input-Typ</li>
+              <li><strong>I</strong> &mdash; kleine Interfaces; vor 10 public-Methoden splitten</li>
+              <li><strong>D</strong> &mdash; Constructor-Injection &uuml;ber Interfaces</li>
+            </ul>
+          </div>
+
+          <div class="col" style="background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 16px; justify-content: flex-start;">
+            <div class="eyebrow" style="color: #4338ca; margin-bottom: 10px;">Architektur-Invarianten</div>
+            <ul class="small" style="margin: 0 0 14px;">
+              <li><strong>Peers, keine Abh&auml;ngigen.</strong> Stripe, PayPal, Versandmodul, OpalReturns teilen sich Payment Base &mdash; nie einander.</li>
+              <li><strong>Keine direkten Contract-Mutationen.</strong> Dispatchen, nicht mutieren. Grep-Guard in <code>one-page-checkout/bin/pre-commit-check.sh</code>.</li>
+              <li><strong>Ein Payment-Tab.</strong> Getaggte Panel-Provider beitragen &mdash; keine modul-eigenen Admin-Tabs.</li>
+              <li><strong>Geteilte Settings leben in Payment Base.</strong> Live/Test-Modus, Debug-Flag, Capture-Modus &mdash; via <code>PaymentConfigServiceInterface</code>.</li>
+              <li><strong>Veraltetes sofort entfernen.</strong> Keine <code>@deprecated</code>-Fenster auf interner Code; Rename + L&ouml;schung in einem Commit.</li>
+            </ul>
+
+            <div class="eyebrow" style="color: #4338ca; margin-bottom: 10px;">Release-Form</div>
+            <ul class="small" style="margin: 0;">
+              <li>Composer-Paket; Semver; pro Modul ein CHANGELOG</li>
+              <li>Doctrine-Migrationen mit dem Modul, falls es Tabellen besitzt</li>
+              <li>Aktivierungs-Smoke (<code>deaktivieren &rarr; aktivieren &rarr; cache-clear</code>) im pre-commit, wenn <code>metadata.php</code> ge&auml;ndert wird</li>
+              <li>Referenz-Module (Stripe, PayPal, OpalReturns) im CI als Integrations-Partner</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div class="callout" style="margin-top: 14px;">
+          <strong>Der kumulierende Nutzen.</strong> Jedes neue Modul &mdash; PSP, Retouren, Versand, BNPL, Marketplace &mdash; entsteht schneller als das vorige.
+          Die Events existieren schon. Der Contract-Lebenszyklus existiert schon. Der Admin-Tab existiert schon. Die Quality-Gates existieren schon.
+          <em class="acc">Payment Base ist der Vermögenswert; alles andere ist ein getaggter Service.</em>
+        </div>
+
+        <div class="s-foot">
+          <div>OXID Payment Base &middot; Versandmodul bauen &middot; 4/4</div>
+          <div class="page-num">12 / 12</div>
+        </div>
