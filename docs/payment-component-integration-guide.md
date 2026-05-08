@@ -119,8 +119,8 @@ Automatically export orders to your ERP when payment is captured:
 
 namespace YourCompany\ERPConnector\EventHandler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentCapturedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EventHandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentCapturedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\EventHandlerInterface;
 use Psr\Log\LoggerInterface;
 
 class ERPOrderExportHandler implements EventHandlerInterface
@@ -181,8 +181,8 @@ Sync customer data to CRM when an order is created:
 
 namespace YourCompany\CRMSync\EventHandler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\OrderCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EventHandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\EventHandlerInterface;
 
 class CRMCustomerSyncHandler implements EventHandlerInterface
 {
@@ -230,8 +230,8 @@ Trigger shipping fulfillment when payment is captured:
 
 namespace YourCompany\ShippingModule\EventHandler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentCapturedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EventHandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentCapturedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\EventHandlerInterface;
 
 class ShippingFulfillmentHandler implements EventHandlerInterface
 {
@@ -284,10 +284,10 @@ Reserve stock when contract is created, release on cancel/expire:
 
 namespace YourCompany\Inventory\EventHandler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCreatedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractCancelledEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Contract\ContractExpiredEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EventHandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCancelledEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractExpiredEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\EventHandlerInterface;
 
 class InventoryReservationHandler implements EventHandlerInterface
 {
@@ -337,10 +337,10 @@ Send notifications on payment events:
 
 namespace YourCompany\Notifications\EventHandler;
 
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentCapturedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentRefundedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Event\Payment\PaymentFailedEvent;
-use OxidEsales\PaymentComponent\EventSystem\Handler\EventHandlerInterface;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentCapturedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentRefundedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentFailedEvent;
+use OxidEsales\PaymentBase\EventSystem\Handler\EventHandlerInterface;
 
 class PaymentNotificationHandler implements EventHandlerInterface
 {
@@ -418,7 +418,7 @@ If using the payment-component's event system, register your handler:
 ```php
 <?php
 
-use OxidEsales\PaymentComponent\EventSystem\EventListenerProvider;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 
 // In your module activation or DI configuration
 $provider = $container->get(EventListenerProvider::class);

@@ -107,7 +107,7 @@ implementation. Red → green → refactor.
   I). No per-PSP admin-order tabs.
 - **Shared settings live in payment-component** (Sprint J onward).
   Live/test mode, debug flag, capture mode — all read via
-  `PaymentComponent\Service\PaymentConfigServiceInterface`.
+  `PaymentBase\Service\PaymentConfigServiceInterface`.
   PSP-local settings only for genuinely PSP-specific values
   (Stripe API keys, PayPal webhook id, etc.).
 
