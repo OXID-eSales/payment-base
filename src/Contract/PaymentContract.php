@@ -27,6 +27,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
     private ?DateTimeInterface $expiresAt = null;
     private DateTimeInterface $createdAt;
     private DateTimeInterface $updatedAt;
+    private ?DateTimeInterface $committedAt = null;
     private ?DateTimeInterface $fulfilledAt = null;
 
     // Sprint 8: Capture/Refund tracking (migrated from order_state)
@@ -207,7 +208,13 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
         $this->orderId = $orderId;
         $this->state = ContractState::committed();
+        $this->committedAt = new DateTime();
         $this->touch();
+    }
+
+    public function getCommittedAt(): ?DateTimeInterface
+    {
+        return $this->committedAt;
     }
 
     public function fulfill(): void
@@ -489,6 +496,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             'expiresAt' => $this->expiresAt?->format('Y-m-d H:i:s'),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'updatedAt' => $this->updatedAt->format('Y-m-d H:i:s'),
+            'committedAt' => $this->committedAt?->format('Y-m-d H:i:s'),
             'fulfilledAt' => $this->fulfilledAt?->format('Y-m-d H:i:s'),
             'capturedAmount' => $this->capturedAmount,
             'refundedAmount' => $this->refundedAmount,
