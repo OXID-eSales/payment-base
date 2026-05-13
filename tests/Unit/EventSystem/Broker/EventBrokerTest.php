@@ -33,14 +33,41 @@ final class EventBrokerTest extends TestCase
         $broker->dispatch(new RefundRequestedEvent($context, 10.0, 'x'));
     }
 
-    public function testDispatchNoOpWhenNoTranslatorRegistered(): void
+    public function testDispatchNoOpWhenNoTranslatorAndNoConventionClass(): void
     {
+        // STRP-AUTOCAP-REFUND: when there is no explicit translator AND the
+        // convention class does not exist (third-party provider not installed),
+        // the broker is a loud no-op (error-logs, returns event unchanged).
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::never())->method('dispatch');
 
         $broker = new EventBroker($dispatcher, []);
+        $context = new EventContext(['providerName' => 'nonexistent_provider_xyz']);
+        $broker->dispatch(new RefundRequestedEvent($context, 1.0));
+    }
+
+    public function testConventionPathDispatchesWhenNoTranslatorButClassExists(): void
+    {
+        // STRP-AUTOCAP-REFUND: a provider that does NOT register a translator
+        // but ships an event class following the naming convention still gets
+        // its event dispatched — payment-module-agnostic by construction.
+        $dispatched = null;
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::once())->method('dispatch')
+            ->willReturnCallback(function (EventInterface $e) use (&$dispatched) {
+                $dispatched = $e;
+                return $e;
+            });
+
+        $broker = new EventBroker($dispatcher, []);
         $context = new EventContext(['providerName' => 'stripe']);
         $broker->dispatch(new RefundRequestedEvent($context, 1.0));
+
+        self::assertInstanceOf(
+            \OxidEsales\Payments\Stripe\EventSystem\Event\StripeRefundRequestEvent::class,
+            $dispatched,
+            'convention-based resolution must construct StripeRefundRequestEvent for stripe provider'
+        );
     }
 
     public function testDispatchNoOpWhenTranslatorReturnsNull(): void
