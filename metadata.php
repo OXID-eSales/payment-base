@@ -15,8 +15,8 @@ $sMetadataVersion = '2.1';
 $aModule = [
     'id'          => 'oe_payment_base',
     'title'       => [
-        'de' => 'OXID Payment Component',
-        'en' => 'OXID Payment Component',
+        'de' => 'OXID Payment Base',
+        'en' => 'OXID Payment Base',
     ],
     'description' => [
         'de' => 'Provider-agnostische Payment-Infrastruktur (Smart-Contract-Architektur, '
