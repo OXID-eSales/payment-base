@@ -387,8 +387,30 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
     public function setCapturedAmount(float $amount): void
     {
-        if (!$this->state->isCommitted() && !$this->state->isFulfilled()) {
-            throw new DomainException('Can only set captured amount in COMMITTED or FULFILLED state');
+        // STRP-AUTOCAP-REFUND: webhook delivery order at the PSP is not
+        // guaranteed. A `payment_intent.succeeded` can arrive BEFORE
+        // `checkout.session.completed` has moved the contract through
+        // ready_to_commit → committed. The captured amount field is the
+        // source of truth for "money was taken from the customer" — the
+        // act of receiving the success webhook is itself the evidence.
+        // Refusing the write because the FSM hasn't caught up loses that
+        // evidence permanently (the shop ack's the webhook and Stripe
+        // won't redeliver). Accept the write in any state where payment
+        // could plausibly have occurred at the PSP; reject only DRAFT /
+        // NOT_FINISHED (no checkout yet) and the non-fulfilled terminal
+        // states (cancelled / expired / failed — money would never have
+        // moved on those).
+        $canHaveCaptured =
+            $this->state->isPending()
+            || $this->state->isAuthorized()
+            || $this->state->isReadyToCommit()
+            || $this->state->isCommitted()
+            || $this->state->isFulfilled();
+        if (!$canHaveCaptured) {
+            throw new DomainException(sprintf(
+                'Cannot set captured amount in state %s',
+                $this->state->getValue(),
+            ));
         }
         if (!is_finite($amount) || $amount <= 0) {
             throw new InvalidArgumentException('Captured amount must be a positive finite number');

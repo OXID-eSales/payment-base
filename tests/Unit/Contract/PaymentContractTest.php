@@ -532,20 +532,37 @@ class PaymentContractTest extends TestCase
         $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
 
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessage('COMMITTED or FULFILLED');
+        $this->expectExceptionMessage('Cannot set captured amount in state draft');
 
         $contract->setCapturedAmount(100.0);
     }
 
-    public function testSetCapturedAmountInPendingStateThrows(): void
+    public function testSetCapturedAmountInPendingStateIsAllowed(): void
     {
+        // STRP-AUTOCAP-REFUND: PSP webhook delivery order is not guaranteed.
+        // payment_intent.succeeded may arrive while the contract is still
+        // pending; the captured amount is the source of truth and must be
+        // recordable then. Previously this threw; relaxed to allow the write.
         $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
         $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
         $contract->transitionToNotFinished('order_123');
         $contract->transitionToPending();
 
+        $contract->setCapturedAmount(100.0);
+
+        $this->assertSame(100.0, $contract->getCapturedAmount());
+    }
+
+    public function testSetCapturedAmountInNotFinishedStateThrows(): void
+    {
+        // Defence in depth: amount-write still rejected before checkout has
+        // even started moving the contract through the FSM.
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_123');
+
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessage('COMMITTED or FULFILLED');
+        $this->expectExceptionMessage('Cannot set captured amount in state not_finished');
 
         $contract->setCapturedAmount(100.0);
     }

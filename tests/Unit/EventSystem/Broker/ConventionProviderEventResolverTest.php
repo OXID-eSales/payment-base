@@ -121,6 +121,20 @@ final class ConventionProviderEventResolverTest extends TestCase
     {
         // Smoke: every payment-base generic request event must have a
         // convention class for in-tree providers (Stripe + PayPal).
+        //
+        // This test asserts cross-package class loadability and can only
+        // run when the consumer packages are present in the autoloader
+        // (i.e. inside the full OXID shop, not payment-base's standalone
+        // composer install). Skip cleanly in standalone mode — Sprint 03
+        // adds the integration-mode version of this assertion under
+        // opalreturns/tests/Integration where Stripe IS loaded.
+        if (!class_exists(\OxidEsales\Payments\Stripe\EventSystem\Event\StripeRefundRequestEvent::class)) {
+            self::markTestSkipped(
+                'Cross-package smoke test — Stripe is not autoloaded in this run. '
+                . 'Runs in the shop-wide phpunit configuration via Sprint 03 integration tests.'
+            );
+        }
+
         $resolver = new ConventionProviderEventResolver();
         $resolver->registerCanonicalName('paypal', 'PayPal');
 

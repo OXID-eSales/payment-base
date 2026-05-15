@@ -51,6 +51,20 @@ final class EventBrokerTest extends TestCase
         // STRP-AUTOCAP-REFUND: a provider that does NOT register a translator
         // but ships an event class following the naming convention still gets
         // its event dispatched — payment-module-agnostic by construction.
+        //
+        // This test exercises convention-based resolution end-to-end and
+        // therefore needs a concrete provider class (Stripe) loaded. In
+        // payment-base's standalone composer install, Stripe is absent;
+        // skip cleanly. Sprint 03 adds the integration-mode counterpart
+        // under opalreturns/tests/Integration where the full autoload is
+        // available.
+        if (!class_exists(\OxidEsales\Payments\Stripe\EventSystem\Event\StripeRefundRequestEvent::class)) {
+            self::markTestSkipped(
+                'Cross-package end-to-end test — Stripe is not autoloaded in this run. '
+                . 'Runs in the shop-wide phpunit configuration via Sprint 03 integration tests.'
+            );
+        }
+
         $dispatched = null;
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())->method('dispatch')
