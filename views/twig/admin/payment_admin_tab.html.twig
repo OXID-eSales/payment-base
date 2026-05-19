@@ -91,6 +91,38 @@
     .pc-admin .pc-form-label { display: block !important; font-weight: 500 !important; margin-bottom: 4px !important; color: #374151 !important; }
     .pc-admin .pc-form-input,
     .pc-admin .pc-form-select { width: 100% !important; padding: 6px 10px !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; font-size: 13px !important; background: #fff !important; }
+
+    /* ==========================================================================
+       Sprint 05 (2026-05-19) — busy overlay machinery (was in stripe panel).
+       The shared payment-tab carries one spinner+blur overlay that PSP panels
+       trigger by marking their action forms with `.js-payment-action-form`. The
+       wrapper is rendered server-side with `.pc-panel-busy` so the spinner is
+       visible from first paint; init() clears it on DOMContentLoaded.
+       ========================================================================== */
+    .pc-admin { position: relative !important; }
+    .pc-admin.pc-panel-busy > *:not(.pc-spinner) {
+        opacity: 0.5 !important;
+        filter: blur(2px) !important;
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+    .pc-admin .pc-spinner {
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 48px !important;
+        height: 48px !important;
+        display: none !important;
+        border: 4px solid #cccccc !important;
+        border-top-color: #3b82f6 !important;
+        border-radius: 50% !important;
+        animation: pc-spin 0.8s linear infinite !important;
+        outline: 0 !important;
+        z-index: 10 !important;
+    }
+    .pc-admin.pc-panel-busy .pc-spinner { display: block !important; }
+    @keyframes pc-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 </style>
 
 <form name="transfer" id="transfer" action="{{ oViewConf.getSelfLink() }}" method="post">
@@ -99,7 +131,14 @@
     <input type="hidden" name="cl" value="PaymentAdmin">
 </form>
 
-<div class="pc-admin" data-provider="{{ oView.getProviderKey() ?: 'none' }}" data-testid="payment-admin-tab">
+<div class="pc-admin pc-panel-busy" data-provider="{{ oView.getProviderKey() ?: 'none' }}" data-testid="payment-admin-tab" aria-busy="true">
+    {# Sprint 05 — `.pc-panel-busy` is set server-side so the spinner is
+       visible from first paint while the browser parses the rest of the
+       panel. init() clears it on DOMContentLoaded. The same overlay is
+       reused on action-form submit, on sibling list-frame click, and
+       on pagehide as a safety net. #}
+    <div class="pc-spinner" role="status" tabindex="-1" aria-label="Processing"></div>
+
     {% if oView.hasProvider() %}
         {% set panel = oView.getPanelViewData() %}
         {% include oView.getPanelTemplatePath() with panel %}
@@ -109,6 +148,97 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+(function () {
+    function enterBusy(panel) {
+        if (!panel) return;
+        panel.classList.add('pc-panel-busy');
+        panel.setAttribute('aria-busy', 'true');
+        var spinner = panel.querySelector('.pc-spinner');
+        if (spinner) spinner.focus();
+        setTimeout(function () {
+            panel.classList.remove('pc-panel-busy');
+            panel.removeAttribute('aria-busy');
+        }, 30000);
+    }
+
+    function bindCrossFrameNavSpinner(panel) {
+        // The panel renders inside OXID admin's `edit` frame; the order
+        // list sits in the sibling `list` frame. Clicking a different
+        // order there triggers a reload of THIS frame — but the round-trip
+        // time is unobservable to the operator because the OLD panel stays
+        // visible until the new HTML arrives. Bind a capturing click
+        // listener on the list frame so we can re-enter busy state on the
+        // current panel BEFORE the navigation actually replaces us. The
+        // incoming new HTML carries .pc-panel-busy server-side, so the
+        // spinner stays visible continuously across the navigation.
+        try {
+            var list = (window.parent && window.parent.frames && window.parent.frames['list'])
+                ? window.parent.frames['list']
+                : null;
+            if (!list || !list.document) return;
+            list.document.addEventListener('click', function (e) {
+                var target = e.target;
+                if (!target || typeof target.closest !== 'function') return;
+                var trigger = target.closest('a[href], button[type="submit"], input[type="submit"]');
+                if (!trigger) return;
+                enterBusy(panel);
+            }, true);
+        } catch (err) {
+            // Cross-frame access blocked (different origin, frame missing).
+            // Silently no-op — the on-load busy class still covers the
+            // parse window after the new HTML arrives.
+        }
+    }
+
+    // Minimum time the on-load spinner stays visible after the
+    // page is parsed. Below ~150ms the spinner blinks too briefly
+    // for humans to perceive on fast renders — on a warm cache the
+    // server response is ~30ms and DOMContentLoaded fires within
+    // single-digit ms of first paint, so without this delay the
+    // operator sees no feedback at all when switching from Overview
+    // (or any non-Payment tab) to Payment. 200ms is the empirical
+    // sweet spot between "perceptible" and "doesn't feel sluggish."
+    var INITIAL_BUSY_MIN_MS = 200;
+
+    function init() {
+        var panel = document.querySelector('.pc-admin');
+        if (!panel) return;
+
+        // Clear the initial server-set busy state — but only after a
+        // minimum perceptible window so the spinner is visible even on
+        // fast renders. Slow renders already show the spinner for the
+        // duration of the parse; this delay only stretches the
+        // fast-render case enough to be seen.
+        setTimeout(function () {
+            panel.classList.remove('pc-panel-busy');
+            panel.removeAttribute('aria-busy');
+        }, INITIAL_BUSY_MIN_MS);
+
+        // PSP-agnostic action-form hook: any panel that includes a form
+        // marked `.js-payment-action-form` gets the overlay on submit.
+        var forms = document.querySelectorAll('.js-payment-action-form');
+        forms.forEach(function (form) {
+            form.addEventListener('submit', function () { enterBusy(panel); });
+        });
+
+        // Inter-order navigation (click in sibling list frame).
+        bindCrossFrameNavSpinner(panel);
+
+        // Safety net for navigations we can't hook (URL bar, back / forward,
+        // any JS-driven location change inside this frame). Fires right
+        // before the page is unloaded.
+        window.addEventListener('pagehide', function () { enterBusy(panel); });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
 
 {% include "bottomnaviitem.html.twig" %}
 {% include "bottomitem.html.twig" %}
