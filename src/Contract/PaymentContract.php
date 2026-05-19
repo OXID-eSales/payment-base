@@ -30,11 +30,10 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
     private ?DateTimeInterface $committedAt = null;
     private ?DateTimeInterface $fulfilledAt = null;
 
-    // Sprint 8: Capture/Refund tracking (migrated from order_state)
-    private ?float $capturedAmount = null;
-    private ?float $refundedAmount = null;
-    private ?DateTimeInterface $capturedAt = null;
-    private ?DateTimeInterface $refundedAt = null;
+    // Sprint 8: Capture/Refund tracking (migrated from order_state).
+    // Sprint 01a (2026-05-19): extracted into CaptureRefundTracker to keep
+    // this aggregate below its PHPMD class-complexity threshold.
+    private CaptureRefundTracker $refundTracking;
 
     private ?string $provider = null;
     private ?string $providerOrderId = null;
@@ -60,6 +59,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $this->createdAt = new DateTime();
         $this->updatedAt = new DateTime();
         $this->expiresAt = (new DateTime())->add(new DateInterval('PT24H'));
+        $this->refundTracking = new CaptureRefundTracker();
     }
 
     public function addCondition(ContractCondition $condition): void
@@ -210,11 +210,6 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $this->state = ContractState::committed();
         $this->committedAt = new DateTime();
         $this->touch();
-    }
-
-    public function getCommittedAt(): ?DateTimeInterface
-    {
-        return $this->committedAt;
     }
 
     public function fulfill(): void
@@ -378,84 +373,61 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         return $this->fulfilledAt;
     }
 
-    // Sprint 8: Capture/Refund tracking methods
+    // Sprint 8: Capture/Refund tracking methods.
+    // Sprint 01a (2026-05-19): now delegates to CaptureRefundTracker.
 
     public function getCapturedAmount(): ?float
     {
-        return $this->capturedAmount;
+        return $this->refundTracking->getCapturedAmount();
     }
 
     public function setCapturedAmount(float $amount): void
     {
-        // STRP-AUTOCAP-REFUND: webhook delivery order at the PSP is not
-        // guaranteed. A `payment_intent.succeeded` can arrive BEFORE
-        // `checkout.session.completed` has moved the contract through
-        // ready_to_commit → committed. The captured amount field is the
-        // source of truth for "money was taken from the customer" — the
-        // act of receiving the success webhook is itself the evidence.
-        // Refusing the write because the FSM hasn't caught up loses that
-        // evidence permanently (the shop ack's the webhook and Stripe
-        // won't redeliver). Accept the write in any state where payment
-        // could plausibly have occurred at the PSP; reject only DRAFT /
-        // NOT_FINISHED (no checkout yet) and the non-fulfilled terminal
-        // states (cancelled / expired / failed — money would never have
-        // moved on those).
-        $canHaveCaptured =
-            $this->state->isPending()
-            || $this->state->isAuthorized()
-            || $this->state->isReadyToCommit()
-            || $this->state->isCommitted()
-            || $this->state->isFulfilled();
-        if (!$canHaveCaptured) {
-            throw new DomainException(sprintf(
-                'Cannot set captured amount in state %s',
-                $this->state->getValue(),
-            ));
-        }
-        if (!is_finite($amount) || $amount <= 0) {
-            throw new InvalidArgumentException('Captured amount must be a positive finite number');
-        }
-        $this->capturedAmount = $amount;
+        $this->refundTracking->setCapturedAmount($this->state, $amount);
         $this->touch();
     }
 
     public function getRefundedAmount(): ?float
     {
-        return $this->refundedAmount;
+        return $this->refundTracking->getRefundedAmount();
     }
 
     public function addRefundedAmount(float $amount): void
     {
-        if (!$this->state->isFulfilled()) {
-            throw new DomainException('Can only add refunded amount in FULFILLED state');
-        }
-        if (!is_finite($amount) || $amount <= 0) {
-            throw new InvalidArgumentException('Refund amount must be a positive finite number');
-        }
-        $this->refundedAmount = ($this->refundedAmount ?? 0.0) + $amount;
+        $this->refundTracking->addRefundedAmount($this->state, $amount);
         $this->touch();
     }
 
     public function getCapturedAt(): ?DateTimeInterface
     {
-        return $this->capturedAt;
+        return $this->refundTracking->getCapturedAt();
     }
 
     public function setCapturedAt(DateTimeInterface $date): void
     {
-        $this->capturedAt = $date;
+        $this->refundTracking->setCapturedAt($date);
         $this->touch();
     }
 
     public function getRefundedAt(): ?DateTimeInterface
     {
-        return $this->refundedAt;
+        return $this->refundTracking->getRefundedAt();
     }
 
     public function setRefundedAt(DateTimeInterface $date): void
     {
-        $this->refundedAt = $date;
+        $this->refundTracking->setRefundedAt($date);
         $this->touch();
+    }
+
+    public function getRemainingRefundableAmount(): ?float
+    {
+        return $this->refundTracking->getRemainingRefundableAmount();
+    }
+
+    public function isFullyRefunded(): bool
+    {
+        return $this->refundTracking->isFullyRefunded();
     }
 
     public function isExpired(): bool
@@ -520,10 +492,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             'updatedAt' => $this->updatedAt->format('Y-m-d H:i:s'),
             'committedAt' => $this->committedAt?->format('Y-m-d H:i:s'),
             'fulfilledAt' => $this->fulfilledAt?->format('Y-m-d H:i:s'),
-            'capturedAmount' => $this->capturedAmount,
-            'refundedAmount' => $this->refundedAmount,
-            'capturedAt' => $this->capturedAt?->format('Y-m-d H:i:s'),
-            'refundedAt' => $this->refundedAt?->format('Y-m-d H:i:s'),
+            ...$this->refundTracking->toArray(),
         ];
     }
 
@@ -551,10 +520,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $contract->createdAt = self::extractDateTime($data, 'createdAt');
         $contract->updatedAt = self::extractDateTime($data, 'updatedAt');
         $contract->fulfilledAt = self::extractOptionalDateTime($data, 'fulfilledAt');
-        $contract->capturedAmount = self::extractOptionalFloat($data, 'capturedAmount');
-        $contract->refundedAmount = self::extractOptionalFloat($data, 'refundedAmount');
-        $contract->capturedAt = self::extractOptionalDateTime($data, 'capturedAt');
-        $contract->refundedAt = self::extractOptionalDateTime($data, 'refundedAt');
+        $contract->refundTracking = CaptureRefundTracker::fromArray($data);
 
         return $contract;
     }
@@ -634,23 +600,6 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
     private static function extractOptionalString(array $data, string $key): ?string
     {
         return isset($data[$key]) && is_string($data[$key]) ? $data[$key] : null;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private static function extractOptionalFloat(array $data, string $key): ?float
-    {
-        if (!isset($data[$key])) {
-            return null;
-        }
-        if (is_float($data[$key])) {
-            return $data[$key];
-        }
-        if (is_int($data[$key]) || is_numeric($data[$key])) {
-            return (float) $data[$key];
-        }
-        return null;
     }
 
     /**

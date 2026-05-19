@@ -169,4 +169,28 @@ interface PaymentContractInterface extends ModelInterface
      * Set the timestamp of last refund.
      */
     public function setRefundedAt(DateTimeInterface $date): void;
+
+    /**
+     * Money still refundable on this contract.
+     *
+     * - Returns `null` when the captured amount has not yet been
+     *   reported (capture webhook pending). Callers MUST treat
+     *   `null` as "unknown" and never as `0.0` — otherwise a contract
+     *   with an in-flight capture is incorrectly flagged as fully
+     *   refunded.
+     * - Returns `max(0.0, captured − refunded)` otherwise, with
+     *   sub-half-cent residuals collapsed to `0.0` to absorb float
+     *   noise.
+     */
+    public function getRemainingRefundableAmount(): ?float;
+
+    /**
+     * True iff a positive captured amount has been recorded AND the
+     * refunded total has reached (or exceeded) it, within a half-cent
+     * epsilon.
+     *
+     * Returns `false` when nothing has been captured yet — "no money
+     * moved" is NOT the same as "fully refunded".
+     */
+    public function isFullyRefunded(): bool;
 }

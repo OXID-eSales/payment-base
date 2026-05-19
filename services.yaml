@@ -60,3 +60,22 @@ services:
     class: Doctrine\DBAL\Connection
     factory: ['@OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface', 'get']
     public: false
+
+  # Sprint 03 (2026-05-19) — payment-base owns the refund routing decision.
+  # Any consumer that emits a RefundIntentEventInterface gets the verb
+  # (refund / cancel-auth / partial-capture) decided here based on
+  # contract state, then dispatched through the broker to the active PSP.
+  #
+  # Listener-binding is the CONSUMER's responsibility: the consumer's own
+  # services.yaml adds a `kernel.event_listener` tag pointing at its own
+  # concrete event class (see opalreturns' services.yaml for an example).
+  # This is because Symfony's EventDispatcher resolves listeners by exact
+  # dispatched class name, not by interface walk — the consumer module is
+  # the place that knows which event(s) it dispatches.
+  OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
+    arguments:
+      $contractRepository: '@?OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $broker:             '@?OxidEsales\PaymentBase\EventSystem\Broker\EventBrokerInterface'
+      $captureStatusQuery: '@?OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface'
+      $logger:             '@?Psr\Log\LoggerInterface'
+    public: true
