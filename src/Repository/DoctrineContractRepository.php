@@ -14,6 +14,7 @@ use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\CaptureRefundTracker;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
@@ -354,11 +355,24 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         $metadata = $this->hydrateContractMetadata($data);
         $this->setPrivateProperty($contract, 'metadata', $metadata);
 
-        // Sprint 8: Capture/Refund tracking fields
-        $this->setPrivateProperty($contract, 'capturedAmount', $this->parseOptionalFloat($data['OXCAPTUREDAMOUNT'] ?? null));
-        $this->setPrivateProperty($contract, 'refundedAmount', $this->parseOptionalFloat($data['OXREFUNDEDAMOUNT'] ?? null));
-        $this->setPrivateProperty($contract, 'capturedAt', $this->parseDateTime($data['OXCAPTUREDAT'] ?? null));
-        $this->setPrivateProperty($contract, 'refundedAt', $this->parseDateTime($data['OXREFUNDEDAT'] ?? null));
+        $this->setPrivateProperty($contract, 'refundTracking', $this->hydrateRefundTracking($data));
+    }
+
+    /**
+     * Rebuild the CaptureRefundTracker collaborator from the four
+     * OX...AMOUNT/OX...AT columns. Type-coercion lives in
+     * CaptureRefundTracker::fromArray() so this method stays a pure mapping.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function hydrateRefundTracking(array $data): CaptureRefundTracker
+    {
+        return CaptureRefundTracker::fromArray([
+            'capturedAmount' => $data['OXCAPTUREDAMOUNT'] ?? null,
+            'refundedAmount' => $data['OXREFUNDEDAMOUNT'] ?? null,
+            'capturedAt'     => $data['OXCAPTUREDAT']     ?? null,
+            'refundedAt'     => $data['OXREFUNDEDAT']     ?? null,
+        ]);
     }
 
     /**
@@ -382,17 +396,20 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
     /**
      * Set a private property value using reflection.
+     *
+     * A missing property is a programmer error — callers in this repository
+     * reference real fields of PaymentContract. Letting ReflectionException
+     * propagate makes future renames fail loudly instead of silently dropping
+     * data during hydration.
+     *
+     * @throws ReflectionException when $propertyName does not exist on $object
      */
     private function setPrivateProperty(object $object, string $propertyName, mixed $value): void
     {
-        try {
-            $reflection = new ReflectionClass($object);
-            $property = $reflection->getProperty($propertyName);
-            $property->setAccessible(true);
-            $property->setValue($object, $value);
-        } catch (ReflectionException $e) {
-            // Property doesn't exist, skip
-        }
+        $reflection = new ReflectionClass($object);
+        $property = $reflection->getProperty($propertyName);
+        $property->setAccessible(true);
+        $property->setValue($object, $value);
     }
 
     /**
@@ -420,22 +437,5 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         /** @phpstan-ignore-next-line */
         $stringValue = is_string($value) ? $value : (string) $value;
         return new DateTime($stringValue);
-    }
-
-    /**
-     * Parse an optional float from database value
-     */
-    private function parseOptionalFloat(mixed $value): ?float
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (is_float($value)) {
-            return $value;
-        }
-        if (is_int($value) || is_numeric($value)) {
-            return (float) $value;
-        }
-        return null;
     }
 }

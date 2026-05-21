@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 
 use DateTime;
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
@@ -305,6 +306,137 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
 
         // Then
         $this->assertIsArray($found);
+    }
+
+    /**
+     * @group sprint-108
+     *
+     * End-to-end safety net: persist a contract with non-null capture/refund
+     * values via the repository, then load it back via the repository. A
+     * failure here means "something in save+load is broken" but does not
+     * localise the side. Use it together with the two isolation tests below.
+     */
+    public function testCapturedAndRefundedAmountsRoundTrip(): void
+    {
+        $contract = $this->createCommittedTestContract('test_contract_roundtrip');
+        $contract->setCapturedAmount(81.50);
+        $contract->setCapturedAt(new DateTimeImmutable('2026-05-20 10:00:00'));
+        $contract->addRefundedAmount(11.25);
+        $contract->setRefundedAt(new DateTimeImmutable('2026-05-20 11:00:00'));
+
+        $this->repository->save($contract);
+        $loaded = $this->repository->findById($contract->getId());
+
+        $this->assertNotNull($loaded);
+        $this->assertEqualsWithDelta(81.50, $loaded->getCapturedAmount(), 0.001);
+        $this->assertEqualsWithDelta(11.25, $loaded->getRefundedAmount(), 0.001);
+        $this->assertSame('2026-05-20 10:00:00', $loaded->getCapturedAt()?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-05-20 11:00:00', $loaded->getRefundedAt()?->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * @group sprint-108
+     *
+     * Hydration in isolation: write a contract row directly via the
+     * Doctrine Connection, then load it through the repository. The save
+     * path is not exercised, so a failure here pinpoints a hydration bug.
+     */
+    public function testHydrationLoadsCaptureRefundColumns(): void
+    {
+        $contractId = 'test_contract_hydration';
+        $this->connection->insert('oe_payments_contract', [
+            'OXID'              => $contractId,
+            'OXSHOPID'          => 1,
+            'OXUSERID'          => 'test_user_123',
+            'OXSTATE'           => 'fulfilled',
+            'OXBASKETDATA'      => json_encode([
+                'items'      => [],
+                'discounts'  => [],
+                'totalGross' => 100.0,
+                'totalNet'   => 84.03,
+                'totalVat'   => 15.97,
+                'currency'   => 'EUR',
+            ]),
+            'OXCONDITIONS'      => json_encode([]),
+            'OXCREATED'         => '2026-05-20 09:00:00',
+            'OXUPDATED'         => '2026-05-20 09:00:00',
+            'OXCAPTUREDAMOUNT'  => 81.50,
+            'OXREFUNDEDAMOUNT'  => 11.25,
+            'OXCAPTUREDAT'      => '2026-05-20 10:00:00',
+            'OXREFUNDEDAT'      => '2026-05-20 11:00:00',
+        ]);
+
+        $loaded = $this->repository->findById($contractId);
+
+        $this->assertNotNull($loaded);
+        $this->assertEqualsWithDelta(81.50, $loaded->getCapturedAmount(), 0.001);
+        $this->assertEqualsWithDelta(11.25, $loaded->getRefundedAmount(), 0.001);
+        $this->assertSame('2026-05-20 10:00:00', $loaded->getCapturedAt()?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-05-20 11:00:00', $loaded->getRefundedAt()?->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * @group sprint-108
+     *
+     * Persistence in isolation: save a contract with non-null capture/refund
+     * values via the repository, then query the four target columns with
+     * raw SQL. The hydration path is not exercised, so a failure here
+     * pinpoints a persistence bug.
+     */
+    public function testPersistenceWritesCaptureRefundColumns(): void
+    {
+        $contract = $this->createCommittedTestContract('test_contract_persistence');
+        $contract->setCapturedAmount(81.50);
+        $contract->setCapturedAt(new DateTimeImmutable('2026-05-20 10:00:00'));
+        $contract->addRefundedAmount(11.25);
+        $contract->setRefundedAt(new DateTimeImmutable('2026-05-20 11:00:00'));
+
+        $this->repository->save($contract);
+
+        $row = $this->connection->fetchAssociative(
+            'SELECT OXCAPTUREDAMOUNT, OXREFUNDEDAMOUNT, OXCAPTUREDAT, OXREFUNDEDAT
+             FROM oe_payments_contract WHERE OXID = :id',
+            ['id' => $contract->getId()]
+        );
+
+        $this->assertNotFalse($row);
+        $this->assertEqualsWithDelta(81.50, (float) $row['OXCAPTUREDAMOUNT'], 0.001);
+        $this->assertEqualsWithDelta(11.25, (float) $row['OXREFUNDEDAMOUNT'], 0.001);
+        $this->assertSame('2026-05-20 10:00:00', $row['OXCAPTUREDAT']);
+        $this->assertSame('2026-05-20 11:00:00', $row['OXREFUNDEDAT']);
+    }
+
+    /**
+     * @group sprint-108
+     *
+     * Pins the post-Sprint-108 contract: setPrivateProperty must rethrow
+     * ReflectionException on unknown property names instead of silently
+     * skipping. The earlier silent catch is what hid the capture/refund
+     * hydration bug for two days — reinstating it would re-open that
+     * class of regression, so this test guards against it.
+     */
+    public function testSetPrivatePropertyThrowsOnUnknownPropertyName(): void
+    {
+        $contract = $this->createTestContract('test_setprivateprop_throws');
+
+        $method = new \ReflectionMethod($this->repository, 'setPrivateProperty');
+        $method->setAccessible(true);
+
+        $this->expectException(\ReflectionException::class);
+        $method->invoke($this->repository, $contract, 'fieldThatDoesNotExist', 'value');
+    }
+
+    private function createCommittedTestContract(string $id): PaymentContract
+    {
+        $contract = $this->createTestContract($id);
+        $contract->addCondition(ContractCondition::paymentAuthorized());
+        $contract->transitionToNotFinished('order_' . $id);
+        $contract->transitionToPending();
+        $contract->setProvider('test', 'pi_' . $id);
+        $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, ['authId' => 'auth_test']);
+        $contract->commitToOrder('order_' . $id);
+        $contract->fulfill();
+        return $contract;
     }
 
     public function testTransactionRollback(): void
