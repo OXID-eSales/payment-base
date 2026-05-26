@@ -1,8 +1,8 @@
-# Payment Component Integration Guide
+# Payment Base Integration Guide
 
 ## For Shipping, CRM, ERP and Third-Party Module Developers
 
-**Package:** `oxid-esales/payment-component`
+**Package:** `oxid-esales/payment-base`
 **Architecture:** Event-Driven (PSR-14 Compatible)
 
 ---
@@ -20,7 +20,7 @@
 
 ## Overview
 
-The `oxid-esales/payment-component` provides a **provider-agnostic event-driven architecture** that allows third-party modules to react to payment lifecycle changes. This enables:
+The `oxid-esales/payment-base` provides a **provider-agnostic event-driven architecture** that allows third-party modules to react to payment lifecycle changes. This enables:
 
 - **Shipping modules**: Update shipment status when payment is captured
 - **CRM systems**: Sync customer data when orders are created
@@ -413,7 +413,7 @@ services:
 
 ### Step 2: Register with EventListenerProvider
 
-If using the payment-component's event system, register your handler:
+If using the payment-base's event system, register your handler:
 
 ```php
 <?php
@@ -510,7 +510,7 @@ class ERPOrderExportHandlerTest extends TestCase
 
 ## Database Schema
 
-The payment-component provides these tables you can query:
+The payment-base provides these tables you can query:
 
 ### oe_payments_contract
 
@@ -559,7 +559,7 @@ Common data available in event context:
 
 ## Support
 
-- **Payment Component Issues**: https://github.com/OXID-eSales/payment-component/issues
+- **Payment Base Issues**: https://github.com/OXID-eSales/payment-base/issues
 - **Stripe Module Issues**: https://github.com/OXID-eSales/stripe-wallet/issues
 - **OXID Documentation**: https://docs.oxid-esales.com
 

@@ -9,7 +9,7 @@
           <div class="col" style="justify-content: flex-start;">
             <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">The boundary rule</div>
             <div style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 14px 16px; font-size: var(--t-13); line-height: 1.55;">
-              <p style="margin: 0 0 10px;"><strong>If it could work with another PSP &mdash; it lives in <code>payment-component</code>.</strong></p>
+              <p style="margin: 0 0 10px;"><strong>If it could work with another PSP &mdash; it lives in <code>payment-base</code>.</strong></p>
               <p style="margin: 0 0 10px;">If it touches <code>\Stripe\StripeClient</code> or PayPal SDK concepts &mdash; it lives in the PSP module.</p>
               <p style="margin: 0;">PayPal and Stripe are <strong>peers</strong>. They share only Payment Base. <em>Architecture grep guards</em> in each PSP&rsquo;s <code>pre-commit-check.sh</code> block any cross-import.</p>
             </div>

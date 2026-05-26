@@ -56,14 +56,14 @@ class StripeContractCreationHandler
 flowchart TB
     REQ["StripeCheckoutSessionRequestEvent<br/>dispatched by controller"]
     H1["StripeContractCreationHandler<br/>priority 100"]
-    H2["EarlyOrderCreationHandler<br/>(payment-component) priority 100"]
+    H2["EarlyOrderCreationHandler<br/>(payment-base) priority 100"]
     H3["StripeCheckoutSessionHandler<br/>priority 0"]
 
     PAY["[user pays on Stripe, returns]"]
 
     H4["StripeCheckoutReturnHandler<br/>priority 100"]
-    H5["PaymentAuthorizedEventHandler<br/>(payment-component) priority 90"]
-    H6["FraudCheckHandler<br/>(payment-component) priority 85"]
+    H5["PaymentAuthorizedEventHandler<br/>(payment-base) priority 90"]
+    H6["FraudCheckHandler<br/>(payment-base) priority 85"]
     H7["StripeOrderCreationHandler<br/>priority 80"]
 
     REQ --> H1 --> H2 --> H3
@@ -92,7 +92,7 @@ EventListenerProviderInterface:
         </div>
 
         <div class="callout" style="margin-top: 12px;">
-          <strong>Adding a whole new PSP requires zero modifications to <code>payment-component</code>.</strong>
+          <strong>Adding a whole new PSP requires zero modifications to <code>payment-base</code>.</strong>
           A new adapter, a new factory, a new <code>ContractCreationHandler</code> subclass, register in <code>services.yaml</code>.
           The core stays untouched &mdash; that&rsquo;s the SOLID Open/Closed promise.
         </div>

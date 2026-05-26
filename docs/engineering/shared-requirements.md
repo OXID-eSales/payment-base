@@ -1,6 +1,6 @@
 # Shared engineering requirements
 
-_Single source of truth for every sprint across `payment-component`,
+_Single source of truth for every sprint across `payment-base`,
 `stripe`, `paypal`, `opalreturns`, and `one-page-checkout`.
 Each dev-log `status.md` references this file instead of re-stating
 the rules. Reviewers block any merge that violates them without an
@@ -8,7 +8,7 @@ explicit, named "Deliberately NOT in scope" carve-out in the sprint
 spec._
 
 **Source of truth path:**
-`source/extensions/payment-component/docs/engineering/shared-requirements.md`.
+`source/extensions/payment-base/docs/engineering/shared-requirements.md`.
 
 ## TDD-first
 
@@ -54,7 +54,7 @@ implementation. Red → green → refactor.
 ## DRY
 
 - Per-PSP code that isn't PSP-specific belongs in
-  `payment-component`. Two identical interfaces with different
+  `payment-base`. Two identical interfaces with different
   namespaces counts as duplication (Sprint I's lesson — see
   `AdminActionDispatcherInterface`).
 - Shared CSS / templates live in PC. PSP-specific painting goes
@@ -93,7 +93,7 @@ implementation. Red → green → refactor.
 ## Architecture invariants
 
 - **PayPal and Stripe are peers.** They share only
-  `payment-component`. No PayPal import in Stripe, no Stripe import
+  `payment-base`. No PayPal import in Stripe, no Stripe import
   in PayPal — enforced by architecture grep guards in each
   module's pre-commit.
 - **opalreturns is PSP-agnostic.** No `OxidEsales\Payments\Stripe`
@@ -102,10 +102,10 @@ implementation. Red → green → refactor.
 - **No direct contract mutations in controllers/services.** Events
   dispatch; handlers mutate. Controllers only orchestrate dispatch.
   Grep guard in `one-page-checkout/bin/pre-commit-check.sh`.
-- **Payment-component owns the admin Payment tab.** PSPs contribute
+- **Payment-base owns the admin Payment tab.** PSPs contribute
   panel-provider services tagged `oe.payment.admin_panel` (Sprint
   I). No per-PSP admin-order tabs.
-- **Shared settings live in payment-component** (Sprint J onward).
+- **Shared settings live in payment-base** (Sprint J onward).
   Live/test mode, debug flag, capture mode — all read via
   `PaymentBase\Service\PaymentConfigServiceInterface`.
   PSP-local settings only for genuinely PSP-specific values

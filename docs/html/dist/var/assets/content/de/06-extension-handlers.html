@@ -56,14 +56,14 @@ class StripeContractCreationHandler
 flowchart TB
     REQ["StripeCheckoutSessionRequestEvent<br/>vom Controller dispatcht"]
     H1["StripeContractCreationHandler<br/>Priorit&auml;t 100"]
-    H2["EarlyOrderCreationHandler<br/>(payment-component) Priorit&auml;t 100"]
+    H2["EarlyOrderCreationHandler<br/>(payment-base) Priorit&auml;t 100"]
     H3["StripeCheckoutSessionHandler<br/>Priorit&auml;t 0"]
 
     PAY["[Kunde zahlt bei Stripe, kehrt zur&uuml;ck]"]
 
     H4["StripeCheckoutReturnHandler<br/>Priorit&auml;t 100"]
-    H5["PaymentAuthorizedEventHandler<br/>(payment-component) Priorit&auml;t 90"]
-    H6["FraudCheckHandler<br/>(payment-component) Priorit&auml;t 85"]
+    H5["PaymentAuthorizedEventHandler<br/>(payment-base) Priorit&auml;t 90"]
+    H6["FraudCheckHandler<br/>(payment-base) Priorit&auml;t 85"]
     H7["StripeOrderCreationHandler<br/>Priorit&auml;t 80"]
 
     REQ --> H1 --> H2 --> H3
@@ -92,7 +92,7 @@ EventListenerProviderInterface:
         </div>
 
         <div class="callout" style="margin-top: 12px;">
-          <strong>Ein komplett neuer PSP erfordert null Modifikationen an <code>payment-component</code>.</strong>
+          <strong>Ein komplett neuer PSP erfordert null Modifikationen an <code>payment-base</code>.</strong>
           Neuer Adapter, neue Factory, neue <code>ContractCreationHandler</code>-Subklasse, in <code>services.yaml</code> registrieren.
           Der Kern bleibt unber&uuml;hrt &mdash; das ist das SOLID-Open/Closed-Versprechen.
         </div>

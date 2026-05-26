@@ -9,7 +9,7 @@
           <div class="col" style="justify-content: flex-start;">
             <div class="eyebrow" style="color: var(--s2-accent); margin-bottom: 10px;">Die Boundary-Regel</div>
             <div style="background: rgba(11, 20, 36, 0.04); border: 1px solid rgba(11, 20, 36, 0.12); border-radius: 6px; padding: 14px 16px; font-size: var(--t-13); line-height: 1.55;">
-              <p style="margin: 0 0 10px;"><strong>K&ouml;nnte es mit einem anderen PSP funktionieren &mdash; geh&ouml;rt es in <code>payment-component</code>.</strong></p>
+              <p style="margin: 0 0 10px;"><strong>K&ouml;nnte es mit einem anderen PSP funktionieren &mdash; geh&ouml;rt es in <code>payment-base</code>.</strong></p>
               <p style="margin: 0 0 10px;">Ber&uuml;hrt es <code>\Stripe\StripeClient</code> oder PayPal-SDK-Konzepte &mdash; geh&ouml;rt es ins PSP-Modul.</p>
               <p style="margin: 0;">PayPal und Stripe sind <strong>Peers</strong>. Sie teilen sich nur Payment Base. <em>Architektur-Grep-Guards</em> in jedem PSP <code>pre-commit-check.sh</code> blockieren jeden Kreuzimport.</p>
             </div>
