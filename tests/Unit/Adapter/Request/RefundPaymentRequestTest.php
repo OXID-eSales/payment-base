@@ -138,4 +138,32 @@ final class RefundPaymentRequestTest extends TestCase
         $this->assertIsArray($request->metadata);
         $this->assertCount(2, $request->metadata);
     }
+
+    // =========================================================================
+    // Sprint 114.10a (§6.2): optional currency field — RED tests
+    // =========================================================================
+
+    /**
+     * @test
+     */
+    public function currencyDefaultsToNullWhenNotProvided(): void
+    {
+        $request = new RefundPaymentRequest(providerPaymentId: 'pi_123456789');
+
+        $this->assertNull($request->currency);
+    }
+
+    /**
+     * @test
+     */
+    public function currencyCanBeSet(): void
+    {
+        $request = new RefundPaymentRequest(
+            providerPaymentId: 'pi_123456789',
+            amount: 1000.0,
+            currency: 'JPY'
+        );
+
+        $this->assertSame('JPY', $request->currency);
+    }
 }

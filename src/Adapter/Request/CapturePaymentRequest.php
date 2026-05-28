@@ -30,11 +30,17 @@ readonly class CapturePaymentRequest
      * @param string $providerPaymentId Provider's payment/authorization ID (e.g., Stripe PaymentIntent ID)
      * @param float|null $amount Amount to capture in major units (null = full capture)
      * @param array<string, mixed> $metadata Additional metadata to store with capture
+     * @param string|null $currency ISO-4217 currency code of the payment (e.g. 'JPY', 'EUR').
+     *                              Used by adapters to convert amounts to the correct minor-unit
+     *                              precision (zero-decimal currencies like JPY need no × 100).
+     *                              Null/empty falls back to 2-decimal behaviour (safe for EUR).
+     *                              Sprint 114.10a (§6.2): additive — existing callers unchanged.
      */
     public function __construct(
         public string $providerPaymentId,
         public ?float $amount = null,
         public array $metadata = [],
+        public ?string $currency = null,
     ) {
     }
 }

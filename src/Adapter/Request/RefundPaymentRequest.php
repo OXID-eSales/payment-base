@@ -29,12 +29,18 @@ readonly class RefundPaymentRequest
      * @param float|null $amount Amount to refund in major units (null = full refund)
      * @param string|null $reason Refund reason ('duplicate', 'fraudulent', 'requested_by_customer')
      * @param array<string, mixed> $metadata Additional metadata
+     * @param string|null $currency ISO-4217 currency code of the payment (e.g. 'JPY', 'EUR').
+     *                              Used by adapters to convert amounts to the correct minor-unit
+     *                              precision (zero-decimal currencies like JPY need no × 100).
+     *                              Null/empty falls back to 2-decimal behaviour (safe for EUR).
+     *                              Sprint 114.10a (§6.2): additive — existing callers unchanged.
      */
     public function __construct(
         public string $providerPaymentId,
         public ?float $amount = null,
         public ?string $reason = null,
         public array $metadata = [],
+        public ?string $currency = null,
     ) {
     }
 }

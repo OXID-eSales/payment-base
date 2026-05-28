@@ -90,4 +90,32 @@ class CapturePaymentRequestTest extends TestCase
         // All should be treated the same - no validation of specific formats
         $this->assertTrue(true, 'Request object accepts any provider format');
     }
+
+    // =========================================================================
+    // Sprint 114.10a (§6.2): optional currency field — RED tests
+    // =========================================================================
+
+    /**
+     * @test
+     */
+    public function currencyDefaultsToNullWhenNotProvided(): void
+    {
+        $request = new CapturePaymentRequest(providerPaymentId: 'pi_123456');
+
+        $this->assertNull($request->currency);
+    }
+
+    /**
+     * @test
+     */
+    public function currencyCanBeSet(): void
+    {
+        $request = new CapturePaymentRequest(
+            providerPaymentId: 'pi_123456',
+            amount: 50.0,
+            currency: 'JPY'
+        );
+
+        $this->assertSame('JPY', $request->currency);
+    }
 }
