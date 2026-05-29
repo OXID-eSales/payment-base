@@ -62,13 +62,89 @@ if (!class_exists(\OxidEsales\Eshop\Core\StubRequest::class, false)) {
 if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Core; '
+        . 'class StubUtils { '
+        . '  public function setHeader(string $h): void {} '
+        . '} '
+        . 'class StubConfig { '
+        . '  public function getShopUrl(): string { return ""; } '
+        . '} '
         . 'class Registry { '
         . '  public static function getLogger(): \\Psr\\Log\\LoggerInterface { return new \\Psr\\Log\\NullLogger(); } '
         . '  public static function getSession(): StubSession { return new StubSession(); } '
         . '  public static function getRequest(): StubRequest { return new StubRequest(); } '
+        . '  public static function getUtils(): StubUtils { return new StubUtils(); } '
+        . '  public static function getConfig(): StubConfig { return new StubConfig(); } '
         . '}'
     );
 }
 if (!function_exists('oxNew')) {
     eval('function oxNew(string $class, ...$args) { return new $class(...$args); }');
+}
+
+// Sprint 119 — stub OXID internal module-configuration classes used by
+// OxidPluginPathResolver. These classes live in oxideshop-ce which is NOT
+// in payment-base's composer deps (PC is a library, not a shop). The stubs
+// give PHPStan enough type information to analyse the class without booting
+// the shop. The real implementations are injected at runtime via the shop DI.
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Dao\ModuleConfigurationDaoInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Configuration\\Dao; '
+        . 'interface ModuleConfigurationDaoInterface { '
+        . '  public function get(string $moduleId, int $shopId): '
+        . '    \\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Configuration\\DataObject\\ModuleConfiguration; '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\DataObject\ModuleConfiguration::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Configuration\\DataObject; '
+        . 'class ModuleConfiguration { '
+        . '  public function getModuleSource(): string { return ""; } '
+        . '  public function getId(): string { return ""; } '
+        . '}'
+    );
+}
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Transition\\Utility; '
+        . 'interface BasicContextInterface { '
+        . '  public function getShopRootPath(): string; '
+        . '  public function getCurrentShopId(): int; '
+        . '}'
+    );
+}
+
+// Sprint 119 — stubs for ValidationApiController (extends FrontendController)
+// and its OXID dependencies used in the production init() method.
+if (!class_exists(\OxidEsales\Eshop\Application\Controller\FrontendController::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Controller; '
+        . 'class FrontendController { '
+        . '  public function init(): void {} '
+        . '  public function render(): string { return ""; } '
+        . '}'
+    );
+}
+
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Setup\Bridge\ModuleActivationBridgeInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setup\\Bridge; '
+        . 'interface ModuleActivationBridgeInterface { '
+        . '  public function isActive(string $moduleId, int $shopId): bool; '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\EshopCommunity\Internal\Container\ContainerFactory::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Container; '
+        . 'class StubContainer { '
+        . '  public function get(string $id): mixed { return null; } '
+        . '} '
+        . 'class ContainerFactory { '
+        . '  private static ?self $instance = null; '
+        . '  public static function getInstance(): self { if (self::$instance === null) { self::$instance = new self(); } return self::$instance; } '
+        . '  public function getContainer(): StubContainer { return new StubContainer(); } '
+        . '}'
+    );
 }

@@ -36,3 +36,43 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         . '}'
     );
 }
+
+// Sprint 119 — FrontendController stub for ValidationApiController unit tests.
+// The controller extends FrontendController; unit tests use a testable subclass
+// that calls initWithDependencies() instead of init() (which boots OXID).
+if (!class_exists(\OxidEsales\Eshop\Application\Controller\FrontendController::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Controller; '
+        . 'class FrontendController { '
+        . '  public function init(): void {} '
+        . '  public function render(): string { return ""; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class StubUtils { '
+        . '  public function setHeader(string $h): void {} '
+        . '} '
+        . 'class Registry { '
+        . '  public static function getLogger(): \\Psr\\Log\\LoggerInterface { return new \\Psr\\Log\\NullLogger(); } '
+        . '  public static function getUtils(): StubUtils { return new StubUtils(); } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\EshopCommunity\Internal\Container\ContainerFactory::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Container; '
+        . 'class StubContainer { '
+        . '  public function get(string $id): mixed { return null; } '
+        . '} '
+        . 'class ContainerFactory { '
+        . '  private static ?self $instance = null; '
+        . '  public static function getInstance(): self { if (self::$instance === null) { self::$instance = new self(); } return self::$instance; } '
+        . '  public function getContainer(): StubContainer { return new StubContainer(); } '
+        . '}'
+    );
+}

@@ -72,6 +72,25 @@ services:
   # This is because Symfony's EventDispatcher resolves listeners by exact
   # dispatched class name, not by interface walk — the consumer module is
   # the place that knows which event(s) it dispatches.
+  # Sprint 119 (STRP-129) — ValidationBase library: per-field character-level
+  # validator. ValidationRuleLoaderInterface is the primary injectable dep;
+  # ValidationBase itself is NOT registered as a singleton because its
+  # constructor requires a $pluginModuleId — consumers instantiate it
+  # directly with `new ValidationBase($pluginId, $loader)`.
+
+  OxidEsales\PaymentBase\Validation\PluginPathResolverInterface:
+    class: OxidEsales\PaymentBase\Validation\OxidPluginPathResolver
+    arguments:
+      $moduleConfigurationDao: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Dao\ModuleConfigurationDaoInterface'
+      $context: '@OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface'
+    public: false
+
+  OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface:
+    class: OxidEsales\PaymentBase\Validation\FilesystemValidationRuleLoader
+    arguments:
+      $pathResolver: '@OxidEsales\PaymentBase\Validation\PluginPathResolverInterface'
+    public: true
+
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
     arguments:
       $contractRepository: '@?OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
@@ -79,3 +98,89 @@ services:
       $captureStatusQuery: '@?OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface'
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
+
+  # ---------------------------------------------------------------
+  # Sprint 119 (STRP-129) Phase A2 — central frontend validation
+  # endpoint + seven-guard chain + per-PSP rate-limit override.
+  # ---------------------------------------------------------------
+
+  # --- Guard implementations ---
+
+  OxidEsales\PaymentBase\Validation\Guard\PostOnlyGuard:
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 10 }
+
+  OxidEsales\PaymentBase\Validation\Guard\PayloadSizeGuard:
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 20 }
+
+  OxidEsales\PaymentBase\Validation\Guard\ActiveSessionGuard:
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 30 }
+
+  OxidEsales\PaymentBase\Validation\Guard\ShopUrlResolverInterface:
+    class: OxidEsales\PaymentBase\Validation\Guard\OxidShopUrlResolver
+
+  OxidEsales\PaymentBase\Validation\Guard\SameOriginGuard:
+    arguments:
+      $shopUrlResolver: '@OxidEsales\PaymentBase\Validation\Guard\ShopUrlResolverInterface'
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 40 }
+
+  OxidEsales\PaymentBase\Validation\Guard\SessionChallengeVerifierInterface:
+    class: OxidEsales\PaymentBase\Validation\Guard\OxidSessionChallengeVerifier
+
+  OxidEsales\PaymentBase\Validation\Guard\CsrfTokenGuard:
+    arguments:
+      $verifier: '@OxidEsales\PaymentBase\Validation\Guard\SessionChallengeVerifierInterface'
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 50 }
+
+  # Rate-limit store — Doctrine-backed production impl (reuses oe_payments_idempotency).
+  OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface:
+    class: OxidEsales\PaymentBase\Validation\RateLimit\DoctrineRateLimitStore
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  # Per-PSP override tagged iterator (empty in this sprint; PSPs opt in via the tag).
+  # The global default is 30 req/min, matching the admin setting `iValidationApiRatePerMinute`.
+  # Note: wiring the live admin setting requires ModuleSettingBridgeInterface; deferred
+  # to Phase E when an admin-UI integration sprint adds the bridge dep.
+  OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface:
+    class: OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig
+    arguments:
+      $globalDefault: 30
+      $overrides: !tagged_iterator oe.payment_base.rate_limit_override
+
+  OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard:
+    arguments:
+      $store: '@OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface'
+      $config: '@OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface'
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 60 }
+
+  OxidEsales\PaymentBase\Validation\Guard\ActiveModuleQueryInterface:
+    class: OxidEsales\PaymentBase\Validation\Guard\OxidActiveModuleQuery
+    arguments:
+      $bridge: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Setup\Bridge\ModuleActivationBridgeInterface'
+      $context: '@OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface'
+
+  OxidEsales\PaymentBase\Validation\Guard\PluginIdAllowlistGuard:
+    arguments:
+      $activeModuleQuery: '@OxidEsales\PaymentBase\Validation\Guard\ActiveModuleQueryInterface'
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 70 }
+
+  # --- Controller ---
+  # Registered in metadata.php `controllers` map (cl=oepaymentvalidationapi).
+  # NOT tagged with oxid.view_controller to avoid "Controller namespace duplication"
+  # on activation (per memory feedback_oxid_controller_duplication).
+  OxidEsales\PaymentBase\Controller\ValidationApiController:
+    public: true
+
+  # --- Message formatter SPI (Sprint 119 Phase E) ---
+  # PSP modules register their MessageFormatterInterface impl with this tag.
+  # The tagged iterator is fetched by ValidationApiController::init() under the
+  # key 'oe.payment_base.validation_message_formatter_iterator'.
+  # Empty by default; the tag is the opt-in point for PSP modules.
+  # (No concrete formatter is registered here — payment-base is provider-agnostic.)
