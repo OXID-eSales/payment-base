@@ -16,6 +16,11 @@
 5. [Best Practices](#best-practices)
 6. [Database Schema](#database-schema)
 
+> **User-data validation:** for the character-level input-validation framework
+> (`ValidationBase`, the central `cl=oepaymentvalidationapi` endpoint, the
+> per-plugin `validation-rules.php` convention, and how to add fields or adopt
+> it in another PSP) see **[validation-system.md](validation-system.md)**.
+
 ---
 
 ## Overview
