@@ -17,7 +17,7 @@ use InvalidArgumentException;
  * Carries only the shape shared handlers + the state machine need. No raw SDK DTO
  * (decision §9.2) — auditing goes through each module's own log service.
  */
-final readonly class ReturnResolution
+readonly class ReturnResolution
 {
     public const OUTCOME_AUTHORIZED = 'authorized';
     public const OUTCOME_READY_TO_COMMIT = 'ready_to_commit';

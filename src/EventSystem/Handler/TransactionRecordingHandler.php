@@ -22,7 +22,7 @@ use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
  * Low priority (10) so it runs AFTER the commit handler — the row references
  * an orderId that the commit handler has just materialised.
  */
-final class TransactionRecordingHandler implements HandlerInterface
+class TransactionRecordingHandler implements HandlerInterface
 {
     public function __construct(
         private readonly TransactionRepositoryInterface $transactions,

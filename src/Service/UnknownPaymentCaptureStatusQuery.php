@@ -19,7 +19,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
  * listener decoupled from missing wiring. Consumers treat `null`
  * as "fall back to the current (pre-disambiguation) behaviour".
  */
-final class UnknownPaymentCaptureStatusQuery implements PaymentCaptureStatusQueryInterface
+class UnknownPaymentCaptureStatusQuery implements PaymentCaptureStatusQueryInterface
 {
     public function isPaymentCaptured(PaymentContractInterface $contract): ?bool
     {

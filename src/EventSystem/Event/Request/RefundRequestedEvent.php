@@ -15,6 +15,6 @@ namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
  *
  * Amount = null means "refund the full remaining captured amount".
  */
-final readonly class RefundRequestedEvent extends AbstractProviderRequestEvent
+readonly class RefundRequestedEvent extends AbstractProviderRequestEvent
 {
 }

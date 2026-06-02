@@ -19,7 +19,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class PluginIdAllowlistGuard implements ValidationGuardInterface
+class PluginIdAllowlistGuard implements ValidationGuardInterface
 {
     public function __construct(
         private readonly ActiveModuleQueryInterface $activeModuleQuery,

@@ -20,7 +20,7 @@ use InvalidArgumentException;
  *
  * @since 2.1.0
  */
-final class AddressHmacService implements AddressHmacServiceInterface
+class AddressHmacService implements AddressHmacServiceInterface
 {
     private const ALGORITHM = 'sha256';
 

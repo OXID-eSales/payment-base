@@ -13,6 +13,6 @@ namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
  * Provider-neutral "capture a previously-authorized payment" event.
  * Amount = null → full remaining authorization captured.
  */
-final readonly class CaptureRequestedEvent extends AbstractProviderRequestEvent
+readonly class CaptureRequestedEvent extends AbstractProviderRequestEvent
 {
 }

@@ -20,7 +20,7 @@ use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
  * template then renders the "no registered online payment provider"
  * notice.
  */
-final class PaymentPanelRegistry implements PaymentPanelRegistryInterface
+class PaymentPanelRegistry implements PaymentPanelRegistryInterface
 {
     /** @var list<PaymentPanelProviderInterface> */
     private array $providers;

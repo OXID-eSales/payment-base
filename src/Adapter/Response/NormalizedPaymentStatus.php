@@ -21,7 +21,7 @@ namespace OxidEsales\PaymentBase\Adapter\Response;
  *
  * @since 1.0.0
  */
-final class NormalizedPaymentStatus
+class NormalizedPaymentStatus
 {
     public const PENDING = 'pending';
     public const AUTHORIZED = 'authorized';

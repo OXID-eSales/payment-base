@@ -23,7 +23,7 @@ use InvalidArgumentException;
  * Path resolution is delegated to PluginPathResolverInterface so unit tests
  * can stub it without booting the OXID shop.
  */
-final class FilesystemValidationRuleLoader implements ValidationRuleLoaderInterface
+class FilesystemValidationRuleLoader implements ValidationRuleLoaderInterface
 {
     private const RULES_RELATIVE_PATH = '/src/Resources/validation-rules.php';
 

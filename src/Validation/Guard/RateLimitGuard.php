@@ -25,7 +25,7 @@ use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class RateLimitGuard implements ValidationGuardInterface
+class RateLimitGuard implements ValidationGuardInterface
 {
     private const TTL_SECONDS = 60;
 

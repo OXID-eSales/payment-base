@@ -20,7 +20,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class PayloadSizeGuard implements ValidationGuardInterface
+class PayloadSizeGuard implements ValidationGuardInterface
 {
     private const MAX_BODY_BYTES = 4096;
     private const MAX_FIELD_COUNT = 32;

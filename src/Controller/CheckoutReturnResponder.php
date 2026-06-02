@@ -42,7 +42,7 @@ use Throwable;
  *
  * Provider-agnostic — no knowledge of Stripe, PayPal, or OPC.
  */
-final class CheckoutReturnResponder
+class CheckoutReturnResponder
 {
     public function __construct(
         private readonly EventDispatcherInterface $dispatcher,

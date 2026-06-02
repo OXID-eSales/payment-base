@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class GuardFailure
+class GuardFailure
 {
     public readonly int $httpStatus;
     public readonly string $guardName;

@@ -14,6 +14,6 @@ namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
  * don't distinguish void from cancel may ignore this (translator returns
  * null and the broker logs a noop).
  */
-final readonly class VoidAuthorizationRequestedEvent extends AbstractProviderRequestEvent
+readonly class VoidAuthorizationRequestedEvent extends AbstractProviderRequestEvent
 {
 }

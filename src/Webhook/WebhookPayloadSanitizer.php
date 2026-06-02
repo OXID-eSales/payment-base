@@ -18,7 +18,7 @@ namespace OxidEsales\PaymentBase\Webhook;
  *
  * @since 2.1.0
  */
-final class WebhookPayloadSanitizer
+class WebhookPayloadSanitizer
 {
     /**
      * Top-level keys that contain PII — replaced entirely with [REDACTED].

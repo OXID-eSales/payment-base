@@ -22,7 +22,7 @@ use OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface;
  * Registered in services.yaml; never instantiated in tests
  * (tests use a stub of PluginPathResolverInterface directly).
  */
-final class OxidPluginPathResolver implements PluginPathResolverInterface
+class OxidPluginPathResolver implements PluginPathResolverInterface
 {
     public function __construct(
         private readonly ModuleConfigurationDaoInterface $moduleConfigurationDao,

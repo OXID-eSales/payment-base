@@ -25,7 +25,7 @@ use Doctrine\DBAL\Exception;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class DoctrineRateLimitStore implements RateLimitStoreInterface
+class DoctrineRateLimitStore implements RateLimitStoreInterface
 {
     private const TABLE = 'oe_payments_idempotency';
     private const STATUS = 'rate_limit';

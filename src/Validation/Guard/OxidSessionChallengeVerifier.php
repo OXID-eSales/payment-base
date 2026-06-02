@@ -20,7 +20,7 @@ use OxidEsales\Eshop\Core\Registry;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class OxidSessionChallengeVerifier implements SessionChallengeVerifierInterface
+class OxidSessionChallengeVerifier implements SessionChallengeVerifierInterface
 {
     public function verify(?string $token): bool
     {

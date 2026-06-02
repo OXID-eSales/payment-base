@@ -13,6 +13,6 @@ namespace OxidEsales\PaymentBase\Admin\Panel;
  * Thrown when the admin tries to dispatch an action for an order that
  * no registered panel provider supports.
  */
-final class UnsupportedPaymentActionException extends \RuntimeException
+class UnsupportedPaymentActionException extends \RuntimeException
 {
 }

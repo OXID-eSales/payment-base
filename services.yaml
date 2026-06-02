@@ -178,6 +178,21 @@ services:
   OxidEsales\PaymentBase\Controller\ValidationApiController:
     public: true
 
+  # Gettable wrappers around the tagged iterators. ValidationApiController runs
+  # under OXID `cl=` dispatch and resolves these by id (it cannot constructor-
+  # inject tagged iterators). Public so Container::get() can reach them.
+  oe.payment_base.validation_guard_iterator:
+    class: OxidEsales\PaymentBase\Validation\TaggedServiceCollection
+    arguments:
+      - !tagged_iterator oe.payment_base.validation_guard
+    public: true
+
+  oe.payment_base.validation_message_formatter_iterator:
+    class: OxidEsales\PaymentBase\Validation\TaggedServiceCollection
+    arguments:
+      - !tagged_iterator oe.payment_base.validation_message_formatter
+    public: true
+
   # --- Message formatter SPI (Sprint 119 Phase E) ---
   # PSP modules register their MessageFormatterInterface impl with this tag.
   # The tagged iterator is fetched by ValidationApiController::init() under the

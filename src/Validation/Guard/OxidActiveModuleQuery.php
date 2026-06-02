@@ -20,7 +20,7 @@ use OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class OxidActiveModuleQuery implements ActiveModuleQueryInterface
+class OxidActiveModuleQuery implements ActiveModuleQueryInterface
 {
     public function __construct(
         private readonly ModuleActivationBridgeInterface $bridge,

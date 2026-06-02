@@ -26,7 +26,7 @@ use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
  * a mid-migration codebase where one provider's own commit handler is still
  * active doesn't double-fire.
  */
-final class ContractCommitmentHandler implements HandlerInterface
+class ContractCommitmentHandler implements HandlerInterface
 {
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,

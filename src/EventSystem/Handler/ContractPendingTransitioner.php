@@ -23,7 +23,7 @@ use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
  * (`PaymentAuthorizedEventHandler` → `ContractCommitmentHandler`) take over
  * once the contract is in PENDING.
  */
-final class ContractPendingTransitioner implements HandlerInterface
+class ContractPendingTransitioner implements HandlerInterface
 {
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,

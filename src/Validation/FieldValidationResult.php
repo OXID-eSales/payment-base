@@ -14,7 +14,7 @@ namespace OxidEsales\PaymentBase\Validation;
  *
  * Use the static factory methods to construct; do not instantiate directly.
  */
-final class FieldValidationResult
+class FieldValidationResult
 {
     public const CODE_DISALLOWED_CHARACTER = 'disallowed_character';
     public const CODE_BLOCKED_CHARACTER = 'blocked_character';

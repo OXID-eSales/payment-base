@@ -35,7 +35,7 @@ use InvalidArgumentException;
  *
  * @since 1.0.0
  */
-final class ConventionProviderEventResolver implements ProviderEventResolverInterface
+class ConventionProviderEventResolver implements ProviderEventResolverInterface
 {
     /**
      * Default namespace pattern. `{Canonical}` is substituted twice

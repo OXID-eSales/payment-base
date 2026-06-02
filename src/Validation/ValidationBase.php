@@ -22,7 +22,7 @@ namespace OxidEsales\PaymentBase\Validation;
  * Each instance is bound to one $pluginModuleId. The loader is called once
  * on the first validateField call (lazy) and the result is cached.
  */
-final class ValidationBase implements ValidationBaseInterface
+class ValidationBase implements ValidationBaseInterface
 {
     /** @var array<string, RuleSet>|null */
     private ?array $ruleSets = null;

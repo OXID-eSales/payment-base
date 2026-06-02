@@ -13,6 +13,6 @@ namespace OxidEsales\PaymentBase\EventSystem\Event\Request;
  * Provider-neutral "cancel an open authorization" event. Maps to the PSP's
  * own cancel-auth call via the broker + translator.
  */
-final readonly class CancelAuthorizationRequestedEvent extends AbstractProviderRequestEvent
+readonly class CancelAuthorizationRequestedEvent extends AbstractProviderRequestEvent
 {
 }

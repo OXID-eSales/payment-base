@@ -129,7 +129,20 @@ class ValidationApiController extends FrontendController
         // @phpstan-ignore-next-line — OXID Registry seam
         Registry::getUtils()->setHeader('Content-Type: application/json');
 
-        return $json;
+        return $this->sendJsonResponse($json);
+    }
+
+    /**
+     * Emit the JSON body and stop, so OXID does not render a page template
+     * around it (the controller extends FrontendController). Mirrors
+     * sendFailureResponse()'s exit pattern.
+     *
+     * Protected so the testable subclass returns the body instead of exiting.
+     */
+    protected function sendJsonResponse(string $json): string
+    {
+        echo $json;
+        exit;
     }
 
     /**

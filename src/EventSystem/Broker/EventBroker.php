@@ -19,7 +19,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-final class EventBroker implements EventBrokerInterface
+class EventBroker implements EventBrokerInterface
 {
     /** @var list<ProviderEventTranslatorInterface> */
     private array $translators;

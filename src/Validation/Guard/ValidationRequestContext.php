@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class ValidationRequestContext
+class ValidationRequestContext
 {
     /** @param array<string, mixed> $fields */
     public function __construct(

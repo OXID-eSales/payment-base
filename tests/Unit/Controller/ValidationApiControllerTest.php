@@ -256,6 +256,12 @@ class TestableValidationApiController extends ValidationApiController
         return '';
     }
 
+    /** Capture the JSON body instead of echo+exit. */
+    protected function sendJsonResponse(string $json): string
+    {
+        return $json;
+    }
+
     protected function setHttpStatus(int $status): void
     {
         $this->capturedStatus = $status;

@@ -20,7 +20,7 @@ use OxidEsales\Eshop\Core\Registry;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class OxidShopUrlResolver implements ShopUrlResolverInterface
+class OxidShopUrlResolver implements ShopUrlResolverInterface
 {
     public function getShopUrl(): string
     {

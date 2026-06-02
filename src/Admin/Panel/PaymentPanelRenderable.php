@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Admin\Panel;
  * `data-provider` attribute so the wrapper CSS can scope small
  * PSP-specific paint jobs without each module shipping its own stylesheet.
  */
-final readonly class PaymentPanelRenderable
+readonly class PaymentPanelRenderable
 {
     /**
      * @param array<string, mixed> $viewData

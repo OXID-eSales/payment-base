@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Validation\RateLimit;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class InMemoryRateLimitStore implements RateLimitStoreInterface
+class InMemoryRateLimitStore implements RateLimitStoreInterface
 {
     /** @var array<string, array{count: int, expiresAt: float}> */
     private array $counters = [];

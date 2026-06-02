@@ -18,7 +18,7 @@ namespace OxidEsales\PaymentBase\Validation;
  * All methods are pure functions with no side effects — safe to use
  * without instantiation.
  */
-final class CharacterClass
+class CharacterClass
 {
     /**
      * PCRE pattern covering all universally-rejected code points:

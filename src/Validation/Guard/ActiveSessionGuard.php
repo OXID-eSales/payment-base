@@ -19,7 +19,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class ActiveSessionGuard implements ValidationGuardInterface
+class ActiveSessionGuard implements ValidationGuardInterface
 {
     public function check(ValidationRequestContext $ctx): ?GuardFailure
     {

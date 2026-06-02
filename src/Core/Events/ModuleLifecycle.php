@@ -25,7 +25,7 @@ namespace OxidEsales\PaymentBase\Core\Events;
  * - Deactivation removes the admin tab automatically via OXID's menu
  *   loader; no cleanup is needed.
  */
-final class ModuleLifecycle
+class ModuleLifecycle
 {
     public static function onActivate(): void
     {

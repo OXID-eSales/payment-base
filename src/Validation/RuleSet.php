@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Validation;
  * Class tokens (uppercase): UNICODE_LETTERS, LETTERS, NUMBERS, SPACES.
  * Literal tokens: any other single character.
  */
-final class RuleSet
+class RuleSet
 {
     /**
      * @param list<string> $allowTokens

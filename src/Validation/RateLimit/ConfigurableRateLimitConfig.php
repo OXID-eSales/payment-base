@@ -19,7 +19,7 @@ namespace OxidEsales\PaymentBase\Validation\RateLimit;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class ConfigurableRateLimitConfig implements RateLimitConfigInterface
+class ConfigurableRateLimitConfig implements RateLimitConfigInterface
 {
     /** @var iterable<RateLimitOverrideInterface> */
     private iterable $overrides;

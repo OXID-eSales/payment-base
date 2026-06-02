@@ -19,7 +19,7 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Sprint 119 (STRP-129) — Phase A2.
  */
-final class SameOriginGuard implements ValidationGuardInterface
+class SameOriginGuard implements ValidationGuardInterface
 {
     public function __construct(
         private readonly ShopUrlResolverInterface $shopUrlResolver,

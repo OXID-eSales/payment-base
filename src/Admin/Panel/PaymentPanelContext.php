@@ -18,7 +18,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
  * the OXID order id, its payment-method key, and the resolved
  * {@see PaymentContractInterface} (or null if none exists yet).
  */
-final readonly class PaymentPanelContext
+readonly class PaymentPanelContext
 {
     public function __construct(
         public string $orderId,

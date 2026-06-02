@@ -20,7 +20,7 @@ use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
  *
  * The controller validates CSRF before calling this dispatcher.
  */
-final class PaymentAdminActionDispatcher
+class PaymentAdminActionDispatcher
 {
     public function __construct(private readonly PaymentPanelRegistryInterface $registry)
     {
