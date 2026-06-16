@@ -21,4 +21,12 @@ $aLang = [
     'PAYMENT_ADMIN_PROVIDER_ORDER'=> 'Anbieter-Bestell-ID',
     'PAYMENT_ADMIN_ACTION_OK'     => 'Aktion erfolgreich abgeschlossen.',
     'PAYMENT_ADMIN_ACTION_FAILED' => 'Aktion fehlgeschlagen. Details im Shop-Log.',
+
+    // Moduleinstellungen — Gruppenüberschriften
+    'SHOP_MODULE_GROUP_validation'             => 'Validierung',
+    'SHOP_MODULE_GROUP_per_line_vat'           => 'Positionsbezogene USt.',
+
+    // Moduleinstellungen — Feldbeschriftungen
+    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
+    'SHOP_MODULE_blPaymentBasePerLineVat'      => 'USt. pro Position berechnen (jede Position vor Summierung runden)',
 ];

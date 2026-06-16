@@ -21,4 +21,12 @@ $aLang = [
     'PAYMENT_ADMIN_PROVIDER_ORDER'=> 'Provider order ID',
     'PAYMENT_ADMIN_ACTION_OK'     => 'Action completed successfully.',
     'PAYMENT_ADMIN_ACTION_FAILED' => 'Action failed. See the shop log for details.',
+
+    // Module settings — group headers
+    'SHOP_MODULE_GROUP_validation'             => 'Validation',
+    'SHOP_MODULE_GROUP_per_line_vat'           => 'Per-line VAT',
+
+    // Module settings — field labels
+    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
+    'SHOP_MODULE_blPaymentBasePerLineVat'      => 'Calculate VAT per line item (round each line before summing)',
 ];
