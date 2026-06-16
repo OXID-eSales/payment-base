@@ -29,7 +29,9 @@ $aModule = [
     'author'      => 'OXID eSales AG',
     'url'         => 'https://www.oxid-esales.com',
     'email'       => 'info@oxid-esales.com',
-    'extend'      => [],
+    'extend'      => [
+        \OxidEsales\Eshop\Core\PriceList::class => \OxidEsales\PaymentBase\Eshop\Core\PriceList::class,
+    ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here
         // to render the Payment tab's `<a href>`. services.yaml DI is kept
@@ -54,5 +56,9 @@ $aModule = [
         // register per-plugin overrides via the tagged iterator
         // `oe.payment_base.rate_limit_override`.
         ['name' => 'iValidationApiRatePerMinute', 'type' => 'num', 'value' => '30', 'group' => 'validation'],
+        // Sprint 125 (STRP-157) — enable per-line VAT calculation (default off).
+        // When true, PriceList::getVatInfo() rounds VAT per line before aggregating
+        // instead of grouping all lines at the same rate and rounding once.
+        ['name' => 'blPaymentBasePerLineVat', 'type' => 'bool', 'value' => false, 'group' => 'per_line_vat'],
     ],
 ];

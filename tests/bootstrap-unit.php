@@ -76,3 +76,33 @@ if (!class_exists(\OxidEsales\EshopCommunity\Internal\Container\ContainerFactory
         . '}'
     );
 }
+
+// Sprint 125 (STRP-157) — stub OxidEsales\Eshop\Core\Price so PriceToTaxableLineMapper
+// and PriceListOverrideTest can run without OXID shop bootstrap.
+if (!class_exists(\OxidEsales\Eshop\Core\Price::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Price { '
+        . '  public function getPrice(): float { return 0.0; } '
+        . '  public function getVat(): float { return 0.0; } '
+        . '}'
+    );
+}
+
+// Sprint 125 (STRP-157) — stub PriceList_parent (OXID virtual class generated at activation)
+// so that PriceList (which extends PriceList_parent) can be autoloaded in unit tests.
+// Unit tests never instantiate PriceList directly; they use TestablePriceList subclasses
+// that bypass the parent constructor.
+// PriceList_parent is resolved in namespace OxidEsales\PaymentBase\Eshop\Core
+// (PriceList uses unqualified 'PriceList_parent'). The real alias is created by
+// OXID's ModuleChainsGenerator::createClassExtension at module activation.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\PriceList_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Core; '
+        . 'class PriceList_parent { '
+        . '  protected array $_aList = []; '
+        . '  public function __construct() {} '
+        . '  public function getVatInfo($isNettoMode = true) { return []; } '
+        . '}'
+    );
+}

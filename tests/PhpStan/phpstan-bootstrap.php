@@ -67,6 +67,7 @@ if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
         . '} '
         . 'class StubConfig { '
         . '  public function getShopUrl(): string { return ""; } '
+        . '  public function getModuleVar(string $name, string $moduleId): mixed { return null; } '
         . '} '
         . 'class Registry { '
         . '  public static function getLogger(): \\Psr\\Log\\LoggerInterface { return new \\Psr\\Log\\NullLogger(); } '
@@ -145,6 +146,47 @@ if (!class_exists(\OxidEsales\EshopCommunity\Internal\Container\ContainerFactory
         . '  private static ?self $instance = null; '
         . '  public static function getInstance(): self { if (self::$instance === null) { self::$instance = new self(); } return self::$instance; } '
         . '  public function getContainer(): StubContainer { return new StubContainer(); } '
+        . '}'
+    );
+}
+
+// Sprint 125 (STRP-157) — stub ModuleSettingServiceInterface for static analysis of
+// PriceList::isPerLineEnabled() which resolves it from the DI container.
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Facade\ModuleSettingServiceInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Facade; '
+        . 'interface ModuleSettingServiceInterface { '
+        . '  public function getBoolean(string $name, string $moduleId): bool; '
+        . '  public function getString(string $name, string $moduleId): string; '
+        . '  public function getInteger(string $name, string $moduleId): int; '
+        . '}'
+    );
+}
+
+// Sprint 125 (STRP-157) — stub OxidEsales\Eshop\Core\Price for static analysis of
+// PriceToTaxableLineMapper (which accepts Price as a parameter).
+if (!class_exists(\OxidEsales\Eshop\Core\Price::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Price { '
+        . '  public function getPrice(): float { return 0.0; } '
+        . '  public function getVat(): float { return 0.0; } '
+        . '}'
+    );
+}
+
+// Sprint 125 (STRP-157) — stub PriceList_parent (OXID virtual class generated at activation)
+// so PHPStan can analyse PriceList which extends PriceList_parent.
+// PriceList_parent is resolved in the namespace OxidEsales\PaymentBase\Eshop\Core
+// (because PriceList uses unqualified 'PriceList_parent', not '\PriceList_parent').
+// The real alias is created by OXID's ModuleChainsGenerator::createClassExtension at runtime.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\PriceList_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Core; '
+        . 'class PriceList_parent { '
+        . '  protected array $_aList = []; '
+        . '  public function __construct() {} '
+        . '  public function getVatInfo($isNettoMode = true) { return []; } '
         . '}'
     );
 }

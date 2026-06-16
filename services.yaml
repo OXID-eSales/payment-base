@@ -199,3 +199,11 @@ services:
   # key 'oe.payment_base.validation_message_formatter_iterator'.
   # Empty by default; the tag is the opt-in point for PSP modules.
   # (No concrete formatter is registered here — payment-base is provider-agnostic.)
+
+  # Sprint 125 (STRP-157) — per-line VAT calculator.
+  # Public so PriceList can resolve it via ContainerFactory::get().
+  OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculatorInterface:
+    class: OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculator
+    public: true
+    arguments:
+      $precision: 2
