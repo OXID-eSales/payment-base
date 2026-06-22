@@ -8,6 +8,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Math\Money\LineItemAmount;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
 class ContractService implements ContractServiceInterface
@@ -145,14 +146,16 @@ class ContractService implements ContractServiceInterface
                 $productId = (string) $article->getId();
             }
 
+            $lineAmount = LineItemAmount::forQuantity($unitPrice, $netPrice, $vatValue, $amount);
+
             $items[] = [
                 'productId' => $productId,
                 'title' => $title,
                 'quantity' => $amount,
                 'unitPrice' => $unitPrice,
-                'totalPrice' => $unitPrice * $amount,
-                'netPrice' => $netPrice * $amount,
-                'vatValue' => $vatValue * $amount,
+                'totalPrice' => $lineAmount->totalPrice,
+                'netPrice' => $lineAmount->netPrice,
+                'vatValue' => $lineAmount->vatValue,
             ];
         }
 

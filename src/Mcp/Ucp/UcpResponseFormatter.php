@@ -6,22 +6,24 @@ namespace OxidEsales\PaymentBase\Mcp\Ucp;
 
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Math\Money\MinorUnitConverter;
 
 class UcpResponseFormatter implements UcpResponseFormatterInterface
 {
     public function formatCheckoutSession(PaymentContractInterface $contract): array
     {
         $snapshot = $contract->getBasketSnapshot();
+        $currency = $snapshot->getCurrency();
 
         return [
             'id' => $contract->getId(),
             'status' => $this->mapContractStateToUcpStatus($contract->getStateValue()),
-            'currency' => strtolower($snapshot->getCurrency()),
+            'currency' => strtolower($currency),
             'line_items' => $this->formatLineItems($snapshot),
             'totals' => [
-                'subtotal' => $this->toMinorUnits($snapshot->getTotalNet()),
-                'tax' => $this->toMinorUnits($snapshot->getTotalVat()),
-                'total' => $this->toMinorUnits($snapshot->getTotalGross()),
+                'subtotal' => MinorUnitConverter::toMinorUnits($snapshot->getTotalNet(), $currency),
+                'tax' => MinorUnitConverter::toMinorUnits($snapshot->getTotalVat(), $currency),
+                'total' => MinorUnitConverter::toMinorUnits($snapshot->getTotalGross(), $currency),
             ],
         ];
     }
@@ -55,23 +57,19 @@ class UcpResponseFormatter implements UcpResponseFormatterInterface
      */
     private function formatLineItems(BasketSnapshot $snapshot): array
     {
+        $currency = $snapshot->getCurrency();
         $lineItems = [];
         foreach ($snapshot->getItems() as $index => $item) {
+            $unitPrice = (float) ($item['grossPrice'] ?? $item['price'] ?? 0.0);
+            $quantity = (int) ($item['quantity'] ?? 1);
             $lineItems[] = [
                 'id' => 'li_' . ($index + 1),
                 'product_id' => $item['articleId'] ?? $item['id'] ?? '',
-                'quantity' => (int) ($item['quantity'] ?? 1),
-                'unit_price' => $this->toMinorUnits((float) ($item['grossPrice'] ?? $item['price'] ?? 0.0)),
-                'total' => $this->toMinorUnits(
-                    (float) ($item['grossPrice'] ?? $item['price'] ?? 0.0) * (int) ($item['quantity'] ?? 1)
-                ),
+                'quantity' => $quantity,
+                'unit_price' => MinorUnitConverter::toMinorUnits($unitPrice, $currency),
+                'total' => MinorUnitConverter::toMinorUnits($unitPrice * $quantity, $currency),
             ];
         }
         return $lineItems;
-    }
-
-    private function toMinorUnits(float $amount): int
-    {
-        return (int) round($amount * 100);
     }
 }

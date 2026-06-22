@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use DomainException;
 use InvalidArgumentException;
+use OxidEsales\PaymentBase\Math\Money\Money;
 
 /**
  * Capture / refund tracking extracted off PaymentContract (Sprint 01a).
@@ -21,14 +22,6 @@ use InvalidArgumentException;
  */
 class CaptureRefundTracker
 {
-    /**
-     * Currency epsilon for full-refund / remaining-refundable comparisons.
-     * Half a cent — tight enough to never collapse a real partial refund
-     * into "fully refunded", loose enough to absorb IEEE 754 noise from
-     * accumulated float arithmetic.
-     */
-    private const FULL_REFUND_EPSILON = 0.005;
-
     private ?float $capturedAmount = null;
     private ?float $refundedAmount = null;
     private ?DateTimeInterface $capturedAt = null;
@@ -119,7 +112,7 @@ class CaptureRefundTracker
         }
         $refunded = $this->refundedAmount ?? 0.0;
         $remaining = $this->capturedAmount - $refunded;
-        if ($remaining < self::FULL_REFUND_EPSILON) {
+        if ($remaining < Money::HALF_CENT_EPSILON) {
             return 0.0;
         }
         return $remaining;
@@ -127,7 +120,7 @@ class CaptureRefundTracker
 
     /**
      * True iff a positive capture exists AND the refunded total has reached
-     * (or exceeded) the captured total within the {@see FULL_REFUND_EPSILON}.
+     * (or exceeded) the captured total within {@see Money::HALF_CENT_EPSILON}.
      *
      * A null captured amount or a zero/missing refunded amount makes this
      * `false` — "nothing has happened yet" is NOT the same as "fully refunded".
@@ -138,7 +131,7 @@ class CaptureRefundTracker
             return false;
         }
         $refunded = $this->refundedAmount ?? 0.0;
-        return $refunded >= ($this->capturedAmount - self::FULL_REFUND_EPSILON);
+        return Money::atLeast($refunded, $this->capturedAmount);
     }
 
     /**

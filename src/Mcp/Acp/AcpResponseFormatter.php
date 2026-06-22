@@ -6,6 +6,7 @@ namespace OxidEsales\PaymentBase\Mcp\Acp;
 
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Math\Money\MinorUnitConverter;
 
 class AcpResponseFormatter implements AcpResponseFormatterInterface
 {
@@ -92,6 +93,7 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
      */
     private function formatLineItems(BasketSnapshot $snapshot): array
     {
+        $currency = $snapshot->getCurrency();
         $lineItems = [];
         foreach ($snapshot->getItems() as $index => $item) {
             $quantity = (int) ($item['quantity'] ?? 1);
@@ -111,10 +113,10 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
                     'title' => $item['title'] ?? '',
                     'quantity' => $quantity,
                 ],
-                'base_amount' => $this->toMinorUnits($grossPrice),
-                'subtotal' => $this->toMinorUnits($netPrice),
-                'tax' => $this->toMinorUnits($vatValue),
-                'total' => $this->toMinorUnits($grossPrice),
+                'base_amount' => MinorUnitConverter::toMinorUnits($grossPrice, $currency),
+                'subtotal' => MinorUnitConverter::toMinorUnits($netPrice, $currency),
+                'tax' => MinorUnitConverter::toMinorUnits($vatValue, $currency),
+                'total' => MinorUnitConverter::toMinorUnits($grossPrice, $currency),
             ];
         }
         return $lineItems;
@@ -125,19 +127,11 @@ class AcpResponseFormatter implements AcpResponseFormatterInterface
      */
     private function formatTotals(BasketSnapshot $snapshot): array
     {
+        $currency = $snapshot->getCurrency();
         return [
-            ['type' => 'subtotal', 'amount' => $this->toMinorUnits($snapshot->getTotalNet())],
-            ['type' => 'tax', 'amount' => $this->toMinorUnits($snapshot->getTotalVat())],
-            ['type' => 'total', 'amount' => $this->toMinorUnits($snapshot->getTotalGross())],
+            ['type' => 'subtotal', 'amount' => MinorUnitConverter::toMinorUnits($snapshot->getTotalNet(), $currency)],
+            ['type' => 'tax', 'amount' => MinorUnitConverter::toMinorUnits($snapshot->getTotalVat(), $currency)],
+            ['type' => 'total', 'amount' => MinorUnitConverter::toMinorUnits($snapshot->getTotalGross(), $currency)],
         ];
-    }
-
-    /**
-     * Convert float amount to integer minor units (cents).
-     * ACP amounts are always integers in the smallest currency unit.
-     */
-    private function toMinorUnits(float $amount): int
-    {
-        return (int) round($amount * 100);
     }
 }

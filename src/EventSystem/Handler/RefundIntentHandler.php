@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\CancelAuthorizationRequeste
 use OxidEsales\PaymentBase\EventSystem\Event\Request\CaptureRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundIntentEventInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
+use OxidEsales\PaymentBase\Math\Money\Money;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface;
 use OxidEsales\PaymentBase\Service\UnknownPaymentCaptureStatusQuery;
@@ -54,12 +55,6 @@ use Psr\Log\NullLogger;
  */
 class RefundIntentHandler
 {
-    /**
-     * Currency epsilon for full-sum equality checks.
-     * Half a cent — same constant used on the contract aggregate.
-     */
-    private const FULL_SUM_EPSILON = 0.005;
-
     private PaymentCaptureStatusQueryInterface $captureStatusQuery;
     private LoggerInterface $logger;
 
@@ -186,12 +181,12 @@ class RefundIntentHandler
 
     private static function isFullAmount(float $requested, float $authorized): bool
     {
-        return abs($requested - $authorized) < self::FULL_SUM_EPSILON;
+        return Money::equals($requested, $authorized);
     }
 
     private static function isPositiveAndWithinAuthorized(float $requested, float $authorized): bool
     {
-        return $requested > 0.0 && $requested <= ($authorized + self::FULL_SUM_EPSILON);
+        return $requested > 0.0 && Money::atMost($requested, $authorized);
     }
 
     private static function roundCurrency(float $amount): float
