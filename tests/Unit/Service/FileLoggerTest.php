@@ -12,12 +12,13 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 use OxidEsales\PaymentBase\Service\FileLogger;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\FileLogger
- * @group sprint-14
- * @group logging
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\FileLogger::class)]
+#[Group('sprint-14')]
+#[Group('logging')]
 final class FileLoggerTest extends TestCase
 {
     private string $testLogDir;
@@ -44,9 +45,7 @@ final class FileLoggerTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function implementsInterface(): void
     {
         $logger = new FileLogger($this->testLogFile);
@@ -54,9 +53,7 @@ final class FileLoggerTest extends TestCase
         $this->assertInstanceOf(FileLoggerInterface::class, $logger);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function logsToFile(): void
     {
         $logger = new FileLogger($this->testLogFile);
@@ -68,9 +65,7 @@ final class FileLoggerTest extends TestCase
         $this->assertStringContainsString('Test message', $content);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function createsDirectoryIfNotExists(): void
     {
         $this->assertDirectoryDoesNotExist($this->testLogDir);
@@ -82,9 +77,7 @@ final class FileLoggerTest extends TestCase
         $this->assertFileExists($this->testLogFile);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function formatsLogEntryWithTimestamp(): void
     {
         $logger = new FileLogger($this->testLogFile);
@@ -99,9 +92,7 @@ final class FileLoggerTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function formatsLogEntryWithPrefix(): void
     {
         $logger = new FileLogger($this->testLogFile, 'RECONCILE');
@@ -112,9 +103,7 @@ final class FileLoggerTest extends TestCase
         $this->assertStringContainsString('RECONCILE SUCCESS: Test', $content);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function appendsToExistingFile(): void
     {
         mkdir($this->testLogDir, 0755, true);
@@ -128,9 +117,7 @@ final class FileLoggerTest extends TestCase
         $this->assertStringContainsString('New message', $content);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function formatsContextAsJson(): void
     {
         $logger = new FileLogger($this->testLogFile);
@@ -141,9 +128,7 @@ final class FileLoggerTest extends TestCase
         $this->assertStringContainsString('{"order_id":"123","status":"success"}', $content);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function emptyContextIsNotAppended(): void
     {
         $logger = new FileLogger($this->testLogFile);
@@ -155,9 +140,7 @@ final class FileLoggerTest extends TestCase
         $this->assertStringContainsString("Test message\n", $content);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function eachLogEntryEndsWithNewline(): void
     {
         $logger = new FileLogger($this->testLogFile);

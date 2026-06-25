@@ -7,22 +7,23 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 use DateTimeImmutable;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * TDD Tests for WebhookLog provider and payload fields
  *
  * Sprint 2 Phase 1: Webhook table consolidation requires adding
  * provider and payload fields to WebhookLog entity.
- *
- * @group sprint-2
- * @group webhook-consolidation
  */
+#[Group('sprint-2')]
+#[Group('webhook-consolidation')]
 class WebhookLogProviderFieldsTest extends TestCase
 {
     /**
-     * @test
      * RED: WebhookLog should support provider field
      */
+    #[Test]
     public function webhookLogSupportsProviderField(): void
     {
         $log = new WebhookLog(
@@ -37,9 +38,9 @@ class WebhookLogProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: WebhookLog should support payload field
      */
+    #[Test]
     public function webhookLogSupportsPayloadField(): void
     {
         $log = new WebhookLog(
@@ -55,9 +56,9 @@ class WebhookLogProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Provider should default to null
      */
+    #[Test]
     public function providerDefaultsToNull(): void
     {
         $log = new WebhookLog(
@@ -70,9 +71,9 @@ class WebhookLogProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Payload should default to null
      */
+    #[Test]
     public function payloadDefaultsToNull(): void
     {
         $log = new WebhookLog(
@@ -85,9 +86,9 @@ class WebhookLogProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: WebhookLog should support processedAt field
      */
+    #[Test]
     public function webhookLogSupportsProcessedAtField(): void
     {
         $log = new WebhookLog(
@@ -103,9 +104,9 @@ class WebhookLogProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: ProcessedAt should default to null
      */
+    #[Test]
     public function processedAtDefaultsToNull(): void
     {
         $log = new WebhookLog(

@@ -19,10 +19,9 @@ use OxidEsales\PaymentBase\Webhook\WebhookProcessorInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookProcessor
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookProcessor::class)]
 final class WebhookProcessorTest extends TestCase
 {
     private ContractRepositoryInterface&MockObject $contractRepository;

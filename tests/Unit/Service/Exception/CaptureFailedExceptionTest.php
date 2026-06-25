@@ -6,10 +6,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service\Exception;
 
 use OxidEsales\PaymentBase\Service\Exception\CaptureFailedException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\Exception\CaptureFailedException
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\Exception\CaptureFailedException::class)]
 class CaptureFailedExceptionTest extends TestCase
 {
     public function testExceptionContainsContractId(): void

@@ -11,10 +11,10 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
 use PHPUnit\Framework\TestCase;
 use OxidEsales\PaymentBase\Adapter\Request\CapturePaymentRequest;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Adapter\Request\CapturePaymentRequest
- */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Request\CapturePaymentRequest::class)]
 class CapturePaymentRequestTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void
@@ -95,9 +95,7 @@ class CapturePaymentRequestTest extends TestCase
     // Sprint 114.10a (§6.2): optional currency field — RED tests
     // =========================================================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function currencyDefaultsToNullWhenNotProvided(): void
     {
         $request = new CapturePaymentRequest(providerPaymentId: 'pi_123456');
@@ -105,9 +103,7 @@ class CapturePaymentRequestTest extends TestCase
         $this->assertNull($request->currency);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function currencyCanBeSet(): void
     {
         $request = new CapturePaymentRequest(

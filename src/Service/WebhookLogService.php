@@ -23,6 +23,13 @@ use Psr\Log\NullLogger;
  *
  * Architecture:
  * Controller/Service → WebhookLogService → WebhookLogRepository → Database
+ *
+ * Logging-control sprint Phase 4: optional $shouldLogPayload closure.
+ * When null (default) → current behavior: OXPAYLOAD persisted and PSR-3 mirror emitted.
+ * When the closure returns false → the claim row is still written (idempotency intact),
+ * but OXPAYLOAD is omitted from the save() call and no PSR-3 mirror lines are emitted.
+ * This keeps the idempotency/dedup ledger unconditional while giving providers control
+ * over the audit payload and operational log verbosity.
  */
 class WebhookLogService implements WebhookLogServiceInterface
 {
@@ -34,9 +41,20 @@ class WebhookLogService implements WebhookLogServiceInterface
 
     public function __construct(
         private readonly WebhookLogRepositoryInterface $repository,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        /** @var ?\Closure(): bool $shouldLogPayload */
+        private readonly ?\Closure $shouldLogPayload = null
     ) {
         $this->logger = $logger ?? new NullLogger();
+    }
+
+    private function isPayloadLoggingEnabled(): bool
+    {
+        if ($this->shouldLogPayload === null) {
+            return true;
+        }
+
+        return ($this->shouldLogPayload)();
     }
 
     public function logEventReceived(
@@ -53,16 +71,21 @@ class WebhookLogService implements WebhookLogServiceInterface
 
         $log->setEventType($eventType);
         $log->setProvider($provider);
-        $log->setPayload($payload);
+
+        if ($this->isPayloadLoggingEnabled()) {
+            $log->setPayload($payload);
+        }
 
         try {
             $this->repository->save($log);
 
-            $this->logger->info('Webhook event received', [
-                'event_id' => $eventId,
-                'event_type' => $eventType,
-                'provider' => $provider,
-            ]);
+            if ($this->isPayloadLoggingEnabled()) {
+                $this->logger->info('Webhook event received', [
+                    'event_id' => $eventId,
+                    'event_type' => $eventType,
+                    'provider' => $provider,
+                ]);
+            }
         } catch (\Throwable $e) {
             $this->logger->error('Failed to log webhook event', [
                 'event_id' => $eventId,
@@ -85,10 +108,12 @@ class WebhookLogService implements WebhookLogServiceInterface
                 $contractId
             );
 
-            $this->logger->info('Webhook event processed', [
-                'event_id' => $eventId,
-                'contract_id' => $contractId,
-            ]);
+            if ($this->isPayloadLoggingEnabled()) {
+                $this->logger->info('Webhook event processed', [
+                    'event_id' => $eventId,
+                    'contract_id' => $contractId,
+                ]);
+            }
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as processed', [
                 'event_id' => $eventId,
@@ -107,10 +132,12 @@ class WebhookLogService implements WebhookLogServiceInterface
                 $errorMessage
             );
 
-            $this->logger->warning('Webhook event failed', [
-                'event_id' => $eventId,
-                'error' => $errorMessage,
-            ]);
+            if ($this->isPayloadLoggingEnabled()) {
+                $this->logger->warning('Webhook event failed', [
+                    'event_id' => $eventId,
+                    'error' => $errorMessage,
+                ]);
+            }
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as failed', [
                 'event_id' => $eventId,

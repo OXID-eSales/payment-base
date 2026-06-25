@@ -20,15 +20,15 @@ use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
  * Tests for AbstractWebhookProcessor Template Method pattern.
  *
  * Updated in Sprint 64g: Uses claimEvent() for atomic idempotency
  * instead of the TOCTOU-vulnerable existsByEventId() + save() pattern.
- *
- * @covers \OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor
  */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor::class)]
 class AbstractWebhookProcessorTest extends TestCase
 {
     private WebhookLogRepositoryInterface&MockObject $logRepository;

@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use OxidEsales\PaymentBase\Migrations\Version20251031140000;
+use PHPUnit\Framework\Attributes\Test;
 use Psr\Log\NullLogger;
 
 class PaymentContractsMigrationTest extends MigrationTestBase
@@ -19,7 +20,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
     private const TABLE_CONDITIONS = 'oe_payments_contract_condition';
     private const TABLE_WEBHOOK_LOGS = 'oe_payments_webhook_logs';
 
-    /** @test */
+    #[Test]
     public function migration_creates_payment_contracts_table(): void
     {
         $schema = new Schema();
@@ -31,7 +32,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertTableExists(self::TABLE_CONTRACTS);
     }
 
-    /** @test */
+    #[Test]
     public function contracts_table_has_correct_columns(): void
     {
         $this->ensureMigrationRan();
@@ -49,7 +50,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertColumnExists(self::TABLE_CONTRACTS, 'OXFULFILLEDAT');
     }
 
-    /** @test */
+    #[Test]
     public function contracts_table_has_correct_column_types(): void
     {
         $this->ensureMigrationRan();
@@ -66,7 +67,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertColumnType(self::TABLE_CONTRACTS, 'OXUPDATED', 'datetime');
     }
 
-    /** @test */
+    #[Test]
     public function contract_table_has_primary_key(): void
     {
         $this->ensureMigrationRan();
@@ -74,7 +75,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertPrimaryKeyExists(self::TABLE_CONTRACTS);
     }
 
-    /** @test */
+    #[Test]
     public function contracts_table_has_required_indexes(): void
     {
         $this->ensureMigrationRan();
@@ -85,7 +86,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertIndexExists(self::TABLE_CONTRACTS, 'IDX_ORDER');
     }
 
-    /** @test */
+    #[Test]
     public function migration_is_idempotent(): void
     {
         $schema = new Schema();
@@ -98,7 +99,7 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertTableExists(self::TABLE_CONTRACTS);
     }
 
-    /** @test */
+    #[Test]
     public function basket_column_has_correct_comment(): void
     {
         $this->ensureMigrationRan();

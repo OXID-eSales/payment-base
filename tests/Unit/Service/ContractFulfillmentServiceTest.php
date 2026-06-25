@@ -21,6 +21,9 @@ use OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Unit tests for ContractFulfillmentService.
@@ -29,10 +32,9 @@ use Psr\Log\LoggerInterface;
  * - LSP compliance (implements interface correctly)
  * - SRP (only handles contract fulfillment)
  * - DRY (single implementation for all fulfillment operations)
- *
- * @covers \OxidEsales\PaymentBase\Service\ContractFulfillmentService
- * @group sprint-18
  */
+#[CoversClass(\OxidEsales\PaymentBase\Service\ContractFulfillmentService::class)]
+#[Group('sprint-18')]
 class ContractFulfillmentServiceTest extends TestCase
 {
     private ContractRepositoryInterface&MockObject $contractRepository;
@@ -64,9 +66,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * LSP: Service implements interface
      */
+    #[Test]
     public function implementsInterface(): void
     {
         $this->assertInstanceOf(
@@ -76,9 +78,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Fulfills committed contract
      */
+    #[Test]
     public function fulfillsCommittedContract(): void
     {
         // Arrange
@@ -102,9 +104,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Guards: Already fulfilled contract returns false
      */
+    #[Test]
     public function returnsFalseForAlreadyFulfilledContract(): void
     {
         // Arrange
@@ -126,9 +128,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Guards: Non-committed contract returns false
      */
+    #[Test]
     public function returnsFalseForPendingContract(): void
     {
         // Arrange
@@ -150,9 +152,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Guards: Draft contract returns false
      */
+    #[Test]
     public function returnsFalseForDraftContract(): void
     {
         // Arrange
@@ -170,9 +172,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Fulfills by provider order ID
      */
+    #[Test]
     public function fulfillsByProviderOrderId(): void
     {
         // Arrange
@@ -202,9 +204,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Returns null when contract not found by provider order ID
      */
+    #[Test]
     public function returnsNullWhenContractNotFoundByProviderOrderId(): void
     {
         // Arrange
@@ -228,9 +230,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Fulfills by contract ID
      */
+    #[Test]
     public function fulfillsByContractId(): void
     {
         // Arrange
@@ -260,9 +262,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Returns null when contract not found by contract ID
      */
+    #[Test]
     public function returnsNullWhenContractNotFoundByContractId(): void
     {
         // Arrange
@@ -282,9 +284,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Logs successful fulfillment
      */
+    #[Test]
     public function logsSuccessfulFulfillment(): void
     {
         // Arrange
@@ -305,9 +307,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Logs when contract cannot be fulfilled
      */
+    #[Test]
     public function logsWhenContractCannotBeFulfilled(): void
     {
         // Arrange
@@ -328,9 +330,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Event includes correct context data
      */
+    #[Test]
     public function eventIncludesCorrectContextData(): void
     {
         // Arrange - contract is already committed with order-123
@@ -354,9 +356,9 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Idempotent: Multiple fulfill calls on same contract only fulfill once
      */
+    #[Test]
     public function isIdempotent(): void
     {
         // Arrange

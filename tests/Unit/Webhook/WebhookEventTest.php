@@ -11,17 +11,16 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use OxidEsales\PaymentBase\Webhook\WebhookEvent;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookEvent
- * @group sprint-13
- * @group webhook
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookEvent::class)]
+#[Group('sprint-13')]
+#[Group('webhook')]
 final class WebhookEventTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function canCreateFromData(): void
     {
         $event = new WebhookEvent(
@@ -34,9 +33,7 @@ final class WebhookEventTest extends TestCase
         $this->assertInstanceOf(WebhookEvent::class, $event);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getIdReturnsEventId(): void
     {
         $event = new WebhookEvent('evt_abc123', 'payment_intent.succeeded', [], 0);
@@ -44,9 +41,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame('evt_abc123', $event->id);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getTypeReturnsEventType(): void
     {
         $event = new WebhookEvent('evt_123', 'charge.refunded', [], 0);
@@ -54,9 +49,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame('charge.refunded', $event->type);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getDataReturnsPayload(): void
     {
         $data = [
@@ -71,9 +64,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame($data, $event->data);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getCreatedReturnsTimestamp(): void
     {
         $created = 1733400000;
@@ -82,9 +73,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame($created, $event->created);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function propertiesAreReadOnly(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -99,9 +88,7 @@ final class WebhookEventTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getObjectIdExtractsIdFromData(): void
     {
         $event = new WebhookEvent(
@@ -114,9 +101,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame('pi_extracted_id', $event->getObjectId());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getObjectIdReturnsNullWhenMissing(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -124,9 +109,7 @@ final class WebhookEventTest extends TestCase
         $this->assertNull($event->getObjectId());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getObjectReturnsDataObject(): void
     {
         $object = ['id' => 'pi_123', 'status' => 'succeeded'];
@@ -135,9 +118,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame($object, $event->getObject());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getObjectReturnsEmptyArrayWhenMissing(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -145,9 +126,7 @@ final class WebhookEventTest extends TestCase
         $this->assertSame([], $event->getObject());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isTypeReturnsTrueForMatchingType(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -155,9 +134,7 @@ final class WebhookEventTest extends TestCase
         $this->assertTrue($event->isType('payment_intent.succeeded'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isTypeReturnsFalseForNonMatchingType(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);

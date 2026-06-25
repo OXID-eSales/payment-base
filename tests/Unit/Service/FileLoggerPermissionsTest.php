@@ -11,14 +11,16 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use OxidEsales\PaymentBase\Service\FileLogger;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 70b: M3 — Restrictive file permissions.
- *
- * @covers \OxidEsales\PaymentBase\Service\FileLogger
- * @group sprint-70b
- * @group security
  */
+#[CoversClass(\OxidEsales\PaymentBase\Service\FileLogger::class)]
+#[Group('sprint-70b')]
+#[Group('security')]
 final class FileLoggerPermissionsTest extends TestCase
 {
     private string $tempDir;
@@ -39,7 +41,7 @@ final class FileLoggerPermissionsTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function logDirectoryCreatedWithRestrictivePermissions(): void
     {
         $logFile = $this->tempDir . '/test.log';
@@ -52,7 +54,7 @@ final class FileLoggerPermissionsTest extends TestCase
         $this->assertSame(0750, $perms, sprintf('Expected 0750, got %04o', $perms));
     }
 
-    /** @test */
+    #[Test]
     public function logFileCreatedInsideRestrictiveDirectory(): void
     {
         $logFile = $this->tempDir . '/test.log';
@@ -67,7 +69,7 @@ final class FileLoggerPermissionsTest extends TestCase
         $this->assertSame(0, $dirPerms & 0007, 'Directory should block other-user access');
     }
 
-    /** @test */
+    #[Test]
     public function existingDirectoryNotModified(): void
     {
         mkdir($this->tempDir, 0755, true);

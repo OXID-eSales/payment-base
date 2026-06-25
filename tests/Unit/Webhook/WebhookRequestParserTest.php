@@ -13,12 +13,13 @@ use OxidEsales\PaymentBase\Webhook\WebhookRequest;
 use OxidEsales\PaymentBase\Webhook\WebhookRequestParser;
 use OxidEsales\PaymentBase\Webhook\WebhookRequestParserInterface;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookRequestParser
- * @group sprint-13
- * @group webhook
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookRequestParser::class)]
+#[Group('sprint-13')]
+#[Group('webhook')]
 final class WebhookRequestParserTest extends TestCase
 {
     private WebhookRequestParser $parser;
@@ -29,17 +30,13 @@ final class WebhookRequestParserTest extends TestCase
         $this->parser = new WebhookRequestParser();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function implementsInterface(): void
     {
         $this->assertInstanceOf(WebhookRequestParserInterface::class, $this->parser);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function parsesValidJsonPayload(): void
     {
         $payload = '{"id":"evt_123","type":"payment_intent.succeeded"}';
@@ -51,9 +48,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame($payload, $request->payload);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function throwsOnEmptyPayload(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -62,9 +57,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->parser->parse('', [], '127.0.0.1');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function extractsSignatureFromHeaders(): void
     {
         $signature = 't=1234567890,v1=abc123def456';
@@ -75,9 +68,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame($signature, $request->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function extractsSignatureFromLowercaseHeader(): void
     {
         $signature = 't=1234567890,v1=abc123def456';
@@ -88,9 +79,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame($signature, $request->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function returnsEmptySignatureWhenHeaderMissing(): void
     {
         $request = $this->parser->parse('{"id":"evt_123"}', [], '127.0.0.1');
@@ -98,9 +87,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame('', $request->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function extractsRemoteIp(): void
     {
         $remoteIp = '54.187.174.169';
@@ -110,9 +97,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame($remoteIp, $request->remoteIp);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function setsReceivedAtToCurrentTime(): void
     {
         $before = new \DateTimeImmutable();
@@ -125,9 +110,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertLessThanOrEqual($after, $request->receivedAt);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function handlesHttpPrefixedHeaders(): void
     {
         $signature = 't=123,v1=abc';
@@ -138,9 +121,7 @@ final class WebhookRequestParserTest extends TestCase
         $this->assertSame($signature, $request->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function preservesRawPayloadExactly(): void
     {
         $payload = '{"id":"evt_123","data":{"object":{"id":"pi_456"}}}';

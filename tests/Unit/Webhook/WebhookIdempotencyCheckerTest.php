@@ -9,10 +9,9 @@ use OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookIdempotencyChecker::class)]
 final class WebhookIdempotencyCheckerTest extends TestCase
 {
     private WebhookLogRepositoryInterface&MockObject $logRepository;

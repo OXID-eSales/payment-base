@@ -18,18 +18,20 @@ use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 64g: Atomic idempotency tests for webhook processing.
  *
  * Verifies that AbstractWebhookProcessor uses claimEvent() instead of
  * the TOCTOU-vulnerable existsByEventId() + save() pattern.
- *
- * @covers \OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor
- * @group sprint-64g
- * @group security
- * @group idempotency
  */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor::class)]
+#[Group('sprint-64g')]
+#[Group('security')]
+#[Group('idempotency')]
 final class AtomicIdempotencyTest extends TestCase
 {
     private WebhookLogRepositoryInterface&MockObject $logRepository;
@@ -41,7 +43,7 @@ final class AtomicIdempotencyTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
     }
 
-    /** @test */
+    #[Test]
     public function processorProceedsWhenClaimEventSucceeds(): void
     {
         $this->logRepository->expects($this->once())
@@ -59,7 +61,7 @@ final class AtomicIdempotencyTest extends TestCase
         $this->assertSame('fulfilled', $result->action);
     }
 
-    /** @test */
+    #[Test]
     public function processorSkipsWhenClaimEventFails(): void
     {
         $this->logRepository->expects($this->once())
@@ -78,7 +80,7 @@ final class AtomicIdempotencyTest extends TestCase
         $this->assertStringContainsString('Already processed', $result->error ?? '');
     }
 
-    /** @test */
+    #[Test]
     public function processorNeverCallsDeprecatedExistsByEventId(): void
     {
         $this->logRepository->method('claimEvent')->willReturn(true);
@@ -91,7 +93,7 @@ final class AtomicIdempotencyTest extends TestCase
         $processor->process($request);
     }
 
-    /** @test */
+    #[Test]
     public function processorNeverCallsSaveForInitialLog(): void
     {
         $this->logRepository->method('claimEvent')->willReturn(true);
@@ -104,7 +106,7 @@ final class AtomicIdempotencyTest extends TestCase
         $processor->process($request);
     }
 
-    /** @test */
+    #[Test]
     public function claimEventReceivesProviderNameAndEventType(): void
     {
         $this->logRepository->expects($this->once())

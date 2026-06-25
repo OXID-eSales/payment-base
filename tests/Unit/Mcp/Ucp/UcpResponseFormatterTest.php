@@ -8,6 +8,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Mcp\Ucp\UcpResponseFormatter;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class UcpResponseFormatterTest extends TestCase
 {
@@ -42,9 +43,7 @@ class UcpResponseFormatterTest extends TestCase
         return $contract;
     }
 
-    /**
-     * @dataProvider stateToUcpStatusProvider
-     */
+    #[DataProvider('stateToUcpStatusProvider')]
     public function testStateMapping(string $contractState, string $expectedUcpStatus): void
     {
         $contract = $this->createContractMock($contractState);

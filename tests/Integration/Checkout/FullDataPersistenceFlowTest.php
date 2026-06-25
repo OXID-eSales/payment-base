@@ -19,6 +19,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\Transaction;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Full Data Persistence Flow Test
@@ -40,12 +41,11 @@ use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
  *
  * Note: oe_payments_order_state was DROPPED in Sprint 8.
  * Capture/refund tracking is now handled by oe_payments_contract fields.
- *
- * @group integration
- * @group e2e
- * @group database
- * @group data-persistence
  */
+#[Group('integration')]
+#[Group('e2e')]
+#[Group('database')]
+#[Group('data-persistence')]
 final class FullDataPersistenceFlowTest extends IntegrationTestCase
 {
     private const TEST_PREFIX = 'e2e_dp_';
@@ -94,9 +94,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     // TEST: oe_payments_contract + oxuser + oxorder
     // =========================================================================
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testContractCreation_PersistsContractWithUserAndOrder(): void
     {
         // 1. Create real user in oxuser
@@ -125,9 +123,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertStringContainsString('e2e_', $dbUser['OXFNAME']);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testOrderCommit_LinksContractToRealOrder(): void
     {
         // 1. Create user
@@ -176,9 +172,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     // TEST: oe_payments_transaction
     // =========================================================================
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testTransaction_PersistsAuthorizationTransaction(): void
     {
         $userId = $this->createTestUser();
@@ -226,9 +220,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertEquals('ch_' . $this->testRunId, $dbTx['OXTRANSACTIONID']);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testTransaction_PersistsCaptureTransaction(): void
     {
         $userId = $this->createTestUser();
@@ -267,9 +259,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertEquals('completed', $dbTx['OXSTATUS']);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testTransaction_PersistsRefundTransaction(): void
     {
         $userId = $this->createTestUser();
@@ -307,9 +297,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertEquals(50.00, (float)$dbTx['OXAMOUNT']);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testTransaction_FindByOrderIdReturnsAllTransactions(): void
     {
         $userId = $this->createTestUser();
@@ -366,9 +354,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     // TEST: oe_payments_customer
     // =========================================================================
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testPaymentCustomer_PersistsCustomerPaymentProfile(): void
     {
         $userId = $this->createTestUser();
@@ -405,9 +391,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertCount(2, $savedMethods);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testPaymentCustomer_LinksToOxuser(): void
     {
         $userId = $this->createTestUser();
@@ -439,9 +423,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     // TEST: oe_payments_sessions
     // =========================================================================
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testPaymentSession_PersistsSessionData(): void
     {
         $userId = $this->createTestUser();
@@ -480,9 +462,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertArrayHasKey('clientSecret', $sessionData);
     }
 
-    /**
-     * @group data-persistence
-     */
+    #[Group('data-persistence')]
     public function testPaymentSession_ExpiresCorrectly(): void
     {
         $sessionId = $this->createSessionId('expiry');
@@ -515,10 +495,9 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
     /**
      * Tests the complete checkout flow populates all required tables.
-     *
-     * @group data-persistence
-     * @group complete-flow
      */
+    #[Group('data-persistence')]
+    #[Group('complete-flow')]
     public function testCompleteFlow_PopulatesAllTables(): void
     {
         $flowId = substr($this->testRunId, 0, 6);

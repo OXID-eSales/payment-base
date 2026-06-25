@@ -11,10 +11,10 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
 use OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest
- */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Request\RefundPaymentRequest::class)]
 final class RefundPaymentRequestTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void
@@ -143,9 +143,7 @@ final class RefundPaymentRequestTest extends TestCase
     // Sprint 114.10a (§6.2): optional currency field — RED tests
     // =========================================================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function currencyDefaultsToNullWhenNotProvided(): void
     {
         $request = new RefundPaymentRequest(providerPaymentId: 'pi_123456789');
@@ -153,9 +151,7 @@ final class RefundPaymentRequestTest extends TestCase
         $this->assertNull($request->currency);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function currencyCanBeSet(): void
     {
         $request = new RefundPaymentRequest(

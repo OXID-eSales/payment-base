@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * Unit tests for OrderPaymentStateService.
@@ -42,9 +43,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * LSP: Service implements interface
      */
+    #[Test]
     public function implementsInterface(): void
     {
         $this->assertInstanceOf(
@@ -54,9 +55,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Updates OXPAID with provided timestamp
      */
+    #[Test]
     public function updatesPaidTimestampWithProvidedTime(): void
     {
         $orderId = 'order-123';
@@ -80,9 +81,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Updates OXPAID with current time when not provided
      */
+    #[Test]
     public function updatesPaidTimestampWithCurrentTimeWhenNotProvided(): void
     {
         $orderId = 'order-123';
@@ -105,9 +106,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Returns false when order not found
      */
+    #[Test]
     public function returnsFalseWhenOrderNotFound(): void
     {
         $orderId = 'non-existent';
@@ -123,9 +124,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Updates OXPAID by transaction ID
      */
+    #[Test]
     public function updatesPaidTimestampByTransactionId(): void
     {
         $transactionId = 'pi_123';
@@ -149,9 +150,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Updates OXTRANSSTATUS to OK
      */
+    #[Test]
     public function updatesTransactionStatusToOk(): void
     {
         $orderId = 'order-123';
@@ -173,9 +174,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * SRP: Updates OXTRANSID
      */
+    #[Test]
     public function updatesTransactionId(): void
     {
         $orderId = 'order-123';
@@ -198,9 +199,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Convenience method updates all payment fields with transaction ID
      */
+    #[Test]
     public function markOrderAsPaidUpdatesAllFieldsWithTransactionId(): void
     {
         $orderId = 'order-123';
@@ -230,9 +231,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Convenience method updates fields without transaction ID
      */
+    #[Test]
     public function markOrderAsPaidUpdatesFieldsWithoutTransactionId(): void
     {
         $orderId = 'order-123';
@@ -260,9 +261,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Handles database exceptions gracefully
      */
+    #[Test]
     public function handlesDatabaseException(): void
     {
         $orderId = 'order-123';
@@ -289,9 +290,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Logs successful update
      */
+    #[Test]
     public function logsSuccessfulUpdate(): void
     {
         $orderId = 'order-123';
@@ -315,9 +316,9 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * @test
      * Does not log when no rows affected
      */
+    #[Test]
     public function doesNotLogWhenNoRowsAffected(): void
     {
         $orderId = 'order-123';

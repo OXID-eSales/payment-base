@@ -18,10 +18,9 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @group database
- */
+#[Group('database')]
 class DoctrineContractRepositoryTest extends IntegrationTestCase
 {
     private DoctrineContractRepository $repository;
@@ -309,13 +308,12 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
     }
 
     /**
-     * @group sprint-108
-     *
      * End-to-end safety net: persist a contract with non-null capture/refund
      * values via the repository, then load it back via the repository. A
      * failure here means "something in save+load is broken" but does not
      * localise the side. Use it together with the two isolation tests below.
      */
+    #[Group('sprint-108')]
     public function testCapturedAndRefundedAmountsRoundTrip(): void
     {
         $contract = $this->createCommittedTestContract('test_contract_roundtrip');
@@ -335,12 +333,11 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
     }
 
     /**
-     * @group sprint-108
-     *
      * Hydration in isolation: write a contract row directly via the
      * Doctrine Connection, then load it through the repository. The save
      * path is not exercised, so a failure here pinpoints a hydration bug.
      */
+    #[Group('sprint-108')]
     public function testHydrationLoadsCaptureRefundColumns(): void
     {
         $contractId = 'test_contract_hydration';
@@ -376,13 +373,12 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
     }
 
     /**
-     * @group sprint-108
-     *
      * Persistence in isolation: save a contract with non-null capture/refund
      * values via the repository, then query the four target columns with
      * raw SQL. The hydration path is not exercised, so a failure here
      * pinpoints a persistence bug.
      */
+    #[Group('sprint-108')]
     public function testPersistenceWritesCaptureRefundColumns(): void
     {
         $contract = $this->createCommittedTestContract('test_contract_persistence');
@@ -407,14 +403,13 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
     }
 
     /**
-     * @group sprint-108
-     *
      * Pins the post-Sprint-108 contract: setPrivateProperty must rethrow
      * ReflectionException on unknown property names instead of silently
      * skipping. The earlier silent catch is what hid the capture/refund
      * hydration bug for two days — reinstating it would re-open that
      * class of regression, so this test guards against it.
      */
+    #[Group('sprint-108')]
     public function testSetPrivatePropertyThrowsOnUnknownPropertyName(): void
     {
         $contract = $this->createTestContract('test_setprivateprop_throws');

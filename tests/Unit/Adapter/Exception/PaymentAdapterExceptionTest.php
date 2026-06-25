@@ -11,10 +11,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Exception;
 
 use OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException
- */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Exception\PaymentAdapterException::class)]
 final class PaymentAdapterExceptionTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void

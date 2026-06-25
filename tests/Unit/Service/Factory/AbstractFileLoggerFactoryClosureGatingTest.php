@@ -14,6 +14,8 @@ use OxidEsales\PaymentBase\Service\FileLogger;
 use OxidEsales\PaymentBase\Service\NullFileLogger;
 use OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Phase 1 TDD tests: closure gating seam on AbstractFileLoggerFactory.
@@ -23,11 +25,10 @@ use PHPUnit\Framework\TestCase;
  *   - closure returning true   ⇒ create() returns FileLogger
  *   - null closure (default)   ⇒ create() returns FileLogger (back-compat / LSP)
  *   - closure invoked lazily   ⇒ not called in ctor, only inside create()
- *
- * @covers \OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory
- * @group logging
- * @group phase-1-closure-gating
  */
+#[CoversClass(\OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory::class)]
+#[Group('logging')]
+#[Group('phase-1-closure-gating')]
 final class AbstractFileLoggerFactoryClosureGatingTest extends TestCase
 {
     private string $testShopDir;

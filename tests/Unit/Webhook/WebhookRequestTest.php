@@ -11,17 +11,16 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use OxidEsales\PaymentBase\Webhook\WebhookRequest;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookRequest
- * @group sprint-13
- * @group webhook
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookRequest::class)]
+#[Group('sprint-13')]
+#[Group('webhook')]
 final class WebhookRequestTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function canCreateFromRawData(): void
     {
         $payload = '{"id":"evt_123","type":"payment_intent.succeeded"}';
@@ -34,9 +33,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertInstanceOf(WebhookRequest::class, $request);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getPayloadReturnsRawString(): void
     {
         $payload = '{"id":"evt_123","type":"payment_intent.succeeded"}';
@@ -45,9 +42,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertSame($payload, $request->payload);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getSignatureReturnsHeader(): void
     {
         $signature = 't=1234567890,v1=abc123def456';
@@ -56,9 +51,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertSame($signature, $request->signature);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getRemoteIpReturnsClientIp(): void
     {
         $remoteIp = '54.187.174.169';
@@ -67,9 +60,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertSame($remoteIp, $request->remoteIp);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getReceivedAtReturnsTimestamp(): void
     {
         $receivedAt = new \DateTimeImmutable('2025-12-05 10:30:00');
@@ -78,9 +69,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertSame($receivedAt, $request->receivedAt);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function propertiesAreReadOnly(): void
     {
         $request = new WebhookRequest('{}', 't=123,v1=abc', '127.0.0.1', new \DateTimeImmutable());
@@ -95,9 +84,7 @@ final class WebhookRequestTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function hasSignatureReturnsTrueWhenSignaturePresent(): void
     {
         $request = new WebhookRequest('{}', 't=123,v1=abc', '127.0.0.1', new \DateTimeImmutable());
@@ -105,9 +92,7 @@ final class WebhookRequestTest extends TestCase
         $this->assertTrue($request->hasSignature());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function hasSignatureReturnsFalseWhenSignatureEmpty(): void
     {
         $request = new WebhookRequest('{}', '', '127.0.0.1', new \DateTimeImmutable());

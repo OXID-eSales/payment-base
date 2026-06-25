@@ -11,14 +11,16 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 69a: H7 — Webhook payload PII redaction.
- *
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer
- * @group sprint-69a
- * @group security
  */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer::class)]
+#[Group('sprint-69a')]
+#[Group('security')]
 final class WebhookPayloadSanitizerTest extends TestCase
 {
     private WebhookPayloadSanitizer $sanitizer;
@@ -28,7 +30,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->sanitizer = new WebhookPayloadSanitizer();
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerPreservesEventId(): void
     {
         $result = $this->sanitizer->sanitize(['id' => 'evt_123']);
@@ -36,7 +38,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('evt_123', $result['id']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerPreservesEventType(): void
     {
         $result = $this->sanitizer->sanitize(['type' => 'checkout.session.completed']);
@@ -44,7 +46,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('checkout.session.completed', $result['type']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerPreservesObjectId(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -54,7 +56,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('cs_123', $result['data']['object']['id']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerPreservesAmounts(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -66,7 +68,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame(2100, $result['amount_subtotal']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerPreservesCurrency(): void
     {
         $result = $this->sanitizer->sanitize(['currency' => 'eur']);
@@ -74,7 +76,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('eur', $result['currency']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerStripsCustomerEmail(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -84,7 +86,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('[REDACTED]', $result['customer_details']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerStripsCustomerName(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -94,7 +96,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('[REDACTED]', $result['customer_name']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerStripsShippingAddress(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -107,7 +109,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('[REDACTED]', $result['shipping']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerStripsNestedCardDetails(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -127,7 +129,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('visa', $result['payment_method_details']['card']['brand']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerHandlesNestedObjects(): void
     {
         $result = $this->sanitizer->sanitize([
@@ -148,7 +150,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame('[REDACTED]', $result['data']['object']['receipt_email']);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerHandlesEmptyPayload(): void
     {
         $result = $this->sanitizer->sanitize([]);
@@ -156,7 +158,7 @@ final class WebhookPayloadSanitizerTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizerIsDeterministic(): void
     {
         $input = [

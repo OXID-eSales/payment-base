@@ -8,6 +8,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Mcp\Acp\AcpResponseFormatter;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class AcpResponseFormatterTest extends TestCase
 {
@@ -54,9 +55,7 @@ class AcpResponseFormatterTest extends TestCase
         return $contract;
     }
 
-    /**
-     * @dataProvider stateToAcpStatusProvider
-     */
+    #[DataProvider('stateToAcpStatusProvider')]
     public function testStateMapping(string $contractState, string $expectedAcpStatus): void
     {
         $contract = $this->createContractMock(state: $contractState);

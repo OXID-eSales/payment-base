@@ -6,6 +6,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class BasketSnapshotTest extends TestCase
 {
@@ -101,9 +102,7 @@ class BasketSnapshotTest extends TestCase
     // Sprint 47: Fix 5 - Amount validation (STRP-99)
     // ==========================================
 
-    /**
-     * @dataProvider invalidAmountProvider
-     */
+    #[DataProvider('invalidAmountProvider')]
     public function testExtractFloatRejectsInvalidAmounts(float $amount, string $field): void
     {
         $data = [
@@ -134,9 +133,7 @@ class BasketSnapshotTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider validAmountProvider
-     */
+    #[DataProvider('validAmountProvider')]
     public function testExtractFloatAcceptsValidAmounts(float $gross, float $net, float $vat): void
     {
         $data = [
@@ -172,9 +169,7 @@ class BasketSnapshotTest extends TestCase
     // Sprint 47: Fix 6 - Currency validation (STRP-99)
     // ==========================================
 
-    /**
-     * @dataProvider invalidCurrencyProvider
-     */
+    #[DataProvider('invalidCurrencyProvider')]
     public function testExtractCurrencyRejectsInvalidCodes(string $currency): void
     {
         $data = [
@@ -210,9 +205,7 @@ class BasketSnapshotTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider validCurrencyProvider
-     */
+    #[DataProvider('validCurrencyProvider')]
     public function testExtractCurrencyAcceptsValidCodes(string $currency): void
     {
         $data = [

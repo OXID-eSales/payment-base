@@ -18,10 +18,9 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @group database
- */
+#[Group('database')]
 class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
 {
     private DoctrineWebhookLogRepository $repository;

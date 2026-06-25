@@ -12,21 +12,21 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 use DateTimeImmutable;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Unit tests for IdempotencyRecord entity.
  *
  * Sprint 42: Idempotency implementation.
- *
- * @covers \OxidEsales\PaymentBase\Contract\IdempotencyRecord
- * @group sprint-42
- * @group idempotency
  */
+#[CoversClass(\OxidEsales\PaymentBase\Contract\IdempotencyRecord::class)]
+#[Group('sprint-42')]
+#[Group('idempotency')]
 class IdempotencyRecordTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function constructSetsRequiredFields(): void
     {
         $createdAt = new DateTimeImmutable('2026-02-06 10:00:00');
@@ -52,9 +52,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertSame($expiresAt, $record->getExpiresAt());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function setResultUpdatesValue(): void
     {
         $record = $this->createRecord();
@@ -64,9 +62,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertSame('{"success":true}', $record->getResult());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function setStatusUpdatesValue(): void
     {
         $record = $this->createRecord();
@@ -76,9 +72,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertSame('completed', $record->getStatus());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isExpiredReturnsTrueWhenPastExpiry(): void
     {
         $record = new IdempotencyRecord(
@@ -94,9 +88,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertTrue($record->isExpired());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isExpiredReturnsFalseWhenNotExpired(): void
     {
         $record = new IdempotencyRecord(
@@ -112,9 +104,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertFalse($record->isExpired());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function toArrayReturnsAllFields(): void
     {
         $createdAt = new DateTimeImmutable('2026-02-06 10:00:00');
@@ -143,9 +133,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertSame('2026-02-07 10:00:00', $array['expiresAt']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function fromArrayHydratesAllFields(): void
     {
         $data = [
@@ -171,9 +159,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertSame('2026-02-07 10:00:00', $record->getExpiresAt()->format('Y-m-d H:i:s'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function fromArrayWithoutResultSetsNull(): void
     {
         $data = [
@@ -191,9 +177,7 @@ class IdempotencyRecordTest extends TestCase
         $this->assertNull($record->getResult());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function toArrayFromArrayRoundTrip(): void
     {
         $record = $this->createRecord();

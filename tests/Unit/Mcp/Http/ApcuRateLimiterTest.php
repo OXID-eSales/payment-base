@@ -6,10 +6,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Mcp\Http;
 
 use OxidEsales\PaymentBase\Mcp\Http\ApcuRateLimiter;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Mcp\Http\ApcuRateLimiter
- */
+#[CoversClass(\OxidEsales\PaymentBase\Mcp\Http\ApcuRateLimiter::class)]
 class ApcuRateLimiterTest extends TestCase
 {
     protected function setUp(): void

@@ -11,76 +11,61 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Response;
 
 use OxidEsales\PaymentBase\Adapter\Response\NormalizedPaymentStatus;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
  * Sprint 114.10a (A2): Canonical normalized-status constants live in payment-base.
  *
  * RED: class does not exist yet.
  * GREEN: create NormalizedPaymentStatus with the 7 string constants.
- *
- * @covers \OxidEsales\PaymentBase\Adapter\Response\NormalizedPaymentStatus
  */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Response\NormalizedPaymentStatus::class)]
 final class NormalizedPaymentStatusTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function pendingConstantHasCorrectValue(): void
     {
         $this->assertSame('pending', NormalizedPaymentStatus::PENDING);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function authorizedConstantHasCorrectValue(): void
     {
         $this->assertSame('authorized', NormalizedPaymentStatus::AUTHORIZED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function capturedConstantHasCorrectValue(): void
     {
         $this->assertSame('captured', NormalizedPaymentStatus::CAPTURED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failedConstantHasCorrectValue(): void
     {
         $this->assertSame('failed', NormalizedPaymentStatus::FAILED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cancelledConstantHasCorrectValue(): void
     {
         $this->assertSame('cancelled', NormalizedPaymentStatus::CANCELLED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function refundedConstantHasCorrectValue(): void
     {
         $this->assertSame('refunded', NormalizedPaymentStatus::REFUNDED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function partiallyRefundedConstantHasCorrectValue(): void
     {
         $this->assertSame('partially_refunded', NormalizedPaymentStatus::PARTIALLY_REFUNDED);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function allConstantsAreStrings(): void
     {
         $constants = [

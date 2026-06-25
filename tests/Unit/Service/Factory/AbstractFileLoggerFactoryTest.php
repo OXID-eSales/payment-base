@@ -13,6 +13,8 @@ use OxidEsales\PaymentBase\Service\FileLogger;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 use OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Phase 0 characterization: AbstractFileLoggerFactory::create() always returns
@@ -21,11 +23,10 @@ use PHPUnit\Framework\TestCase;
  * This is the LSP/back-compat anchor for Phase 1. After Phase 1 adds the
  * optional ?\Closure $isEnabled = null parameter, the null-default path MUST
  * still return a FileLogger — these tests prove that contract.
- *
- * @covers \OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory
- * @group logging
- * @group phase-0-characterization
  */
+#[CoversClass(\OxidEsales\PaymentBase\Service\Factory\AbstractFileLoggerFactory::class)]
+#[Group('logging')]
+#[Group('phase-0-characterization')]
 final class AbstractFileLoggerFactoryTest extends TestCase
 {
     private string $testShopDir;

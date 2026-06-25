@@ -11,19 +11,21 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Contract;
 
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 69b: H6 — Basket snapshot PII whitelist.
  *
  * Tests that BasketSnapshot strips non-whitelisted fields from items.
- *
- * @covers \OxidEsales\PaymentBase\Contract\BasketSnapshot
- * @group sprint-69b
- * @group security
  */
+#[CoversClass(\OxidEsales\PaymentBase\Contract\BasketSnapshot::class)]
+#[Group('sprint-69b')]
+#[Group('security')]
 final class BasketSnapshotSanitizationTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function snapshotKeepsProductId(): void
     {
         $snapshot = $this->createSnapshotWithItem(['artnum' => 'ABC123']);
@@ -31,7 +33,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertSame('ABC123', $snapshot->getItems()[0]['artnum']);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotKeepsTitle(): void
     {
         $snapshot = $this->createSnapshotWithItem(['title' => 'Widget']);
@@ -39,7 +41,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertSame('Widget', $snapshot->getItems()[0]['title']);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotKeepsQuantity(): void
     {
         $snapshot = $this->createSnapshotWithItem(['quantity' => 2]);
@@ -47,7 +49,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertSame(2, $snapshot->getItems()[0]['quantity']);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotKeepsPrice(): void
     {
         $snapshot = $this->createSnapshotWithItem(['price' => 19.99]);
@@ -55,7 +57,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertSame(19.99, $snapshot->getItems()[0]['price']);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotKeepsVat(): void
     {
         $snapshot = $this->createSnapshotWithItem(['vat' => 19.0]);
@@ -63,7 +65,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertSame(19.0, $snapshot->getItems()[0]['vat']);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotStripsUnknownItemFields(): void
     {
         $snapshot = $this->createSnapshotWithItem([
@@ -78,7 +80,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertArrayNotHasKey('internalId', $item);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotStripsGiftMessage(): void
     {
         $snapshot = $this->createSnapshotWithItem([
@@ -89,7 +91,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertArrayNotHasKey('giftMessage', $snapshot->getItems()[0]);
     }
 
-    /** @test */
+    #[Test]
     public function snapshotStripsPersonalization(): void
     {
         $snapshot = $this->createSnapshotWithItem([
@@ -100,7 +102,7 @@ final class BasketSnapshotSanitizationTest extends TestCase
         $this->assertArrayNotHasKey('personalization', $snapshot->getItems()[0]);
     }
 
-    /** @test */
+    #[Test]
     public function sanitizeItemsIsDeterministic(): void
     {
         $data = $this->buildSnapshotData([['artnum' => 'A', 'extra' => 'val']]);

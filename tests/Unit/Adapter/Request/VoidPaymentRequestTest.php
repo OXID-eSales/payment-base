@@ -11,10 +11,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
 use OxidEsales\PaymentBase\Adapter\Request\VoidPaymentRequest;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Adapter\Request\VoidPaymentRequest
- */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Request\VoidPaymentRequest::class)]
 final class VoidPaymentRequestTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void

@@ -14,21 +14,21 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 use OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Unit tests for DoctrineIdempotencyRepository.
  *
  * Sprint 42: Idempotency implementation.
- *
- * @covers \OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository
- * @group sprint-42
- * @group idempotency
  */
+#[CoversClass(\OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository::class)]
+#[Group('sprint-42')]
+#[Group('idempotency')]
 class DoctrineIdempotencyRepositoryTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function saveInsertsNewRecord(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -59,9 +59,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $repository->save($record);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function saveUpdatesExistingRecord(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -89,9 +87,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $repository->save($record);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByKeyReturnsRecordWhenFound(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -126,9 +122,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertSame('completed', $record->getStatus());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByKeyReturnsNullWhenNotFound(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -144,9 +138,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertNull($result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function deleteExpiredRemovesExpiredRecords(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -168,9 +160,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertSame(3, $count);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function deleteExpiredReturnsZeroOnException(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -186,9 +176,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertSame(0, $count);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByKeyReturnsNullOnException(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -204,9 +192,7 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertNull($result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByKeyHydratesRecordWithNullResult(): void
     {
         $connection = $this->createMock(Connection::class);

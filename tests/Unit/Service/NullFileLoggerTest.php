@@ -7,10 +7,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 use OxidEsales\PaymentBase\Service\NullFileLogger;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\NullFileLogger
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\NullFileLogger::class)]
 class NullFileLoggerTest extends TestCase
 {
     public function testImplementsFileLoggerInterface(): void

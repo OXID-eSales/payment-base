@@ -9,21 +9,22 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * TDD Tests for DoctrineWebhookLogRepository provider/payload field support
  *
  * Sprint 2 Phase 1: Repository must persist provider and payload fields
- *
- * @group sprint-2
- * @group webhook-consolidation
  */
+#[Group('sprint-2')]
+#[Group('webhook-consolidation')]
 class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
 {
     /**
-     * @test
      * RED: Repository should persist provider field
      */
+    #[Test]
     public function repositoryShouldPersistProviderField(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -52,9 +53,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should persist payload as JSON
      */
+    #[Test]
     public function repositoryShouldPersistPayloadAsJson(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -86,9 +87,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should persist processedAt field
      */
+    #[Test]
     public function repositoryShouldPersistProcessedAtField(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -120,9 +121,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should hydrate provider field from database
      */
+    #[Test]
     public function repositoryShouldHydrateProviderField(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -150,9 +151,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should hydrate payload field from database
      */
+    #[Test]
     public function repositoryShouldHydratePayloadField(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -180,9 +181,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should hydrate processedAt field from database
      */
+    #[Test]
     public function repositoryShouldHydrateProcessedAtField(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -211,9 +212,9 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
     }
 
     /**
-     * @test
      * RED: Repository should handle null provider gracefully
      */
+    #[Test]
     public function repositoryShouldHandleNullProviderGracefully(): void
     {
         $connection = $this->createMock(Connection::class);

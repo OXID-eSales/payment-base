@@ -14,6 +14,7 @@ use OxidEsales\EshopCommunity\Internal\Framework\Module\Facade\ModuleSettingServ
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculator;
 use OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculatorInterface;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Integration tests for the per-line VAT PriceList override.
@@ -23,9 +24,8 @@ use OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculatorInterface;
  * - With blPaymentBasePerLineVat=false (default), getVatInfo() delegates to parent
  * - With blPaymentBasePerLineVat=true (ON), getVatInfo() returns per-line rounded
  *   amounts that diverge from the core grouped calculation
- *
- * @group integration
  */
+#[Group('integration')]
 class PerLineVatPriceListTest extends IntegrationTestCase
 {
     public function testCalculatorResolvesFromContainer(): void

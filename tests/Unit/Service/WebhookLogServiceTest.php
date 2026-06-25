@@ -15,10 +15,9 @@ use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\WebhookLogService
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\WebhookLogService::class)]
 final class WebhookLogServiceTest extends TestCase
 {
     private WebhookLogRepositoryInterface&MockObject $repository;

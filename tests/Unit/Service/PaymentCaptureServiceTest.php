@@ -17,11 +17,10 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\PaymentCaptureService
- * @covers \OxidEsales\PaymentBase\Service\AbstractPaymentCaptureService
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\PaymentCaptureService::class)]
+#[CoversClass(\OxidEsales\PaymentBase\Service\AbstractPaymentCaptureService::class)]
 class PaymentCaptureServiceTest extends TestCase
 {
     private ContractRepositoryInterface&MockObject $contractRepository;

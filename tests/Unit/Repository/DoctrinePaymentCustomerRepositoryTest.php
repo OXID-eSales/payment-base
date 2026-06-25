@@ -14,20 +14,20 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\PaymentBase\Contract\PaymentCustomer;
 use OxidEsales\PaymentBase\Repository\DoctrinePaymentCustomerRepository;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Unit tests for DoctrinePaymentCustomerRepository.
  *
  * Sprint 45: Stripe Customer lifecycle.
- *
- * @covers \OxidEsales\PaymentBase\Repository\DoctrinePaymentCustomerRepository
- * @group sprint-45
  */
+#[CoversClass(\OxidEsales\PaymentBase\Repository\DoctrinePaymentCustomerRepository::class)]
+#[Group('sprint-45')]
 class DoctrinePaymentCustomerRepositoryTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function saveInsertsNewRecord(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -57,9 +57,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $repository->save($customer);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function saveUpdatesExistingRecord(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -87,9 +85,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $repository->save($customer);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByUserIdReturnsRecordWhenFound(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -126,9 +122,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $this->assertSame('2026-02-05 10:00:00', $record->getLastPaymentDate()?->format('Y-m-d H:i:s'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByUserIdReturnsNullWhenNotFound(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -144,9 +138,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $this->assertNull($result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByPaymentCustomerIdReturnsRecordWhenFound(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -173,9 +165,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $this->assertSame('cus_stripe_xyz', $record->getPaymentCustomerId());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByUserIdReturnsNullOnException(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -191,9 +181,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $this->assertNull($result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function findByPaymentCustomerIdReturnsNullOnException(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -209,9 +197,7 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
         $this->assertNull($result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function hydratesRecordWithNullOptionalFields(): void
     {
         $connection = $this->createMock(Connection::class);

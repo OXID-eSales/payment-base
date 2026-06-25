@@ -6,10 +6,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service\Exception;
 
 use OxidEsales\PaymentBase\Service\Exception\RefundFailedException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Service\Exception\RefundFailedException
- */
+#[CoversClass(\OxidEsales\PaymentBase\Service\Exception\RefundFailedException::class)]
 class RefundFailedExceptionTest extends TestCase
 {
     public function testExceptionContainsContractId(): void

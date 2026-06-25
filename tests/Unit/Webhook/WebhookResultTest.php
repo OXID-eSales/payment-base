@@ -11,17 +11,16 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookResult
- * @group sprint-13
- * @group webhook
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookResult::class)]
+#[Group('sprint-13')]
+#[Group('webhook')]
 final class WebhookResultTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function successResultHasCorrectStatus(): void
     {
         $result = WebhookResult::success('handled');
@@ -31,9 +30,7 @@ final class WebhookResultTest extends TestCase
         $this->assertNull($result->error);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failureResultContainsError(): void
     {
         $result = WebhookResult::failure('error', 'Something went wrong');
@@ -43,9 +40,7 @@ final class WebhookResultTest extends TestCase
         $this->assertSame('Something went wrong', $result->error);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canCreateWithConstructor(): void
     {
         $result = new WebhookResult(
@@ -58,9 +53,7 @@ final class WebhookResultTest extends TestCase
         $this->assertSame('processed', $result->action);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function propertiesAreReadOnly(): void
     {
         $result = WebhookResult::success('test');
@@ -75,9 +68,7 @@ final class WebhookResultTest extends TestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function skippedCreatesSuccessWithSkippedAction(): void
     {
         $result = WebhookResult::skipped('No handler found');
@@ -87,9 +78,7 @@ final class WebhookResultTest extends TestCase
         $this->assertSame('No handler found', $result->error);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function toArrayReturnsCorrectStructure(): void
     {
         $result = WebhookResult::success('handled');
@@ -102,9 +91,7 @@ final class WebhookResultTest extends TestCase
         $this->assertNull($array['error']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function toArrayIncludesErrorWhenPresent(): void
     {
         $result = WebhookResult::failure('error', 'Test error message');
@@ -116,9 +103,7 @@ final class WebhookResultTest extends TestCase
         $this->assertSame('Test error message', $array['error']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isSuccessReturnsTrueForSuccessResult(): void
     {
         $result = WebhookResult::success('handled');
@@ -126,9 +111,7 @@ final class WebhookResultTest extends TestCase
         $this->assertTrue($result->isSuccess());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isSuccessReturnsFalseForFailureResult(): void
     {
         $result = WebhookResult::failure('error', 'Failed');
@@ -136,9 +119,7 @@ final class WebhookResultTest extends TestCase
         $this->assertFalse($result->isSuccess());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isFailureReturnsTrueForFailureResult(): void
     {
         $result = WebhookResult::failure('error', 'Failed');
@@ -146,9 +127,7 @@ final class WebhookResultTest extends TestCase
         $this->assertTrue($result->isFailure());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function isFailureReturnsFalseForSuccessResult(): void
     {
         $result = WebhookResult::success('handled');

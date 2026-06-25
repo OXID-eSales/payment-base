@@ -14,10 +14,9 @@ use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Contract\Transaction;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @group database
- */
+#[Group('database')]
 class DoctrineTransactionRepositoryTest extends IntegrationTestCase
 {
     private DoctrineTransactionRepository $repository;

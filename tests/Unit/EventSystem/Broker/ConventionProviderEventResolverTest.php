@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Broker;
 use InvalidArgumentException;
 use OxidEsales\PaymentBase\EventSystem\Broker\ConventionProviderEventResolver;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * STRP-AUTOCAP-REFUND — unit tests for the convention-based provider event
@@ -21,9 +22,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Adding a new payment provider must require zero changes to payment-base
  * as long as it conforms to this convention.
- *
- * @group strp-autocap-refund
  */
+#[Group('strp-autocap-refund')]
 final class ConventionProviderEventResolverTest extends TestCase
 {
     public function testResolvesStripeRefundRequestEventByUcfirstConvention(): void

@@ -16,12 +16,13 @@ use OxidEsales\PaymentBase\Webhook\WebhookEventHandlerInterface;
 use OxidEsales\PaymentBase\Webhook\WebhookResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookEventDispatcher
- * @group sprint-13
- * @group webhook
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookEventDispatcher::class)]
+#[Group('sprint-13')]
+#[Group('webhook')]
 final class WebhookEventDispatcherTest extends TestCase
 {
     private LoggerInterface $logger;
@@ -34,17 +35,13 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->dispatcher = new WebhookEventDispatcher($this->logger);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function implementsInterface(): void
     {
         $this->assertInstanceOf(WebhookEventDispatcherInterface::class, $this->dispatcher);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function dispatchesToCorrectHandler(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -64,9 +61,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertSame('handled', $result->action);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function returnsSuccessWhenHandlerSucceeds(): void
     {
         $event = new WebhookEvent('evt_123', 'charge.refunded', [], 0);
@@ -83,9 +78,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertSame('refund_processed', $result->action);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function returnsSkippedWhenNoHandlerFound(): void
     {
         $event = new WebhookEvent('evt_123', 'unknown.event', [], 0);
@@ -97,9 +90,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertStringContainsString('No handler', $result->error);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function logsAllDispatchedEvents(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -120,9 +111,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertSame('evt_123', $firstLog['context']['event_id']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function skipsHandlersThatDoNotSupport(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -145,9 +134,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertTrue($result->isSuccess());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function returnsFailureWhenHandlerFails(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -164,9 +151,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertSame('error', $result->action);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function catchesHandlerExceptionsAndReturnsFailure(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
@@ -192,9 +177,9 @@ final class WebhookEventDispatcherTest extends TestCase
     }
 
     /**
-     * @test
      * Sprint 17: Fixed false-positive test - now verifies both handlers are checked
      */
+    #[Test]
     public function canRegisterMultipleHandlers(): void
     {
         $event = new WebhookEvent('evt_123', 'some.event', [], 0);
@@ -227,9 +212,7 @@ final class WebhookEventDispatcherTest extends TestCase
         $this->assertSame('handled_by_second', $result->action);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function firstMatchingHandlerWins(): void
     {
         $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);

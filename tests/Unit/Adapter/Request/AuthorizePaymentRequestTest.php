@@ -11,10 +11,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Adapter\Request;
 
 use OxidEsales\PaymentBase\Adapter\Request\AuthorizePaymentRequest;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Adapter\Request\AuthorizePaymentRequest
- */
+#[CoversClass(\OxidEsales\PaymentBase\Adapter\Request\AuthorizePaymentRequest::class)]
 final class AuthorizePaymentRequestTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void

@@ -14,21 +14,23 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 68a: H5 — State machine guard on fromArray().
  *
  * Tests that fromArray() rejects invalid states and detects
  * state/condition inconsistencies.
- *
- * @covers \OxidEsales\PaymentBase\Contract\PaymentContract
- * @covers \OxidEsales\PaymentBase\Contract\ContractState
- * @group sprint-68a
- * @group security
  */
+#[CoversClass(\OxidEsales\PaymentBase\Contract\PaymentContract::class)]
+#[CoversClass(\OxidEsales\PaymentBase\Contract\ContractState::class)]
+#[Group('sprint-68a')]
+#[Group('security')]
 final class PaymentContractFromArrayGuardTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function fromArrayRejectsInvalidState(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -37,7 +39,7 @@ final class PaymentContractFromArrayGuardTest extends TestCase
         PaymentContract::fromArray($this->buildContractData('hacked'));
     }
 
-    /** @test */
+    #[Test]
     public function fromArrayAcceptsAllValidStates(): void
     {
         $validStates = [
@@ -52,7 +54,7 @@ final class PaymentContractFromArrayGuardTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function fromArrayRejectsEmptyState(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -61,7 +63,7 @@ final class PaymentContractFromArrayGuardTest extends TestCase
         PaymentContract::fromArray($this->buildContractData(''));
     }
 
-    /** @test */
+    #[Test]
     public function fromArrayRejectsNonStringState(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -73,7 +75,7 @@ final class PaymentContractFromArrayGuardTest extends TestCase
         PaymentContract::fromArray($data);
     }
 
-    /** @test */
+    #[Test]
     public function fromArrayPreservesStateWithConditions(): void
     {
         $data = $this->buildContractData('fulfilled');
@@ -86,7 +88,7 @@ final class PaymentContractFromArrayGuardTest extends TestCase
         $this->assertSame('fulfilled', $contract->getStateValue());
     }
 
-    /** @test */
+    #[Test]
     public function fromArrayDetectsInconsistentStateConditions(): void
     {
         $data = $this->buildContractData('fulfilled');

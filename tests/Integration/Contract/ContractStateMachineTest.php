@@ -14,7 +14,10 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Integration tests for PaymentContract state machine.
@@ -26,13 +29,12 @@ use PHPUnit\Framework\TestCase;
  * DRAFT → NOT_FINISHED → PENDING → READY_TO_COMMIT → COMMITTED → FULFILLED
  *              ↓              ↓              ↓               ↓
  *           FAILED         FAILED       CANCELLED       EXPIRED
- *
- * @covers \OxidEsales\PaymentBase\Contract\PaymentContract
- * @covers \OxidEsales\PaymentBase\Contract\ContractState
- * @group sprint-14
- * @group contract
- * @group state-machine
  */
+#[CoversClass(\OxidEsales\PaymentBase\Contract\PaymentContract::class)]
+#[CoversClass(\OxidEsales\PaymentBase\Contract\ContractState::class)]
+#[Group('sprint-14')]
+#[Group('contract')]
+#[Group('state-machine')]
 final class ContractStateMachineTest extends TestCase
 {
     private BasketSnapshot $basketSnapshot;
@@ -55,9 +57,7 @@ final class ContractStateMachineTest extends TestCase
     // Happy Path: Full Lifecycle
     // ==========================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function fullLifecycleFromDraftToFulfilled(): void
     {
         // Given: New contract starts in DRAFT
@@ -90,9 +90,9 @@ final class ContractStateMachineTest extends TestCase
     // ==========================================
 
     /**
-     * @test
      * STRP-74: Updated for new flow - transitionToNotFinished checks for conditions
      */
+    #[Test]
     public function transitionToNotFinishedRequiresConditions(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->basketSnapshot);
@@ -104,9 +104,9 @@ final class ContractStateMachineTest extends TestCase
     }
 
     /**
-     * @test
      * STRP-74: transitionToPending now requires NOT_FINISHED state, not DRAFT
      */
+    #[Test]
     public function transitionToPendingRequiresNotFinishedState(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->basketSnapshot);
@@ -119,9 +119,9 @@ final class ContractStateMachineTest extends TestCase
     }
 
     /**
-     * @test
      * STRP-74: Updated for new flow - transitionToPending only from NOT_FINISHED
      */
+    #[Test]
     public function transitionToPendingOnlyFromNotFinished(): void
     {
         $contract = $this->createContractInState('pending');
@@ -132,9 +132,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->transitionToPending();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function fulfillConditionTransitionsToReadyToCommitWhenAllFulfilled(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->basketSnapshot);
@@ -152,9 +150,7 @@ final class ContractStateMachineTest extends TestCase
         $this->assertTrue($contract->getState()->isReadyToCommit());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function commitToOrderRequiresReadyToCommitState(): void
     {
         $contract = $this->createContractInState('pending');
@@ -165,9 +161,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->commitToOrder('order123');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function fulfillRequiresCommittedState(): void
     {
         $contract = $this->createContractInState('ready_to_commit');
@@ -182,9 +176,7 @@ final class ContractStateMachineTest extends TestCase
     // Terminal States
     // ==========================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cannotTransitionFromFulfilled(): void
     {
         $contract = $this->createContractInState('fulfilled');
@@ -196,9 +188,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->cancel();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cancelledIsFinal(): void
     {
         $contract = $this->createContractInState('pending');
@@ -211,9 +201,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->fail('Cannot fail cancelled contract');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function expiredIsFinal(): void
     {
         $contract = $this->createContractInState('pending');
@@ -226,9 +214,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->cancel();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failedIsFinal(): void
     {
         $contract = $this->createContractInState('pending');
@@ -245,9 +231,7 @@ final class ContractStateMachineTest extends TestCase
     // Invalid Transitions
     // ==========================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cannotAddConditionsAfterDraft(): void
     {
         $contract = $this->createContractInState('pending');
@@ -258,9 +242,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->addCondition(new ContractCondition(ContractCondition::TYPE_FRAUD_CHECK));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cannotCommitWithUnfulfilledConditions(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->basketSnapshot);
@@ -280,9 +262,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->commitToOrder('order123');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cannotFulfillFromPending(): void
     {
         $contract = $this->createContractInState('pending');
@@ -293,9 +273,7 @@ final class ContractStateMachineTest extends TestCase
         $contract->fulfill();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function cannotFulfillFromReadyToCommit(): void
     {
         $contract = $this->createContractInState('ready_to_commit');
@@ -310,9 +288,7 @@ final class ContractStateMachineTest extends TestCase
     // ContractState Value Object
     // ==========================================
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractStateEquality(): void
     {
         $state1 = ContractState::committed();
@@ -323,9 +299,7 @@ final class ContractStateMachineTest extends TestCase
         $this->assertFalse($state1->equals($state3));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractStateFromValue(): void
     {
         $state = ContractState::fromValue('committed');
@@ -335,9 +309,7 @@ final class ContractStateMachineTest extends TestCase
         $this->assertEquals('committed', (string) $state);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractStateInvalidValueThrows(): void
     {
         $this->expectException(\InvalidArgumentException::class);

@@ -18,6 +18,9 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Sprint 8: Contract Capture/Refund Tracking Tests
@@ -27,13 +30,12 @@ use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
  * - OXREFUNDEDAMOUNT
  * - OXCAPTUREDAT
  * - OXREFUNDEDAT
- *
- * @covers \OxidEsales\PaymentBase\Contract\PaymentContract
- * @covers \OxidEsales\PaymentBase\Repository\DoctrineContractRepository
- * @group integration
- * @group contract
- * @group sprint-8
  */
+#[CoversClass(\OxidEsales\PaymentBase\Contract\PaymentContract::class)]
+#[CoversClass(\OxidEsales\PaymentBase\Repository\DoctrineContractRepository::class)]
+#[Group('integration')]
+#[Group('contract')]
+#[Group('sprint-8')]
 final class ContractCaptureRefundTest extends IntegrationTestCase
 {
     private const TEST_PREFIX = 'capref_test_';
@@ -64,9 +66,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         parent::tearDown();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractStoresCapturedAmount(): void
     {
         // Given: A committed contract
@@ -86,9 +86,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->assertNotNull($loaded->getCapturedAt());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractStoresRefundedAmount(): void
     {
         // Given: A fulfilled contract
@@ -109,9 +107,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->assertNotNull($loaded->getRefundedAt());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function multipleRefundsAccumulate(): void
     {
         // Given: A fulfilled contract with existing refund
@@ -134,9 +130,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->assertEquals(50.00, $final->getRefundedAmount());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function contractWithNullAmountsLoadsCorrectly(): void
     {
         // Given: A new contract without capture/refund data
@@ -154,9 +148,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->assertNull($loaded->getRefundedAt());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function partialRefundDoesNotExceedCaptured(): void
     {
         // Given: A fulfilled and captured contract

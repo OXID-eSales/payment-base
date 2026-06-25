@@ -19,10 +19,9 @@ use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
 use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\EventSystem\Handler\FraudCheckHandler
- */
+#[CoversClass(\OxidEsales\PaymentBase\EventSystem\Handler\FraudCheckHandler::class)]
 class FraudCheckHandlerTest extends TestCase
 {
     private FraudCheckHandler $handler;

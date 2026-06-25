@@ -6,10 +6,9 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * @covers \OxidEsales\PaymentBase\Webhook\WebhookLog
- */
+#[CoversClass(\OxidEsales\PaymentBase\Webhook\WebhookLog::class)]
 final class WebhookLogTest extends TestCase
 {
     public function testConstructWithRequiredParameters(): void
