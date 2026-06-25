@@ -1,4 +1,4 @@
-name: Development
+name: Tests on OXID 7.4
 
 on: [ push, pull_request ]
 
