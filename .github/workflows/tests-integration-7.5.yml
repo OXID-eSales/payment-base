@@ -1,0 +1,351 @@
+name: Development
+
+on: [ push, pull_request ]
+
+env:
+  PACKAGE_NAME: 'oxid-esales/payment-base'
+  PHP_VERSION: '8.3'
+  MYSQL_VERSION: '8.0'
+  TEMPLATE_ENGINE: 'twig'
+
+jobs:
+  # ==========================================================================
+  # Install Shop with Component - Shared setup cached for other jobs
+  # ==========================================================================
+  install_shop_with_module:
+    runs-on: [arc-runner-set]
+    steps:
+      - name: Print run parameters
+        run: |
+          echo "Running job with:\
+            PHP version: ${{ env.PHP_VERSION }}\
+            MySQL version: ${{ env.MYSQL_VERSION }}\
+            Template engine: ${{ env.TEMPLATE_ENGINE }}\
+            Trigger event: ${{ github.event_name }}"
+
+      - name: Cleanup workspace
+        run: |
+          ls -la ./
+          sudo rm -rf ./* || true
+          sudo rm -rf ./.??* || true
+          ls -la ./
+
+      - name: Clone testing environment
+        run: git clone https://github.com/OXID-eSales/docker-eshop-sdk.git .
+
+      - name: Clone the shop
+        run: git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.5.x --single-branch source
+
+      - name: Prepare container configuration
+        run: |
+          make setup
+          make addbasicservices
+          perl -pi\
+            -e 's#PHP_VERSION=.*#PHP_VERSION=${{ env.PHP_VERSION }}#g;'\
+            -e "s#MYSQL_VERSION=.*#MYSQL_VERSION=${{ env.MYSQL_VERSION }}#g;"\
+            .env
+          perl -pi\
+            -e 's#display_errors =.*#display_errors = false#g;'\
+            -e 's#error_reporting = .*#error_reporting = E_ALL ^ E_WARNING ^ E_DEPRECATED#g;'\
+            -e 'print "xdebug.max_nesting_level=1000\nxdebug.mode=coverage\n\n"'\
+            containers/php/custom.ini
+          perl -pi\
+            -e 's#/var/www/#/var/www/source/#g;'\
+            containers/httpd/project.conf
+
+      - name: Prepare shop configuration
+        run: |
+          cp source/source/config.inc.php.dist source/source/config.inc.php
+          sed -i "1s+^+SetEnvIf Authorization "\(.*\)" HTTP_AUTHORIZATION=\$1\n\n+" source/source/.htaccess
+          sed -i -e 's/<dbHost>/mysql/'\
+                 -e 's/<dbUser>/root/'\
+                 -e 's/<dbName>/example/'\
+                 -e 's/<dbPwd>/root/'\
+                 -e 's/<dbPort>/3306/'\
+                 -e 's/<sShopURL>/https:\/\/oxideshop.local\//'\
+                 -e 's/<sShopDir>/\/var\/www\/source\//'\
+                 -e 's/<sCompileDir>/\/var\/www\/source\/tmp\//'\
+              source/source/config.inc.php
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Start containers
+        run: |
+          make up
+          sleep 2
+
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+
+      - name: Install component
+        run: |
+          docker compose exec -T \
+            php composer config repositories.${{ env.PACKAGE_NAME }} \
+            --json '{"type":"path", "url":"./test-module", "options": {"symlink": true}}'
+          docker compose exec -T \
+            php composer require ${{ env.PACKAGE_NAME }}:* --no-interaction --no-update
+
+      - name: Install dependencies
+        run: |
+          docker compose exec -T php composer update --with-all-dependencies --no-interaction
+
+      # Sprint 93 — workaround for a CI-environment-specific bug in
+      # `oxid-esales/oxideshop-unified-namespace-generator` (commit
+      # 8a7b5c4 on b-7.4.x at the time of writing). The generator's
+      # `Generator::createUnifiedNamespaceSubDirectory()` calls
+      # `Symfony\Component\Filesystem\Path::join($outputDir, $subNs)`
+      # where `$subNs` is `"OxidEsales\\Eshop\\Core"`. On the CI
+      # runner image that call leaves the backslashes in place — the
+      # `canonicalize()` `str_replace('\\', '/', …)` does not run —
+      # so 519 `Eshop\` shim files end up in directories literally
+      # named `OxidEsales\Eshop\Core` (one component) instead of the
+      # nested `OxidEsales/Eshop/Core/` hierarchy that PSR-4 autoload
+      # expects. `bin/oe-console` then fatals at bootstrap.php:184
+      # with `Class "OxidEsales\Eshop\Core\ConfigFile" not found`.
+      #
+      # Local Docker reproduces the correct (forward-slash) layout
+      # with the same code + Symfony 6.4.37, so this is environmental.
+      # Until the upstream is patched (issue tracked separately), we
+      # rename the backslash-named directories into the forward-slash
+      # hierarchy ourselves. Pure file rename, no generator
+      # invocation, no autoload manipulation.
+      - name: Workaround — rename backslash-named generator dirs
+        run: |
+          docker compose exec -T php sh -c '
+            cd /var/www/vendor/oxid-esales/oxideshop-unified-namespace-generator/generated
+            for src in $(find . -mindepth 1 -maxdepth 1 -type d -name "*\\\\*" | sort -r); do
+              target=$(echo "${src#./}" | sed "s|\\\\|/|g")
+              mkdir -p "$(dirname "$target")"
+              if [ -d "$target" ]; then
+                cp -rT "$src" "$target" && rm -rf "$src"
+              else
+                mv "$src" "$target"
+              fi
+            done
+            ls -la /var/www/vendor/oxid-esales/oxideshop-unified-namespace-generator/generated/OxidEsales/Eshop/Core/ConfigFile.php
+          '
+
+      # Sprint 93 — `oe:database:reset` MUST run before
+      # `oe:module:install`. `oe:module:install` writes module config
+      # via `ModuleConfigurationDao->save()`, which fires the cache-
+      # invalidation subscriber, which loads `oxconfig` from the
+      # database. Without the schema, that load fatals with
+      # "Table 'example.oxconfig' doesn't exist".
+      - name: Reset database
+        run: |
+          docker compose exec -T php bin/oe-console oe:database:reset \
+            --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
+
+      # Sprint 93 / Sprint I §86–95 — payment-base is itself an
+      # oxideshop-module now and must be installed and activated as
+      # a real module, not just composer-required. The OXID composer
+      # plugin already runs `Installing module oxid-esales/payment-base
+      # package.` during `composer update` (visible in the install log)
+      # so the explicit `oe:module:install` here is the documented
+      # safety net for environments where the plugin's BootstrapModuleInstaller
+      # had to run before the DB existed.
+      - name: Install + activate payment-base module
+        run: |
+          docker compose exec -T php ls -la /var/www/test-module
+          docker compose exec -T php ls -la /var/www/bin
+          docker compose exec -T php ls -la /var/www/vendor/bin
+          docker compose exec -T php bin/oe-console oe:module:install /var/www/test-module
+          docker compose exec -T php bin/oe-console oe:module:activate oe_payment_base
+
+      - name: Show docker log
+        if: always()
+        run: |
+          docker compose logs
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+          sleep 2
+
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+
+      - name: Upload configuration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstallShopWithComponent-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
+          path: |
+            docker-compose.yml
+            source/composer.json
+            source/composer.lock
+            source/config.inc.php
+            data/php/logs/error_log.txt
+
+  # ==========================================================================
+  # Style Checks - PHPCS, PHPStan, PHPMD (no shop required)
+  # ==========================================================================
+  styles:
+    strategy:
+      matrix:
+        php: [ '8.3' ]
+    runs-on: [arc-runner-set]
+    steps:
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+          extensions: gd, zip
+
+      - name: Install component dependencies
+        working-directory: source/test-module
+        run: composer install --no-interaction
+
+      - name: Run style check
+        run: |
+          ./source/test-module/bin/pre-commit-check.sh
+
+      - name: Upload log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StylesLog-${{ matrix.php }}
+          path: |
+            source/test-module/tests/reports/phpstan.report.json
+            source/test-module/tests/reports/phpmd.report.json
+
+  # ==========================================================================
+  # Isolated Unit Tests - No shop required, runs standalone
+  # ==========================================================================
+  isolated_unit_tests:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        php: [ '8.3', '8.4' ]
+        mysql: [ '8.0' ]
+    needs: [ install_shop_with_module ]
+    runs-on: [arc-runner-set]
+    steps:
+      - name: Load current installation from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Start containers
+        run: |
+          make up
+          sleep 2
+
+      - name: Install component dependencies
+        run: |
+          docker compose exec -T \
+            php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      - name: Run isolated unit tests
+        run: |
+          docker compose exec -T php bash -c "cd /var/www/test-module && vendor/bin/phpunit -c phpunit.xml --testsuite Unit"
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+          sleep 2
+
+  # ==========================================================================
+  # Integration Tests - Requires full OXID shop setup with database
+  # ==========================================================================
+  integration_tests:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        php: [ '8.3', '8.4' ]
+        mysql: [ '8.0' ]
+    needs: [ install_shop_with_module ]
+    runs-on: [arc-runner-set]
+    steps:
+      - name: Load current installation from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Start containers
+        run: |
+          make up
+          sleep 2
+
+      - name: Install shop dependencies
+        run: |
+          docker compose exec -T php composer update --no-interaction
+
+      - name: Install component dev dependencies
+        run: |
+          docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      - name: Kick off migrations with composer update
+        run: |
+          docker compose exec -T php composer require oxid-esales/payment-base --no-interaction
+
+      - name: Run integration tests with shop bootstrap
+        run: |
+          docker compose exec -T -e XDEBUG_MODE=coverage php vendor/bin/phpunit \
+            -c /var/www/test-module/tests/phpunit-integration.xml
+
+      - name: Upload log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: IntegrationTestsLog-${{ matrix.php }}-${{ matrix.mysql }}
+          path: |
+            source/source/log/oxideshop.log
+            data/php/logs/error_log.txt
+            source/composer.lock
+            source/composer.json
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+          sleep 2
