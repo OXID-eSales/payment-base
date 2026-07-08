@@ -91,6 +91,14 @@ services:
       $pathResolver: '@OxidEsales\PaymentBase\Validation\PluginPathResolverInterface'
     public: true
 
+  # Factory for creating per-module ValidationBase instances.
+  # Each payment provider needs its own ValidationBase instance with their specific
+  # module ID. Providers use this factory instead of defining their own.
+  OxidEsales\PaymentBase\Validation\ValidationBaseFactory:
+    arguments:
+      $loader: '@OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface'
+    public: true
+
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
     arguments:
       $contractRepository: '@?OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'

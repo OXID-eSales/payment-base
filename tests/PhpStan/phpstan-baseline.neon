@@ -1,18 +1,19 @@
 parameters:
     ignoreErrors:
-        # Sprint I: AdminActionDispatcherInterface accepts the OXID core
-        # Order model directly because oxideshop_ce 7.4 doesn't ship a
-        # public Order interface. Track: widen to an order interface
-        # once one exists upstream.
         -
-            message: '#Parameter \$order uses concrete class "OxidEsales\\Eshop\\Application\\Model\\Order" instead of an interface\.#'
-            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
+            message: '#^Parameter \$order uses concrete class "OxidEsales\\Eshop\\Application\\Model\\Order" instead of an interface\. Use an interface to follow Liskov Substitution Principle\.$#'
+            identifier: lsp.concreteClassParameter
             count: 3
+            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
 
-        # Sprint E trait — consumed by PSP modules (Stripe / PayPal)
-        # outside this package's scope; PHPStan can't see those
-        # consumers when analysing PC standalone.
         -
-            message: '#Trait OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.#'
-            path: ../../src/Controller/HandlesCheckoutReturn.php
+            message: '#^Trait OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.$#'
+            identifier: trait.unused
             count: 1
+            path: ../../src/Controller/HandlesCheckoutReturn.php
+
+        -
+            message: '#^Parameter \#1 \$array \(list\<float\>\) of array_values is already a list, call has no effect\.$#'
+            identifier: arrayValues.list
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
