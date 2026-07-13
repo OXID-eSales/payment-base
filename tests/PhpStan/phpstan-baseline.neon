@@ -1,19 +1,19 @@
 parameters:
-	ignoreErrors:
-		-
-			message: '#^Parameter \$order uses concrete class "OxidEsales\\Eshop\\Application\\Model\\Order" instead of an interface\. Use an interface to follow Liskov Substitution Principle\.$#'
-			identifier: lsp.concreteClassParameter
-			count: 3
-			path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
+    ignoreErrors:
+        -
+            message: '#^Parameter \$order uses concrete class "OxidEsales\\Eshop\\Application\\Model\\Order" instead of an interface\. Use an interface to follow Liskov Substitution Principle\.$#'
+            identifier: lsp.concreteClassParameter
+            count: 3
+            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
 
-		-
-			message: '#^Trait OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.$#'
-			identifier: trait.unused
-			count: 1
-			path: ../../src/Controller/HandlesCheckoutReturn.php
+        -
+            message: '#^Trait OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn is used zero times and is not analysed\.$#'
+            identifier: trait.unused
+            count: 1
+            path: ../../src/Controller/HandlesCheckoutReturn.php
 
-		-
-			message: '#^Parameter \#1 \$array \(list\<float\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: ../../src/Math/Vat/VatBreakdown.php
+        -
+            message: '#^Parameter \#1 \$array \(list\<float\>\) of array_values is already a list, call has no effect\.$#'
+            identifier: arrayValues.list
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
