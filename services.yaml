@@ -97,8 +97,6 @@ services:
   OxidEsales\PaymentBase\Validation\ValidationBaseFactory:
     arguments:
       $loader: '@OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface'
-      $moduleConfigDao: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Dao\ModuleConfigurationDaoInterface'
-      $context: '@OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface'
     public: true
 
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:

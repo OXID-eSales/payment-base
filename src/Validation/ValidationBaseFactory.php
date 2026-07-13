@@ -9,9 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Validation;
 
-use OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Dao\ModuleConfigurationDaoInterface;
-use OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface;
-
 /**
  * Factory for creating ValidationBase instances bound to specific modules.
  *
@@ -29,24 +26,16 @@ use OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface;
  * OxidEsales\Payments\Provider\Service\UserDataValidatorInterface:
  *   class: OxidEsales\Payments\Provider\Service\UserDataValidator
  *   arguments:
- *     - !phpfn OxidEsales\PaymentBase\Validation\ValidationBaseFactory:create
- *         - 'oe_payments_provider'
+ *     - '@OxidEsales\PaymentBase\Validation\ValidationBaseFactory'
  * ```
  *
- * Or via the factory service directly in services that need it:
- * ```yaml
- * OxidEsales\Payments\Provider\Service\UserDataValidator:
- *   factory: ['@OxidEsales\PaymentBase\Validation\ValidationBaseFactory', 'create']
- *   arguments:
- *     - 'oe_payments_provider'
- * ```
+ * The consuming service calls `$factory->create('oe_payments_provider')` to
+ * get an isolated ValidationBase instance for validation.
  */
 class ValidationBaseFactory
 {
     public function __construct(
         private readonly ValidationRuleLoaderInterface $loader,
-        private readonly ?ModuleConfigurationDaoInterface $moduleConfigDao = null,
-        private readonly ?BasicContextInterface $context = null,
     ) {
     }
 
