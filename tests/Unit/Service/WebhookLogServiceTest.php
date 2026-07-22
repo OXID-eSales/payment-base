@@ -42,7 +42,7 @@ final class WebhookLogServiceTest extends TestCase
             ->method('save')
             ->with($this->isInstanceOf(WebhookLog::class));
 
-        $result = $this->service->logEventReceived($eventId, $eventType, $payload);
+        $result = $this->service->logEventReceived($eventId, $eventType, $payload, 'stripe');
 
         $this->assertInstanceOf(WebhookLog::class, $result);
         $this->assertSame($eventId, $result->getEventId());

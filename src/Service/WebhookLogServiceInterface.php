@@ -27,17 +27,20 @@ interface WebhookLogServiceInterface
      *
      * Creates a new webhook log entry with status 'received'.
      *
-     * @param string $eventId Stripe event ID
+     * @param string $eventId Provider event ID
      * @param string $eventType Event type (e.g., 'payment_intent.succeeded')
      * @param array<string, mixed> $payload Raw webhook payload
-     * @param string $provider Payment provider (default: 'stripe')
+     * @param string $provider Payment provider name — required; the caller
+     *                          owns the provider identity (e.g. Stripe passes
+     *                          StripeDefinitions::PROVIDER). This agnostic
+     *                          package must not assume a default provider.
      * @return WebhookLog The created log entry
      */
     public function logEventReceived(
         string $eventId,
         string $eventType,
         array $payload,
-        string $provider = 'stripe'
+        string $provider
     ): WebhookLog;
 
     /**

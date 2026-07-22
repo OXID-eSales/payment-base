@@ -15,11 +15,18 @@ namespace OxidEsales\PaymentBase\Webhook;
  * Extracts payload, signature, and metadata from incoming webhook requests.
  * Handles various header formats (normalized, HTTP-prefixed, case variations).
  *
+ * The signature header name is provider-specific (Stripe: `Stripe-Signature`,
+ * PayPal: `PayPal-Transmission-Sig`, …) and is injected at construction. This
+ * agnostic parser holds no knowledge of any single provider's header.
+ *
  * @since Sprint 13
  */
 class WebhookRequestParser implements WebhookRequestParserInterface
 {
-    private const SIGNATURE_HEADER = 'Stripe-Signature';
+    public function __construct(
+        private readonly string $signatureHeader
+    ) {
+    }
 
     /**
      * @inheritDoc
@@ -46,25 +53,25 @@ class WebhookRequestParser implements WebhookRequestParserInterface
     private function extractSignature(array $headers): string
     {
         // Try exact match first
-        if (isset($headers[self::SIGNATURE_HEADER])) {
-            return $headers[self::SIGNATURE_HEADER];
+        if (isset($headers[$this->signatureHeader])) {
+            return $headers[$this->signatureHeader];
         }
 
         // Try lowercase
-        $lowercaseKey = strtolower(self::SIGNATURE_HEADER);
+        $lowercaseKey = strtolower($this->signatureHeader);
         if (isset($headers[$lowercaseKey])) {
             return $headers[$lowercaseKey];
         }
 
         // Try HTTP-prefixed (from $_SERVER)
-        $httpKey = 'HTTP_' . strtoupper(str_replace('-', '_', self::SIGNATURE_HEADER));
+        $httpKey = 'HTTP_' . strtoupper(str_replace('-', '_', $this->signatureHeader));
         if (isset($headers[$httpKey])) {
             return $headers[$httpKey];
         }
 
         // Search case-insensitively
         foreach ($headers as $key => $value) {
-            if (strcasecmp($key, self::SIGNATURE_HEADER) === 0) {
+            if (strcasecmp($key, $this->signatureHeader) === 0) {
                 return $value;
             }
             if (strcasecmp($key, $httpKey) === 0) {

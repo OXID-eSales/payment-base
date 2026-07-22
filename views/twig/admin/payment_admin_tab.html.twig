@@ -50,9 +50,6 @@
     .pc-admin .pc-alert-success { background: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #14532d !important; }
     .pc-admin .pc-alert-warning { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; }
     .pc-admin .pc-alert-danger  { background: #fef2f2 !important; border-color: #fecaca !important; color: #991b1b !important; }
-    .pc-admin[data-provider="stripe"] .pc-btn-primary { background: #635bff !important; color: #fff !important; }
-    .pc-admin[data-provider="paypal"] .pc-btn-primary { background: #0070ba !important; color: #fff !important; }
-    .pc-admin[data-provider="mollie"] .pc-btn-primary { background: #0057ff !important; color: #fff !important; }
     .pc-admin .pc-btn {
         display: inline-block !important;
         padding: 8px 14px !important;
@@ -62,7 +59,11 @@
         text-decoration: none !important;
         font-size: 13px !important;
     }
-    .pc-admin .pc-btn-primary { background: #1a1a2e !important; color: #fff !important; }
+    /* Brand color is owned by each provider panel via the --pc-brand custom
+       property (set on the .pc-admin[data-provider="…"] scope from the panel
+       template). The base ships only a neutral fallback — it holds no PSP
+       brand hex codes. */
+    .pc-admin .pc-btn-primary { background: var(--pc-brand, #1a1a2e) !important; color: #fff !important; }
     .pc-admin .pc-btn-primary:hover { filter: brightness(1.12) !important; }
     .pc-admin .pc-btn-warning { background: #f59e0b !important; color: #fff !important; }
     .pc-admin .pc-btn-warning:hover { background: #d97706 !important; }

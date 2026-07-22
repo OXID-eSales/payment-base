@@ -61,7 +61,7 @@ class WebhookLogService implements WebhookLogServiceInterface
         string $eventId,
         string $eventType,
         array $payload,
-        string $provider = 'stripe'
+        string $provider
     ): WebhookLog {
         $log = new WebhookLog(
             $eventId,

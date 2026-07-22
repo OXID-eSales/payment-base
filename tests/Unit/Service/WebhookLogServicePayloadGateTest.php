@@ -57,7 +57,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
             ->method('info')
             ->with('Webhook event received', $this->anything());
 
-        $result = $service->logEventReceived('evt_001', 'payment_intent.succeeded', $payload);
+        $result = $service->logEventReceived('evt_001', 'payment_intent.succeeded', $payload, 'stripe');
 
         $this->assertSame($payload, $result->getPayload());
     }
@@ -107,7 +107,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
         $this->logger->expects($this->once())
             ->method('info');
 
-        $service->logEventReceived('evt_002', 'payment_intent.succeeded', $payload);
+        $service->logEventReceived('evt_002', 'payment_intent.succeeded', $payload, 'stripe');
     }
 
     // -------------------------------------------------------------------------
@@ -126,7 +126,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
                 return true;
             }));
 
-        $service->logEventReceived('evt_003', 'payment_intent.succeeded', ['secret' => 'data']);
+        $service->logEventReceived('evt_003', 'payment_intent.succeeded', ['secret' => 'data'], 'stripe');
 
         $this->assertNotNull($savedLog);
         $this->assertNull($savedLog->getPayload(), 'OXPAYLOAD must be null/empty when gate returns false');
@@ -144,7 +144,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
                 return true;
             }));
 
-        $service->logEventReceived('evt_004', 'checkout.session.completed', ['data' => 'x']);
+        $service->logEventReceived('evt_004', 'checkout.session.completed', ['data' => 'x'], 'stripe');
 
         $this->assertNotNull($savedLog);
         $this->assertSame('evt_004', $savedLog->getEventId());
@@ -162,7 +162,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
         $this->logger->expects($this->never())
             ->method('info');
 
-        $service->logEventReceived('evt_005', 'payment_intent.succeeded', ['amount' => 500]);
+        $service->logEventReceived('evt_005', 'payment_intent.succeeded', ['amount' => 500], 'stripe');
     }
 
     public function testGateFalseSupressesPsr3OnMarkEventProcessed(): void
@@ -234,6 +234,6 @@ final class WebhookLogServicePayloadGateTest extends TestCase
                 return $log->getEventId() === 'evt_dedup_test';
             }));
 
-        $service->logEventReceived('evt_dedup_test', 'payment_intent.succeeded', []);
+        $service->logEventReceived('evt_dedup_test', 'payment_intent.succeeded', [], 'stripe');
     }
 }

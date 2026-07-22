@@ -90,12 +90,22 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
                 ]
             );
 
-            // Set provider info
+            // Set provider info. The provider identity is owned by the
+            // caller and travels via the context; this agnostic handler must
+            // never guess it. When it is absent we leave the contract's
+            // existing provider untouched (a provider-specific handler set it
+            // earlier in the flow) and log for diagnosis — matching the
+            // sibling PaymentAuthorizationHandler.
             $providerName = $context->get('providerName');
-            $contract->setProvider(
-                is_string($providerName) ? $providerName : 'stripe',
-                $event->getProviderOrderId()
-            );
+            if (is_string($providerName) && $providerName !== '') {
+                $contract->setProvider($providerName, $event->getProviderOrderId());
+            } else {
+                $this->logEvent(
+                    'PaymentAuthorizedEventHandler: providerName absent from context — '
+                    . 'leaving existing contract provider unchanged',
+                    ['contractId' => $contract->getId()]
+                );
+            }
 
             // STRP-74: Update order's OXTRANSID if order was created early
             // This links the Payment Intent ID to the existing order so webhooks can find it

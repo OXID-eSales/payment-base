@@ -27,7 +27,8 @@ final class WebhookRequestParserTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->parser = new WebhookRequestParser();
+        // Header name is injected per-provider; tests exercise the Stripe header.
+        $this->parser = new WebhookRequestParser('Stripe-Signature');
     }
 
     #[Test]
