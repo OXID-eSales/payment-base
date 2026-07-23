@@ -25,8 +25,10 @@ $aLang = [
     // Module settings — group headers
     'SHOP_MODULE_GROUP_validation'             => 'Validation',
     'SHOP_MODULE_GROUP_per_line_vat'           => 'Per-line VAT',
+    'SHOP_MODULE_GROUP_iframe_checkout'        => 'Iframe checkout',
 
     // Module settings — field labels
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
     'SHOP_MODULE_blPaymentBasePerLineVat'      => 'Calculate VAT per line item (round each line before summing)',
+    'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Use iframe instead of checkout button',
 ];
