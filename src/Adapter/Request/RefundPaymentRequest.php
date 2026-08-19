@@ -34,6 +34,14 @@ readonly class RefundPaymentRequest
      *                              precision (zero-decimal currencies like JPY need no × 100).
      *                              Null/empty falls back to 2-decimal behaviour (safe for EUR).
      *                              Sprint 114.10a (§6.2): additive — existing callers unchanged.
+     * @param string|null $idempotencyKey Caller-supplied reference identifying THIS refund
+     *                              attempt, so a retry of one request is deduplicated while a
+     *                              second, legitimate partial refund of the same amount is not.
+     *                              Providers mix it into their idempotency key. Null means the
+     *                              caller cannot distinguish attempts, in which case the key
+     *                              falls back to (payment, amount, reason) — safe, but two
+     *                              identical partial refunds within the TTL will deduplicate.
+     *                              Sprint 133 (F2): additive — existing callers unchanged.
      */
     public function __construct(
         public string $providerPaymentId,
@@ -41,6 +49,7 @@ readonly class RefundPaymentRequest
         public ?string $reason = null,
         public array $metadata = [],
         public ?string $currency = null,
+        public ?string $idempotencyKey = null,
     ) {
     }
 }
