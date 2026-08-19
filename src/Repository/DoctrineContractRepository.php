@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Repository;
 
+use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
@@ -32,7 +34,8 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     private const TABLE_CONTRACTS = 'oe_payments_contract';
 
     public function __construct(
-        private readonly Connection $connection
+        private readonly Connection $connection,
+        private readonly LoggerInterface $logger = new NullLogger()
     ) {
     }
 
@@ -94,6 +97,15 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
             return array_map(fn($row) => $this->hydrateContract($row), $rows);
         } catch (Exception $e) {
+            // Sprint 133 · Story 16 (F16): an empty array is indistinguishable
+            // from "nothing matched", so a failing query silently turned the
+            // caller into a no-op — for findStaleNotFinished that stopped the
+            // stale-checkout sweep running after every webhook, permanently.
+            $this->logger->error('Contract query failed; returning an empty result', [
+                'query' => __FUNCTION__,
+                'error' => $e->getMessage(),
+            ]);
+
             return [];
         }
     }
@@ -171,6 +183,15 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
             return array_map(fn($row) => $this->hydrateContract($row), $rows);
         } catch (Exception $e) {
+            // Sprint 133 · Story 16 (F16): an empty array is indistinguishable
+            // from "nothing matched", so a failing query silently turned the
+            // caller into a no-op — for findStaleNotFinished that stopped the
+            // stale-checkout sweep running after every webhook, permanently.
+            $this->logger->error('Contract query failed; returning an empty result', [
+                'query' => __FUNCTION__,
+                'error' => $e->getMessage(),
+            ]);
+
             return [];
         }
     }
@@ -199,6 +220,15 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
             return array_map(fn($row) => $this->hydrateContract($row), $rows);
         } catch (Exception $e) {
+            // Sprint 133 · Story 16 (F16): an empty array is indistinguishable
+            // from "nothing matched", so a failing query silently turned the
+            // caller into a no-op — for findStaleNotFinished that stopped the
+            // stale-checkout sweep running after every webhook, permanently.
+            $this->logger->error('Contract query failed; returning an empty result', [
+                'query' => __FUNCTION__,
+                'error' => $e->getMessage(),
+            ]);
+
             return [];
         }
     }
