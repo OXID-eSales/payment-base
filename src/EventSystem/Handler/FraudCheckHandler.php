@@ -16,6 +16,8 @@ use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
+use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handles fraud checking on payment authorization.
@@ -48,7 +50,8 @@ class FraudCheckHandler implements HandlerInterface
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly FraudCheckServiceInterface $fraudCheckService,
         private readonly bool $enabled = true,
-        private readonly bool $failOpenOnCheckError = true
+        private readonly bool $failOpenOnCheckError = true,
+        private readonly LoggerInterface $logger = new NullLogger()
     ) {
     }
 
@@ -60,6 +63,14 @@ class FraudCheckHandler implements HandlerInterface
     public function handle(object $event): void
     {
         if (!$event instanceof PaymentAuthorizedEvent) {
+            // Sprint 133 · Story 16 (F16): a silent return here means the fraud
+            // condition is never fulfilled and the contract stalls with the
+            // customer's money authorised — a wiring bug, not a normal condition.
+            $this->logger->warning('FraudCheckHandler received an unexpected event type; skipping', [
+                'expected' => PaymentAuthorizedEvent::class,
+                'received' => $event::class,
+            ]);
+
             return;
         }
 
@@ -67,6 +78,10 @@ class FraudCheckHandler implements HandlerInterface
         $contract = $context->get('contract');
 
         if (!$contract instanceof PaymentContractInterface) {
+            $this->logger->warning('FraudCheckHandler got an event with no contract in context; skipping', [
+                'event' => $event::class,
+            ]);
+
             return;
         }
 

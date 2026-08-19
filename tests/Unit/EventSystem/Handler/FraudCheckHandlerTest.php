@@ -352,4 +352,47 @@ class FraudCheckHandlerTest extends TestCase
 
         $this->handler->handle($event);
     }
+
+    /**
+     * Sprint 133 · Story 16 (F16): these guards returned silently. This handler
+     * fulfils the fraud-check condition, so if a tag/priority regression routes
+     * the wrong event here — or the context carries no contract — the condition
+     * is never fulfilled, the contract stalls, no order is created, the
+     * customer's money is authorised at Stripe, and nothing was written anywhere.
+     */
+    public function testLogsWhenTheEventTypeDoesNotMatch(): void
+    {
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('warning')
+            ->with($this->stringContains('unexpected event'), $this->anything());
+
+        $handler = new FraudCheckHandler(
+            $this->contractRepository,
+            $this->fraudCheckService,
+            true,
+            true,
+            $logger
+        );
+
+        $handler->handle(new \stdClass());
+    }
+
+    public function testLogsWhenTheContextCarriesNoContract(): void
+    {
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('warning')
+            ->with($this->stringContains('no contract'), $this->anything());
+
+        $handler = new FraudCheckHandler(
+            $this->contractRepository,
+            $this->fraudCheckService,
+            true,
+            true,
+            $logger
+        );
+
+        $handler->handle(new PaymentAuthorizedEvent(new EventContext(), 'pi_x', 'order_x', 1.0, 'EUR'));
+    }
 }
