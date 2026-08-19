@@ -14,6 +14,7 @@ use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
 
 /**
@@ -34,10 +35,20 @@ use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
  */
 class FraudCheckHandler implements HandlerInterface
 {
+    private const REASON_UNSCREENED = 'unscreened';
+
+    /**
+     * @param bool $failOpenOnCheckError Whether an order may proceed when the fraud
+     *        check could not be executed at all (PSP outage, bad credentials).
+     *        Defaults to true, preserving the historical business outcome — but the
+     *        contract now records that no screening happened instead of a forged
+     *        pass. Set false to block unscreenable orders. Sprint 133 (F1).
+     */
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly FraudCheckServiceInterface $fraudCheckService,
-        private readonly bool $enabled = true
+        private readonly bool $enabled = true,
+        private readonly bool $failOpenOnCheckError = true
     ) {
     }
 
@@ -75,12 +86,19 @@ class FraudCheckHandler implements HandlerInterface
         // Perform fraud check
         $result = $this->fraudCheckService->check($contract);
 
+        if (!$result->isScreened()) {
+            $this->recordUnscreened($contract, $result);
+            $this->contractRepository->save($contract);
+            return;
+        }
+
         if ($result->isSuccessful()) {
             // Passed: Fulfill the fraud check condition
             $contract->fulfillCondition(
                 ContractCondition::TYPE_FRAUD_CHECK,
                 [
                     'checkedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                    'screened' => true,
                     'passed' => true,
                     'score' => $result->score,
                 ]
@@ -95,5 +113,39 @@ class FraudCheckHandler implements HandlerInterface
         }
 
         $this->contractRepository->save($contract);
+    }
+
+    /**
+     * Record that screening did not happen — without inventing a score.
+     *
+     * An execution error is subject to the fail-open policy; "nothing to screen"
+     * (no payment intent, or a payment method the provider does not score) always
+     * proceeds, because there is no outage to protect against.
+     */
+    private function recordUnscreened(
+        PaymentContractInterface $contract,
+        FraudCheckResponse $result
+    ): void {
+        $isCheckError = $result->getErrorMessage() !== null;
+
+        if ($isCheckError && !$this->failOpenOnCheckError) {
+            $contract->fail(sprintf(
+                'Fraud check could not be executed: %s',
+                (string) $result->getErrorMessage()
+            ));
+
+            return;
+        }
+
+        $contract->fulfillCondition(
+            ContractCondition::TYPE_FRAUD_CHECK,
+            [
+                'checkedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+                'screened' => false,
+                'passed' => false,
+                'reason' => $isCheckError ? 'check_error' : ($result->getReason() ?? self::REASON_UNSCREENED),
+                'error' => $result->getErrorMessage(),
+            ]
+        );
     }
 }

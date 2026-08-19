@@ -23,6 +23,14 @@ namespace OxidEsales\PaymentBase\Adapter\Response;
 readonly class FraudCheckResponse
 {
     /**
+     * Error code marking a response where no screening happened, as opposed to
+     * one where screening ran and produced a verdict.
+     *
+     * Sprint 133 (F1).
+     */
+    public const CODE_UNSCREENED = 'unscreened';
+
+    /**
      * @param bool $successful Whether the fraud check passed (true = proceed, false = block)
      * @param float $score Risk score (0.0 - 1.0, where 1.0 is highest risk)
      * @param string|null $reason Reason for failure (empty if passed)
@@ -67,6 +75,26 @@ readonly class FraudCheckResponse
     }
 
     /**
+     * Create a response for "screening did not happen, but nothing is wrong":
+     * no payment to screen, or a payment method the provider does not score.
+     *
+     * Payment proceeds, but the caller can tell this apart from an observed
+     * clean score, so no audit record claims a screening that never ran.
+     * Sprint 133 (F1): previously these cases returned success(0.0), which on
+     * this DTO's documented scale means *maximally clean*.
+     */
+    public static function unscreened(string $reason): self
+    {
+        return new self(
+            successful: true,
+            score: 0.0,
+            reason: $reason,
+            errorMessage: null,
+            errorCode: self::CODE_UNSCREENED,
+        );
+    }
+
+    /**
      * Create an error response (fraud check itself failed to execute).
      */
     public static function error(string $errorMessage, ?string $errorCode = null): self
@@ -78,6 +106,17 @@ readonly class FraudCheckResponse
             errorMessage: $errorMessage,
             errorCode: $errorCode,
         );
+    }
+
+    /**
+     * Whether screening actually ran and produced a verdict.
+     *
+     * False for an execution error and for the unscreened cases; the score of
+     * such a response carries no information and must not be recorded as one.
+     */
+    public function isScreened(): bool
+    {
+        return $this->errorMessage === null && $this->errorCode !== self::CODE_UNSCREENED;
     }
 
     /**

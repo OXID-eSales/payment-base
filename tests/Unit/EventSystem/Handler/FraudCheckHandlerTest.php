@@ -244,4 +244,112 @@ class FraudCheckHandlerTest extends TestCase
 
         return $contract;
     }
+
+    // =========================================================================
+    // Sprint 133 · Story 4 (F1) — the check itself failing is not a pass
+    //
+    // Before this, the Stripe implementation swallowed API errors and returned
+    // success(0.0) -- maximally clean on the DTO's documented scale -- so the
+    // contract recorded "passed: true, score: 0.0" for an order Radar never
+    // saw. The provider now reports honestly via FraudCheckResponse::error()
+    // and the blocking decision lives here, where it belongs.
+    // =========================================================================
+
+    public function testWhenCheckErroredAndFailOpenEnabledFulfilsConditionMarkedUnscreened(): void
+    {
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+        $event = new PaymentAuthorizedEvent($context, 'pi_1', 'order_1', 100.0, 'EUR');
+
+        $this->fraudCheckService->method('check')
+            ->willReturn(FraudCheckResponse::error('Stripe API unreachable'));
+
+        $contract->expects($this->once())
+            ->method('fulfillCondition')
+            ->with(
+                ContractCondition::TYPE_FRAUD_CHECK,
+                $this->callback(static fn (array $data): bool =>
+                    $data['screened'] === false
+                    && $data['passed'] === false
+                    && $data['reason'] === 'check_error'
+                    && !array_key_exists('score', $data))
+            );
+
+        $contract->expects($this->never())->method('fail');
+
+        $this->handler->handle($event);
+    }
+
+    public function testWhenCheckErroredAndFailOpenDisabledFailsContract(): void
+    {
+        $handler = new FraudCheckHandler(
+            $this->contractRepository,
+            $this->fraudCheckService,
+            true,
+            false // fail closed
+        );
+
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+        $event = new PaymentAuthorizedEvent($context, 'pi_2', 'order_2', 100.0, 'EUR');
+
+        $this->fraudCheckService->method('check')
+            ->willReturn(FraudCheckResponse::error('Stripe API unreachable'));
+
+        $contract->expects($this->never())->method('fulfillCondition');
+        $contract->expects($this->once())->method('fail');
+
+        $handler->handle($event);
+    }
+
+    public function testWhenProviderCannotScreenRecordsUnscreenedWithoutForgingAScore(): void
+    {
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+        $event = new PaymentAuthorizedEvent($context, 'pi_3', 'order_3', 100.0, 'EUR');
+
+        // e.g. a payment method Radar does not score: proceed, but do not claim
+        // a perfect score was observed.
+        $this->fraudCheckService->method('check')
+            ->willReturn(FraudCheckResponse::unscreened('score_unavailable'));
+
+        $contract->expects($this->once())
+            ->method('fulfillCondition')
+            ->with(
+                ContractCondition::TYPE_FRAUD_CHECK,
+                $this->callback(static fn (array $data): bool =>
+                    $data['screened'] === false
+                    && $data['reason'] === 'score_unavailable'
+                    && !array_key_exists('score', $data))
+            );
+
+        $contract->expects($this->never())->method('fail');
+
+        $this->handler->handle($event);
+    }
+
+    public function testPassedCheckStillRecordsTheRealScoreAndScreenedTrue(): void
+    {
+        $contract = $this->createMockContract();
+        $context = new EventContext();
+        $context->set('contract', $contract);
+        $event = new PaymentAuthorizedEvent($context, 'pi_4', 'order_4', 100.0, 'EUR');
+
+        $this->fraudCheckService->method('check')->willReturn(FraudCheckResponse::success(0.42));
+
+        $contract->expects($this->once())
+            ->method('fulfillCondition')
+            ->with(
+                ContractCondition::TYPE_FRAUD_CHECK,
+                $this->callback(static fn (array $data): bool =>
+                    $data['screened'] === true
+                    && $data['passed'] === true
+                    && $data['score'] === 0.42)
+            );
+
+        $this->handler->handle($event);
+    }
 }
