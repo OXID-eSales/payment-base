@@ -61,6 +61,17 @@ interface PaymentContractInterface extends ModelInterface
     public function expire(): void;
 
     /**
+     * Transition contract from DRAFT to NOT_FINISHED, linking the early order.
+     *
+     * Sprint 133 (F15): its sibling transitionToPending() was already on this
+     * interface, so consumers had to narrow to the concrete PaymentContract for
+     * this one call — and each of them invented its own reaction when the
+     * narrowing failed (one threw, one silently returned false). Completing the
+     * pair removes that fork.
+     */
+    public function transitionToNotFinished(string $orderId): void;
+
+    /**
      * Transition contract from DRAFT to PENDING state.
      */
     public function transitionToPending(): void;
