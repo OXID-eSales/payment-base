@@ -18,6 +18,12 @@ namespace OxidEsales\PaymentBase\Adapter\Response;
  * Success means the fraud check passed (payment should proceed).
  * Failure means the fraud check failed (payment should be blocked).
  *
+ * Sprint 133 (F20): the readonly properties are the canonical accessors. The
+ * four get*() methods that mirror a property 1:1 are deprecated — consumers
+ * already mixed both styles on the same object. The behavioural accessors
+ * (isSuccessful(), isScreened()) stay: they answer a question rather than
+ * echoing a field.
+ *
  * @since 1.0.0
  */
 readonly class FraudCheckResponse
@@ -130,6 +136,10 @@ readonly class FraudCheckResponse
     /**
      * Get the risk score.
      */
+    /**
+     * @deprecated Sprint 133 (F20): mirrors the readonly $score property 1:1.
+     *             Read ->score instead; this getter is removed in the next major.
+     */
     public function getScore(): float
     {
         return $this->score;
@@ -137,6 +147,10 @@ readonly class FraudCheckResponse
 
     /**
      * Get the failure reason.
+     */
+    /**
+     * @deprecated Sprint 133 (F20): mirrors the readonly $reason property 1:1.
+     *             Read ->reason instead; this getter is removed in the next major.
      */
     public function getReason(): ?string
     {
@@ -146,6 +160,10 @@ readonly class FraudCheckResponse
     /**
      * Get error message if fraud check failed to execute.
      */
+    /**
+     * @deprecated Sprint 133 (F20): mirrors the readonly $errorMessage property 1:1.
+     *             Read ->errorMessage instead; this getter is removed in the next major.
+     */
     public function getErrorMessage(): ?string
     {
         return $this->errorMessage;
@@ -153,6 +171,10 @@ readonly class FraudCheckResponse
 
     /**
      * Get error code if fraud check failed to execute.
+     */
+    /**
+     * @deprecated Sprint 133 (F20): mirrors the readonly $errorCode property 1:1.
+     *             Read ->errorCode instead; this getter is removed in the next major.
      */
     public function getErrorCode(): ?string
     {

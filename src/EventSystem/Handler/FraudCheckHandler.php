@@ -141,12 +141,12 @@ class FraudCheckHandler implements HandlerInterface
         PaymentContractInterface $contract,
         FraudCheckResponse $result
     ): void {
-        $isCheckError = $result->getErrorMessage() !== null;
+        $isCheckError = $result->errorMessage !== null;
 
         if ($isCheckError && !$this->failOpenOnCheckError) {
             $contract->fail(sprintf(
                 'Fraud check could not be executed: %s',
-                (string) $result->getErrorMessage()
+                (string) $result->errorMessage
             ));
 
             return;
@@ -158,8 +158,8 @@ class FraudCheckHandler implements HandlerInterface
                 'checkedAt' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
                 'screened' => false,
                 'passed' => false,
-                'reason' => $isCheckError ? 'check_error' : ($result->getReason() ?? self::REASON_UNSCREENED),
-                'error' => $result->getErrorMessage(),
+                'reason' => $isCheckError ? 'check_error' : ($result->reason ?? self::REASON_UNSCREENED),
+                'error' => $result->errorMessage,
             ]
         );
     }
