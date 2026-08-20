@@ -69,9 +69,15 @@ interface ShopAdapterInterface
     public function getShopCurrency(): string;
 
     /**
-     * Check if shop is in test/development mode.
+     * Check if the SHOP is in test/development mode (e.g. OXID's blDebugMode).
      *
-     * @return bool True if test mode, false if production
+     * Sprint 133 (F20): this is the shop's own dev flag, NOT the payment
+     * provider's test/live mode — providers expose that separately through their
+     * own configuration service. The two are independent: a live shop can run
+     * with debug on, and a staging shop can hold live PSP credentials. Do not
+     * use this method to decide which API keys to use.
+     *
+     * @return bool True if the shop is in test/development mode
      */
     public function isTestMode(): bool;
 
