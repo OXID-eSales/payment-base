@@ -91,6 +91,20 @@ jobs:
           docker compose exec -T \
             php composer require "${{ env.PACKAGE_NAME }}:*@dev" --no-interaction --no-update
 
+      # The shop's own composer.json asks for the migration wrapper as
+      # dev-b-7.4.x, but `composer update --with-all-dependencies` under a
+      # stable minimum-stability drops the dev branch and takes the newest
+      # tag instead — v5.5.0, whose migrations-db.php references
+      # Database::MYSQL_ATTR_INIT_COMMAND, a class constant the 7.4 core does
+      # not define. `oe:database:reset` then dies with "Undefined constant".
+      # Pin the branch that matches this shop line, exactly as the 7.5
+      # workflow ends up with dev-b-7.5.x.
+      - name: Pin the migration wrapper to this shop line
+        run: |
+          docker compose exec -T php composer require \
+            "oxid-esales/oxideshop-doctrine-migration-wrapper:dev-b-7.4.x" \
+            --no-interaction --no-update
+
       - name: Install dependencies
         run: |
           docker compose exec -T php composer update --with-all-dependencies --no-interaction
