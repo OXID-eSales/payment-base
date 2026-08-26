@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Integration tests that render the shop's real checkout templates through
+    TemplateRendererBridgeInterface, to prove payment-base's template overrides
+    land in the chain.
+
+    They need a shop with a usable frontend theme. The CI shop image has none —
+    its renderer answers with the template *name* instead of markup — so they are
+    kept out of tests/phpunit-integration.xml (which CI runs wholesale) and live
+    here instead. Each test asserts the renderer really rendered, so a shop
+    without a theme fails loudly rather than passing by accident.
+
+    Run against a real shop:
+      vendor/bin/phpunit -c extensions/payment-base/tests/phpunit-integration-renderer.xml
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         bootstrap="bootstrap-integration.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="Integration-renderer">
+            <file>Integration/Checkout/SinglePaymentOrderTemplateTest.php</file>
+            <file>Integration/Checkout/SinglePaymentStepTemplateTest.php</file>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>../src</directory>
+        </include>
+    </source>
+</phpunit>
