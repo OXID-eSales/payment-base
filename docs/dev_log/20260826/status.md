@@ -1,5 +1,8 @@
 # 2026-08-26 — payment-base
 
+**Day summary: [reports/04-day-summary.md](reports/04-day-summary.md)** — sprint 06 shipped, the correction it needed, and what it uncovered in stripe.
+CI green on 7.4 and 7.5.
+
 ## Sprints
 
 - **Sprint 06** — [Single active payment method: auto-assign and hide the payment blocks](sprints/sprint-06-single-active-payment-auto-assign.md) — *implemented, verified live*
