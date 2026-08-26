@@ -29,4 +29,5 @@ parameters:
         - '#Call to static method (getRequest|getSession|getLogger|getUtilsView|getConfig|getLang)\(\) on an unknown class OxidEsales\\Eshop\\Core\\Registry#'
         - '#unknown class OxidEsales\\Eshop\\Application\\(Controller|Model)\\#'
         - '#Cannot call method \w+\(\) on mixed#'
-        - '#Used function oxNew not found#'
+        # OXID's model factory. Wording differs between PHPStan versions.
+        - '#(Used f|F)unction oxNew not found#'

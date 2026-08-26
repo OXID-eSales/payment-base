@@ -106,3 +106,49 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\PriceList_parent::class, fa
         . '}'
     );
 }
+
+// Sprint 06 — stubs for the single-payment checkout extensions.
+// PaymentController_parent / OrderController_parent are OXID virtual classes
+// created by ModuleChainsGenerator at activation; they resolve in the
+// extension's own namespace. Unit tests never instantiate the real parents —
+// testable subclasses override the seams.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
+        . 'class PaymentController_parent { '
+        . '  public function render() { return ""; } '
+        . '  public function getPaymentList() { return []; } '
+        . '  public function getPaymentError() { return null; } '
+        . '  public function getUser() { return null; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
+        . 'class OrderController_parent { '
+        . '  public function getPayment() { return false; } '
+        . '  public function getBasket() { return false; } '
+        . '  public function getUser() { return null; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Payment::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Payment { '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getDynValues(): ?array { return []; } '
+        . '  public function isValidPayment($dynValue, $shopId, $user, $basketPrice, $shipSetId): bool { return false; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\PaymentList::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class PaymentList { '
+        . '  public function getPaymentList($shipSetId, $price, $user = null): array { return []; } '
+        . '}'
+    );
+}

@@ -48,6 +48,10 @@ if (!class_exists(\OxidEsales\Eshop\Core\StubSession::class, false)) {
         . 'class StubSession { '
         . '  public function getSessionChallengeToken(): string { return ""; } '
         . '  public function getId(): string { return ""; } '
+        . '  public function getVariable(string $name): mixed { return null; } '
+        . '  public function setVariable(string $name, mixed $value): void {} '
+        . '  public function deleteVariable(string $name): void {} '
+        . '  public function getBasket(): mixed { return null; } '
         . '}'
     );
 }
@@ -64,9 +68,12 @@ if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
         'namespace OxidEsales\\Eshop\\Core; '
         . 'class StubUtils { '
         . '  public function setHeader(string $h): void {} '
+        . '  public function redirect(string $url, bool $addParams = true, int $status = 302): void {} '
         . '} '
         . 'class StubConfig { '
         . '  public function getShopUrl(): string { return ""; } '
+        . '  public function getShopSecureHomeUrl(): string { return ""; } '
+        . '  public function getShopId(): int { return 1; } '
         . '  public function getModuleVar(string $name, string $moduleId): mixed { return null; } '
         . '} '
         . 'class Registry { '
@@ -75,6 +82,7 @@ if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
         . '  public static function getRequest(): StubRequest { return new StubRequest(); } '
         . '  public static function getUtils(): StubUtils { return new StubUtils(); } '
         . '  public static function getConfig(): StubConfig { return new StubConfig(); } '
+        . '  public static function get(string $class): mixed { return null; } '
         . '}'
     );
 }
@@ -187,6 +195,52 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\PriceList_parent::class, fa
         . '  protected array $_aList = []; '
         . '  public function __construct() {} '
         . '  public function getVatInfo($isNettoMode = true) { return []; } '
+        . '}'
+    );
+}
+
+// Sprint 06 — stubs for the single-payment checkout extensions.
+// PaymentController_parent / OrderController_parent are OXID virtual classes
+// created by ModuleChainsGenerator at activation; they resolve in the
+// extension's own namespace. Unit tests never instantiate the real parents —
+// testable subclasses override the seams.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
+        . 'class PaymentController_parent { '
+        . '  public function render() { return ""; } '
+        . '  public function getPaymentList() { return []; } '
+        . '  public function getPaymentError() { return null; } '
+        . '  public function getUser() { return null; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
+        . 'class OrderController_parent { '
+        . '  public function getPayment() { return false; } '
+        . '  public function getBasket() { return false; } '
+        . '  public function getUser() { return null; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Payment::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Payment { '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getDynValues(): ?array { return []; } '
+        . '  public function isValidPayment($dynValue, $shopId, $user, $basketPrice, $shipSetId): bool { return false; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\PaymentList::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class PaymentList { '
+        . '  public function getPaymentList($shipSetId, $price, $user = null): array { return []; } '
         . '}'
     );
 }
