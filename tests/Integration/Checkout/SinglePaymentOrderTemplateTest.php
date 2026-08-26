@@ -104,12 +104,23 @@ class SinglePaymentOrderTemplateTest extends IntegrationTestCase
         $bridge = ContainerFactory::getInstance()->getContainer()
             ->get(TemplateRendererBridgeInterface::class);
 
-        return $bridge->getTemplateRenderer()->renderTemplate(
+        $output = $bridge->getTemplateRenderer()->renderTemplate(
             'page/checkout/order.html.twig',
             [
                 'oView' => new SinglePaymentProbeView($autoAssigned),
                 'oxcmp_basket' => new SinglePaymentProbeBasket(),
             ]
         );
+
+        // A shop without a usable frontend theme answers with the template
+        // name instead of markup. Say so plainly — a silent pass here would
+        // claim the override was verified when nothing was rendered.
+        $this->assertNotSame(
+            'page/checkout/order.html.twig',
+            trim($output),
+            'the shop renderer returned the template name — no frontend theme in this environment'
+        );
+
+        return $output;
     }
 }

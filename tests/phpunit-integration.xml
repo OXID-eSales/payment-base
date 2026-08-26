@@ -8,8 +8,26 @@
          bootstrap="bootstrap-integration.php"
          colors="true">
     <testsuites>
+        <!-- Default suite: everything that runs in any shop, CI included. -->
         <testsuite name="Integration">
             <directory>Integration</directory>
+            <exclude>Integration/Checkout/SinglePaymentOrderTemplateTest.php</exclude>
+            <exclude>Integration/Checkout/SinglePaymentStepTemplateTest.php</exclude>
+        </testsuite>
+        <!--
+            Renderer suite: these two render the shop's real checkout templates
+            through TemplateRendererBridgeInterface to prove the module's template
+            overrides land in the chain. They need a shop with a usable frontend
+            theme; the CI shop image has none, and its renderer answers with the
+            template *name* instead of markup, so the assertions cannot hold there.
+            Run explicitly against a real shop:
+              vendor/bin/phpunit -c extensions/payment-base/tests/phpunit-integration.xml Integration-renderer
+            The tests themselves fail loudly (not skip) if the renderer only echoes
+            the name back, so this can never pass by accident.
+        -->
+        <testsuite name="Integration-renderer">
+            <file>Integration/Checkout/SinglePaymentOrderTemplateTest.php</file>
+            <file>Integration/Checkout/SinglePaymentStepTemplateTest.php</file>
         </testsuite>
     </testsuites>
     <source>
