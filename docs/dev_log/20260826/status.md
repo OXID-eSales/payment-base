@@ -4,9 +4,14 @@
 
 - **Sprint 06** — [Single active payment method: auto-assign and hide the payment blocks](sprints/sprint-06-single-active-payment-auto-assign.md) — *implemented, verified live*
   Binding requirements: [`sprints/_engeneering_requirements.md`](sprints/_engeneering_requirements.md)
-  Report: [reports/01-sprint-06-implementation-report.md](reports/01-sprint-06-implementation-report.md)
+  Reports: [01 implementation](reports/01-sprint-06-implementation-report.md) ·
+  [03 delivery](reports/03-delivery.md) (commits + verification at delivery)
 
 ## Follow-up (not sprint 06)
+
+- The stripe side has its own write-up for today:
+  `extensions/stripe/docs/oe_payments_docs/daniil_dev_log/20260826/` — including why
+  Mollie's return path never hit either of these defects.
 
 - [Checkout return walkthrough](reports/02-checkout-return-walkthrough.md) — the
   "Payment verification failed" report. Return path now logs **which** of six checks
