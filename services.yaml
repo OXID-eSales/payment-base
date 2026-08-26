@@ -216,6 +216,22 @@ services:
     arguments:
       $precision: 2
 
+  # Sprint 06 — single active payment method: assign it, skip the selection step.
+  # All three are public: the classic-checkout controller extensions run under
+  # OXID `cl=` dispatch (no constructor DI) and resolve them via ContainerFactory,
+  # and one-page checkout resolves the resolver the same way.
+  OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentResolverInterface:
+    class: OxidEsales\PaymentBase\Checkout\SinglePaymentResolver
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentAssignerInterface:
+    class: OxidEsales\PaymentBase\Checkout\SinglePaymentAssigner
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentSettingsInterface:
+    class: OxidEsales\PaymentBase\Checkout\SinglePaymentSettings
+    public: true
+
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the
   # provider-agnostic flag via ContainerFactory::get(). Names no provider.

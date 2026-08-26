@@ -1,0 +1,33 @@
+{% extends "page/checkout/payment.html.twig" %}
+
+{#
+    Sprint 06 — single active payment method.
+
+    With one usable method there is nothing to select, so the payment-selection
+    block is replaced by the bare form it lives in: heading, radio buttons,
+    prices and descriptions are gone, the <form id="payment"> stays.
+
+    The form has to stay. The step's "next" button sits *outside* it and submits
+    it by id (`document.querySelector('#payment').requestSubmit()`), so removing
+    the element would leave the customer with no way forward. What remains is
+    exactly what the submit needs: the session/navigation parameters, the
+    validatepayment action, and the assigned payment id — which core's
+    validatePayment() re-validates like any other submission.
+
+    The delivery-set block (`change_shipping`) is a sibling and is untouched: on
+    a single-payment shop this step shows the shipping choice alone.
+#}
+{% block change_payment %}
+    {% if oView.isSinglePaymentAutoAssigned() %}
+        <form action="{{ oViewConf.getSslSelfLink()|raw }}" class="payment" id="payment"
+              name="order" method="post" novalidate>
+            {{ oViewConf.getHiddenSid()|raw }}
+            {{ oViewConf.getNavFormParams()|raw }}
+            <input type="hidden" name="cl" value="{{ oViewConf.getActiveClassName() }}">
+            <input type="hidden" name="fnc" value="validatepayment">
+            <input type="hidden" name="paymentid" value="{{ oView.getSinglePaymentId() }}">
+        </form>
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}

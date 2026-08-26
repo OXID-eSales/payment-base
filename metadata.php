@@ -31,6 +31,11 @@ $aModule = [
     'email'       => 'info@oxid-esales.com',
     'extend'      => [
         \OxidEsales\Eshop\Core\PriceList::class => \OxidEsales\PaymentBase\Eshop\Core\PriceList::class,
+        // Sprint 06 — single active payment method: assign it and skip the step.
+        \OxidEsales\Eshop\Application\Controller\PaymentController::class
+            => \OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController::class,
+        \OxidEsales\Eshop\Application\Controller\OrderController::class
+            => \OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here
@@ -65,5 +70,15 @@ $aModule = [
         // instead of rendering a button that redirects to the provider's hosted page. Read
         // provider-agnostically through IframeCheckoutSettingsInterface.
         ['name' => 'blPaymentBaseUseIframe', 'type' => 'bool', 'value' => false, 'group' => 'iframe_checkout'],
+        // Sprint 06 (2026-08-26) — when the shop offers exactly one payment method the
+        // checkout assigns it and skips the selection step (and hides the payment block
+        // on the order page). Default on: it can only fire when there is nothing to
+        // choose. Turn it off to keep the confirmation step.
+        [
+            'name' => 'blPaymentBaseAutoAssignSinglePayment',
+            'type' => 'bool',
+            'value' => true,
+            'group' => 'checkout_flow',
+        ],
     ],
 ];

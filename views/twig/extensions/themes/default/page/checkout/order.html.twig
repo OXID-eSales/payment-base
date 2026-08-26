@@ -1,0 +1,21 @@
+{% extends "page/checkout/order.html.twig" %}
+
+{#
+    Sprint 06 — single active payment method.
+
+    When the shop offers exactly one usable payment method, the order page's
+    "payment method" block has nothing to say and nowhere useful to lead: the
+    pencil inside it goes back to a selection page that no longer renders. The
+    whole block is left out, heading and method line included.
+
+    Shipping stays untouched — its own block is a sibling, and its pencil is
+    still the way to change the delivery set.
+
+    The condition is answered by payment-base's OrderController extension; with
+    two or more methods it is false and the block renders exactly as core does.
+#}
+{% block checkout_order_payment_method %}
+    {% if not oView.isSinglePaymentAutoAssigned() %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
