@@ -10,6 +10,12 @@ CI green on 7.4 and 7.5.
   Reports: [01 implementation](reports/01-sprint-06-implementation-report.md) ·
   [03 delivery](reports/03-delivery.md) (commits + verification at delivery)
 
+## Verified since
+
+- [The setting, per provider, on and off](reports/05-setting-matrix.md) — all four cells
+  pass (Stripe/Mollie × on/off). Off really restores the old behaviour, and Mollie needed
+  no code of its own. Spec: `single-payment-matrix.spec.ts`.
+
 ## Follow-up (not sprint 06)
 
 - The stripe side has its own write-up for today:
