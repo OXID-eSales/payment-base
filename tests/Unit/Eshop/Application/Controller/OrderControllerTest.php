@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Eshop\Application\Controller;
 
+use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentResolverInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentSettingsInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingResolverInterface;
@@ -68,7 +69,13 @@ final class TestableOrderController extends OrderController
         private readonly ?SingleShippingSettingsInterface $shippingSettings = null,
         private readonly mixed $shipSet = false,
         private readonly array $availableDeliverySetList = [],
+        private readonly ?SpyPaymentStepSkipGuard $skipGuard = null,
     ) {
+    }
+
+    protected function getPaymentStepSkipGuard(): PaymentStepSkipGuardInterface
+    {
+        return $this->skipGuard ?? new SpyPaymentStepSkipGuard();
     }
 
     protected function getSinglePaymentSettings(): SinglePaymentSettingsInterface
@@ -153,6 +160,11 @@ final class UnbootstrappedOrderController extends OrderController
     protected function getSingleShippingResolver(): SingleShippingResolverInterface
     {
         return new SingleShippingResolver();
+    }
+
+    protected function getPaymentStepSkipGuard(): PaymentStepSkipGuardInterface
+    {
+        return new SpyPaymentStepSkipGuard();
     }
 
     public function getShipSet()
@@ -440,5 +452,42 @@ final class OrderControllerTest extends TestCase
 
         $this->assertTrue($controller->isSinglePaymentAutoAssigned());
         $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    // ---------------------------------------------------------------
+    // Sprint 07 S6 — the other half of the payment step's skip guard.
+    // ---------------------------------------------------------------
+
+    /**
+     * Reaching this page is what re-arms the shortcut. Without it the payment
+     * step would skip exactly once per session and then never again.
+     */
+    public function testRenderingTheOrderPageReArmsTheSkip(): void
+    {
+        $guard = new SpyPaymentStepSkipGuard(maySkip: false);
+        $controller = new TestableOrderController(
+            new FakeSinglePaymentSettings(false),
+            false,
+            [],
+            new FakeSingleShippingSettings(false),
+            false,
+            [],
+            $guard,
+        );
+
+        $controller->render();
+
+        $this->assertSame(1, $guard->clears);
+        $this->assertTrue($guard->maySkip());
+    }
+
+    public function testRenderStillReturnsTheParentTemplate(): void
+    {
+        $controller = new TestableOrderController(
+            new FakeSinglePaymentSettings(false),
+            false,
+        );
+
+        $this->assertSame('', $controller->render());
     }
 }

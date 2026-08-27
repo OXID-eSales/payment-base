@@ -12,6 +12,8 @@ namespace OxidEsales\PaymentBase\Eshop\Application\Controller;
 use OxidEsales\Eshop\Application\Model\DeliverySetList;
 use OxidEsales\Eshop\Application\Model\PaymentList;
 use OxidEsales\Eshop\Core\Registry;
+use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\ResolvesSinglePaymentMethod;
 use OxidEsales\PaymentBase\Checkout\ResolvesSingleShippingMethod;
 use Throwable;
@@ -30,6 +32,9 @@ use Throwable;
  * second payment method or delivery set brings the block back immediately.
  *
  * The two decisions are independent: hiding one block never implies the other.
+ *
+ * Sprint 07 S6 adds the other half of the payment step's skip guard: reaching
+ * this page is what re-arms the shortcut.
  */
 // @phpstan-ignore-next-line (OrderController_parent is an OXID virtual class generated at activation)
 class OrderController extends OrderController_parent
@@ -41,6 +46,33 @@ class OrderController extends OrderController_parent
 
     private ?bool $singlePaymentAutoAssigned = null;
     private ?bool $singleShippingAutoAssigned = null;
+
+    /**
+     * Sprint 07 S6 — re-arm the payment step's one-shot skip.
+     *
+     * Only reached when the parent actually rendered. Core's render() redirects
+     * away — to `cl=payment`, `cl=basket` or the home page — when it cannot put
+     * an order together, and those redirects exit; the guard then stays spent,
+     * which is exactly what stops the two steps redirecting at each other.
+     */
+    public function render(): string
+    {
+        $template = (string) parent::render();
+
+        $this->getPaymentStepSkipGuard()->clear();
+
+        return $template;
+    }
+
+    protected function getPaymentStepSkipGuard(): PaymentStepSkipGuardInterface
+    {
+        /** @var PaymentStepSkipGuardInterface $guard */
+        $guard = ContainerFactory::getInstance()
+            ->getContainer()
+            ->get(PaymentStepSkipGuardInterface::class);
+
+        return $guard;
+    }
 
     /**
      * Template getter — true when the payment block should be left out because

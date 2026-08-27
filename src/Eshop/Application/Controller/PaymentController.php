@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Eshop\Application\Controller;
 
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\Eshop\Core\Registry;
+use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentAssignerInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingAssignerInterface;
 use OxidEsales\PaymentBase\Checkout\ResolvesSinglePaymentMethod;
@@ -23,8 +25,10 @@ use OxidEsales\PaymentBase\Checkout\ResolvesSingleShippingMethod;
  * payment-selection block out. The customer sees the step's *other* content —
  * the delivery-set selector lives on the same page — and just continues.
  *
- * The step is deliberately **not** skipped: its "next" button is what submits
- * the checkout forward.
+ * Sprint 07 S6 (decision D1) skips the step outright, but *only* when both
+ * halves were assigned — at which point the page has nothing on it but a
+ * heading, a "previous" link and a "next" button. With either half still a real
+ * choice the step renders, as it did before.
  *
  * Sprint 07 does the same for the delivery-set selector that shares this step,
  * and makes sure `sShipSet` really names the only available set before hiding
@@ -55,7 +59,62 @@ class PaymentController extends PaymentController_parent
         $this->autoAssignedShipSetId = $this->assignSingleShippingMethod();
         $this->autoAssignedPaymentId = $this->assignSinglePaymentMethod();
 
+        $this->skipStepIfNothingIsLeftToChoose();
+
         return $template;
+    }
+
+    /**
+     * Sprint 07 S6 — forward to the order step when this page has nothing left
+     * on it.
+     *
+     * The condition is deliberately "both were assigned", not "both settings
+     * are on": an assignment that was refused (an invalid method, a pending
+     * payment error) leaves a real page behind, and skipping past it would hide
+     * something the customer has to act on.
+     *
+     * Nothing has been written to the output yet — `parent::render()` returns a
+     * template *name*, the shop renders it afterwards — so redirecting here is
+     * safe.
+     */
+    protected function skipStepIfNothingIsLeftToChoose(): void
+    {
+        if ($this->autoAssignedShipSetId === null || $this->autoAssignedPaymentId === null) {
+            return;
+        }
+
+        // One-shot. The order step redirects back here whenever it cannot
+        // resolve a payment, and two 302s pointing at each other would spend
+        // the customer's checkout in a loop. See PaymentStepSkipGuard.
+        $guard = $this->getPaymentStepSkipGuard();
+        if (!$guard->maySkip()) {
+            return;
+        }
+
+        $guard->markSkipped();
+        $this->redirectToOrderStep();
+    }
+
+    protected function redirectToOrderStep(): void
+    {
+        // Secure home URL, not getShopCurrentURL(): the checkout must stay on
+        // SSL, and the current URL would drag this request's own parameters
+        // (fnc, sShipSet, …) along to the order step.
+        Registry::getUtils()->redirect(
+            Registry::getConfig()->getShopSecureHomeUrl() . 'cl=order',
+            false,
+            302
+        );
+    }
+
+    protected function getPaymentStepSkipGuard(): PaymentStepSkipGuardInterface
+    {
+        /** @var PaymentStepSkipGuardInterface $guard */
+        $guard = ContainerFactory::getInstance()
+            ->getContainer()
+            ->get(PaymentStepSkipGuardInterface::class);
+
+        return $guard;
     }
 
     /**

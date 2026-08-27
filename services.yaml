@@ -249,6 +249,13 @@ services:
     class: OxidEsales\PaymentBase\Checkout\SingleShippingSettings
     public: true
 
+  # Sprint 07 S6 — one-shot permission to skip the payment step. Public: both
+  # controller extensions resolve it via ContainerFactory (one grants the skip,
+  # the other re-arms it), and a private service would be inlined away.
+  OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface:
+    class: OxidEsales\PaymentBase\Checkout\PaymentStepSkipGuard
+    public: true
+
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the
   # provider-agnostic flag via ContainerFactory::get(). Names no provider.

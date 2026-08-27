@@ -220,6 +220,7 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\OrderCont
     eval(
         'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
         . 'class OrderController_parent { '
+        . '  public function render() { return ""; } '
         . '  public function getPayment() { return false; } '
         . '  public function getBasket() { return false; } '
         . '  public function getUser() { return null; } '
