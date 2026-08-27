@@ -8,14 +8,30 @@
     pencil inside it goes back to a selection page that no longer renders. The
     whole block is left out, heading and method line included.
 
-    Shipping stays untouched — its own block is a sibling, and its pencil is
-    still the way to change the delivery set.
+    Shipping is a sibling block, decided separately — see sprint 07 below. With
+    several carriers its pencil is still the way to change the delivery set.
 
     The condition is answered by payment-base's OrderController extension; with
     two or more methods it is false and the block renders exactly as core does.
 #}
 {% block checkout_order_payment_method %}
     {% if not oView.isSinglePaymentAutoAssigned() %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{#
+    Sprint 07 — single active shipping method.
+
+    Same argument as the payment block above: with exactly one delivery set the
+    "shipping carrier" block has nothing to offer and its pencil leads to a step
+    that no longer shows a selector. Heading, carrier line and form go together.
+
+    Payment is decided separately — the two blocks are siblings and either can
+    be hidden without the other.
+#}
+{% block checkout_order_shipping_carrier %}
+    {% if not oView.isSingleShippingAutoAssigned() %}
         {{ parent() }}
     {% endif %}
 {% endblock %}

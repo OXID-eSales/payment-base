@@ -212,6 +212,7 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentCo
         . '  public function getPaymentList() { return []; } '
         . '  public function getPaymentError() { return null; } '
         . '  public function getUser() { return null; } '
+        . '  public function getAllSets() { return []; } '
         . '}'
     );
 }
@@ -222,6 +223,7 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\OrderCont
         . '  public function getPayment() { return false; } '
         . '  public function getBasket() { return false; } '
         . '  public function getUser() { return null; } '
+        . '  public function getShipSet() { return false; } '
         . '}'
     );
 }
@@ -241,6 +243,17 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\PaymentList::class, false)
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . 'class PaymentList { '
         . '  public function getPaymentList($shipSetId, $price, $user = null): array { return []; } '
+        . '}'
+    );
+}
+// Sprint 07 — DeliverySetList stub. OrderController::readAvailableDeliverySetList()
+// resolves it through Registry::get(); under unit conditions there is no basket, which
+// is exactly the "the shop cannot answer" case the read has to survive.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\DeliverySetList::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class DeliverySetList { '
+        . '  public function getDeliverySetData($shipSet, $user, $basket): array { return [[], null, []]; } '
         . '}'
     );
 }

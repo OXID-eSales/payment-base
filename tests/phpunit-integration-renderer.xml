@@ -21,6 +21,8 @@
         <testsuite name="Integration-renderer">
             <file>Integration/Checkout/SinglePaymentOrderTemplateTest.php</file>
             <file>Integration/Checkout/SinglePaymentStepTemplateTest.php</file>
+            <file>Integration/Checkout/SingleShippingOrderTemplateTest.php</file>
+            <file>Integration/Checkout/SingleShippingStepTemplateTest.php</file>
         </testsuite>
     </testsuites>
     <source>

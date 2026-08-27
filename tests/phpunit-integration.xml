@@ -18,6 +18,8 @@
             <directory>Integration</directory>
             <exclude>Integration/Checkout/SinglePaymentOrderTemplateTest.php</exclude>
             <exclude>Integration/Checkout/SinglePaymentStepTemplateTest.php</exclude>
+            <exclude>Integration/Checkout/SingleShippingOrderTemplateTest.php</exclude>
+            <exclude>Integration/Checkout/SingleShippingStepTemplateTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

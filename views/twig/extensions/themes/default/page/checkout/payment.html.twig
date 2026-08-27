@@ -14,8 +14,9 @@
     validatepayment action, and the assigned payment id — which core's
     validatePayment() re-validates like any other submission.
 
-    The delivery-set block (`change_shipping`) is a sibling and is untouched: on
-    a single-payment shop this step shows the shipping choice alone.
+    The delivery-set block (`change_shipping`) is a sibling and is decided
+    separately — see sprint 07 below. On a shop with one payment method and
+    several carriers, this step shows the shipping choice alone.
 #}
 {% block change_payment %}
     {% if oView.isSinglePaymentAutoAssigned() %}
@@ -28,6 +29,28 @@
             <input type="hidden" name="paymentid" value="{{ oView.getSinglePaymentId() }}">
         </form>
     {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{#
+    Sprint 07 — single active shipping method.
+
+    With one delivery set the `<select name="sShipSet">` holds a single
+    `<option>` and choosing it changes nothing, so the whole block goes.
+
+    Nothing replaces it, unlike `change_payment` above. That form has to stay
+    because the step's "next" button submits it by id from outside; this one is
+    submitted by its own `onchange` and by nothing else, so removing the element
+    strands nobody. The delivery set itself is not lost either — the controller
+    has already written `sShipSet` into the session, which is more than core
+    does on a plain render.
+
+    What does disappear with it is the `#shipSetCost` line. The delivery cost is
+    still in the summary sidebar on this page and in the order-page totals.
+#}
+{% block change_shipping %}
+    {% if not oView.isSingleShippingAutoAssigned() %}
         {{ parent() }}
     {% endif %}
 {% endblock %}
