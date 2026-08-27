@@ -3,7 +3,7 @@
 **Sprint:** [sprint-07-single-active-shipping-method.md](../done/sprint-07-single-active-shipping-method.md)
 **Requirements:** [`_engeneering_requirements.md`](../sprints/_engeneering_requirements.md)
 **Modules:** `payment-base` (branch `sprint-07-single-active-shipping`) + one template condition and two E2E specs in `stripe`.
-**State:** S1–S5 and S7 done. **S6 not built** — it was gated on decision D1, which is answered below and is the user's call. Revised once during implementation: §0.
+**State:** S1–S5 and S7 done, E2E green against the tunnelled local shop. **S6 not built** — it was gated on decision D1, which is answered below and is the user's call. Revised once during implementation: §0.
 
 ---
 
@@ -173,14 +173,41 @@ shop has **four** active delivery sets but only **two** survive the filter for a
 normal basket, and only **one** payment method does — which is why sprint 06's
 shortcut is live here and sprint 07's is not.
 
-**E2E: written, not executed.** The local shop's `sShopURL` points at
-`https://pay1.oxid.dev` — a remote, shared host — so Playwright's requests to
-`localhost.local` are redirected off-box and never reach this code. The existing
-payment spec fails in the same way, before it reaches any checkout step, for the
-same reason. Running the suite would have exercised someone else's shop rather
-than this one, so it was not run. Both specs typecheck and are discoverable.
-To run them, point the shop's URL config at the local host (or set `SHOP_URL` to
-match it) and follow the recipes in each spec's header.
+**E2E: executed and green.** Initially blocked — the shop's `sShopURL` read
+`https://pay1.oxid.dev` and Playwright's requests to `localhost.local` were
+redirected off-box, so the suite was not run rather than risk exercising a
+shared host. The environment was then repointed at `https://daniil.oxiddev.de`
+(the same local shop, tunnelled), which the container's own `getShopUrl()`
+confirms, and all four cells were driven against it:
+
+| spec | delivery sets | shipping setting | selector (options) | `#orderShipping` | `#orderPayment` | submits |
+|---|---|---|---|---|---|---|
+| shipping matrix | 2 effective | on | 1 (2) | 1 | 0 | 10 |
+| shipping matrix | 1 effective | on | **0** | **0** | 0 | 9 |
+| shipping matrix | 1 effective | off | 1 (1) | 1 | 0 | 10 |
+| payment matrix (mollie/on, `EXPECT_SHIPPING=hidden`) | 1 effective | on | 0 | — | 0 | 9 |
+
+All passed, no messages displayed in any cell. Row 1 is the shortcut correctly
+staying inert. Row 3 is the kill switch, and shows the dead click the sprint
+removes: a dropdown with exactly one option. Row 2 is also the **D1 state** —
+both blocks hidden — and the order page still rendered nine submit controls,
+which is the closest thing to evidence D1 is safe that can be had without
+building it.
+
+The browser numbers match the server-side probe exactly, and the run also
+settles a question the probe could not: the tunnel really does serve this
+container, since the hidden payment block in every row is sprint 06 code that
+only exists in this checkout.
+
+Two environment notes for whoever runs it next. The specs' default product
+`34beb6d63dd96d36ed6875c09e300b02` is a **variant parent**, so `#toBasket` never
+becomes visible and the run dies before reaching checkout; pass a non-variant
+`TEST_PRODUCT_ANID` (`0757c381b5c2efea14b10d34822c67ed` works). And the four
+`oxdeliveryset` rows were restored to their exact captured pre-test state, with
+the flag left on — though note that state was *already* `294c2e89…=0` when this
+run began, having changed since the earlier server-side probe, so it is worth
+confirming the shop's delivery sets are as intended before drawing conclusions
+from a future run.
 
 **Also unrun: the stripe Unit suite**, which cannot be built in this shop —
 `Class "OxidEsales\Payments\Mollie\Controller\PaymentController_parent" not
@@ -210,8 +237,9 @@ behaviour change (a redirect, not a hidden block), and the case for it rests on
 the step being empty — which the renderer test
 `testBothBlocksCanBeHiddenAndTheSubmitPathSurvives` now demonstrates is *almost*
 true: what remains is the bare `<form id="payment">` plus the step's own
-navigation. Everything S6 needs is in place and green; it is one guarded
-redirect away. My recommendation is unchanged — do it, as its own commit, once
+navigation. The E2E run reached that state on a real shop (§4, row 2) and the
+order page stayed placeable. Everything S6 needs is in place and green; it is
+one guarded redirect away. My recommendation is unchanged — do it, as its own commit, once
 someone says so.
 
 **D2 — deduplicate `SinglePayment*` and `SingleShipping*`?** **No, as
@@ -237,7 +265,7 @@ was for payment.
 
 - **S6** — gated on D1 above.
 - **Order-overview decision** — above. Blocks DoD sign-off.
-- **E2E execution** — blocked by the shop-URL config, not by the code. One-line fix.
+- **E2E execution** — done, all four cells green (§4). No longer open.
 - **`SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment`'s English label** still
   reads "Skip the payment step…", which has been inaccurate since sprint 06's
   correction (the step is not skipped; its block is replaced). Left alone as out
