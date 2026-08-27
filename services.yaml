@@ -245,6 +245,10 @@ services:
     class: OxidEsales\PaymentBase\Checkout\SingleShippingAssigner
     public: true
 
+  OxidEsales\PaymentBase\Checkout\Contract\SingleShippingSettingsInterface:
+    class: OxidEsales\PaymentBase\Checkout\SingleShippingSettings
+    public: true
+
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the
   # provider-agnostic flag via ContainerFactory::get(). Names no provider.

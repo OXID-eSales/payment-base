@@ -34,4 +34,6 @@ $aLang = [
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Iframe statt Checkout-Schaltfläche verwenden',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'
         => 'Zahlungsschritt überspringen, wenn nur eine Zahlungsart verfügbar ist',
+    'SHOP_MODULE_blPaymentBaseAutoAssignSingleShipping'
+        => 'Auswahl der Versandart überspringen, wenn nur eine Versandart verfügbar ist',
 ];
