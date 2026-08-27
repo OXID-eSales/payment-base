@@ -34,4 +34,6 @@ $aLang = [
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Use iframe instead of checkout button',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'
         => 'Skip the payment step when only one payment method is available',
+    'SHOP_MODULE_blPaymentBaseAutoAssignSingleShipping'
+        => 'Skip the shipping-method selection when only one delivery set is available',
 ];

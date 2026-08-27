@@ -80,5 +80,16 @@ $aModule = [
             'value' => true,
             'group' => 'checkout_flow',
         ],
+        // Sprint 07 (2026-08-27) — the shipping half. When the shop offers exactly one
+        // delivery set the checkout assigns it (writing sShipSet, which core does not
+        // persist on a plain render) and leaves the selector out of the payment step and
+        // the carrier block out of the order page. Separate switch from the payment one:
+        // a merchant may want one shortcut and not the other.
+        [
+            'name' => 'blPaymentBaseAutoAssignSingleShipping',
+            'type' => 'bool',
+            'value' => true,
+            'group' => 'checkout_flow',
+        ],
     ],
 ];
