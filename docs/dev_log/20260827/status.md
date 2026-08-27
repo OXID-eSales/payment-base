@@ -1,32 +1,57 @@
 # 2026-08-27 — payment-base
 
+**Implementation report: [reports/01-sprint-07-implementation-report.md](reports/01-sprint-07-implementation-report.md)**
+— sprint 07 shipped, the premise it had to correct, and what it uncovered in the E2E suite.
+
 ## Sprints
 
-- **Sprint 07** — [Single active shipping method: auto-assign and hide the shipping blocks](sprints/sprint-07-single-active-shipping-method.md) — *planned, not started*
+- **Sprint 07** — [Single active shipping method: auto-assign and hide the shipping blocks](done/sprint-07-single-active-shipping-method.md) — *S1–S5 + S7 implemented; S6 not built (gated on D1)*
   Binding requirements: [`sprints/_engeneering_requirements.md`](sprints/_engeneering_requirements.md)
   Predecessor: [Sprint 06](../20260826/sprints/sprint-06-single-active-payment-auto-assign.md) (payment half, shipped 2026-08-26)
+  Branches: `payment-base` and `stripe` both on `sprint-07-single-active-shipping`; E2E submodule on `projects/Stripe`. **Not pushed.**
 
-## Open decisions blocking the sprint
+## V1 — answered, and it corrected the sprint
+
+Core **does** persist the chosen delivery set on a plain render: `Basket::setShipping()`
+mirrors the id into the session, and `getPaymentList()` calls it during `parent::render()`.
+The sprint's §1a said the opposite and was wrong; sprint 06's code comment was right.
+`isValidPayment()` would refuse a falsy ship set (`_iPaymentError = -2`), but that branch
+is unreachable from the payment step. **No latent gap.** Consequences — the assigner now
+corrects rather than writes, its write includes the `onUpdate()` core does, and the
+ordering invariant is real but narrower than claimed — are in report §0.
+
+## Open decisions
 
 - **D1** — skip the payment step entirely when *both* payment and shipping are auto-assigned.
-  Recommended yes, as story S6, after S1–S5 are green. Do not build speculatively.
-- **D2** — deduplicate `SinglePayment*` / `SingleShipping*`. Recommended no: the payment
-  rules have no shipping analogue, and sprint 06 is verified-live code under an
-  additive-only requirement.
-- **Order-overview completeness** — carried over unresolved from sprint 06 and sharper for
-  shipping (carrier + delivery cost are price components in a German order review).
-  Recommended: static non-clickable carrier line on the order page, full hide on the
-  payment step. Settle it for shipping and payment together.
-
-## Verification item found while planning
-
-- **V1** — core never persists `sShipSet` on a plain render: `getPaymentList()` calls
-  `Basket::setShipping()` but writes no session variable, only `changeshipping()` does, and
-  neither core's payment form nor sprint 06's reduced form posts `sShipSet`. So
-  `validatePayment()` can reach `isValidPayment(..., $shipSetId = false)` today. Pre-existing;
-  the sprint's assigner closes it as a side effect. Confirm the live behaviour before and
-  after and record it either way.
+  **Not built; needs a yes.** Everything it depends on is in place and green, and the
+  renderer test shows the step is down to a bare form plus navigation. Recommendation
+  unchanged: do it, as its own commit.
+- **D2** — deduplicate `SinglePayment*` / `SingleShipping*`. **Answered: no.** The
+  implementation strengthened the case — shipping has three rules to payment's six, no
+  user parameter, and an idempotence guard payment does not want.
+- **Order-overview completeness (BGB §312j)** — **still open, and the only thing blocking
+  a clean DoD.** Recommendation: static non-clickable carrier line on the order page,
+  full hide on the payment step; settle sprint 06's identical question for the payment
+  line at the same time. One Twig condition in two files.
 
 ## State
 
-- Nothing implemented today. Working tree clean at planning time; last commit is sprint 06's.
+- payment-base gates green: phpcs, phpstan **level max**, phpmd. Neither baseline grew.
+- Unit 1182 → **1236**, Integration 95 → **104**, Integration-renderer 7 → **16**.
+- stripe Integration 92 → **96**. Its Unit suite still cannot be built in this shop
+  (pre-existing class-chain recursion, names no sprint-07 symbol).
+- Consumers unchanged: mollie 582, paypal 449, opalreturns 353, OPC 316 (same one
+  pre-existing error) — identical counts before and after.
+- Verified against the running local shop: with one effective delivery set the selector
+  is hidden, with two it is shown, and the kill switch restores the old behaviour both
+  ways. The four delivery sets were restored to their recorded pre-test state.
+- **E2E written but not executed**: the local shop's `sShopURL` points at the remote
+  `https://pay1.oxid.dev`, so Playwright never reaches local code. The existing payment
+  spec fails the same way for the same reason. Fix is one config change.
+- **Found on the way**: `single-payment-matrix.spec.ts` asserted the shipping selector
+  and `#orderShipping` were unconditionally present. Sprint 07 makes that false on a
+  one-carrier shop; both assertions are now `EXPECT_SHIPPING`-aware, defaulting to the
+  old behaviour.
+- Still inaccurate since sprint 06 and left alone as out of scope: the English label for
+  `blPaymentBaseAutoAssignSinglePayment` says "Skip the payment step", which the step
+  no longer does.

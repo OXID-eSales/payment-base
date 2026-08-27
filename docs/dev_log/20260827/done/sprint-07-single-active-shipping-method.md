@@ -11,6 +11,16 @@ records why sprint 06 does **block replacement, not step skipping**).
 **Estimated size:** ~230 LOC production, ~380 LOC tests, 1 new module setting, 0 new class extensions
 (both are already in the `extend` map), 2 payment-base template blocks + 1 stripe condition.
 
+
+> **Revised 2026-08-27 during implementation — read this first.** §1a below claims
+> core never persists `sShipSet` on a plain render, and builds the sprint's
+> justification on it. That is **wrong**: `Basket::setShipping()` mirrors the id into
+> the session, and `PaymentController::getPaymentList()` calls it during
+> `parent::render()`. V1 is answered — there is no latent gap, and sprint 06 was
+> right. What shipped, and the three things that follow from the correction, are in
+> [reports/01-sprint-07-implementation-report.md](../reports/01-sprint-07-implementation-report.md) §0.
+> **S6 was not built** (decision D1 was never confirmed); everything else is done.
+
 ---
 
 ## 1. Why
