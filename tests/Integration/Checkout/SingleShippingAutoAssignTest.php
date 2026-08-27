@@ -12,10 +12,12 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Checkout;
 use OxidEsales\Eshop\Application\Model\DeliverySet;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
+use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingAssignerInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingResolverInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingSettingsInterface;
 use OxidEsales\PaymentBase\Checkout\ShippingCandidateFactory;
+use OxidEsales\PaymentBase\Checkout\PaymentStepSkipGuard;
 use OxidEsales\PaymentBase\Checkout\SingleShippingAssigner;
 use OxidEsales\PaymentBase\Checkout\SingleShippingResolver;
 use OxidEsales\PaymentBase\Checkout\SingleShippingSettings;
@@ -133,6 +135,41 @@ class SingleShippingAutoAssignTest extends IntegrationTestCase
             'oxidstandard' => $this->loadDeliverySet('oxidstandard'),
             'express' => $this->loadDeliverySet('oxidstandard'),
         ])));
+    }
+
+    /**
+     * Sprint 07 S6 — the skip guard has to be resolvable from both controller
+     * extensions at runtime. A private service would be inlined away and the
+     * payment step would die on a missing id at exactly the moment it tried to
+     * take the shortcut.
+     */
+    public function testSkipGuardIsReachableFromTheContainer(): void
+    {
+        $guard = ContainerFactory::getInstance()->getContainer()
+            ->get(PaymentStepSkipGuardInterface::class);
+
+        $this->assertInstanceOf(PaymentStepSkipGuard::class, $guard);
+    }
+
+    /**
+     * And the guard must actually work against the shop's real session — a
+     * one-shot that always answers true would reintroduce the redirect loop it
+     * exists to prevent.
+     */
+    public function testSkipGuardIsOneShotAgainstTheRealSession(): void
+    {
+        /** @var PaymentStepSkipGuardInterface $guard */
+        $guard = ContainerFactory::getInstance()->getContainer()
+            ->get(PaymentStepSkipGuardInterface::class);
+
+        $guard->clear();
+        $this->assertTrue($guard->maySkip(), 'a fresh checkout may take the shortcut');
+
+        $guard->markSkipped();
+        $this->assertFalse($guard->maySkip(), 'a spent shortcut must not be granted again');
+
+        $guard->clear();
+        $this->assertTrue($guard->maySkip(), 'reaching the order step re-arms it');
     }
 
     private function loadDeliverySet(string $shipSetId): DeliverySet

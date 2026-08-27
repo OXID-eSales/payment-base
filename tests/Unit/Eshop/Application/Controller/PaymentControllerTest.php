@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Eshop\Application\Controller;
 
+use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentAssignerInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentResolverInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentSettingsInterface;
@@ -64,6 +65,33 @@ final class SpySinglePaymentAssigner implements SinglePaymentAssignerInterface
         }
 
         return $this->result;
+    }
+}
+
+final class SpyPaymentStepSkipGuard implements PaymentStepSkipGuardInterface
+{
+    public int $marks = 0;
+    public int $clears = 0;
+
+    public function __construct(private bool $maySkip = true)
+    {
+    }
+
+    public function maySkip(): bool
+    {
+        return $this->maySkip;
+    }
+
+    public function markSkipped(): void
+    {
+        $this->marks++;
+        $this->maySkip = false;
+    }
+
+    public function clear(): void
+    {
+        $this->clears++;
+        $this->maySkip = true;
     }
 }
 
@@ -147,7 +175,21 @@ final class TestablePaymentController extends PaymentController
         private readonly ?SingleShippingSettingsInterface $shippingSettings = null,
         private readonly ?SpySingleShippingAssigner $shippingAssigner = null,
         private readonly array|false $allSets = [],
+        private readonly ?SpyPaymentStepSkipGuard $skipGuard = null,
     ) {
+    }
+
+    /** @var list<string> */
+    public array $redirects = [];
+
+    protected function getPaymentStepSkipGuard(): PaymentStepSkipGuardInterface
+    {
+        return $this->skipGuard ?? new SpyPaymentStepSkipGuard();
+    }
+
+    protected function redirectToOrderStep(): void
+    {
+        $this->redirects[] = 'cl=order';
     }
 
     protected function getSinglePaymentSettings(): SinglePaymentSettingsInterface
@@ -543,5 +585,137 @@ final class PaymentControllerTest extends TestCase
 
         $this->assertFalse($controller->isSinglePaymentAutoAssigned());
         $this->assertTrue($controller->isSingleShippingAutoAssigned());
+    }
+
+    // ---------------------------------------------------------------
+    // Sprint 07 S6 (decision D1) — skipping the step when both halves
+    // are auto-assigned and there is nothing left on the page.
+    // ---------------------------------------------------------------
+
+    private function bothAssignedController(
+        bool $paymentEnabled = true,
+        bool $shippingEnabled = true,
+        ?SpyPaymentStepSkipGuard $guard = null,
+        mixed $paymentError = null,
+    ): TestablePaymentController {
+        return new TestablePaymentController(
+            new FakeSinglePaymentSettings($paymentEnabled),
+            new SpySinglePaymentAssigner(),
+            ['oxidinvoice' => new ListedPayment()],
+            $paymentError,
+            'user-object',
+            new FakeSingleShippingSettings($shippingEnabled),
+            new SpySingleShippingAssigner(),
+            ['oxidstandard' => new ListedShipSet()],
+            $guard ?? new SpyPaymentStepSkipGuard(),
+        );
+    }
+
+    public function testStepIsSkippedWhenBothHalvesAreAutoAssigned(): void
+    {
+        $guard = new SpyPaymentStepSkipGuard();
+        $controller = $this->bothAssignedController(guard: $guard);
+
+        $controller->render();
+
+        $this->assertSame(['cl=order'], $controller->redirects);
+        $this->assertSame(1, $guard->marks, 'the skip must be recorded before it is taken');
+    }
+
+    /**
+     * The whole premise of D1: the step is skipped only because *nothing* is
+     * left on it. One remaining choice and the customer must see the page.
+     */
+    public function testStepIsNotSkippedWhenOnlyPaymentIsAutoAssigned(): void
+    {
+        $controller = $this->bothAssignedController(shippingEnabled: false);
+
+        $controller->render();
+
+        $this->assertTrue($controller->isSinglePaymentAutoAssigned());
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+        $this->assertSame([], $controller->redirects);
+    }
+
+    public function testStepIsNotSkippedWhenOnlyShippingIsAutoAssigned(): void
+    {
+        $controller = $this->bothAssignedController(paymentEnabled: false);
+
+        $controller->render();
+
+        $this->assertFalse($controller->isSinglePaymentAutoAssigned());
+        $this->assertTrue($controller->isSingleShippingAutoAssigned());
+        $this->assertSame([], $controller->redirects);
+    }
+
+    public function testStepIsNotSkippedWhenNeitherIsAutoAssigned(): void
+    {
+        $controller = $this->bothAssignedController(paymentEnabled: false, shippingEnabled: false);
+
+        $controller->render();
+
+        $this->assertSame([], $controller->redirects);
+    }
+
+    /**
+     * A payment error already suppresses the payment assignment, so the step
+     * cannot be skipped past a message the customer has to act on. Asserted
+     * directly, because it is the failure that would hurt most.
+     */
+    public function testStepIsNotSkippedWhileAPaymentErrorIsPending(): void
+    {
+        $controller = $this->bothAssignedController(paymentError: -3);
+
+        $controller->render();
+
+        $this->assertSame([], $controller->redirects);
+    }
+
+    /**
+     * The redirect-loop guard. The order step bounces back to `cl=payment`
+     * whenever it cannot resolve a payment; if we skipped forward again the two
+     * would ping-pong. Coming back with the guard spent means: render the page.
+     */
+    public function testASecondArrivalAfterABounceRendersTheStepInstead(): void
+    {
+        $guard = new SpyPaymentStepSkipGuard(maySkip: false);
+        $controller = $this->bothAssignedController(guard: $guard);
+
+        $controller->render();
+
+        $this->assertSame([], $controller->redirects);
+        $this->assertSame(0, $guard->marks);
+    }
+
+    /**
+     * Even when it does not redirect, the reduced page must still be correct —
+     * both blocks hidden and the assigned ids available to the bare form.
+     */
+    public function testTheBouncedStepStillRendersReducedAndSubmittable(): void
+    {
+        $controller = $this->bothAssignedController(guard: new SpyPaymentStepSkipGuard(maySkip: false));
+
+        $this->assertSame('', $controller->render());
+        $this->assertTrue($controller->isSinglePaymentAutoAssigned());
+        $this->assertTrue($controller->isSingleShippingAutoAssigned());
+        $this->assertSame('oxidinvoice', $controller->getSinglePaymentId());
+    }
+
+    /**
+     * Both kill switches still work as kill switches: either one off means the
+     * step is not skipped, because the other half is still a real choice.
+     */
+    public function testEitherKillSwitchAloneStopsTheSkip(): void
+    {
+        foreach ([[false, true], [true, false]] as [$payment, $shipping]) {
+            $controller = $this->bothAssignedController(
+                paymentEnabled: $payment,
+                shippingEnabled: $shipping,
+            );
+
+            $controller->render();
+
+            $this->assertSame([], $controller->redirects);
+        }
     }
 }
