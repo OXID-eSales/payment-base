@@ -11,7 +11,10 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Eshop\Application\Controller;
 
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentResolverInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\SinglePaymentSettingsInterface;
+use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingResolverInterface;
+use OxidEsales\PaymentBase\Checkout\Contract\SingleShippingSettingsInterface;
 use OxidEsales\PaymentBase\Checkout\SinglePaymentResolver;
+use OxidEsales\PaymentBase\Checkout\SingleShippingResolver;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -33,21 +36,70 @@ final class SelectedPayment
     }
 }
 
+/**
+ * The delivery set the order page is about to use, as core's getShipSet()
+ * hands it over — loaded from the basket's shipping id, or false.
+ */
+final class SelectedShipSet
+{
+    public function __construct(private readonly ?string $id)
+    {
+    }
+
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+}
+
 final class TestableOrderController extends OrderController
 {
     public int $paymentListReads = 0;
+    public int $deliverySetListReads = 0;
 
-    /** @param array<array-key, mixed> $availablePaymentList */
+    /**
+     * @param array<array-key, mixed> $availablePaymentList
+     * @param array<array-key, mixed> $availableDeliverySetList
+     */
     public function __construct(
         private readonly SinglePaymentSettingsInterface $settings,
         private readonly mixed $payment,
         private readonly array $availablePaymentList = [],
+        private readonly ?SingleShippingSettingsInterface $shippingSettings = null,
+        private readonly mixed $shipSet = false,
+        private readonly array $availableDeliverySetList = [],
     ) {
     }
 
     protected function getSinglePaymentSettings(): SinglePaymentSettingsInterface
     {
         return $this->settings;
+    }
+
+    protected function getSingleShippingSettings(): SingleShippingSettingsInterface
+    {
+        return $this->shippingSettings ?? new FakeSingleShippingSettings(false);
+    }
+
+    protected function getSingleShippingResolver(): SingleShippingResolverInterface
+    {
+        return new SingleShippingResolver();
+    }
+
+    public function getShipSet()
+    {
+        if ($this->shipSet === 'throw') {
+            throw new RuntimeException('delivery set unavailable');
+        }
+
+        return $this->shipSet;
+    }
+
+    protected function readAvailableDeliverySetList(): array
+    {
+        $this->deliverySetListReads++;
+
+        return $this->availableDeliverySetList;
     }
 
     protected function getSinglePaymentResolver(): SinglePaymentResolverInterface
@@ -91,6 +143,21 @@ final class UnbootstrappedOrderController extends OrderController
     protected function getSinglePaymentResolver(): SinglePaymentResolverInterface
     {
         return new SinglePaymentResolver();
+    }
+
+    protected function getSingleShippingSettings(): SingleShippingSettingsInterface
+    {
+        return new FakeSingleShippingSettings(true);
+    }
+
+    protected function getSingleShippingResolver(): SingleShippingResolverInterface
+    {
+        return new SingleShippingResolver();
+    }
+
+    public function getShipSet()
+    {
+        return new SelectedShipSet('oxidstandard');
     }
 
     public function getPayment()
@@ -234,5 +301,144 @@ final class OrderControllerTest extends TestCase
         $controller->isSinglePaymentAutoAssigned();
 
         $this->assertSame(1, $controller->paymentListReads);
+    }
+
+    // ---------------------------------------------------------------
+    // Sprint 07 — hiding the order page's shipping-carrier block.
+    // ---------------------------------------------------------------
+
+    /** @param array<array-key, mixed> $availableDeliverySetList */
+    private function shippingController(
+        mixed $shipSet,
+        array $availableDeliverySetList,
+        bool $enabled = true,
+    ): TestableOrderController {
+        return new TestableOrderController(
+            new FakeSinglePaymentSettings(false),
+            false,
+            [],
+            new FakeSingleShippingSettings($enabled),
+            $shipSet,
+            $availableDeliverySetList,
+        );
+    }
+
+    public function testCarrierBlockIsHiddenWhenTheOrderUsesTheOnlyAvailableSet(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet('oxidstandard'),
+            ['oxidstandard' => new ListedShipSet()],
+        );
+
+        $this->assertTrue($controller->isSingleShippingAutoAssigned());
+    }
+
+    public function testCarrierBlockIsShownWhenTheCustomerHadAChoice(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet('oxidstandard'),
+            ['oxidstandard' => new ListedShipSet(), 'express' => new ListedShipSet()],
+        );
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    /**
+     * Self-healing: the merchant activates a second delivery set mid-session,
+     * so the order no longer runs on the shop's only carrier and the block
+     * comes back. This is why the answer is recomputed per request rather than
+     * remembered in the session.
+     */
+    public function testStaleCarrierSelectionShowsTheBlockAgain(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet('express'),
+            ['oxidstandard' => new ListedShipSet()],
+        );
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    public function testDisabledShippingSettingShowsTheCarrierBlock(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet('oxidstandard'),
+            ['oxidstandard' => new ListedShipSet()],
+            enabled: false,
+        );
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+        $this->assertSame(0, $controller->deliverySetListReads, 'the kill switch must short-circuit');
+    }
+
+    /**
+     * Core returns false from getShipSet() when the basket carries no loadable
+     * delivery set.
+     */
+    public function testMissingShipSetShowsTheCarrierBlock(): void
+    {
+        $controller = $this->shippingController(false, ['oxidstandard' => new ListedShipSet()]);
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    public function testShipSetWithoutAnIdShowsTheCarrierBlock(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet(null),
+            ['oxidstandard' => new ListedShipSet()],
+        );
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    public function testUnreadableShipSetShowsTheCarrierBlock(): void
+    {
+        $controller = $this->shippingController('throw', ['oxidstandard' => new ListedShipSet()]);
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    /**
+     * Without a shop behind it the delivery-set list cannot be read at all.
+     * That must produce "show the block", not an exception on the order page.
+     */
+    public function testShopThatCannotAnswerShowsTheCarrierBlock(): void
+    {
+        $controller = new UnbootstrappedOrderController(new SelectedPayment('oxidinvoice'));
+
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
+    }
+
+    public function testCarrierDecisionIsComputedOncePerRequest(): void
+    {
+        $controller = $this->shippingController(
+            new SelectedShipSet('oxidstandard'),
+            ['oxidstandard' => new ListedShipSet()],
+        );
+
+        $controller->isSingleShippingAutoAssigned();
+        $controller->isSingleShippingAutoAssigned();
+
+        $this->assertSame(1, $controller->deliverySetListReads);
+    }
+
+    /**
+     * The two blocks are decided independently — hiding the carrier must not
+     * drag sprint 06's payment block with it, or vice versa.
+     */
+    public function testTheTwoBlocksAreDecidedIndependently(): void
+    {
+        $controller = new TestableOrderController(
+            new FakeSinglePaymentSettings(true),
+            new SelectedPayment('oxidinvoice'),
+            ['oxidinvoice' => new ListedPayment()],
+            new FakeSingleShippingSettings(true),
+            new SelectedShipSet('oxidstandard'),
+            ['oxidstandard' => new ListedShipSet(), 'express' => new ListedShipSet()],
+        );
+
+        $this->assertTrue($controller->isSinglePaymentAutoAssigned());
+        $this->assertFalse($controller->isSingleShippingAutoAssigned());
     }
 }
