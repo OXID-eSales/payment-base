@@ -27,9 +27,8 @@ use OxidEsales\PaymentBase\Checkout\ResolvesSingleShippingMethod;
  * the checkout forward.
  *
  * Sprint 07 does the same for the delivery-set selector that shares this step,
- * and adds the write core omits: `sShipSet` is persisted on the customer's
- * behalf, because once the selector is hidden nothing else on the page can
- * write it.
+ * and makes sure `sShipSet` really names the only available set before hiding
+ * the control that would otherwise submit it.
  *
  * The decision runs after parent::render(), because the parent is what resolves
  * the delivery set and the payment list the decision reads.
@@ -47,12 +46,12 @@ class PaymentController extends PaymentController_parent
     {
         $template = (string) parent::render();
 
-        // Shipping first, and the order is load-bearing rather than stylistic.
-        // SinglePaymentAssigner validates the method against the session's
-        // sShipSet, which core writes only in changeshipping() — so on a first
-        // visit the variable does not exist yet. Assigning shipping second
-        // would validate the payment against a falsy delivery set on exactly
-        // the request that matters.
+        // Shipping first, because SinglePaymentAssigner validates the method
+        // against the session's sShipSet. Normally core has already put the
+        // right value there (getPaymentList() -> Basket::setShipping()), so the
+        // order makes no difference — but on the one request where the shipping
+        // assignment has something to correct, running it second would validate
+        // the payment against the value it is about to replace.
         $this->autoAssignedShipSetId = $this->assignSingleShippingMethod();
         $this->autoAssignedPaymentId = $this->assignSinglePaymentMethod();
 
@@ -101,7 +100,7 @@ class PaymentController extends PaymentController_parent
     /**
      * The sets core has already filtered for this user, country and basket.
      * Only populated once parent::render() has run — core memoises it together
-     * with the payment list.
+     * with the payment list, and reading it earlier returns an empty list.
      */
     protected function resolveSingleShipSetId(): ?string
     {

@@ -16,18 +16,23 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * Records the order of the basket writes. Core clears the shipping before
- * setting it so the lazily cached delivery cost cannot survive the change,
- * and that ordering is the reason this spy keeps a log rather than a value.
+ * Records the basket calls in order. Core clears the shipping and marks the
+ * basket for recalculation before recording the new choice, and that sequence
+ * is the reason this spy keeps a log rather than a value.
  */
 final class ShippingSpyBasket
 {
-    /** @var list<string|null> */
-    public array $shippingWrites = [];
+    /** @var list<string> */
+    public array $calls = [];
 
     public function setShipping(?string $shipSetId = null): void
     {
-        $this->shippingWrites[] = $shipSetId;
+        $this->calls[] = 'setShipping:' . ($shipSetId ?? 'null');
+    }
+
+    public function onUpdate(): void
+    {
+        $this->calls[] = 'onUpdate';
     }
 }
 
@@ -36,8 +41,11 @@ final class ShippingSpySession
     /** @var array<string, mixed> */
     public array $written = [];
 
-    public function __construct(private readonly ?ShippingSpyBasket $basket = null)
-    {
+    /** @param array<string, mixed> $variables */
+    public function __construct(
+        private readonly ?ShippingSpyBasket $basket = null,
+        private array $variables = [],
+    ) {
     }
 
     public function getBasket(): ?ShippingSpyBasket
@@ -45,8 +53,14 @@ final class ShippingSpySession
         return $this->basket;
     }
 
+    public function getVariable(string $name): mixed
+    {
+        return $this->variables[$name] ?? null;
+    }
+
     public function setVariable(string $name, mixed $value): void
     {
+        $this->variables[$name] = $value;
         $this->written[$name] = $value;
     }
 }
@@ -73,12 +87,12 @@ final class TestableSingleShippingAssigner extends SingleShippingAssigner
 /**
  * Sprint 07 — assigning the single delivery set.
  *
- * This is the substance of the sprint, not the cosmetics. Core never persists
- * the chosen set on a plain render: `PaymentController::getPaymentList()` calls
- * `Basket::setShipping()` but writes no session variable, only
- * `changeshipping()` does — and neither core's payment form nor sprint 06's
- * reduced form posts `sShipSet`. Once the selector is hidden the customer can
- * no longer set it even by accident, so the assigner has to.
+ * Core normally has this right already: `getPaymentList()` resolves the active
+ * set during `parent::render()` and `Basket::setShipping()` mirrors it into the
+ * session. So the assigner's job is to *correct*, not to write — it guarantees
+ * that the value the hidden `<select>` would have submitted is the one in the
+ * session, and otherwise leaves the basket alone rather than making it
+ * recalculate for no change.
  */
 #[CoversClass(SingleShippingAssigner::class)]
 final class SingleShippingAssignerTest extends TestCase
@@ -92,32 +106,61 @@ final class SingleShippingAssignerTest extends TestCase
     }
 
     /**
-     * The session variable is the whole point: `validatePayment()` reads
-     * `sShipSet` from the request first and the session second, and no form on
-     * the step posts it.
+     * `validatePayment()` reads `sShipSet` from the request first and the
+     * session second, and no form on the step posts it — so when the session
+     * disagrees with the only available set, the session is what gets corrected.
      */
-    public function testTheChosenSetIsPersistedInTheSession(): void
+    public function testADisagreeingSessionIsCorrected(): void
     {
-        $session = new ShippingSpySession(new ShippingSpyBasket());
+        $session = new ShippingSpySession(new ShippingSpyBasket(), ['sShipSet' => 'express']);
         $assigner = new TestableSingleShippingAssigner($session);
 
         $this->assertTrue($assigner->assign('oxidstandard'));
         $this->assertSame(['sShipSet' => 'oxidstandard'], $session->written);
     }
 
+    public function testAnEmptySessionIsFilledIn(): void
+    {
+        $session = new ShippingSpySession(new ShippingSpyBasket());
+        $assigner = new TestableSingleShippingAssigner($session);
+
+        $this->assertTrue($assigner->assign('oxidstandard'));
+        $this->assertSame('oxidstandard', $session->written['sShipSet'] ?? null);
+    }
+
     /**
-     * Core's `changeshipping()` clears the basket's shipping before setting it,
-     * so the cached delivery cost is recomputed. Same sequence here — a single
-     * `setShipping($id)` would leave a stale cost behind.
+     * Core's `changeshipping()` clears the shipping and calls `onUpdate()` — the
+     * flag that makes the basket recalculate — before recording the new choice.
+     * Omitting `onUpdate()` would leave a stale delivery cost behind, and an
+     * end-value assertion on the session would not notice.
      */
-    public function testBasketShippingIsClearedBeforeItIsSet(): void
+    public function testTheWriteFollowsCoreSequenceExactly(): void
     {
         $basket = new ShippingSpyBasket();
-        $assigner = new TestableSingleShippingAssigner(new ShippingSpySession($basket));
+        $assigner = new TestableSingleShippingAssigner(
+            new ShippingSpySession($basket, ['sShipSet' => 'express'])
+        );
 
         $assigner->assign('oxidstandard');
 
-        $this->assertSame([null, 'oxidstandard'], $basket->shippingWrites);
+        $this->assertSame(['setShipping:null', 'onUpdate'], $basket->calls);
+    }
+
+    /**
+     * The common case, and the reason the guard exists: core already resolved
+     * and persisted this very set during parent::render(). Touching the basket
+     * would force a recalculation on every render of a single-carrier shop, for
+     * a value that is already correct.
+     */
+    public function testAnAlreadyCorrectSessionIsLeftAlone(): void
+    {
+        $basket = new ShippingSpyBasket();
+        $session = new ShippingSpySession($basket, ['sShipSet' => 'oxidstandard']);
+        $assigner = new TestableSingleShippingAssigner($session);
+
+        $this->assertTrue($assigner->assign('oxidstandard'));
+        $this->assertSame([], $basket->calls);
+        $this->assertSame([], $session->written);
     }
 
     public function testEmptySetIdIsNotAssigned(): void
