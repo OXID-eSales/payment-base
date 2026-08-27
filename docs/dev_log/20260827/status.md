@@ -23,9 +23,10 @@ ordering invariant is real but narrower than claimed — are in report §0.
 ## Open decisions
 
 - **D1** — skip the payment step entirely when *both* payment and shipping are auto-assigned.
-  **Not built; needs a yes.** Everything it depends on is in place and green, and the
-  renderer test shows the step is down to a bare form plus navigation. Recommendation
-  unchanged: do it, as its own commit.
+  **Not built; needs a yes.** Everything it depends on is in place and green, the renderer
+  test shows the step is down to a bare form plus navigation, and the E2E run reached that
+  exact state on a real shop with the order page still placeable. Recommendation unchanged:
+  do it, as its own commit.
 - **D2** — deduplicate `SinglePayment*` / `SingleShipping*`. **Answered: no.** The
   implementation strengthened the case — shipping has three rules to payment's six, no
   user parameter, and an idempotence guard payment does not want.
@@ -45,13 +46,30 @@ ordering invariant is real but narrower than claimed — are in report §0.
 - Verified against the running local shop: with one effective delivery set the selector
   is hidden, with two it is shown, and the kill switch restores the old behaviour both
   ways. The four delivery sets were restored to their recorded pre-test state.
-- **E2E written but not executed**: the local shop's `sShopURL` points at the remote
-  `https://pay1.oxid.dev`, so Playwright never reaches local code. The existing payment
-  spec fails the same way for the same reason. Fix is one config change.
+- **E2E green**, all four cells, against `https://daniil.oxiddev.de` (this shop,
+  tunnelled — the container's own `getShopUrl()` confirms it):
+
+  | delivery sets | setting | selector (options) | `#orderShipping` | `#orderPayment` |
+  |---|---|---|---|---|
+  | 2 effective | on | 1 (2) | 1 | 0 |
+  | 1 effective | on | **0** | **0** | 0 |
+  | 1 effective | off | 1 (1) | 1 | 0 |
+  | 1 effective, payment matrix | on | 0 | — | 0 |
+
+  No messages displayed in any cell; the order page stayed placeable throughout.
+  Row 2 is also the D1 state (both blocks hidden). Was blocked earlier in the day when
+  `sShopURL` still read `pay1.oxid.dev`; the env was repointed and the run went ahead.
+  Gotcha for the next run: the specs' default product is a variant parent whose
+  `#toBasket` never appears — pass `TEST_PRODUCT_ANID=0757c381b5c2efea14b10d34822c67ed`.
 - **Found on the way**: `single-payment-matrix.spec.ts` asserted the shipping selector
   and `#orderShipping` were unconditionally present. Sprint 07 makes that false on a
   one-carrier shop; both assertions are now `EXPECT_SHIPPING`-aware, defaulting to the
-  old behaviour.
+  old behaviour. Confirmed necessary, not precautionary — the re-run measured
+  `shipSetSelects=0` exactly where the old assertion demanded 1.
+- Delivery sets were restored to their exact captured pre-test state. Note that state
+  was already `294c2e89…=0` when the E2E run began, having changed since the earlier
+  probe in the same session — worth confirming the shop's sets are as intended before
+  drawing conclusions from a future run.
 - Still inaccurate since sprint 06 and left alone as out of scope: the English label for
   `blPaymentBaseAutoAssignSinglePayment` says "Skip the payment step", which the step
   no longer does.
