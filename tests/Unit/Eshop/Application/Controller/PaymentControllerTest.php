@@ -471,11 +471,12 @@ final class PaymentControllerTest extends TestCase
      * rather than an end-state one.
      *
      * SinglePaymentAssigner validates the method against the session's
-     * sShipSet. On a first visit that variable does not exist yet — core writes
-     * it only in changeshipping(). If the shipping assignment ran second, the
-     * payment would be validated against a falsy delivery set on the very
-     * request that matters, and an end-state check would still pass because the
-     * next request finds sShipSet already written.
+     * sShipSet. Normally core has already written the right value there during
+     * parent::render(), so the order changes nothing — but on the one request
+     * where the shipping assignment has something to correct, running it second
+     * would validate the payment against the value it is about to replace. An
+     * end-state assertion cannot see that: both orders leave the same session
+     * behind.
      */
     public function testShippingIsAssignedBeforePayment(): void
     {

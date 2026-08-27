@@ -20,12 +20,18 @@ use Throwable;
  * downstream code can tell the difference between an auto-assignment and a
  * customer picking the only option in the dropdown.
  *
- * This is the load-bearing half of the feature. Core does not persist the set
- * on a plain render — `getPaymentList()` calls `Basket::setShipping()` but
- * writes no session variable, and only `changeshipping()` writes `sShipSet`.
- * Meanwhile `validatePayment()` reads `sShipSet` from the request first and the
- * session second, and no form on the step posts it. Hiding the selector removes
- * the customer's last route to that value, so the assigner supplies it.
+ * **Usually there is nothing to do.** `PaymentController::getPaymentList()`
+ * resolves the active set during `parent::render()` and calls
+ * `Basket::setShipping()`, which mirrors the id into the session — so by the
+ * time we are asked, `sShipSet` normally already holds exactly the set we would
+ * assign. Re-writing it would force a basket recalculation (`onUpdate()`) for
+ * no change at all, on every render of a single-carrier shop.
+ *
+ * So the assigner corrects rather than writes: it makes this module's decision
+ * authoritative if the session ever disagrees — another module in the
+ * PaymentController chain may suppress or alter core's write — and otherwise
+ * gets out of the way. That is what makes hiding the selector safe: the value
+ * the hidden `<select>` would have submitted is guaranteed to be there.
  *
  * The shop is reached through one protected seam so the write sequence is
  * unit-testable without a bootstrap.
@@ -59,12 +65,19 @@ class SingleShippingAssigner implements SingleShippingAssignerInterface
             return false;
         }
 
-        // Core clears the shipping before setting it so the basket's cached
-        // delivery cost is recomputed rather than carried over.
-        $basket->setShipping(null);
+        // The common case: core already resolved and persisted this very set
+        // during parent::render(). Nothing to correct, and no reason to make
+        // the basket recalculate.
+        if ($session->getVariable(self::SESSION_SHIP_SET) === $shipSetId) {
+            return true;
+        }
 
+        // Core's changeshipping() sequence, in core's order: clear, mark the
+        // basket for recalculation, then record the choice. The basket picks
+        // the new id up lazily through getShippingId().
+        $basket->setShipping(null);
+        $basket->onUpdate();
         $session->setVariable(self::SESSION_SHIP_SET, $shipSetId);
-        $basket->setShipping($shipSetId);
 
         return true;
     }
