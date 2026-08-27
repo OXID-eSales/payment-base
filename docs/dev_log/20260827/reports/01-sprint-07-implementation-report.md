@@ -3,7 +3,7 @@
 **Sprint:** [sprint-07-single-active-shipping-method.md](../done/sprint-07-single-active-shipping-method.md)
 **Requirements:** [`_engeneering_requirements.md`](../sprints/_engeneering_requirements.md)
 **Modules:** `payment-base` (branch `sprint-07-single-active-shipping`) + one template condition and two E2E specs in `stripe`.
-**State:** S1–S5 and S7 done, E2E green against the tunnelled local shop. **S6 not built** — it was gated on decision D1, which is answered below and is the user's call. Revised once during implementation: §0.
+**State:** S1–S7 done, all E2E green against the tunnelled local shop. **S6 built** — D1 was confirmed yes after the rest had shipped. Revised once during implementation: §0.
 
 ---
 
@@ -230,17 +230,8 @@ recorded results stand. Its footer now says so explicitly.
 
 ## 6. Decisions
 
-**D1 — skip the payment step when both halves are auto-assigned?**
-**Not built. This is the user's call and it was never confirmed.** The sprint
-said "do not build speculatively" and that still holds: it is a second, larger
-behaviour change (a redirect, not a hidden block), and the case for it rests on
-the step being empty — which the renderer test
-`testBothBlocksCanBeHiddenAndTheSubmitPathSurvives` now demonstrates is *almost*
-true: what remains is the bare `<form id="payment">` plus the step's own
-navigation. The E2E run reached that state on a real shop (§4, row 2) and the
-order page stayed placeable. Everything S6 needs is in place and green; it is
-one guarded redirect away. My recommendation is unchanged — do it, as its own commit, once
-someone says so.
+**D1 — skip the payment step when both halves are auto-assigned? Answered yes,
+and built as S6.** See §8 for what shipped and how the redirect loop was closed.
 
 **D2 — deduplicate `SinglePayment*` and `SingleShipping*`?** **No, as
 recommended, and the implementation strengthened the case.** The shipping family
@@ -263,10 +254,93 @@ was for payment.
 
 ## 7. Open / not done
 
-- **S6** — gated on D1 above.
 - **Order-overview decision** — above. Blocks DoD sign-off.
 - **E2E execution** — done, all four cells green (§4). No longer open.
 - **`SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment`'s English label** still
   reads "Skip the payment step…", which has been inaccurate since sprint 06's
   correction (the step is not skipped; its block is replaced). Left alone as out
   of scope — it is sprint 06's text — but it should be corrected.
+
+---
+
+## 8. S6 — skipping the step (added after D1 was confirmed)
+
+### What it does
+
+When the payment method **and** the delivery set were both auto-assigned in the
+same request, `cl=payment` answers a 302 to `cl=order`. Before S6 the customer
+was shown a page consisting of a heading, a "previous" link, a "next" button and
+an invisible `<form id="payment">`.
+
+The condition is deliberately **"both were assigned"**, not "both settings are
+on". A refused assignment — an invalid method, a pending payment error — leaves a
+real page behind, and skipping past it would hide something the customer has to
+act on. Either kill switch therefore also disables the skip, which is why **no
+third setting was added**: the two existing flags already gate it, and a merchant
+who wants the blocks hidden *without* the skip is a case nobody has asked for.
+It is a small change to add if that turns out to be wrong.
+
+### The redirect loop, and why it cannot happen
+
+This is the only genuinely dangerous part of S6 and it deserves stating plainly.
+
+`OrderController::render()` redirects back to `cl=payment` whenever
+`getPayment()` returns false. A skipping payment step redirects forward to
+`cl=order`. Two 302s pointing at each other would spend the customer's checkout
+in a loop.
+
+They should never disagree: `getPayment()` validates with `session dynvalue`,
+shop id, user, `getPriceForPayment()` and `session sShipSet`, and
+`SinglePaymentAssigner` validates with exactly those — that parity is what sprint
+06 designed for, and the chain was re-verified for this story
+(`Basket::getPaymentId()` reads the session `paymentid` the assigner writes).
+But "should never disagree" is not a property worth betting a checkout on.
+
+So `PaymentStepSkipGuard` makes the skip a **one-shot**: granted once, and not
+granted again until the order step has actually rendered. `OrderController`
+gained a `render()` override that clears the guard — reached only when the parent
+really rendered, because core's own redirects `exit`. A bounce therefore costs
+one extra redirect and then shows the reduced payment step, which is precisely
+the pre-S6 behaviour. Every guard failure mode resolves to "do not skip":
+refusing the shortcut costs a click, taking it wrongly could strand someone.
+
+There is no back-link problem either: neither core's order template nor this
+module's has a "previous step" link, so the only routes to `cl=payment` are the
+two pencils (both hidden in this state) and the user step.
+
+### Verified live
+
+On `daniil.oxiddev.de`, one delivery set and one payment method:
+
+```
+302 .../index.php?cl=payment&lang=0  ->  .../index.php?...&cl=order
+FINAL_URL   : .../index.php?...&cl=order
+H1          : Bestellung
+form#payment: 0     #orderShipping/#orderPayment: 0/0     submit button: 1
+REDIRECTS   : exactly one
+```
+
+With either flag off: **zero** redirects, the payment step renders, `form#payment`
+present. Mollie's payment UI was still on the order page after the skip
+(`providerPaymentUi=2`), so the shortcut does not cost the customer a way to pay.
+
+One observation worth recording so it is not mistaken for a defect later: on the
+payment step the browser URL reads `cl=user` while the page is plainly the
+payment step (`H1: Versand & Zahlungsart`, `form#payment: 1`, zero redirects).
+That is OXID's own canonical-URL behaviour on that step, unrelated to this work.
+It looks alarming in a test log and is not.
+
+### Counts
+
+Unit 1236 → **1254**, Integration 104 → **106**. phpcs, PHPStan `--level max`
+and PHPMD clean; no baseline grown. The one PHPStan finding S6 raised was fixed
+by using `getShopSecureHomeUrl()` — the right accessor for a checkout step, since
+it keeps SSL and carries no stray request parameters — rather than by extending a
+stub or suppressing anything.
+
+### Invariant 4, amended
+
+Sprint 07 §6 invariant 4 said "no new session key". S6 necessarily adds one,
+`oepbPaymentStepSkipped`. It is the loop guard, it is cleared as soon as the
+order step renders, and it holds nothing but a boolean. The invariant stands for
+the *assignment* path, which still writes only core's own keys.
