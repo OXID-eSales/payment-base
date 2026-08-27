@@ -232,6 +232,15 @@ services:
     class: OxidEsales\PaymentBase\Checkout\SinglePaymentSettings
     public: true
 
+  # Sprint 07 — single active shipping method: assign it, hide the selector.
+  # Public for the same reason as their payment siblings: the classic-checkout
+  # controller extensions run under OXID `cl=` dispatch (no constructor DI) and
+  # resolve them via ContainerFactory. A private service would be inlined away
+  # and the runtime get() would die on a removed id.
+  OxidEsales\PaymentBase\Checkout\Contract\SingleShippingResolverInterface:
+    class: OxidEsales\PaymentBase\Checkout\SingleShippingResolver
+    public: true
+
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the
   # provider-agnostic flag via ContainerFactory::get(). Names no provider.
