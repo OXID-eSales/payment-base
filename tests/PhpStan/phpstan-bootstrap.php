@@ -171,6 +171,20 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Facad
     );
 }
 
+// Sprint 08 (2026-08-28) — stub ModuleSettingBridgeInterface for static analysis of
+// NotFinishedOrderCleanupSettings, which resolves it from the DI container.
+// The bridge, not the typed facade: OXID stores a 'num' setting as a string, so
+// the facade's getInteger(): int throws a TypeError on its own stored value.
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Bridge\ModuleSettingBridgeInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Configuration\\Bridge; '
+        . 'interface ModuleSettingBridgeInterface { '
+        . '  public function save(string $name, mixed $value, string $moduleId): void; '
+        . '  public function get(string $name, string $moduleId): mixed; '
+        . '}'
+    );
+}
+
 // Sprint 125 (STRP-157) — stub OxidEsales\Eshop\Core\Price for static analysis of
 // PriceToTaxableLineMapper (which accepts Price as a parameter).
 if (!class_exists(\OxidEsales\Eshop\Core\Price::class, false)) {

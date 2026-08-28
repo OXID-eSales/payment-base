@@ -52,6 +52,45 @@ services:
     alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
     public: true
 
+  # --------------------------------------------------------------
+  # Sprint 08 (2026-08-28) — abandoned-checkout collector.
+  #
+  # PSP modules create the order before redirecting to the provider, so a
+  # customer who never returns leaves an order at NOT_FINISHED with its
+  # vouchers spent. Cleanup used to happen only as a side effect of that
+  # customer retrying, or of an inbound provider webhook — a shop with
+  # neither collected nothing at all. The command below is the scheduled
+  # caller. It lives here rather than in a PSP module because every module
+  # using the early-order pattern leaves the same residue.
+  # --------------------------------------------------------------
+
+  OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+    public: true
+
+  OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface:
+    class: OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettings
+    public: true
+
+  OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface:
+    class: OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupService
+    arguments:
+      $orderRepository:    '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $logger:             '@?Psr\Log\LoggerInterface'
+    public: true
+
+  # Console command: oe:payments:not_finished:cleanup
+  OxidEsales\PaymentBase\Command\CleanupNotFinishedOrdersCommand:
+    arguments:
+      $cleanupService: '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface'
+      $settings:       '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface'
+    tags:
+      - { name: 'console.command', command: 'oe:payments:not_finished:cleanup' }
+    public: true
+
   # Sprint 93 — `doctrine.dbal.connection` is a factory wrapper
   # around OXID's ConnectionProviderInterface (which IS in core).
   # Defined identically in stripe-wallet's services.yaml; needed

@@ -91,5 +91,18 @@ $aModule = [
             'value' => true,
             'group' => 'checkout_flow',
         ],
+        // Sprint 08 (2026-08-28) — age threshold, in days, for
+        // `bin/oe-console oe:payments:not_finished:cleanup`. A PSP module creates the
+        // order before redirecting to the provider, so a customer who never comes back
+        // leaves it at OXTRANSSTATUS = 'NOT_FINISHED' with its vouchers still spent.
+        // Nothing collected those rows on a schedule before; the command does, and this
+        // is how old an order has to be before it qualifies. Values below 1 are refused
+        // at read time — "older than 0 days" would select the checkout in progress.
+        [
+            'name' => 'iPaymentBaseCleanupPeriod',
+            'type' => 'num',
+            'value' => '7',
+            'group' => 'cleanup',
+        ],
     ],
 ];

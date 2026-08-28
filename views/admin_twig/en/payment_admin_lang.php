@@ -27,6 +27,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_per_line_vat'           => 'Per-line VAT',
     'SHOP_MODULE_GROUP_iframe_checkout'        => 'Iframe checkout',
     'SHOP_MODULE_GROUP_checkout_flow'          => 'Checkout flow',
+    'SHOP_MODULE_GROUP_cleanup'                => 'Cleanup',
 
     // Module settings — field labels
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
@@ -36,4 +37,6 @@ $aLang = [
         => 'Skip the payment step when only one payment method is available',
     'SHOP_MODULE_blPaymentBaseAutoAssignSingleShipping'
         => 'Skip the shipping-method selection when only one delivery set is available',
+    'SHOP_MODULE_iPaymentBaseCleanupPeriod'
+        => 'Cleanup period (days) — age at which an unfinished order is cleaned up',
 ];
