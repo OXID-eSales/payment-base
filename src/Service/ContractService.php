@@ -54,20 +54,6 @@ class ContractService implements ContractServiceInterface
         return $this->contractRepository->findActiveByUserId($userId);
     }
 
-    public function cleanupExpiredContracts(): int
-    {
-        $expired = $this->contractRepository->findExpired();
-        $count = 0;
-
-        foreach ($expired as $contract) {
-            $contract->expire();
-            $this->contractRepository->save($contract);
-            $count++;
-        }
-
-        return $count;
-    }
-
     private function createBasketSnapshot(object $basket): BasketSnapshot
     {
         $items = $this->extractProductItems($basket);

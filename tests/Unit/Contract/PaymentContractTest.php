@@ -258,6 +258,37 @@ class PaymentContractTest extends TestCase
         $this->assertEquals('failed', $contract->getStateValue());
     }
 
+    /**
+     * STRP-168 item 6. expire() guarded only isTerminal(), and `committed` is
+     * not terminal — so a committed contract, one whose payment has already
+     * been taken, could be transitioned straight to EXPIRED. That is what made
+     * ContractService::cleanupExpiredContracts() dangerous rather than merely
+     * dead: findExpired() returned committed contracts (32 of them on the dev
+     * shop) and the loop would have rewritten every one of them.
+     */
+    public function testExpireRefusesACommittedContract(): void
+    {
+        $contract = $this->createContractInCommittedState();
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('committed');
+
+        $contract->expire();
+    }
+
+    public function testACommittedContractKeepsItsStateAfterARefusedExpiry(): void
+    {
+        $contract = $this->createContractInCommittedState();
+
+        try {
+            $contract->expire();
+        } catch (\DomainException) {
+            // expected
+        }
+
+        $this->assertSame('committed', $contract->getStateValue());
+    }
+
     public function testExpire(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
@@ -668,6 +699,23 @@ class PaymentContractTest extends TestCase
         $this->expectExceptionMessage('positive finite');
 
         $contract->addRefundedAmount(NAN);
+    }
+
+    /**
+     * Committed: the payment has been taken and the order committed, but the
+     * contract is not yet fulfilled — and `committed` is not a terminal state,
+     * which is exactly why the expiry guard has to name it separately.
+     */
+    private function createContractInCommittedState(): PaymentContract
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_123');
+        $contract->transitionToPending();
+        $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
+        $contract->commitToOrder('order_123');
+
+        return $contract;
     }
 
     private function createFulfilledContract(): PaymentContract

@@ -174,7 +174,10 @@ class DoctrineContractRepository implements ContractRepositoryInterface
                 $sql,
                 [
                     'before' => $before->format('Y-m-d H:i:s'),
-                    'states' => ['fulfilled', 'cancelled', 'expired', 'failed']
+                    // STRP-168: 'committed' belongs here too — its payment has
+                    // been taken, so it is past any deadline the contract carries.
+                    // Returning it invited exactly the corruption expire() now refuses.
+                    'states' => ['committed', 'fulfilled', 'cancelled', 'expired', 'failed']
                 ],
                 [
                     'states' => Connection::PARAM_STR_ARRAY

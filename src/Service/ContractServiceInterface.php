@@ -30,10 +30,4 @@ interface ContractServiceInterface extends ServiceInterface
      */
     public function findActiveContractByUser(string $userId): ?PaymentContractInterface;
 
-    /**
-     * Clean up expired contracts by transitioning them to EXPIRED state.
-     *
-     * @return int Number of contracts expired
-     */
-    public function cleanupExpiredContracts(): int;
 }

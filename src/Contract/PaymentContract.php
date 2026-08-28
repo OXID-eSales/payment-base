@@ -249,6 +249,14 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             throw new DomainException('Cannot expire a terminal state contract');
         }
 
+        // STRP-168: `committed` is not terminal, so the guard above let a
+        // contract whose payment had already been taken be transitioned to
+        // EXPIRED — silently rewriting settled payment history. The deadline
+        // stored on a contract says nothing about money that has already moved.
+        if ($this->state->isCommitted()) {
+            throw new DomainException('Cannot expire a committed contract: its payment has already been taken');
+        }
+
         $this->state = ContractState::expired();
         $this->touch();
     }

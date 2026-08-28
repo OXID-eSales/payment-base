@@ -107,38 +107,4 @@ class ContractServiceTest extends TestCase
 
         $this->assertNull($found);
     }
-
-    public function testCleanupExpiredContracts(): void
-    {
-        $snapshot = BasketSnapshot::fromArray([
-            'items' => [],
-            'discounts' => [],
-            'totalGross' => 100.0,
-            'totalNet' => 84.03,
-            'totalVat' => 15.97,
-            'currency' => 'EUR',
-            'capturedAt' => '2020-01-01 12:00:00',
-        ]);
-
-        $contract = new PaymentContract(1, 'user123', $snapshot);
-
-        // Create an expired contract
-        $expiredData = $contract->toArray();
-        $expiredData['expiresAt'] = '2020-01-01 12:00:00';
-        $expiredContract = PaymentContract::fromArray($expiredData);
-
-        $this->repository->expects($this->once())
-            ->method('findExpired')
-            ->willReturn([$expiredContract]);
-
-        $this->repository->expects($this->once())
-            ->method('save')
-            ->with($this->callback(function (PaymentContract $c) {
-                return $c->getState()->isExpired();
-            }));
-
-        $count = $this->service->cleanupExpiredContracts();
-
-        $this->assertEquals(1, $count);
-    }
 }
