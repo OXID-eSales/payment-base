@@ -11,7 +11,10 @@
     <!-- Exclude vendor and other directories -->
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/tests/*</exclude-pattern>
-    <exclude-pattern>*/var/*</exclude-pattern>
+    <!-- Do NOT add a bare */var/* pattern here. Under the Docker mount this
+         module lives at /var/www/extensions/..., so */var/* matches every file,
+         PHPCS scans nothing and exits 0 — a gate that always passes. It cost us
+         a red CI on STRP-168. Nothing under src/ needs excluding anyway. -->
     <exclude-pattern>*/migration/*</exclude-pattern>
 
     <!-- Show progress -->

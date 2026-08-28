@@ -29,5 +29,4 @@ interface ContractServiceInterface extends ServiceInterface
      * @return PaymentContractInterface|null Active contract or null if none found
      */
     public function findActiveContractByUser(string $userId): ?PaymentContractInterface;
-
 }
