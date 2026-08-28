@@ -16,7 +16,7 @@ namespace OxidEsales\PaymentBase\Repository;
  * early order can outlive the contract that created it (or never be pointed at
  * by one), and those rows are precisely the ones nothing else reclaims.
  */
-interface NotFinishedOrderRepositoryInterface
+interface NotFinishedOrderRepositoryInterface extends VoucherReleaseInterface
 {
     /**
      * Orders still sitting at OXTRANSSTATUS = 'NOT_FINISHED', not yet stornoed,
@@ -43,12 +43,4 @@ interface NotFinishedOrderRepositoryInterface
      * @return bool true if this call is what cancelled the order
      */
     public function cancelOrder(string $orderId): bool;
-
-    /**
-     * Clear the reservation that early order creation put on the order's
-     * vouchers, so the customer can spend them again.
-     *
-     * @return int number of vouchers released
-     */
-    public function releaseVouchers(string $orderId): int;
 }

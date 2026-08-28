@@ -70,6 +70,13 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: true
 
+  # STRP-168 — the narrow half, for consumers that only need to hand a
+  # customer their voucher back (the Stripe webhook that learns a payment
+  # ended) and have no business running order queries.
+  OxidEsales\PaymentBase\Repository\VoucherReleaseInterface:
+    alias: OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface
+    public: true
+
   OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface:
     class: OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettings
     public: true
