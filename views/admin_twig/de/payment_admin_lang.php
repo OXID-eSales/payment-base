@@ -39,4 +39,6 @@ $aLang = [
         => 'Auswahl der Versandart überspringen, wenn nur eine Versandart verfügbar ist',
     'SHOP_MODULE_iPaymentBaseCleanupPeriod'
         => 'Bereinigungszeitraum (Tage) — Alter, ab dem eine unfertige Bestellung bereinigt wird',
+    'SHOP_MODULE_iPaymentBaseStaleCheckoutMinutes'
+        => 'Timeout für laufende Zahlvorgänge (Minuten) — Alter, ab dem ein Zahlvorgang freigegeben wird',
 ];

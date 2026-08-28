@@ -24,4 +24,18 @@ interface NotFinishedOrderCleanupSettingsInterface
      * progress right now.
      */
     public function getCleanupPeriodDays(): int;
+
+    /**
+     * Age in minutes beyond which a checkout still in flight is considered
+     * abandoned by the fast sweep that runs off inbound provider webhooks.
+     *
+     * A much shorter horizon than the cleanup period, and a different job: this
+     * one clears the way for a customer retrying their own checkout, rather
+     * than collecting orders nobody will come back for. Configurable because a
+     * shop selling via bank transfer or Klarna legitimately has customers who
+     * take longer than the default.
+     *
+     * Always >= 1.
+     */
+    public function getStaleCheckoutMinutes(): int;
 }

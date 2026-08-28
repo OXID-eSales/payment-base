@@ -37,7 +37,12 @@ interface ContractRepositoryInterface
      * Used to garbage-collect abandoned checkouts (contracts stuck in
      * draft/not_finished/pending states with NOT_FINISHED orders).
      *
+     * @param int|null $limit cap the batch, or null for no cap. The sweep runs
+     *                        inline in a provider's webhook request, where an
+     *                        unbounded backlog is paid for out of that request's
+     *                        response time.
+     *
      * @return array<int, PaymentContractInterface>
      */
-    public function findStaleNotFinished(int $minutesOld): array;
+    public function findStaleNotFinished(int $minutesOld, ?int $limit = null): array;
 }

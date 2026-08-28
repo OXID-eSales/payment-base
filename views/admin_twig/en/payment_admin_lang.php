@@ -39,4 +39,6 @@ $aLang = [
         => 'Skip the shipping-method selection when only one delivery set is available',
     'SHOP_MODULE_iPaymentBaseCleanupPeriod'
         => 'Cleanup period (days) — age at which an unfinished order is cleaned up',
+    'SHOP_MODULE_iPaymentBaseStaleCheckoutMinutes'
+        => 'Stale checkout timeout (minutes) — age at which an in-flight checkout is released',
 ];

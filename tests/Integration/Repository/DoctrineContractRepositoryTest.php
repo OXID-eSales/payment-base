@@ -50,6 +50,48 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
         $this->connection->executeStatement('DELETE FROM oe_payments_contract');
     }
 
+    /**
+     * STRP-168 item 4. This sweep runs inline in a provider's webhook request,
+     * so an unbounded backlog is paid for out of that request's response time —
+     * and a provider that times out retries, growing the backlog it was already
+     * struggling with. The bound has to hold in SQL, not just in the caller.
+     */
+    public function testStaleSweepHonoursTheLimit(): void
+    {
+        $this->seedStaleContracts(3);
+
+        $this->assertCount(3, $this->repository->findStaleNotFinished(30), 'unbounded still returns everything');
+        $this->assertCount(2, $this->repository->findStaleNotFinished(30, 2));
+        $this->assertCount(1, $this->repository->findStaleNotFinished(30, 1));
+    }
+
+    public function testStaleSweepStillExcludesContractsInsideTheWindow(): void
+    {
+        $this->seedStaleContracts(1);
+        $this->repository->save($this->createTestContract('fresh_contract'));
+
+        $found = $this->repository->findStaleNotFinished(30, 10);
+        $ids = array_map(static fn($c) => $c->getId(), $found);
+
+        $this->assertNotContains('fresh_contract', $ids, 'a limit must not widen the age window');
+    }
+
+    /**
+     * Saves contracts and backdates them past the sweep window.
+     */
+    private function seedStaleContracts(int $count): void
+    {
+        for ($i = 0; $i < $count; $i++) {
+            $this->repository->save($this->createTestContract('stale_contract_' . $i));
+        }
+
+        $this->connection->executeStatement(
+            'UPDATE oe_payments_contract SET OXCREATED = DATE_SUB(NOW(), INTERVAL 2 HOUR)
+             WHERE OXID LIKE :p',
+            ['p' => 'stale_contract_%']
+        );
+    }
+
     private function createTestBasketSnapshot(): BasketSnapshot
     {
         return BasketSnapshot::fromArray([

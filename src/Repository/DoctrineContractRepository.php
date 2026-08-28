@@ -199,12 +199,18 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     /**
      * @return array<int, PaymentContractInterface>
      */
-    public function findStaleNotFinished(int $minutesOld): array
+    public function findStaleNotFinished(int $minutesOld, ?int $limit = null): array
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
                 WHERE OXSTATE IN (:states)
                 AND OXCREATED < DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
                 ORDER BY OXCREATED ASC';
+
+        if ($limit !== null) {
+            // MySQL will not take a bound parameter in LIMIT under real
+            // prepared statements, so the value is cast to int and inlined.
+            $sql .= ' LIMIT ' . max(1, $limit);
+        }
 
         try {
             $rows = $this->connection->fetchAllAssociative(

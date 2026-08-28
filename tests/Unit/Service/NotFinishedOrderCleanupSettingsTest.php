@@ -76,7 +76,7 @@ final class NotFinishedOrderCleanupSettingsTest extends TestCase
     public function testFallsBackToTheDefaultWhenTheContainerIsUnavailable(): void
     {
         $settings = new class () extends NotFinishedOrderCleanupSettings {
-            protected function readRawPeriod(): mixed
+            protected function readRawSetting(string $name): mixed
             {
                 throw new RuntimeException('no container');
             }
@@ -95,9 +95,68 @@ final class NotFinishedOrderCleanupSettingsTest extends TestCase
             {
             }
 
-            protected function readRawPeriod(): mixed
+            protected function readRawSetting(string $name): mixed
             {
                 return $this->value;
+            }
+        };
+    }
+
+    /**
+     * STRP-168 item 3. The webhook sweep's 30-minute horizon used to be a
+     * hardcoded property, so a shop whose customers legitimately take longer
+     * — bank transfer, Klarna — had no way to raise it without a code change.
+     */
+    public function testStaleCheckoutMinutesComesFromItsOwnSetting(): void
+    {
+        $settings = $this->settingsPerName([
+            NotFinishedOrderCleanupSettings::SETTING_STALE_CHECKOUT => '90',
+            NotFinishedOrderCleanupSettings::SETTING_NAME => '14',
+        ]);
+
+        $this->assertSame(90, $settings->getStaleCheckoutMinutes());
+        $this->assertSame(14, $settings->getCleanupPeriodDays(), 'the two horizons must not read each other');
+    }
+
+    #[DataProvider('storedValues')]
+    public function testStaleCheckoutMinutesCoercesTheSameWay(mixed $stored, int $expectedDays): void
+    {
+        $expected = $expectedDays === NotFinishedOrderCleanupSettings::DEFAULT_PERIOD_DAYS
+            ? NotFinishedOrderCleanupSettings::DEFAULT_STALE_CHECKOUT_MINUTES
+            : $expectedDays;
+
+        $this->assertSame($expected, $this->settingsReturning($stored)->getStaleCheckoutMinutes());
+    }
+
+    public function testStaleCheckoutMinutesFallsBackWhenTheContainerIsUnavailable(): void
+    {
+        $settings = new class () extends NotFinishedOrderCleanupSettings {
+            protected function readRawSetting(string $name): mixed
+            {
+                throw new RuntimeException('no container');
+            }
+        };
+
+        $this->assertSame(
+            NotFinishedOrderCleanupSettings::DEFAULT_STALE_CHECKOUT_MINUTES,
+            $settings->getStaleCheckoutMinutes()
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     */
+    private function settingsPerName(array $values): NotFinishedOrderCleanupSettings
+    {
+        return new class ($values) extends NotFinishedOrderCleanupSettings {
+            /** @param array<string, mixed> $values */
+            public function __construct(private readonly array $values)
+            {
+            }
+
+            protected function readRawSetting(string $name): mixed
+            {
+                return $this->values[$name] ?? null;
             }
         };
     }

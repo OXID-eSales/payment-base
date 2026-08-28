@@ -104,5 +104,18 @@ $aModule = [
             'value' => '7',
             'group' => 'cleanup',
         ],
+        // STRP-168 item 3 — how many minutes a checkout may sit in flight before
+        // the fast sweep (which runs off inbound provider webhooks) treats it as
+        // abandoned. Was a hardcoded 30 in Stripe's webhook controller, so a shop
+        // selling by bank transfer or Klarna — where customers legitimately take
+        // longer — could not raise it without a code change. Distinct from the
+        // cleanup period above: this one clears the way for a customer retrying
+        // their own checkout, that one collects orders nobody returns for.
+        [
+            'name' => 'iPaymentBaseStaleCheckoutMinutes',
+            'type' => 'num',
+            'value' => '30',
+            'group' => 'cleanup',
+        ],
     ],
 ];

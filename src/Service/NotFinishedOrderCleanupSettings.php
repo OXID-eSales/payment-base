@@ -39,31 +39,46 @@ class NotFinishedOrderCleanupSettings implements NotFinishedOrderCleanupSettings
      */
     public const DEFAULT_PERIOD_DAYS = 7;
 
+    public const DEFAULT_STALE_CHECKOUT_MINUTES = 30;
+
     public const SETTING_NAME = 'iPaymentBaseCleanupPeriod';
+
+    public const SETTING_STALE_CHECKOUT = 'iPaymentBaseStaleCheckoutMinutes';
 
     private const MODULE_ID = 'oe_payment_base';
 
-    private const MINIMUM_PERIOD_DAYS = 1;
+    /** Both horizons share this floor: a zero would select what is happening right now. */
+    private const MINIMUM_VALUE = 1;
 
     public function getCleanupPeriodDays(): int
     {
+        return $this->readPositiveInt(self::SETTING_NAME, self::DEFAULT_PERIOD_DAYS);
+    }
+
+    public function getStaleCheckoutMinutes(): int
+    {
+        return $this->readPositiveInt(self::SETTING_STALE_CHECKOUT, self::DEFAULT_STALE_CHECKOUT_MINUTES);
+    }
+
+    private function readPositiveInt(string $name, int $default): int
+    {
         try {
-            $raw = $this->readRawPeriod();
+            $raw = $this->readRawSetting($name);
         } catch (Throwable) {
             // No container (CLI before bootstrap) or no such setting yet
             // (module installed but not re-installed after this release).
             // The caller still needs a usable, conservative number.
-            return self::DEFAULT_PERIOD_DAYS;
+            return $default;
         }
 
         if (!is_numeric($raw)) {
-            return self::DEFAULT_PERIOD_DAYS;
+            return $default;
         }
 
         $configured = (int) $raw;
 
-        if ($configured < self::MINIMUM_PERIOD_DAYS) {
-            return self::DEFAULT_PERIOD_DAYS;
+        if ($configured < self::MINIMUM_VALUE) {
+            return $default;
         }
 
         return $configured;
@@ -73,13 +88,13 @@ class NotFinishedOrderCleanupSettings implements NotFinishedOrderCleanupSettings
      * The stored value exactly as the shop hands it over — string, int or
      * nothing at all. Interpreting it is the caller's job.
      */
-    protected function readRawPeriod(): mixed
+    protected function readRawSetting(string $name): mixed
     {
         /** @var ModuleSettingBridgeInterface $settings */
         $settings = ContainerFactory::getInstance()
             ->getContainer()
             ->get(ModuleSettingBridgeInterface::class);
 
-        return $settings->get(self::SETTING_NAME, self::MODULE_ID);
+        return $settings->get($name, self::MODULE_ID);
     }
 }
