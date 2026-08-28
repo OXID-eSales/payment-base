@@ -27,6 +27,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_per_line_vat'           => 'Positionsbezogene USt.',
     'SHOP_MODULE_GROUP_iframe_checkout'        => 'Iframe-Checkout',
     'SHOP_MODULE_GROUP_checkout_flow'          => 'Checkout-Ablauf',
+    'SHOP_MODULE_GROUP_cleanup'                => 'Bereinigung',
 
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
@@ -36,4 +37,6 @@ $aLang = [
         => 'Zahlungsschritt überspringen, wenn nur eine Zahlungsart verfügbar ist',
     'SHOP_MODULE_blPaymentBaseAutoAssignSingleShipping'
         => 'Auswahl der Versandart überspringen, wenn nur eine Versandart verfügbar ist',
+    'SHOP_MODULE_iPaymentBaseCleanupPeriod'
+        => 'Bereinigungszeitraum (Tage) — Alter, ab dem eine unfertige Bestellung bereinigt wird',
 ];
