@@ -34,23 +34,34 @@
 {% endblock %}
 
 {#
-    Sprint 07 — single active shipping method.
+    Sprint 07 — single active shipping method (revised 2026-08-31).
 
-    With one delivery set the `<select name="sShipSet">` holds a single
-    `<option>` and choosing it changes nothing, so the whole block goes.
+    Originally the whole `change_shipping` block went, on the reasoning that a
+    `<select>` holding one `<option>` offers nothing. That threw away more than
+    the control: the customer lost sight of *which* carrier they were getting,
+    on the last page where they could still have questioned it.
 
-    Nothing replaces it, unlike `change_payment` above. That form has to stay
-    because the step's "next" button submits it by id from outside; this one is
-    submitted by its own `onchange` and by nothing else, so removing the element
-    strands nobody. The delivery set itself is not lost either — the controller
-    has already written `sShipSet` into the session, which is more than core
-    does on a plain render.
+    So the block stays and only the control goes. The heading, the card and the
+    delivery-cost line render as core wrote them; in place of the dropdown the
+    carrier's name is printed as text. Shown, not changeable.
 
-    What does disappear with it is the `#shipSetCost` line. The delivery cost is
-    still in the summary sidebar on this page and in the order-page totals.
+    The name comes from the same expression core's own `<option>` uses, off the
+    one set `getAllSets()` holds — `isSingleShippingAutoAssigned()` is true only
+    when there is exactly one, and this block renders only inside core's
+    `{% if oView.getAllSets() %}`, so `|first` always has something to take.
+
+    The surrounding <form> is left alone. It is submitted by the select's own
+    `onchange` and by the noscript button, both of which live in this block and
+    are now gone — nothing else points at it, so it stands there inert. The
+    delivery set itself was written to the session by the controller long
+    before this renders.
 #}
-{% block change_shipping %}
-    {% if not oView.isSingleShippingAutoAssigned() %}
+{% block act_shipping %}
+    {% if oView.isSingleShippingAutoAssigned() %}
+        <div class="mb-3" id="singleShippingMethod">
+            {{ (oView.getAllSets()|first).oxdeliveryset__oxtitle.value }}
+        </div>
+    {% else %}
         {{ parent() }}
     {% endif %}
 {% endblock %}

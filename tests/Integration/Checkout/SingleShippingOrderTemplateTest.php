@@ -36,6 +36,16 @@ class SingleShippingProbeView
         return $this->paymentAutoAssigned;
     }
 
+    /**
+     * What core's `checkout_order_shipping_carrier_desc` prints. Without it the
+     * probe answered null through __call and the carrier line was empty, which
+     * would let "the name is shown" pass on an empty string.
+     */
+    public function getShipSet(): object
+    {
+        return new SinglePaymentStepProbeShipSet();
+    }
+
     /** @param array<int, mixed> $args */
     public function __call(string $name, array $args): mixed
     {
@@ -66,12 +76,20 @@ class SingleShippingOrderTemplateTest extends IntegrationTestCase
         $this->assertStringContainsString(self::SHIPPING_BLOCK_MARKER, $output);
     }
 
-    public function testCarrierBlockIsLeftOutForASingleDeliverySet(): void
+    /**
+     * Revised 2026-08-31: the carrier is named, only the pencil goes. The order
+     * page is what the customer confirms; dropping the whole block left it
+     * silent about how the goods were coming.
+     */
+    public function testCarrierIsNamedWithoutAnEditControlForASingleDeliverySet(): void
     {
         $output = $this->renderOrderPage(shippingAutoAssigned: true);
 
+        // Shown...
+        $this->assertStringContainsString(SinglePaymentStepProbeShipSet::TITLE, $output);
+        // ...but not changeable: the edit form that posts back to cl=payment is gone.
         $this->assertStringNotContainsString(self::SHIPPING_BLOCK_MARKER, $output);
-        // Paired positive: the page really rendered, it just has no carrier block.
+        // Paired positive: the page really rendered.
         $this->assertStringContainsString(self::PAYMENT_BLOCK_MARKER, $output);
     }
 
@@ -95,10 +113,16 @@ class SingleShippingOrderTemplateTest extends IntegrationTestCase
         $this->assertStringNotContainsString(self::PAYMENT_BLOCK_MARKER, $output);
     }
 
-    public function testBothBlocksDisappearWhenBothAreAutoAssigned(): void
+    /**
+     * Both shortcuts at once. The payment block still goes entirely — there is
+     * no equivalent "show it anyway" requirement for it — while shipping keeps
+     * its name and loses only the pencil.
+     */
+    public function testCarrierIsStillNamedWhenBothAreAutoAssigned(): void
     {
         $output = $this->renderOrderPage(shippingAutoAssigned: true, paymentAutoAssigned: true);
 
+        $this->assertStringContainsString(SinglePaymentStepProbeShipSet::TITLE, $output);
         $this->assertStringNotContainsString(self::SHIPPING_BLOCK_MARKER, $output);
         $this->assertStringNotContainsString(self::PAYMENT_BLOCK_MARKER, $output);
         // Paired positive: the order page still renders its confirm step.

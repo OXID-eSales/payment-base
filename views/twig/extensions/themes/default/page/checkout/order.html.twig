@@ -21,16 +21,27 @@
 {% endblock %}
 
 {#
-    Sprint 07 — single active shipping method.
+    Sprint 07 — single active shipping method (revised 2026-08-31).
 
-    Same argument as the payment block above: with exactly one delivery set the
-    "shipping carrier" block has nothing to offer and its pencil leads to a step
-    that no longer shows a selector. Heading, carrier line and form go together.
+    Originally the whole carrier block went. That also removed the line naming
+    the carrier, so the order page — the page the customer confirms — no longer
+    said how the goods were coming. With one delivery set there is nothing to
+    decide, but there is still something to know.
+
+    Now only the edit control goes. The heading and
+    `checkout_order_shipping_carrier_desc` (which prints the set's title off
+    `oView.getShipSet()`) render as core wrote them; the pencil, and the form
+    that would post back to `cl=payment`, do not. Shown, not changeable.
+
+    That the pencil goes matters beyond tidiness: with one delivery set and one
+    payment method the payment step redirects straight back here (sprint 07 S6
+    D1), so the pencil led into a bounce. With several payment methods it would
+    have landed on a step whose carrier selector is now read-only anyway.
 
     Payment is decided separately — the two blocks are siblings and either can
-    be hidden without the other.
+    be reduced without the other.
 #}
-{% block checkout_order_shipping_carrier %}
+{% block checkout_order_shipping_carrier_form %}
     {% if not oView.isSingleShippingAutoAssigned() %}
         {{ parent() }}
     {% endif %}

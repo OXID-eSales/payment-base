@@ -64,7 +64,18 @@ class SinglePaymentStepProbeView
 
 class SinglePaymentStepProbeShipSet
 {
+    /** The carrier name core prints, and that the read-only line must now show. */
+    public const TITLE = 'Probe Carrier Pigeon Post';
+
     public bool $blSelected = true;
+
+    /** Mirrors an OXID field object: the template reads `.value` off it. */
+    public object $oxdeliveryset__oxtitle;
+
+    public function __construct()
+    {
+        $this->oxdeliveryset__oxtitle = (object) ['value' => self::TITLE];
+    }
 
     /** @param array<int, mixed> $args */
     public function __call(string $name, array $args): mixed

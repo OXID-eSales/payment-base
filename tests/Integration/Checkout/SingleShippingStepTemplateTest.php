@@ -94,12 +94,22 @@ class SingleShippingStepTemplateTest extends IntegrationTestCase
         $this->assertStringContainsString(self::SHIPPING_SELECT_MARKER, $output);
     }
 
-    public function testSelectorDisappearsForASingleDeliverySet(): void
+    /**
+     * Revised 2026-08-31: the carrier is shown, it just cannot be changed.
+     * Hiding the block outright also hid *which* carrier the customer was
+     * getting, on the last page where they could still have questioned it.
+     */
+    public function testCarrierIsNamedButNotSelectableForASingleDeliverySet(): void
     {
         $output = $this->renderPaymentStep(shippingAutoAssigned: true);
 
+        // Shown...
+        $this->assertStringContainsString(SinglePaymentStepProbeShipSet::TITLE, $output);
+        $this->assertStringContainsString('id="singleShippingMethod"', $output);
+        // ...but not changeable: no dropdown, and no noscript submit either.
         $this->assertStringNotContainsString(self::SHIPPING_SELECT_MARKER, $output);
-        // Paired positive: the step really rendered, it just has no selector.
+        $this->assertStringNotContainsString('UPDATE_SHIPPING_CARRIER', $output);
+        // Paired positive: the step really rendered.
         $this->assertStringContainsString('id="payment"', $output);
     }
 
@@ -126,6 +136,9 @@ class SingleShippingStepTemplateTest extends IntegrationTestCase
 
         $this->assertStringNotContainsString(self::SHIPPING_SELECT_MARKER, $output);
         $this->assertStringNotContainsString('type="radio"', $output);
+        // The carrier is still named even here — this page is reachable when
+        // the skip guard has already been spent.
+        $this->assertStringContainsString(SinglePaymentStepProbeShipSet::TITLE, $output);
         $this->assertStringContainsString('id="payment"', $output);
         $this->assertStringContainsString('value="validatepayment"', $output);
         $this->assertStringContainsString('name="paymentid" value="oxidinvoice"', $output);
