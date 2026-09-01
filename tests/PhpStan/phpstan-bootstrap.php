@@ -36,10 +36,71 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . 'class Order { '
+        // 2026-09-01 — payment-base now owns order finalization, so the stub has
+        // to carry the finalizeOrder() surface the adapter uses.
+        . '  const ORDER_STATE_OK = 1; '
+        . '  const ORDER_STATE_PAYMENTERROR = 2; '
+        . '  const ORDER_STATE_ORDEREXISTS = 3; '
+        . '  const ORDER_STATE_INVALIDDELIVERY = 4; '
+        . '  const ORDER_STATE_INVALIDPAYMENT = 5; '
+        . '  const ORDER_STATE_MAILINGERROR = 6; '
+        . '  const ORDER_STATE_INVALIDDELADDRESSCHANGED = 7; '
+        . '  const ORDER_STATE_BELOWMINPRICE = 8; '
+        . '  const ORDER_STATE_VOUCHERERROR = 9; '
+        . '  public mixed $oxorder__oxfolder = null; '
+        . '  public mixed $oxorder__oxtransid = null; '
+        . '  public mixed $oxorder__oxtransstatus = null; '
+        . '  public mixed $oxorder__oxordernr = null; '
+        . '  public mixed $oxorder__oxorderdate = null; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function save(): mixed { return true; } '
+        . '  public function assign($data): mixed { return true; } '
+        . '  public function finalizeOrder($basket, $user, $recalculate = false): int { return 1; } '
         . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Core\Field::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Field { '
+        . '  const T_RAW = 1; '
+        . '  const T_TEXT = 2; '
+        . '  public mixed $value = null; '
+        . '  public function __construct($value = null, $type = 1) { $this->value = $value; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Basket { '
+        . '  public function getProductsCount(): int { return 0; } '
+        . '  public function getPrice(): mixed { return null; } '
+        . '  public function getBasketCurrency(): ?object { return null; } '
+        . '  public function getBasketUser(): mixed { return null; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class User { '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getEncodedDeliveryAddress(): string { return ""; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Core\Exception\ArticleException::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core\\Exception; '
+        . 'class ArticleException extends \\Exception {}'
     );
 }
 if (!class_exists(\OxidEsales\Eshop\Core\StubSession::class, false)) {

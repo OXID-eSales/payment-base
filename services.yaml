@@ -77,6 +77,23 @@ services:
     alias: OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface
     public: true
 
+  # 2026-09-01 — payment-base owns order finalization.
+  #
+  # Every PSP module used to alias this same id to its own copy of the adapter.
+  # One container id means one winner, decided by services.yaml merge order, and
+  # that winner finalized every provider's orders — on one installation Stripe's
+  # copy was finalizing Mollie payments. The copies branched on nothing, so there
+  # is one implementation now and the PSP modules no longer bind this id.
+  OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidShopOrderService
+    arguments:
+      $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Adapter\OxidShopOrderService:
+    alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
+    public: true
+
   # 2026-09-01 — thank-you page notices. Public: OXID controllers get no
   # constructor injection, so the extension fetches this through the container
   # at runtime, and a private id would be inlined away and fail that lookup.
