@@ -23,6 +23,7 @@
             <file>Integration/Checkout/SinglePaymentStepTemplateTest.php</file>
             <file>Integration/Checkout/SingleShippingOrderTemplateTest.php</file>
             <file>Integration/Checkout/SingleShippingStepTemplateTest.php</file>
+            <file>Integration/Checkout/ThankYouNoticeTemplateTest.php</file>
         </testsuite>
     </testsuites>
     <source>

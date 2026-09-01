@@ -36,6 +36,11 @@ $aModule = [
             => \OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController::class,
         \OxidEsales\Eshop\Application\Controller\OrderController::class
             => \OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController::class,
+        // 2026-09-01 — takes the messages a PSP queued for the thank-you page out
+        // of the display-error stash, so they can be shown as notices inside the
+        // thank-you text instead of as a red alert above it.
+        \OxidEsales\Eshop\Application\Controller\ThankYouController::class
+            => \OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here

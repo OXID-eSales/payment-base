@@ -166,3 +166,15 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\DeliverySetList::class, fa
         . '}'
     );
 }
+
+// 2026-09-01 — ThankYouController_parent is an OXID virtual class created by
+// ModuleChainsGenerator at activation; it resolves in the extension's own
+// namespace. Unit tests never instantiate the real parent.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Controller; '
+        . 'class ThankYouController_parent { '
+        . '  public function render() { return ""; } '
+        . '}'
+    );
+}

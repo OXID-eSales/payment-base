@@ -77,6 +77,13 @@ services:
     alias: OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface
     public: true
 
+  # 2026-09-01 — thank-you page notices. Public: OXID controllers get no
+  # constructor injection, so the extension fetches this through the container
+  # at runtime, and a private id would be inlined away and fail that lookup.
+  OxidEsales\PaymentBase\Checkout\Contract\CheckoutNoticeRelocatorInterface:
+    class: OxidEsales\PaymentBase\Checkout\SessionCheckoutNoticeRelocator
+    public: true
+
   OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface:
     class: OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettings
     public: true

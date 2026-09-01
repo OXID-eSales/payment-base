@@ -1,0 +1,27 @@
+{% extends "page/checkout/thankyou.html.twig" %}
+
+{#
+    2026-09-01 — a payment still settling is not an error.
+
+    A PSP that returns the customer while the payment is still open has one way
+    to say so between two requests: UtilsView::addErrorToDisplay(). The shop
+    paints everything in that channel as a dismissible red alert above the whole
+    page, so the customer's order went through and the first thing they saw was
+    red — directly above the words "Thank you".
+
+    payment-base's ThankYouController extension takes those messages out of the
+    stash while the page renders, which is what removes the banner; here they
+    come back as what they always were, inside the thank-you text.
+
+    First, deliberately: "your payment is being processed" changes how the rest
+    of the block should be read, so it cannot come after it.
+
+    `raw` matches how core renders the same messages in message/errors.html.twig
+    — they are shop and module lang strings, and some carry markup.
+#}
+{% block checkout_thankyou_info %}
+    {% for notice in oView.getPaymentNotices() %}
+        <div class="alert alert-info" id="paymentNotice" role="status">{{ notice|raw }}</div>
+    {% endfor %}
+    {{ parent() }}
+{% endblock %}
