@@ -113,6 +113,7 @@ if (!class_exists(\OxidEsales\Eshop\Core\StubSession::class, false)) {
         . '  public function setVariable(string $name, mixed $value): void {} '
         . '  public function deleteVariable(string $name): void {} '
         . '  public function getBasket(): mixed { return null; } '
+        . '  public function setBasket(object $basket): void {} '
         . '}'
     );
 }

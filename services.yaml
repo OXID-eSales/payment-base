@@ -94,6 +94,27 @@ services:
     alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
     public: true
 
+  # Retiring the checkout attempt a shopper left behind on retry (STRP-171).
+  # Wired by concrete class: the SessionAdapterInterface id is bound by the
+  # provider modules, and payment-base must not depend on one of them being
+  # active - nor add a fourth definition of that id.
+  OxidEsales\PaymentBase\Adapter\OxidSessionAdapter:
+    class: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
+    public: false
+
+  OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface:
+    class: OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry
+    public: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+
+  OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface:
+    class: OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleaner
+    public: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      - '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
+
   # 2026-09-01 — thank-you page notices. Public: OXID controllers get no
   # constructor injection, so the extension fetches this through the container
   # at runtime, and a private id would be inlined away and fail that lookup.

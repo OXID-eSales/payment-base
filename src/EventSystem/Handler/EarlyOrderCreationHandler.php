@@ -6,6 +6,8 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
+use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
@@ -41,7 +43,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ContractRepositoryInterface $contractRepository,
         private readonly ShopOrderServiceInterface $shopOrderService,
         ?EventDispatcherInterface $eventDispatcher = null,
-        private readonly ?FileLoggerInterface $eventLogger = null
+        private readonly ?FileLoggerInterface $eventLogger = null,
+        // Optional so a consumer whose services.yaml predates this keeps
+        // working - it simply does not get the cleanup.
+        private readonly ?PreviousCheckoutAttemptCleanerInterface $previousAttemptCleaner = null,
+        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
     }
@@ -81,10 +87,12 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ]);
 
         try {
+            $this->retirePreviousAttempt($contract);
             $orderData = $this->createOrder($contract, $event);
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
             $this->transitionContractToPending($contract, $event);
             $this->dispatchOrderCreatedEvent($event, $orderData['orderId']);
+            $this->openAttempts?->remember($contract->getId());
             $this->logEvent('EarlyOrderCreationHandler::handle() END - SUCCESS');
         } catch (\Throwable $e) {
             $this->logEvent('EarlyOrderCreationHandler: Order creation failed', [
@@ -93,6 +101,45 @@ class EarlyOrderCreationHandler extends AbstractHandler
                 'class' => get_class($e),
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * An order is created here BEFORE the shopper leaves for the PSP, so every
+     * retry inside one session - back button, refresh, a different payment
+     * method - would otherwise leave another NOT_FINISHED order in the backend.
+     * Retire the one this session already has open first.
+     *
+     * Scope is the session on purpose: an attempt open in another session or on
+     * another device may still be paid, and cancelling it would storno an order
+     * somebody is in the middle of paying for.
+     *
+     * Best-effort by design. Losing a stale order is annoying; refusing the
+     * shopper's new checkout because the cleanup failed is worse.
+     */
+    private function retirePreviousAttempt(PaymentContract $contract): void
+    {
+        if ($this->previousAttemptCleaner === null || $this->openAttempts === null) {
+            return;
+        }
+
+        try {
+            $previousContractId = $this->openAttempts->takePrevious();
+
+            if ($previousContractId === null || $previousContractId === $contract->getId()) {
+                return;
+            }
+
+            $this->previousAttemptCleaner->clean($previousContractId);
+            $this->logEvent('EarlyOrderCreationHandler: retired the previous checkout attempt', [
+                'previous_contract_id' => $previousContractId,
+                'contract_id' => $contract->getId(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logEvent('EarlyOrderCreationHandler: could not retire the previous attempt', [
+                'contract_id' => $contract->getId(),
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
