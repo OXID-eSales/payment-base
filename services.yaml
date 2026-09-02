@@ -108,9 +108,13 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
 
+  # Public: OXID controllers get no constructor injection, so a provider's
+  # return controller fetches this through the container at runtime. A private
+  # id would be inlined away and that lookup would fail - silently, since such
+  # a lookup is usually wrapped in a try/catch that yields "no cleanup".
   OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface:
     class: OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleaner
-    public: false
+    public: true
     arguments:
       - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
