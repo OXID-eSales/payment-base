@@ -114,29 +114,46 @@ Regression tests for `NotFinishedOrderCleanupService` and
 `deleteNotFinishedOrder()`. They release today; nothing in this sprint may
 change that, and a future refactor must fail loudly if it does.
 
-### S6 — Prove it through the admin UI  ⚠️ NOT DONE
-Playwright, per the binding requirement: place an order with a real coupon,
-storno it in the admin, and assert the **same coupon can be applied again** in a
-fresh checkout. Then the same for delete. Re-applying is the only assertion that
-discriminates — the voucher row looking tidy proves nothing about reusability.
-Run the control: revert the extension, watch both fail.
+### S6 — Prove it through the admin UI  ✅ DONE
+`e2e-tests-playwright` `projects/Stripe` `869c914`:
+`playwright/tests/admin/voucher-returns-when-order-ends.spec.ts`.
 
-**Attempted and withdrawn.** A spec was written and made green, but it also
-passed with the feature switched **off** — it proved nothing, so it was not
-committed. Two distinct reasons, both worth knowing before the next attempt:
+It discriminates, which is the only property that matters:
 
-1. **The PSP round-trip frees the coupon by itself.** Checking out through
-   Mollie and coming back without paying is a release trigger in its own right
-   (STRP-171 retires the abandoned attempt). Whatever the storno does or does
-   not do, the coupon is already back. Use a payment that completes in-shop —
-   invoice — so the storno is the only candidate.
-2. **The admin list's first storno link is not the order you just placed.** The
-   spec clicked `a[href^="Javascript:StornoThisArticle"]` first-match and
-   cancelled an unrelated older order while asserting about the new one. The row
-   has to be selected by its order number.
+| feature | sequence | result |
+|---|---|---|
+| on | accepted → refused (spent) → storno → **accepted** | passes |
+| off | accepted → refused (spent) → storno → **refused** | fails |
 
-Until that spec exists and fails with the feature off, this story is open. What
-*is* verified is in §6 below, and it is not a substitute.
+Five things had to be right first, and each one had already produced a green
+run that proved nothing:
+
+1. **E2E_SINGLE** — its series holds exactly ONE voucher. Re-applying a code
+   from a multi-voucher series just takes the next free row.
+2. **Every voucher check in a fresh browser context.** Returning to the shop in
+   the session that started a checkout retires the abandoned attempt and frees
+   the coupon by itself (STRP-171).
+3. **The storno is clicked on the row of THIS order**, whose number comes from
+   the customer's own order history — the admin list is not reliably
+   newest-first and served an older order as its top row.
+4. **The confirm dialog is accepted.** Playwright dismisses dialogs by default,
+   which cancelled the storno silently: `OXSTORNO` stayed 0 while the spec went
+   on asserting about a cancellation that never happened.
+5. **Acceptance is measured, not the summary's discount figure.** The shop
+   persists the customer basket, and a voucher still attached there keeps
+   reporting its discount after the row behind it was spent.
+
+**Found on the way, needs its own ticket:** placing an **invoice** order through
+OPC fails — `processCheckout` succeeds, then `placeOrder` answers
+`ORDER_CREATION_FAILED` *"Shared handler chain did not produce an orderId for
+contract …"* — and no order is created. Invoice was the first choice for this
+spec precisely because it completes in-shop; it had to be abandoned. Note that
+the checkout matrix's `opc / invoice` cells pass today because they assert on
+the `processCheckout` response only, not on an order existing.
+
+**Delete is not covered by a UI spec.** The admin list's delete action is
+proven at unit level and by the direct A/B in §6a; a second spec clicking
+`deleteThis()` is the obvious follow-up.
 
 ### S7 — Record the invariant
 `docs/invariants/` gains: *an order that ends returns its vouchers*, naming the
