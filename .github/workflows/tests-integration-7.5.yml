@@ -13,7 +13,7 @@ jobs:
   # Install Shop with Component - Shared setup cached for other jobs
   # ==========================================================================
   install_shop_with_module:
-    runs-on: [arc-runner-set]
+    runs-on: ubuntu-latest
     steps:
       - name: Print run parameters
         run: |
@@ -30,8 +30,9 @@ jobs:
           sudo rm -rf ./.??* || true
           ls -la ./
 
-      # Both repositories are public, but an *anonymous* clone from
-      # arc-runner-set fails: GitHub answers the ref listing with a credential
+      # Kept authenticated after the move to ubuntu-latest. Both repositories
+      # are public, but an *anonymous* clone from arc-runner-set failed: GitHub
+      # answered the ref listing with a credential
       # challenge, git has no terminal to prompt on, and the step dies with
       # "could not read Username for 'https://github.com'" (exit 128) about 12s
       # in, before anything is installed. The shared cluster egress is what
@@ -216,7 +217,7 @@ jobs:
     strategy:
       matrix:
         php: [ '8.3' ]
-    runs-on: [arc-runner-set]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout current component
         uses: actions/checkout@v5
@@ -259,7 +260,7 @@ jobs:
         php: [ '8.3', '8.4' ]
         mysql: [ '8.0' ]
     needs: [ install_shop_with_module ]
-    runs-on: [arc-runner-set]
+    runs-on: ubuntu-latest
     steps:
       - name: Load current installation from cache
         uses: actions/cache/restore@v4
@@ -311,7 +312,7 @@ jobs:
         php: [ '8.3', '8.4' ]
         mysql: [ '8.0' ]
     needs: [ install_shop_with_module ]
-    runs-on: [arc-runner-set]
+    runs-on: ubuntu-latest
     steps:
       - name: Load current installation from cache
         uses: actions/cache/restore@v4
