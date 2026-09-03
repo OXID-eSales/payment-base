@@ -30,11 +30,32 @@ jobs:
           sudo rm -rf ./.??* || true
           ls -la ./
 
+      # Both repositories are public, but an *anonymous* clone from
+      # arc-runner-set fails: GitHub answers the ref listing with a credential
+      # challenge, git has no terminal to prompt on, and the step dies with
+      # "could not read Username for 'https://github.com'" (exit 128) about 12s
+      # in, before anything is installed. The shared cluster egress is what
+      # gets refused, so it is not branch-related and survives a re-run.
+      #
+      # actions/checkout authenticates with this job's own token, which is why
+      # the `styles` job on the very same runner set stayed green. The
+      # workspace is cached below as `./*`, so `persist-credentials: false` is
+      # required: without it the token lands in .git/config and then in the
+      # cache entry. Same fix as stripe-wallet 141b6a5.
       - name: Clone testing environment
-        run: git clone https://github.com/OXID-eSales/docker-eshop-sdk.git .
+        uses: actions/checkout@v5
+        with:
+          repository: OXID-eSales/docker-eshop-sdk
+          fetch-depth: 0  # parity with the previous full `git clone`
+          persist-credentials: false
 
       - name: Clone the shop
-        run: git clone --depth 1 https://github.com/OXID-eSales/oxideshop_ce.git --branch b-7.5.x --single-branch source
+        uses: actions/checkout@v5
+        with:
+          repository: OXID-eSales/oxideshop_ce
+          ref: b-7.5.x
+          path: source
+          persist-credentials: false
 
       - name: Prepare container configuration
         run: |
