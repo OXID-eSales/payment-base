@@ -346,3 +346,18 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouC
         . '}'
     );
 }
+
+// Sprint 09 (2026-09-03) — Order_parent, the OXID virtual class the order
+// extension extends. Stubbed here rather than suppressed with
+// @phpstan-ignore, so the parent calls and getId() stay type-checked.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
+        . 'class Order_parent { '
+        . '  public function delete($sOxId = null) { return true; } '
+        . '  public function cancelOrder() {} '
+        . '  public function getId() { return ""; } '
+        . '  public function save() { return true; } '
+        . '}'
+    );
+}

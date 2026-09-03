@@ -1,4 +1,4 @@
-# Sprint 08 — Return the voucher to the pool when an order ends
+# Sprint 09 — Return the voucher to the pool when an order ends
 
 **Branch:** `b-7.4.x` (payment-base only)
 **Module:** `payment-base` — the rule is shop-level order behaviour, not a PSP concern. No PSP module is touched.
@@ -114,16 +114,47 @@ Regression tests for `NotFinishedOrderCleanupService` and
 `deleteNotFinishedOrder()`. They release today; nothing in this sprint may
 change that, and a future refactor must fail loudly if it does.
 
-### S6 — Prove it through the admin UI
+### S6 — Prove it through the admin UI  ⚠️ NOT DONE
 Playwright, per the binding requirement: place an order with a real coupon,
 storno it in the admin, and assert the **same coupon can be applied again** in a
 fresh checkout. Then the same for delete. Re-applying is the only assertion that
 discriminates — the voucher row looking tidy proves nothing about reusability.
 Run the control: revert the extension, watch both fail.
 
+**Attempted and withdrawn.** A spec was written and made green, but it also
+passed with the feature switched **off** — it proved nothing, so it was not
+committed. Two distinct reasons, both worth knowing before the next attempt:
+
+1. **The PSP round-trip frees the coupon by itself.** Checking out through
+   Mollie and coming back without paying is a release trigger in its own right
+   (STRP-171 retires the abandoned attempt). Whatever the storno does or does
+   not do, the coupon is already back. Use a payment that completes in-shop —
+   invoice — so the storno is the only candidate.
+2. **The admin list's first storno link is not the order you just placed.** The
+   spec clicked `a[href^="Javascript:StornoThisArticle"]` first-match and
+   cancelled an unrelated older order while asserting about the new one. The row
+   has to be selected by its order number.
+
+Until that spec exists and fails with the feature off, this story is open. What
+*is* verified is in §6 below, and it is not a substitute.
+
 ### S7 — Record the invariant
 `docs/invariants/` gains: *an order that ends returns its vouchers*, naming the
 four paths and the single seam they share.
+
+## 6a. Verified so far
+
+Direct A/B against the real shop, driving `oxNew(Order)` — which resolves to
+this extension — with the kill switch as the only variable:
+
+| action | switch | result |
+|---|---|---|
+| `cancelOrder()` | off | voucher stays stamped (`OXORDERID`, `OXDATEUSED` set) |
+| `cancelOrder()` | on | `OXORDERID`, `OXUSERID`, `OXDATEUSED`, `OXRESERVED` all cleared |
+| `delete()` | on | order row gone **and** voucher cleared — which can only happen if the release ran first (D1) |
+
+Plus 8 unit tests covering both orderings, the kill switch and the best-effort
+paths. This is a real control, but it is not the UI proof S6 asks for.
 
 ## 6. Definition of Done
 

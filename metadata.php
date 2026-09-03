@@ -41,6 +41,12 @@ $aModule = [
         // thank-you text instead of as a red alert above it.
         \OxidEsales\Eshop\Application\Controller\ThankYouController::class
             => \OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController::class,
+        // Sprint 09 (2026-09-03) — an order that ends returns its vouchers to the
+        // pool. Core's cancelOrder() restocks the articles but never lifts the
+        // voucher stamp, and delete() drops the order row while the voucher still
+        // points at it — an orphan no later action can find.
+        \OxidEsales\Eshop\Application\Model\Order::class
+            => \OxidEsales\PaymentBase\Eshop\Application\Model\Order::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here
@@ -95,6 +101,17 @@ $aModule = [
             'type' => 'bool',
             'value' => true,
             'group' => 'checkout_flow',
+        ],
+        // Sprint 09 (2026-09-03) — return a coupon to the pool when its order ends
+        // (admin storno or admin delete). Default on: leaving a customer's voucher
+        // spent on an order that was called off, or deleted outright, is a data
+        // defect rather than a policy. Off restores core behaviour byte-for-byte,
+        // for shops whose series are single-use per customer by policy.
+        [
+            'name' => 'blPaymentBaseReleaseVouchersOnOrderEnd',
+            'type' => 'bool',
+            'value' => true,
+            'group' => 'cleanup',
         ],
         // Sprint 08 (2026-08-28) — age threshold, in days, for
         // `bin/oe-console oe:payments:not_finished:cleanup`. A PSP module creates the

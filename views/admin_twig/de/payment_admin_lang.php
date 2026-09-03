@@ -32,6 +32,7 @@ $aLang = [
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
     'SHOP_MODULE_blPaymentBasePerLineVat'      => 'USt. pro Position berechnen (jede Position vor Summierung runden)',
+    'SHOP_MODULE_blPaymentBaseReleaseVouchersOnOrderEnd' => 'Gutscheine bei Stornierung oder Löschung einer Bestellung wieder freigeben',
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Iframe statt Checkout-Schaltfläche verwenden',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'
         => 'Zahlungsschritt überspringen, wenn nur eine Zahlungsart verfügbar ist',

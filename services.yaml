@@ -126,6 +126,12 @@ services:
     class: OxidEsales\PaymentBase\Checkout\SessionCheckoutNoticeRelocator
     public: true
 
+  # Sprint 09 — read by the Order extension, which is an OXID model and gets no
+  # constructor DI, so it resolves this at runtime. Public for that reason.
+  OxidEsales\PaymentBase\Service\VoucherReleaseSettingsInterface:
+    class: OxidEsales\PaymentBase\Service\VoucherReleaseSettings
+    public: true
+
   OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface:
     class: OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettings
     public: true

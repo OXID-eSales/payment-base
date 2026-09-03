@@ -178,3 +178,22 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouC
         . '}'
     );
 }
+
+// Sprint 09 (2026-09-03) — Order_parent is an OXID virtual class created by
+// ModuleChainsGenerator at activation; it resolves in the extension's own
+// namespace. The stub records the calls it receives so a test can assert that
+// the vouchers are released BEFORE the order row is deleted: after
+// parent::delete() the oxvouchers row would point at an order that no longer
+// exists, and nothing could ever find it again.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
+        . 'class Order_parent { '
+        . '  public static array $calls = []; '
+        . '  public static bool $deleteResult = true; '
+        . '  public function delete($sOxId = null) { self::$calls[] = "parent::delete"; return self::$deleteResult; } '
+        . '  public function cancelOrder() { self::$calls[] = "parent::cancelOrder"; } '
+        . '  public function getId() { return "order-1"; } '
+        . '}'
+    );
+}

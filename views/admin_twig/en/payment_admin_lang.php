@@ -32,6 +32,7 @@ $aLang = [
     // Module settings — field labels
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
     'SHOP_MODULE_blPaymentBasePerLineVat'      => 'Calculate VAT per line item (round each line before summing)',
+    'SHOP_MODULE_blPaymentBaseReleaseVouchersOnOrderEnd' => 'Return vouchers to the pool when an order is cancelled or deleted',
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Use iframe instead of checkout button',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'
         => 'Skip the payment step when only one payment method is available',
