@@ -1,0 +1,58 @@
+name: Secret scan
+
+# Added 2026-09-04 alongside the same job in the stripe-wallet module, where a
+# real Stripe test secret key and webhook signing secret had been committed to
+# the default branch and 16 others. This repository scanned clean — working tree
+# and full history — and this job is what keeps it that way.
+#
+# Deliberately NOT gitleaks/gitleaks-action: that action requires a
+# GITLEAKS_LICENSE for repositories owned by an organisation, and this one is.
+# The scanner itself is free, so it runs from its own container image.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current module
+        uses: actions/checkout@v5
+        with:
+          # Full history, because the commit scan below covers all of it.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan the working tree
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            dir /repo --config /repo/.gitleaks.toml --redact --no-banner \
+            --report-format sarif --report-path /repo/gitleaks-worktree.sarif
+
+      # A secret added and then deleted in the same branch never appears in the
+      # working tree, but it is published the moment the branch is pushed. So
+      # scan the commits themselves.
+      #
+      # Full history, unlike the stripe-wallet copy of this job: this
+      # repository's history is clean, so there is no pre-existing leak to
+      # exclude and no reason to narrow the range. If this ever starts failing
+      # on old commits, fix or rewrite them — do not narrow the scan.
+      - name: Scan the commit history
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            git /repo --config /repo/.gitleaks.toml --redact --no-banner \
+            --log-opts="--all --no-merges" \
+            --report-format sarif --report-path /repo/gitleaks-history.sarif
+
+      - name: Upload the findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-sarif
+          path: gitleaks-*.sarif
+          if-no-files-found: ignore

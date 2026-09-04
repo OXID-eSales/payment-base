@@ -1,0 +1,79 @@
+# gitleaks configuration
+#
+# Added 2026-09-04. An audit of payment-base, stripe and mollie found real
+# Stripe credentials committed in the stripe repository - a test secret key and
+# a webhook signing secret, on its default branch and 16 others. This repo was
+# clean, and this config is here to keep it that way.
+#
+# The allowlist is made of narrow, fixture-shaped patterns rather than blanket
+# path exclusions, so a real key pasted into a unit test still fails the scan.
+
+title = "OXID payments module"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Vendored code, generated artefacts, and obvious test fixtures"
+
+paths = [
+  '''(^|/)vendor/''',
+  '''(^|/)node_modules/''',
+  '''\.min\.(js|css)$''',
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)\.claude/''',
+  '''(^|/)(playwright-report|test-results|reports)/''',
+  '''gitleaks-report\.json$''',
+]
+
+regexes = [
+  # Placeholders shipped on purpose.
+  '''(sk|pk|rk)_(test|live)_(replace_with|your_)[A-Za-z0-9_]*''',
+  '''whsec_(replace_with|your_)[A-Za-z0-9_]*''',
+  # Stripe-shaped fixtures: spelled-out words and repeated digits.
+  '''(?i)(sk|pk|rk)_(test|live)_(51)?(abc|xyz)[a-z0-9]{0,20}''',
+  '''(sk|pk|rk)_(test|live)_(4242)+''',
+  '''(?i)(sk|pk|rk)_(test|live)_(dummy|example|placeholder|fake|test|key|secret|alias)[a-z0-9_]*''',
+  '''(?i)whsec_(test|dummy|example|fake|placeholder|abc|xyz|live)[a-z0-9_]*''',
+  '''(pi|seti|cs)_(test|live)_[A-Za-z0-9]{0,12}_secret_[A-Za-z0-9_]*''',
+  # Mollie-shaped fixtures. A real Mollie key is (live|test)_ plus 30 mixed
+  # characters, which no fixture below can be mistaken for: they are one
+  # character repeated, the word dummy repeated, or shouted placeholder text.
+  # Written out per character because Go's RE2 has no backreferences.
+  '''(live|test)_(a{10,}|b{10,}|c{10,}|x{10,}|y{10,}|z{10,}|0{10,}|1{10,}|A{10,}|B{10,}|X{10,})[A-Za-z0-9]*''',
+  '''(live|test)_(dummy)+[A-Za-z0-9]*''',
+  '''(live|test)_DUMMYVALUE[A-Za-z0-9]*''',
+  # payment-base fixture tokens.
+  '''spt_(granted|denied|expired)_[0-9A-Za-z]*''',
+]
+
+# gitleaks has no rule for a Stripe webhook signing secret, and its
+# stripe-access-token rule covers sk_/rk_ only. Both gaps mattered in the
+# incident this config follows, so they are covered explicitly.
+
+# Note on capture groups in the rules below: gitleaks reports capture group 1
+# as the finding's *secret*, and an allowlist regex is matched against that
+# secret by default. A capturing (test|live) would therefore reduce the secret
+# to the word "test" and no fixture allowlist above could ever match it. Keep
+# these groups non-capturing.
+
+[[rules]]
+id = "stripe-webhook-signing-secret"
+description = "Stripe webhook signing secret (whsec_)"
+regex = '''whsec_[A-Za-z0-9]{24,}'''
+keywords = ["whsec_"]
+
+[[rules]]
+id = "stripe-publishable-key"
+description = "Stripe publishable key (pk_live_/pk_test_)"
+regex = '''pk_(?:test|live)_51[A-Za-z0-9]{80,}'''
+keywords = ["pk_test_51", "pk_live_51"]
+
+# There is no default rule for a Mollie API key either, and a live_ one is a
+# full-access production credential.
+
+[[rules]]
+id = "mollie-api-key"
+description = "Mollie API key (live_/test_ + 30 characters)"
+regex = '''\b(?:live|test)_[A-Za-z0-9]{30}\b'''
+keywords = ["live_", "test_"]

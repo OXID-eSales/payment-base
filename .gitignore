@@ -11,3 +11,6 @@ composer.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Secret-scan reports produced by .github/workflows/gitleaks.yml
+gitleaks-*.sarif
