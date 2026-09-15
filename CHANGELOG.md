@@ -15,6 +15,10 @@ All notable changes to this module are documented here. Format follows
   OXID 7 the module stays in `vendor/` and Twig resolves `@oe_payment_base/...` from `views/twig`.
 
 ### Added
+- Module logo: `assets/img/logo.png` and the matching `thumbnail` entry in `metadata.php`, so the
+  admin module page shows the OXID module logo instead of the shop's generic placeholder. It is
+  the same file the One-Page Checkout already used, and it is now the shared default for the
+  payment modules.
 - `.gitattributes`: tests, generated documentation, sprint logs, CI workflows, developer scripts
   and the static analysis configuration are no longer part of the composer package. LICENSE,
   README and this changelog stay in it.

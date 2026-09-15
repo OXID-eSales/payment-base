@@ -35,10 +35,11 @@ $aModule = [
         'en' => 'Provider-agnostic payment infrastructure (smart-contract architecture, '
               . 'shared admin "Payment" tab). Consumed by the PSP modules (Stripe, PayPal).',
     ],
-    'version'     => '1.2.1',
+    'version'     => '1.2.2',
     'author'      => 'OXID eSales AG',
     'url'         => 'https://www.oxid-esales.com',
     'email'       => 'info@oxid-esales.com',
+    'thumbnail'   => 'img/logo.png',
     'extend'      => [
         oxPriceList::class => PriceList::class,
         // Sprint 06 — single active payment method: assign it and skip the step.
