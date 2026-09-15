@@ -7,9 +7,19 @@
 
 declare(strict_types=1);
 
+use OxidEsales\Eshop\Core\PriceList as oxPriceList;
+use OxidEsales\Eshop\Application\Controller\PaymentController as oxPaymentController;
+use OxidEsales\Eshop\Application\Controller\OrderController as oxOrderController;
+use OxidEsales\Eshop\Application\Controller\ThankYouController as oxThankYouController;
+use OxidEsales\Eshop\Application\Model\Order as oxOrder;
 use OxidEsales\PaymentBase\Admin\PaymentAdminController;
 use OxidEsales\PaymentBase\Controller\ValidationApiController;
 use OxidEsales\PaymentBase\Core\Events\ModuleLifecycle;
+use OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController;
+use OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController;
+use OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController;
+use OxidEsales\PaymentBase\Eshop\Core\PriceList;
+use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 
 $sMetadataVersion = '2.1';
 
@@ -25,28 +35,24 @@ $aModule = [
         'en' => 'Provider-agnostic payment infrastructure (smart-contract architecture, '
               . 'shared admin "Payment" tab). Consumed by the PSP modules (Stripe, PayPal).',
     ],
-    'version'     => '1.0.0',
+    'version'     => '1.2.1',
     'author'      => 'OXID eSales AG',
     'url'         => 'https://www.oxid-esales.com',
     'email'       => 'info@oxid-esales.com',
     'extend'      => [
-        \OxidEsales\Eshop\Core\PriceList::class => \OxidEsales\PaymentBase\Eshop\Core\PriceList::class,
+        oxPriceList::class => PriceList::class,
         // Sprint 06 — single active payment method: assign it and skip the step.
-        \OxidEsales\Eshop\Application\Controller\PaymentController::class
-            => \OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController::class,
-        \OxidEsales\Eshop\Application\Controller\OrderController::class
-            => \OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController::class,
+        oxPaymentController::class => PaymentController::class,
+        oxOrderController::class => OrderController::class,
         // 2026-09-01 — takes the messages a PSP queued for the thank-you page out
         // of the display-error stash, so they can be shown as notices inside the
         // thank-you text instead of as a red alert above it.
-        \OxidEsales\Eshop\Application\Controller\ThankYouController::class
-            => \OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController::class,
+        oxThankYouController::class => ThankYouController::class,
         // Sprint 09 (2026-09-03) — an order that ends returns its vouchers to the
         // pool. Core's cancelOrder() restocks the articles but never lifts the
         // voucher stamp, and delete() drops the order row while the voucher still
         // points at it — an orphan no later action can find.
-        \OxidEsales\Eshop\Application\Model\Order::class
-            => \OxidEsales\PaymentBase\Eshop\Application\Model\Order::class,
+        oxOrder::class => Order::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here
@@ -58,9 +64,6 @@ $aModule = [
         // Sprint 119 (STRP-129) — central frontend validation endpoint.
         // URL: /index.php?cl=oepaymentvalidationapi&fnc=validate
         'oepaymentvalidationapi' => ValidationApiController::class,
-    ],
-    'templates'   => [
-        '@oe_payment_base/admin/payment_admin_tab' => 'views/twig/admin/payment_admin_tab.html.twig',
     ],
     'events'      => [
         'onActivate'   => ModuleLifecycle::class . '::onActivate',

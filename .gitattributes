@@ -1,0 +1,24 @@
+* text=auto
+
+# Keep the composer dist package to what the shop actually runs.
+# Everything below stays in the git repository but is stripped from the
+# archive composer downloads (`--prefer-dist`, i.e. the default install).
+# LICENSE, README.md and CHANGELOG.md are deliberately NOT ignored.
+
+/.github            export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.gitleaks.toml     export-ignore
+
+# Developer helper scripts. Migrations are run through the official
+# oe-eshop-db_migrate flow, not through bin/run-migrations.sh.
+/bin                export-ignore
+
+# Generated API documentation and sprint logs.
+/docs/html          export-ignore
+/docs/dev_log       export-ignore
+
+# Tests and static analysis configuration.
+/tests              export-ignore
+/phpunit.xml        export-ignore
+/phpstan.neon       export-ignore

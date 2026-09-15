@@ -2,27 +2,49 @@
     "name": "oxid-esales/payment-base",
     "description": "Provider-agnostic payment component with smart-contract architecture and shared admin Payment tab",
     "type": "oxideshop-module",
-    "license": "proprietary",
+    "keywords": [
+        "oxid",
+        "modules",
+        "eShop",
+        "payment",
+        "psp",
+        "checkout"
+    ],
+    "homepage": "https://www.oxid-esales.com/",
+    "license": [
+        "proprietary"
+    ],
     "authors": [
         {
             "name": "OXID eSales AG",
             "email": "info@oxid-esales.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/OXID-eSales/payment-base/issues",
+        "source": "https://github.com/OXID-eSales/payment-base"
+    },
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
+        "ext-json": "*",
+        "doctrine/dbal": "^2.13 || ^3.0",
+        "doctrine/migrations": "^3.0",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
-        "psr/event-dispatcher": "^1.0",
-        "doctrine/dbal": "^2.13 || ^3.0"
+        "symfony/console": "^6.4 || ^7.0",
+        "symfony/filesystem": "^6.4 || ^7.0"
     },
     "require-dev": {
-        "composer/composer": "^2.0",
-        "phpunit/phpunit": "^11.0",
-        "phpstan/phpstan": "^2.0",
-        "squizlabs/php_codesniffer": "^3.7",
         "phpmd/phpmd": "^2.13",
-        "doctrine/migrations": "^3.0",
-        "symfony/yaml": "^6.0 || ^7.0"
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^11.0",
+        "squizlabs/php_codesniffer": "^3.7",
+        "symfony/yaml": "^6.4 || ^7.0"
+    },
+    "conflict": {
+        "oxid-esales/oxideshop-ce": "<7.4"
+    },
+    "suggest": {
+        "ext-apcu": "Enables the APCu-backed rate limiter for the MCP HTTP endpoints"
     },
     "autoload": {
         "psr-4": {
@@ -46,11 +68,6 @@
         ],
         "test": "phpunit -c phpunit.xml",
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit"
-    },
-    "extra": {
-        "oxideshop": {
-            "target-directory": "oe_payment_base"
-        }
     },
     "config": {
         "sort-packages": true,

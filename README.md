@@ -12,7 +12,7 @@ Payment Base is a universal, event-driven payment library that enables seamless 
 - **70% Faster Integration** - New payment providers in 35-50 hours vs 120-160 hours
 - **Event-Driven** - All business logic triggered via PSR-14 domain events
 - **Smart Contracts** - Two-step authorization with condition-based fulfillment
-- **Type-Safe** - PHP 8.1+ with strict typing and PHPStan level 6 compliance
+- **Type-Safe** - PHP 8.2+ with strict typing and PHPStan level 6 compliance
 
 ## Installation
 
@@ -21,30 +21,26 @@ composer require oxid-esales/payment-base
 ```
 
 ## Migrations
-oxid-esales/oxid-shop-doctrine-migration-wrapper is required to run migrations.
+
+The module ships its migrations in `migration/` and registers them through
+`migration/migrations.yml`. They are run by the shop's standard migration flow, which picks up
+every module suite:
 
 ```bash
-composer require oxid-esales/oxid-shop-doctrine-migration-wrapper
+vendor/bin/oe-eshop-db_migrate migrations:migrate
 ```
 
-Migrations are running automatically on composer install/update via ComposerPlugin ./src/Composer/MigrationPlugin.php
-
-```bash
-composer update oxid-esales/payment-base
-```
-
-## Force Migrations
-To run migrations manually use:
-```bash
-./bin/run-migrations.sh
-```
+`oxid-esales/oxideshop-doctrine-migration-wrapper` provides that command and is part of the
+OXID eShop installation, so it does not have to be required separately.
 
 ## Requirements
 
-- PHP 8.1+
-- PSR-3 Logger (psr/log ^2.0 || ^3.0)
-- PSR-14 Event Dispatcher (psr/event-dispatcher ^1.0)
+- OXID eShop 7.4 or 7.5
+- PHP 8.2+
+- PSR-3 Logger (psr/log ^1.0 || ^2.0 || ^3.0)
 - Doctrine DBAL ^2.13 || ^3.0
+- Doctrine Migrations ^3.0
+- Symfony Console and Filesystem ^6.4 || ^7.0
 
 ## Smart-Contract Architecture
 
