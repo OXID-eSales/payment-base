@@ -43,16 +43,17 @@ final class UnifiedNamespaceClassmapTest extends TestCase
             'oxideshop-module',
             $composer['type'] ?? null,
             'payment-base composer.json `type` must stay '
-            . '`oxideshop-module` so the OXID composer plugin installs '
-            . 'it under source/modules/. See Sprint 93 / Sprint I §47.'
+            . '`oxideshop-module` so the shop installs it as a module. '
+            . 'See Sprint 93 / Sprint I §47.'
         );
-        self::assertSame(
-            self::MODULE_ID,
-            $composer['extra']['oxideshop']['target-directory'] ?? null,
-            'payment-base composer.json must declare '
-            . '`extra.oxideshop.target-directory: ' . self::MODULE_ID . '` '
-            . 'so the OXID composer plugin knows where to install it.'
-        );
+
+        // `extra.oxideshop.target-directory` used to be asserted here as well.
+        // It no longer says anything: since OXID 7 a module is not copied to
+        // source/modules/ at all — it stays in vendor/ and only assets/ is
+        // symlinked to source/out/modules/<moduleId> by ModuleFilesInstaller.
+        // The key is read by ThemePackageInstaller only;
+        // ModulePackageInstaller::getModuleTargetDir() has no caller.
+        // The module id itself is guarded below, against metadata.php.
     }
 
     public function testMetadataPhpDeclaresPaymentBaseModuleId(): void

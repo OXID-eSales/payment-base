@@ -69,6 +69,11 @@
         "test": "phpunit -c phpunit.xml",
         "test-unit": "phpunit -c phpunit.xml --testsuite Unit"
     },
+    "extra": {
+        "branch-alias": {
+            "dev-b-7.4.x": "1.2.x-dev"
+        }
+    },
     "config": {
         "sort-packages": true,
         "allow-plugins": {

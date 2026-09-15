@@ -3,6 +3,30 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [v1.2.3] - 2026-09-15
+
+### Added
+- `extra.branch-alias` (`dev-b-7.4.x` => `1.2.x-dev`). The consuming modules require
+  `>=v1.2`, and their CI installs this package from a path repository, where composer sees
+  `dev-b-7.4.x` — a dev branch does not satisfy a numeric range on its own. With the alias it
+  does, so no workflow has to carry an explicit `as <version>` pin that goes stale on every
+  release.
+
+### Changed
+- `UnifiedNamespaceClassmapTest` no longer asserts `extra.oxideshop.target-directory`. Since
+  OXID 7 a module is not copied to `source/modules/` at all: it stays in `vendor/` and only
+  `assets/` is symlinked to `source/out/modules/<moduleId>`. The key is read by
+  `ThemePackageInstaller` alone — `ModulePackageInstaller::getModuleTargetDir()` has no caller.
+  The package type and the module id are still guarded.
+
+## [v1.2.2] - 2026-09-15
+
+### Added
+- Module logo: `assets/img/logo.png` and the matching `thumbnail` entry in `metadata.php`, so the
+  admin module page shows the OXID module logo instead of the shop's generic placeholder. It is
+  the same file the One-Page Checkout already used, and it is now the shared default for the
+  payment modules.
+
 ## [v1.2.1] - 2026-09-15
 
 ### Changed
@@ -15,10 +39,6 @@ All notable changes to this module are documented here. Format follows
   OXID 7 the module stays in `vendor/` and Twig resolves `@oe_payment_base/...` from `views/twig`.
 
 ### Added
-- Module logo: `assets/img/logo.png` and the matching `thumbnail` entry in `metadata.php`, so the
-  admin module page shows the OXID module logo instead of the shop's generic placeholder. It is
-  the same file the One-Page Checkout already used, and it is now the shared default for the
-  payment modules.
 - `.gitattributes`: tests, generated documentation, sprint logs, CI workflows, developer scripts
   and the static analysis configuration are no longer part of the composer package. LICENSE,
   README and this changelog stay in it.
