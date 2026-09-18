@@ -50,7 +50,28 @@ class Order extends Order_parent
         return (bool) parent::delete($sOxId);
     }
 
-    public function cancelOrder(): void
+    /**
+     * Deliberately without a native return type, because the shop's own
+     * `Order::cancelOrder()` declares none.
+     *
+     * A module extension sits in a chain, not on top of the core alone: every
+     * other module extending the same method becomes this class's parent or
+     * child depending on activation order. PHP allows a child to ADD a return
+     * type where the parent declares none, but not to replace one — so the
+     * first extension in the chain that writes a type takes that freedom away
+     * from everyone below it, and the shop fatals at compile time with
+     * "Declaration of … must be compatible with …". Measured against
+     * opal/opalsubscription, which declares `mixed` here: with both modules
+     * active the storefront checkout went blank.
+     *
+     * Keeping the core's shape is therefore not a style choice but the only
+     * signature that leaves the chain usable. The `@return` below is what tells
+     * static analysis what comes back — `mixed` rather than `void` for the same
+     * reason: it is what the untyped core resolves to, and it commits nobody.
+     *
+     * @return mixed whatever the shop returns, which today is nothing
+     */
+    public function cancelOrder()
     {
         parent::cancelOrder();
 
