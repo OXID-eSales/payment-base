@@ -63,6 +63,11 @@ final class NoConcreteClassTypeHintRule implements Rule
         // interfaces for them — same reason Price is listed above. The rule is
         // about not depending on *our* concretions.
         '#\\\\Eshop\\\\Application\\\\Model\\\\(Basket|User|Order)$#',
+        // Sprint 10 (2026-09-23): pure billing-to-shipping field mapping with
+        // one implementation and one caller (OxidShopOrderService) — CLAUDE.md
+        // "one impl before an interface", same reasoning as the RuleSet /
+        // ValidationRequestContext VOs above.
+        '#\\\\Adapter\\\\OrderShippingAddressCopier$#',
 
         // Test classes
         '#Test$#',

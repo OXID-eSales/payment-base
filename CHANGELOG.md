@@ -3,6 +3,21 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Orders where the shopper ships to their billing address ("use billing address for shipping")
+  now carry that address in the order's shipping columns too. Core's `Order::setUser()` only
+  writes `OXDEL*` when a separate `oxaddress` row was selected, so every such order — for every
+  provider using this module's `OxidShopOrderService` (Mollie, Stripe, PayPal) — left the admin
+  *Addresses* tab's Shipping Address section empty; the merchant had to know the convention and
+  read the billing block instead. `OxidShopOrderService::setOrderFieldsAfterCreation()` now copies
+  billing into the 13 `OXDEL*` columns whenever none was already set by core, immediately before
+  its existing save; an order with a separately selected delivery address is untouched. Visible
+  side effect: order confirmation e-mails and the thank-you page print a shipping block wherever
+  the core template keys on `oxdellname`, so those now show the billing address as shipping for
+  these orders too, matching what the admin screen shows.
+
 ## [v1.2.3] - 2026-09-15
 
 ### Added
