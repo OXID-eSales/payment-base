@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Adapter;
 
+use OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier;
 use OxidEsales\PaymentBase\Adapter\OxidShopOrderService;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
@@ -63,7 +64,7 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $this->assertInstanceOf(
             ShopOrderServiceInterface::class,
-            new OxidShopOrderService(new SpyOrderRepository())
+            new OxidShopOrderService(new SpyOrderRepository(), new OrderShippingAddressCopier())
         );
     }
 
@@ -75,7 +76,8 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository();
 
-        $this->assertTrue((new OxidShopOrderService($repository))->deleteNotFinishedOrder('order-1'));
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier());
+        $this->assertTrue($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1', 'vouchers:order-1'], $repository->calls);
     }
 
@@ -88,7 +90,8 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository(cancelSucceeds: false);
 
-        $this->assertFalse((new OxidShopOrderService($repository))->deleteNotFinishedOrder('order-1'));
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier());
+        $this->assertFalse($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1'], $repository->calls, 'vouchers must not be released');
     }
 }

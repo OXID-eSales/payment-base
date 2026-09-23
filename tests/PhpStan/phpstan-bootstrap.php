@@ -52,6 +52,23 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         . '  public mixed $oxorder__oxtransstatus = null; '
         . '  public mixed $oxorder__oxordernr = null; '
         . '  public mixed $oxorder__oxorderdate = null; '
+        // Sprint 10 (2026-09-23) — OrderShippingAddressCopier writes these
+        // OXDEL* columns; declared here purely for static analysis, the same
+        // way the fields above already are (OXID's real Order/BaseModel
+        // exposes them as dynamic properties at runtime, not as declared ones).
+        . '  public mixed $oxorder__oxdelcompany = null; '
+        . '  public mixed $oxorder__oxdelfname = null; '
+        . '  public mixed $oxorder__oxdellname = null; '
+        . '  public mixed $oxorder__oxdelstreet = null; '
+        . '  public mixed $oxorder__oxdelstreetnr = null; '
+        . '  public mixed $oxorder__oxdeladdinfo = null; '
+        . '  public mixed $oxorder__oxdelcity = null; '
+        . '  public mixed $oxorder__oxdelcountryid = null; '
+        . '  public mixed $oxorder__oxdelstateid = null; '
+        . '  public mixed $oxorder__oxdelzip = null; '
+        . '  public mixed $oxorder__oxdelfon = null; '
+        . '  public mixed $oxorder__oxdelfax = null; '
+        . '  public mixed $oxorder__oxdelsal = null; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getFieldData(string $field): mixed { return null; } '

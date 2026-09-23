@@ -43,12 +43,15 @@ use Throwable;
 class OxidShopOrderService implements ShopOrderServiceInterface
 {
     /**
-     * Order creation itself needs no collaborators — it reads the request and
-     * talks to OXID. Cancelling one does: that is the same storno + voucher
-     * release the cleanup command performs, and it is written once.
+     * Cancelling an order needs the repository for the same storno + voucher
+     * release the cleanup command performs, written once. Sprint 10
+     * (2026-09-23): order creation now needs a collaborator too — the
+     * post-creation step copies billing into an empty shipping address, and
+     * that field mapping is its own class rather than inlined here.
      */
     public function __construct(
-        private readonly NotFinishedOrderRepositoryInterface $orderRepository
+        private readonly NotFinishedOrderRepositoryInterface $orderRepository,
+        private readonly OrderShippingAddressCopier $shippingAddressCopier
     ) {
     }
 
@@ -259,8 +262,12 @@ class OxidShopOrderService implements ShopOrderServiceInterface
             );
         }
 
+        $this->shippingAddressCopier->copyBillingWhenShippingEmpty($order);
+        // finalizeOrder() has already drawn the order number (core setNumber()).
+        // The former setOrderNumber() call here was a method the Stripe / OPC
+        // Order extensions add, so order creation only worked where one of
+        // those modules was active — CI's bare CE shop proved it.
         $order->save();
-        $order->setOrderNumber(); // @phpstan-ignore method.notFound
 
         if (!empty($request->metadata)) {
             $this->storeOrderMetadata($order, $request->metadata);

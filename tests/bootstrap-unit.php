@@ -29,10 +29,37 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\Admin\AdminDetailsCon
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
+        // Sprint 10 (2026-09-23) — #[AllowDynamicProperties] mirrors OXID's real
+        // BaseModel, which exposes oxorder__* columns as dynamic properties.
+        // OrderShippingAddressCopierTest relies on this to read back the
+        // oxorder__oxdel* fields the copier writes, without declaring all of
+        // them here (declaring them would defeat the test that asserts the
+        // *exact* set of properties written).
+        . '#[\\AllowDynamicProperties] '
         . 'class Order { '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function save(): mixed { return true; } '
+        . '}'
+    );
+}
+
+// Sprint 10 (2026-09-23) — OrderShippingAddressCopier writes OXDEL* fields as
+// raw Field values. Only the T_RAW branch is exercised, so the stub keeps the
+// real class's constructor semantics for that branch only.
+if (!class_exists(\OxidEsales\Eshop\Core\Field::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Field { '
+        . '  public const T_TEXT = 1; '
+        . '  public const T_RAW = 2; '
+        . '  public mixed $value = null; '
+        . '  public mixed $rawValue = null; '
+        . '  public function __construct($value = null, $type = self::T_TEXT) { '
+        . '    $this->rawValue = $value; '
+        . '    if ((int) $type === self::T_RAW) { $this->value = $value; } '
+        . '  } '
         . '}'
     );
 }
