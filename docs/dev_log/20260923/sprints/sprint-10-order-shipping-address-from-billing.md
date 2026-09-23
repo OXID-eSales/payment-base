@@ -107,3 +107,12 @@ its own active article and its own payment method assigned to `oxidstandard` (th
 set initial data ships, and it is active), inside the rolled-back transaction. Mail was ruled out
 as a cause: both environments use the SDK PHP image with msmtp. Re-verified locally: 2 tests, 17
 assertions, no fixture rows left behind; phpcs and phpstan clean.
+
+Second CI run, same job: `Function 'setOrderNumber' does not exist or is not accessible`.
+`setOrderNumber()` is a public method the Stripe and OPC `Order` extensions add; payment-base's
+`setOrderFieldsAfterCreation()` called it after `save()`, so payment-base order creation only
+ever worked with one of those modules in the class chain. Core's `finalizeOrder()` already draws
+the number (`setNumber()` at the end of the OK path), so the call was removed rather than
+re-implemented, and the integration test now asserts `oxordernr > 0`. Latent production bug for
+Mollie-only / PayPal-only shops; CHANGELOG entry added. All gates re-run green locally
+(Integration 125, Unit 1345, phpcs/phpstan/phpmd clean).

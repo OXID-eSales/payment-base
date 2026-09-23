@@ -263,8 +263,11 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         }
 
         $this->shippingAddressCopier->copyBillingWhenShippingEmpty($order);
+        // finalizeOrder() has already drawn the order number (core setNumber()).
+        // The former setOrderNumber() call here was a method the Stripe / OPC
+        // Order extensions add, so order creation only worked where one of
+        // those modules was active — CI's bare CE shop proved it.
         $order->save();
-        $order->setOrderNumber(); // @phpstan-ignore method.notFound
 
         if (!empty($request->metadata)) {
             $this->storeOrderMetadata($order, $request->metadata);

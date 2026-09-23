@@ -17,6 +17,10 @@ All notable changes to this module are documented here. Format follows
   side effect: order confirmation e-mails and the thank-you page print a shipping block wherever
   the core template keys on `oxdellname`, so those now show the billing address as shipping for
   these orders too, matching what the admin screen shows.
+- Order creation in `OxidShopOrderService` no longer calls `setOrderNumber()`, a method only the
+  Stripe and one-page-checkout Order extensions provide. Core's `finalizeOrder()` already draws
+  the number; on a shop without one of those modules active every payment-base order creation
+  threw "Function 'setOrderNumber' does not exist or is not accessible".
 
 ## [v1.2.3] - 2026-09-15
 

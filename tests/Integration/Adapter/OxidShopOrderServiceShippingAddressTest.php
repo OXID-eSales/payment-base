@@ -72,6 +72,10 @@ final class OxidShopOrderServiceShippingAddressTest extends IntegrationTestCase
 
         $order = $this->loadOrder($this->createOrder($user));
 
+        // Core numbers the order inside finalizeOrder(); the service must not
+        // need a module-provided setOrderNumber() for that.
+        self::assertGreaterThan(0, (int) $order->getFieldData('oxordernr'));
+
         foreach (self::FIELD_SUFFIXES as $suffix) {
             self::assertSame(
                 $order->getFieldData("oxbill$suffix"),
