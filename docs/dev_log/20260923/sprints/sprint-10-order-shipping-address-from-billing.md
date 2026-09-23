@@ -96,3 +96,14 @@ providers pass through, already owning the single `save()`.
 ## Gates
 `composer phpcs` · `composer phpstan` · `composer phpmd` · `composer test-unit` ·
 `./bin/pre-commit-check.sh --full` before commit · `var/cache` cleared in the PHP container.
+
+## CI follow-up (2026-09-23, after the first push)
+
+The two integration tests were green locally and red in CI (`Failed asserting that false is of
+type string`). Local shop = EE with demo data and the Mollie module active; CI = bare CE from
+`initial_data.sql`: no articles, no `oxobject2payment` rows, no PSP module. The fixture had
+leaned on both (`SELECT … FROM oxarticles LIMIT 1`, `oe_payments_mollie`). The test now creates
+its own active article and its own payment method assigned to `oxidstandard` (the only delivery
+set initial data ships, and it is active), inside the rolled-back transaction. Mail was ruled out
+as a cause: both environments use the SDK PHP image with msmtp. Re-verified locally: 2 tests, 17
+assertions, no fixture rows left behind; phpcs and phpstan clean.

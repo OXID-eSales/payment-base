@@ -10,11 +10,13 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Integration\Adapter;
 
 use OxidEsales\Eshop\Application\Model\Address;
+use OxidEsales\Eshop\Application\Model\Article;
 use OxidEsales\Eshop\Application\Model\Basket;
 use OxidEsales\Eshop\Application\Model\Order;
+use OxidEsales\Eshop\Application\Model\Payment;
 use OxidEsales\Eshop\Application\Model\User;
-use OxidEsales\Eshop\Core\DatabaseProvider;
 use OxidEsales\Eshop\Core\Field;
+use OxidEsales\Eshop\Core\Model\BaseModel;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
@@ -32,17 +34,23 @@ use PHPUnit\Framework\Attributes\Group;
  * SingleShippingAutoAssignTest and FullDataPersistenceFlowTest already do in
  * this suite; every write happens inside IntegrationTestCase's transaction
  * and is rolled back in tearDown().
+ *
+ * The test brings its own article and payment method. CI installs a bare CE
+ * shop from initial_data.sql: no articles, no oxobject2payment rows, and no
+ * PSP module, so neither demo data nor `oe_payments_*` can be relied on.
+ * `oxidstandard` (active delivery set) and Germany do ship with initial data.
  */
 #[Group('integration')]
 final class OxidShopOrderServiceShippingAddressTest extends IntegrationTestCase
 {
     private const GERMANY = 'a7c40f631fc920687.20179984';
 
-    // This shop only has an active PSP payment method (payment-base's own
-    // consumers); the core methods (oxidinvoice etc.) are deactivated here.
-    // Any active, basket-checkable payment id proves the seam - the fix does
-    // not branch on provider.
-    private const PAYMENT_ID = 'oe_payments_mollie';
+    private const DELIVERY_SET = 'oxidstandard';
+
+    // Own fixture payment assigned to the delivery set below: any active,
+    // basket-checkable payment id proves the seam - the fix does not branch
+    // on provider - and a fixture exists on every shop this suite runs on.
+    private const PAYMENT_ID = 'e2e_sa_payment';
 
     private const FIELD_SUFFIXES = [
         'company', 'fname', 'lname', 'street', 'streetnr', 'addinfo', 'city',
@@ -113,19 +121,62 @@ final class OxidShopOrderServiceShippingAddressTest extends IntegrationTestCase
 
     private function putOneArticleInBasketFor(User $user): void
     {
-        $articleId = DatabaseProvider::getDb()->getOne(
-            'SELECT OXID FROM oxarticles WHERE OXACTIVE = 1 AND OXSTOCK > 0 LIMIT 1'
-        );
-        self::assertIsString($articleId, 'fixture needs at least one active, in-stock article in the shop');
+        $this->createFixturePayment();
+        $article = $this->createFixtureArticle();
 
         $basket = oxNew(Basket::class);
         $basket->setBasketUser($user);
-        $basket->addToBasket($articleId, 1);
+        $basket->addToBasket($article->getId(), 1);
         $basket->setPayment(self::PAYMENT_ID);
-        $basket->setShipping('oxidstandard');
+        $basket->setShipping(self::DELIVERY_SET);
         $basket->calculateBasket();
 
         Registry::getSession()->setBasket($basket);
+    }
+
+    private function createFixtureArticle(): Article
+    {
+        $article = oxNew(Article::class);
+        $article->setId('e2e_sa_art_' . substr(md5(uniqid('', true)), 0, 8));
+        $article->oxarticles__oxshopid = new Field(Registry::getConfig()->getShopId(), Field::T_RAW);
+        $article->oxarticles__oxactive = new Field(1, Field::T_RAW);
+        $article->oxarticles__oxartnum = new Field('E2E-SA-1', Field::T_RAW);
+        $article->oxarticles__oxtitle = new Field('Shipping address fixture', Field::T_RAW);
+        $article->oxarticles__oxprice = new Field(10.0, Field::T_RAW);
+        $article->oxarticles__oxstock = new Field(100, Field::T_RAW);
+        $article->oxarticles__oxstockflag = new Field(1, Field::T_RAW);
+        $article->save();
+
+        return $article;
+    }
+
+    /**
+     * An active payment method with no country / group restriction, assigned
+     * to the delivery set the basket uses - the two conditions
+     * PaymentList::getFilterSelect() demands before Order::validatePayment()
+     * accepts a basket.
+     */
+    private function createFixturePayment(): void
+    {
+        $payment = oxNew(Payment::class);
+        $payment->setId(self::PAYMENT_ID);
+        $payment->oxpayments__oxactive = new Field(1, Field::T_RAW);
+        $payment->oxpayments__oxdesc = new Field('Shipping address fixture', Field::T_RAW);
+        $payment->oxpayments__oxaddsum = new Field(0, Field::T_RAW);
+        $payment->oxpayments__oxaddsumtype = new Field('abs', Field::T_RAW);
+        $payment->oxpayments__oxfromboni = new Field(0, Field::T_RAW);
+        $payment->oxpayments__oxfromamount = new Field(0, Field::T_RAW);
+        $payment->oxpayments__oxtoamount = new Field(1000000, Field::T_RAW);
+        $payment->oxpayments__oxchecked = new Field(0, Field::T_RAW);
+        $payment->oxpayments__oxsort = new Field(0, Field::T_RAW);
+        $payment->save();
+
+        $assignment = oxNew(BaseModel::class);
+        $assignment->init('oxobject2payment');
+        $assignment->oxobject2payment__oxpaymentid = new Field(self::PAYMENT_ID, Field::T_RAW);
+        $assignment->oxobject2payment__oxobjectid = new Field(self::DELIVERY_SET, Field::T_RAW);
+        $assignment->oxobject2payment__oxtype = new Field('oxdelset', Field::T_RAW);
+        $assignment->save();
     }
 
     private function createFixtureUser(string $suffix): User
