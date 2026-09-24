@@ -8,6 +8,13 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 interface ContractRepositoryInterface
 {
+    /**
+     * Persists the contract. MOL-17: the row carries a version; saving a copy that was loaded before
+     * another writer saved the same contract throws {@see StaleContractException} - reload and decide,
+     * never overwrite (the shopper's return leg and the PSP webhook race on the same contract).
+     *
+     * @throws StaleContractException
+     */
     public function save(PaymentContractInterface $contract): void;
 
     public function findById(string $id): ?PaymentContractInterface;
