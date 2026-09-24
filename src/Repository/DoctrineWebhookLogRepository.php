@@ -22,6 +22,8 @@ use RuntimeException;
 class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
 {
     private const TABLE_NAME = 'oe_payments_webhooklogs';
+    private const STATUS_CLAIMED = 'claimed';
+    private const STATUS_FAILED = 'failed';
 
     public function __construct(
         private readonly Connection $connection
@@ -60,6 +62,14 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
         }
     }
 
+    /**
+     * @inheritDoc
+     *
+     * First delivery: INSERT on UNIQUE(OXEVENTID). A later delivery of the same event hits the key; it
+     * may still claim when the earlier attempt ended `failed` - the PSP was answered non-2xx for exactly
+     * that reason and is now retrying. The re-claim is one UPDATE guarded by the status, so two
+     * concurrent retries cannot both win. Processed and in-flight (`claimed`) rows stay exclusive.
+     */
     public function claimEvent(string $eventId, string $provider, string $eventType): bool
     {
         try {
@@ -68,14 +78,30 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
                 'OXEVENTID' => $eventId,
                 'OXPROVIDER' => $provider,
                 'OXEVENTTYPE' => $eventType,
-                'OXSTATUS' => 'claimed',
+                'OXSTATUS' => self::STATUS_CLAIMED,
                 'OXRECEIVEDAT' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
             ]);
 
             return true;
         } catch (UniqueConstraintViolationException) {
-            return false;
+            return $this->reclaimFailed($eventId);
         }
+    }
+
+    private function reclaimFailed(string $eventId): bool
+    {
+        $affected = (int) $this->connection->update(
+            self::TABLE_NAME,
+            [
+                'OXSTATUS' => self::STATUS_CLAIMED,
+                'OXRECEIVEDAT' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+                'OXPROCESSEDAT' => null,
+                'OXERROR' => null,
+            ],
+            ['OXEVENTID' => $eventId, 'OXSTATUS' => self::STATUS_FAILED]
+        );
+
+        return $affected > 0;
     }
 
     public function existsByEventId(string $eventId): bool
