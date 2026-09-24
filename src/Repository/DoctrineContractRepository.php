@@ -286,7 +286,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface
             'OXCONDITIONS' => json_encode($contractArray['conditions'] ?? []),
             'OXPROVIDER' => $contractArray['provider'] ?? null,
             'OXPROVIDERORDERID' => $contractArray['providerOrderId'] ?? null,
-            'OXPROVIDERDATA' => isset($contractArray['providerData']) ? json_encode($contractArray['providerData']) : null,
+            'OXPROVIDERDATA' => $this->encodeProviderData($contractArray),
             'OXCREATED' => $this->formatDateTime($createdAt),
             'OXUPDATED' => $this->formatDateTime($updatedAt),
             'OXCOMMITTEDAT' => isset($contractArray['committedAt']) ? $this->formatDateTime($contractArray['committedAt']) : null,
@@ -369,6 +369,43 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     }
 
     /**
+     * MOL-18: the PSP checkout URL handed to setProvider() used to live only
+     * in memory - OXPROVIDERDATA was written from a `providerData` key the
+     * contract never produced, so every reloaded contract answered null to
+     * getProviderRedirectUrl(). A repeated "Order now" replays that URL, so
+     * it has to survive the round trip.
+     *
+     * @param array<string, mixed> $contractArray
+     */
+    private function encodeProviderData(array $contractArray): ?string
+    {
+        $redirectUrl = $contractArray['providerRedirectUrl'] ?? null;
+        if (!is_string($redirectUrl) || $redirectUrl === '') {
+            return null;
+        }
+
+        $encoded = json_encode(['redirectUrl' => $redirectUrl]);
+
+        return $encoded === false ? null : $encoded;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function hydrateProviderRedirectUrl(array $data): ?string
+    {
+        $raw = $data['OXPROVIDERDATA'] ?? null;
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        $redirectUrl = is_array($decoded) ? ($decoded['redirectUrl'] ?? null) : null;
+
+        return is_string($redirectUrl) && $redirectUrl !== '' ? $redirectUrl : null;
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @param array<int, ContractCondition> $conditions
      */
@@ -383,6 +420,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         $this->setPrivateProperty($contract, 'orderId', $data['OXORDERID']);
         $this->setPrivateProperty($contract, 'provider', $data['OXPROVIDER']);
         $this->setPrivateProperty($contract, 'providerOrderId', $data['OXPROVIDERORDERID']);
+        $this->setPrivateProperty($contract, 'providerRedirectUrl', $this->hydrateProviderRedirectUrl($data));
         $this->setPrivateProperty($contract, 'expiresAt', $this->parseDateTime($data['OXEXPIRESAT']));
         $this->setPrivateProperty($contract, 'createdAt', $this->parseDateTime($data['OXCREATED']));
         $this->setPrivateProperty($contract, 'updatedAt', $this->parseDateTime($data['OXUPDATED']));

@@ -79,6 +79,35 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
     /**
      * Saves contracts and backdates them past the sweep window.
      */
+    /**
+     * MOL-18: a repeated "Order now" replays the PSP checkout URL of the
+     * attempt in flight, so the URL setProvider() received must survive a
+     * save/load round trip. It used to be dropped (OXPROVIDERDATA was always
+     * NULL) and every reloaded contract answered null.
+     */
+    public function testProviderRedirectUrlSurvivesTheRoundTrip(): void
+    {
+        $contract = $this->createTestContract('redirect_contract');
+        $contract->setProvider('mollie', 'tr_123', 'https://www.mollie.com/checkout/select-method/tr_123');
+        $this->repository->save($contract);
+
+        $reloaded = $this->repository->findById('redirect_contract');
+
+        $this->assertNotNull($reloaded);
+        $this->assertSame('mollie', $reloaded->getProvider());
+        $this->assertSame('tr_123', $reloaded->getProviderOrderId());
+        $this->assertSame('https://www.mollie.com/checkout/select-method/tr_123', $reloaded->getProviderRedirectUrl());
+    }
+
+    public function testAContractWithoutARedirectUrlReloadsWithNull(): void
+    {
+        $contract = $this->createTestContract('no_redirect_contract');
+        $contract->setProvider('mollie', 'tr_456');
+        $this->repository->save($contract);
+
+        $this->assertNull($this->repository->findById('no_redirect_contract')?->getProviderRedirectUrl());
+    }
+
     private function seedStaleContracts(int $count): void
     {
         for ($i = 0; $i < $count; $i++) {
