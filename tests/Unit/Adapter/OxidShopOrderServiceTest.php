@@ -50,6 +50,11 @@ class SpyOrderRepository implements NotFinishedOrderRepositoryInterface
 
         return 1;
     }
+
+    public function isNotFinished(string $orderId): bool
+    {
+        return true;
+    }
 }
 
 /**

@@ -102,6 +102,28 @@ class DoctrineNotFinishedOrderRepositoryTest extends IntegrationTestCase
         $this->assertCount(1, $this->repository->findStaleNotFinishedOrderIds(30, null, 1));
     }
 
+    /**
+     * MOL-18: the in-flight resolver asks whether an attempt's order is still
+     * at NOT_FINISHED before replaying its PSP redirect.
+     */
+    public function testReportsAnUnfinishedOrderAsNotFinished(): void
+    {
+        $this->seedOrder('open', daysOld: 0);
+
+        $this->assertTrue($this->repository->isNotFinished(self::PREFIX . 'open'));
+    }
+
+    public function testReportsFinishedCancelledAndUnknownOrdersAsNotNotFinished(): void
+    {
+        $this->seedOrder('paid', daysOld: 0, status: 'OK');
+        $this->seedOrder('gone', daysOld: 0);
+        $this->repository->cancelOrder(self::PREFIX . 'gone');
+
+        $this->assertFalse($this->repository->isNotFinished(self::PREFIX . 'paid'));
+        $this->assertFalse($this->repository->isNotFinished(self::PREFIX . 'gone'));
+        $this->assertFalse($this->repository->isNotFinished(self::PREFIX . 'never-existed'));
+    }
+
     public function testCancelKeepsTheRowAndMovesItOffNotFinished(): void
     {
         $this->seedOrder('cancel-me', daysOld: 60);

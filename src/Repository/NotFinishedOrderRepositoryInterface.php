@@ -43,4 +43,11 @@ interface NotFinishedOrderRepositoryInterface extends VoucherReleaseInterface
      * @return bool true if this call is what cancelled the order
      */
     public function cancelOrder(string $orderId): bool;
+
+    /**
+     * Whether the order row still sits at OXTRANSSTATUS = 'NOT_FINISHED' - i.e.
+     * the checkout attempt that created it is still in flight (MOL-18). False
+     * for a finished, cancelled or unknown order.
+     */
+    public function isNotFinished(string $orderId): bool;
 }
