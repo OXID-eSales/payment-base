@@ -15,6 +15,7 @@ use DateTime;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use RuntimeException;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\CaptureRefundTracker;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
@@ -29,7 +30,7 @@ use ReflectionException;
  *
  * @SuppressWarnings(PHPMD)
  */
-class DoctrineContractRepository implements ContractRepositoryInterface
+class DoctrineContractRepository implements ContractRepositoryInterface, ContractStateQueryInterface
 {
     private const TABLE_CONTRACTS = 'oe_payments_contract';
 
@@ -240,6 +241,26 @@ class DoctrineContractRepository implements ContractRepositoryInterface
 
             return [];
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function findByStateAndProvider(string $state, string $provider, ?int $limit = null): array
+    {
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXSTATE = :state AND OXPROVIDER = :provider ORDER BY OXCREATED ASC';
+        if ($limit !== null) {
+            // MySQL will not take a bound parameter in LIMIT under real prepared statements.
+            $sql .= ' LIMIT ' . max(1, $limit);
+        }
+
+        try {
+            $rows = $this->connection->fetchAllAssociative($sql, ['state' => $state, 'provider' => $provider]);
+        } catch (Exception $e) {
+            throw new RuntimeException('Failed to query contracts by state and provider: ' . $e->getMessage(), 0, $e);
+        }
+
+        return array_values(array_map(fn (array $row): PaymentContractInterface => $this->hydrateContract($row), $rows));
     }
 
     /**

@@ -100,6 +100,29 @@ final class DoctrineContractRepositoryVersioningTest extends TestCase
         self::assertSame(7, $contract->toArray()['version']);
     }
 
+    // MOL-17 Story 4: the sweep the reconciliation command runs on.
+    public function testFindByStateAndProviderQueriesExactlyThatAndHydratesRows(): void
+    {
+        $this->connection->expects(self::once())->method('fetchAllAssociative')
+            ->with(
+                self::callback(static fn (string $sql) => str_contains($sql, 'OXSTATE = :state') && str_contains($sql, 'OXPROVIDER = :provider') && str_contains($sql, 'LIMIT 5')),
+                ['state' => 'committed', 'provider' => 'mollie'],
+            )
+            ->willReturn([[
+                'OXID' => 'c-3', 'OXSHOPID' => 1, 'OXUSERID' => 'u', 'OXORDERID' => 'o', 'OXSTATE' => 'committed',
+                'OXSTATEREASON' => null, 'OXBASKETDATA' => json_encode($this->snapshot()->toArray()), 'OXTERMS' => null,
+                'OXMETADATA' => null, 'OXCONDITIONS' => '[]', 'OXPROVIDER' => 'mollie', 'OXPROVIDERORDERID' => 'tr_3',
+                'OXPROVIDERDATA' => null, 'OXCREATED' => '2026-09-24 10:00:00', 'OXUPDATED' => '2026-09-24 10:00:00',
+                'OXCOMMITTEDAT' => '2026-09-24 10:00:00', 'OXFULFILLEDAT' => null, 'OXEXPIRESAT' => null, 'OXVERSION' => '2',
+            ]]);
+
+        $found = $this->repository->findByStateAndProvider('committed', 'mollie', 5);
+
+        self::assertCount(1, $found);
+        self::assertSame('tr_3', $found[0]->getProviderOrderId());
+        self::assertSame('committed', $found[0]->getStateValue());
+    }
+
     private function contractAtVersion(int $version): PaymentContract
     {
         $contract = PaymentContract::fromArray([
