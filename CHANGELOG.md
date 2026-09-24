@@ -6,6 +6,10 @@ All notable changes to this module are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- Optimistic concurrency on payment contracts (MOL-17): `oe_payments_contract.OXVERSION` (migration
+  `Version20260924120000`), `DoctrineContractRepository::save()` updates only the row version it loaded
+  and throws `StaleContractException` otherwise; `ContractStateQueryInterface::findByStateAndProvider()`
+  for reconciliation sweeps.
 - `InFlightCheckoutAttemptResolverInterface` (MOL-18): answers whether the session already has a
   checkout attempt in flight - an open contract with a provider checkout URL whose order is still
   `NOT_FINISHED` and whose basket total matches the live basket - and hands back that URL so a
@@ -14,6 +18,13 @@ All notable changes to this module are documented here. Format follows
   `NotFinishedOrderRepositoryInterface::isNotFinished()` reads an order's `OXTRANSSTATUS`.
 
 ### Fixed
+- A paid order could end up without a Refund action (MOL-17): the shopper's return leg and the PSP's
+  `paid` webhook both saved the contract row without coordination, and the return leg's stale copy
+  overwrote the webhook's `fulfilled` state with `committed`. The save is now versioned (see Added),
+  `CheckoutReturnResponder` yields to a newer state instead of overwriting it (reports the committed /
+  fulfilled contract's order, re-runs the chain once on a fresh copy when the contract is still open),
+  and providers' webhook handlers can retry on `StaleContractException`. Which payment methods were
+  affected depended on timing only.
 - "Order now" clicked twice no longer writes a phantom order (MOL-18). Core's `finalizeOrder()`
   answers `ORDER_STATE_ORDEREXISTS` when `sess_challenge` already names an order row;
   `OxidShopOrderService` treated that as success and saved the never-loaded `Order` object - a
