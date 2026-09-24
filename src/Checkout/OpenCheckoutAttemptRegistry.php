@@ -37,8 +37,15 @@ class OpenCheckoutAttemptRegistry implements OpenCheckoutAttemptRegistryInterfac
      */
     public function takePrevious(): ?string
     {
-        $stored = $this->session->getVariable(self::SESSION_KEY);
+        $stored = $this->peek();
         $this->session->setVariable(self::SESSION_KEY, null);
+
+        return $stored;
+    }
+
+    public function peek(): ?string
+    {
+        $stored = $this->session->getVariable(self::SESSION_KEY);
 
         return is_string($stored) && $stored !== '' ? $stored : null;
     }

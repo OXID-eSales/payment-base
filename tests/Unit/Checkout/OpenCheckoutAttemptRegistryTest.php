@@ -90,4 +90,21 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
 
         $this->assertNull($registry->takePrevious());
     }
+
+    public function testPeekingAtTheOpenAttemptKeepsIt(): void
+    {
+        // MOL-18: the in-flight resolver only asks; the retire-and-recreate
+        // path must still find the attempt afterwards.
+        $session = $this->sessionHolding('contract-1');
+        $registry = new OpenCheckoutAttemptRegistry($session);
+
+        $this->assertSame('contract-1', $registry->peek());
+        $this->assertSame('contract-1', $registry->peek());
+        $this->assertSame('contract-1', $registry->takePrevious());
+    }
+
+    public function testPeekReportsNoOpenAttemptForAFreshSession(): void
+    {
+        $this->assertNull((new OpenCheckoutAttemptRegistry($this->sessionHolding(null)))->peek());
+    }
 }

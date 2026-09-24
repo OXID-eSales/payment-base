@@ -96,6 +96,23 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
         return $affected > 0;
     }
 
+    public function isNotFinished(string $orderId): bool
+    {
+        $sql = 'SELECT OXTRANSSTATUS FROM ' . self::TABLE_ORDERS . ' WHERE OXID = :id';
+
+        try {
+            $status = $this->connection->fetchOne($sql, ['id' => $orderId]);
+        } catch (Exception $e) {
+            throw new RuntimeException(
+                'Failed to read the state of order ' . $orderId . ': ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+
+        return $status === self::STATUS_NOT_FINISHED;
+    }
+
     public function releaseVouchers(string $orderId): int
     {
         // Mirrors what early order creation did via Order::finalizeOrder() ->

@@ -122,8 +122,23 @@ services:
     class: OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleaner
     public: true
     arguments:
-      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
-      - '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $orderService: '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
+      # MOL-18: a retired attempt must also give up the `sess_challenge` that
+      # names its (kept, storno'd) order row, or core refuses every retry.
+      $session: '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+
+  # MOL-18 — "is a checkout attempt already in flight for this session?" A
+  # provider's order controller asks this before starting a new attempt and
+  # replays the answer (the PSP checkout URL) instead. Public for the same
+  # reason as the cleaner above: OXID controllers fetch it at runtime.
+  OxidEsales\PaymentBase\Checkout\InFlightCheckoutAttemptResolverInterface:
+    class: OxidEsales\PaymentBase\Checkout\InFlightCheckoutAttemptResolver
+    public: true
+    arguments:
+      $openAttempts: '@OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $orders: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
 
   # 2026-09-01 — thank-you page notices. Public: OXID controllers get no
   # constructor injection, so the extension fetches this through the container

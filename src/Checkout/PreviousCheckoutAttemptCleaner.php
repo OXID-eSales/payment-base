@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Checkout;
 
+use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
@@ -25,12 +26,23 @@ use Throwable;
  */
 class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerInterface
 {
+    /**
+     * Core generates this once on the order page and uses it as the id of the
+     * order finalizeOrder() creates; it is only deleted on the thank-you page.
+     */
+    public const SESSION_CHALLENGE = 'sess_challenge';
+
     private readonly LoggerInterface $logger;
 
+    /**
+     * The session is optional so a consumer whose services.yaml predates
+     * MOL-18 keeps working - it simply does not get the challenge rotation.
+     */
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly ShopOrderServiceInterface $orderService,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        private readonly ?SessionAdapterInterface $session = null
     ) {
         $this->logger = $logger ?? new NullLogger();
     }
@@ -55,8 +67,39 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
 
         $contract->cancel('checkout_retry');
         $this->contractRepository->save($contract);
+        $this->forgetSessionChallenge($contract);
 
         return true;
+    }
+
+    /**
+     * MOL-18: the retired order keeps its row (storno, CANCELLED - the number
+     * sequence must stay gap-free), so as long as `sess_challenge` still names
+     * it, core's finalizeOrder() answers ORDEREXISTS for every further attempt
+     * in this session and no new order can ever be created. Before 2026-09-24
+     * that was masked by OxidShopOrderService saving a phantom row. Forgetting
+     * the challenge makes core issue a fresh one on the next order page, or a
+     * fresh id inside finalizeOrder() when the retry is already under way.
+     *
+     * Only a challenge naming THIS attempt's order is touched: a newer one
+     * belongs to whatever attempt the shopper is on now.
+     */
+    private function forgetSessionChallenge(PaymentContractInterface $contract): void
+    {
+        if ($this->session === null) {
+            return;
+        }
+
+        $orderId = $contract->getOrderId();
+        if ($orderId === null || $orderId === '') {
+            return;
+        }
+
+        if ($this->session->getVariable(self::SESSION_CHALLENGE) !== $orderId) {
+            return;
+        }
+
+        $this->session->setVariable(self::SESSION_CHALLENGE, null);
     }
 
     private function isAbandonable(PaymentContractInterface $contract, string $contractId): bool

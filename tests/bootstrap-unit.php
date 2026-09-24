@@ -37,10 +37,47 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         // *exact* set of properties written).
         . '#[\\AllowDynamicProperties] '
         . 'class Order { '
+        // MOL-18 (2026-09-24) — the order-state codes core's finalizeOrder()
+        // answers with, same values as the real class, so OxidShopOrderService
+        // can be unit-tested through its newOrder() seam.
+        . '  const ORDER_STATE_MAILINGERROR = 0; '
+        . '  const ORDER_STATE_OK = 1; '
+        . '  const ORDER_STATE_PAYMENTERROR = 2; '
+        . '  const ORDER_STATE_ORDEREXISTS = 3; '
+        . '  const ORDER_STATE_INVALIDDELIVERY = 4; '
+        . '  const ORDER_STATE_INVALIDPAYMENT = 5; '
+        . '  const ORDER_STATE_INVALIDDELADDRESSCHANGED = 7; '
+        . '  const ORDER_STATE_BELOWMINPRICE = 8; '
+        . '  const ORDER_STATE_VOUCHERERROR = 9; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getFieldData(string $field): mixed { return null; } '
         . '  public function save(): mixed { return true; } '
+        . '  public function finalizeOrder($basket, $user, $recalculating = false): int { return self::ORDER_STATE_OK; } '
+        . '}'
+    );
+}
+
+// MOL-18 (2026-09-24) — Basket / User stubs: OxidShopOrderService's creation
+// path type-hints both; tests subclass these with the few readers it calls.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Basket { '
+        . '  public function getBasketUser() { return null; } '
+        . '  public function getPrice() { return null; } '
+        . '  public function getBasketCurrency() { return null; } '
+        . '  public function getProductsCount(): int { return 0; } '
+        . '  public function getPaymentId() { return null; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class User { '
+        . '  public function getId(): ?string { return null; } '
         . '}'
     );
 }

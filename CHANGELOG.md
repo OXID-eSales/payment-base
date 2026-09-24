@@ -5,7 +5,28 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+- `InFlightCheckoutAttemptResolverInterface` (MOL-18): answers whether the session already has a
+  checkout attempt in flight - an open contract with a provider checkout URL whose order is still
+  `NOT_FINISHED` and whose basket total matches the live basket - and hands back that URL so a
+  provider's order controller can replay the redirect instead of starting a second attempt.
+  `OpenCheckoutAttemptRegistryInterface::peek()` reads the remembered attempt without consuming it;
+  `NotFinishedOrderRepositoryInterface::isNotFinished()` reads an order's `OXTRANSSTATUS`.
+
 ### Fixed
+- "Order now" clicked twice no longer writes a phantom order (MOL-18). Core's `finalizeOrder()`
+  answers `ORDER_STATE_ORDEREXISTS` when `sess_challenge` already names an order row;
+  `OxidShopOrderService` treated that as success and saved the never-loaded `Order` object - a
+  second row with no user, no articles, no payment type and total 0, which the shopper was then
+  sent to the PSP to pay for. `createOrder()` now throws `ShopOrderException` with code
+  `order_exists` and writes nothing.
+- A retired checkout attempt now forgets the session's `sess_challenge` when it names the retired
+  order (MOL-18). The order row is kept (storno, `CANCELLED`) for a gap-free number sequence, so
+  while the challenge still pointed at it core refused every further attempt in the session with
+  `ORDEREXISTS`; the phantom order above was what made the retry appear to work.
+- The provider checkout URL handed to `PaymentContract::setProvider()` is now persisted
+  (`OXPROVIDERDATA` as `{"redirectUrl": ...}`) and restored on load (MOL-18). It used to live only in
+  memory, so every contract loaded from the database answered `null` to `getProviderRedirectUrl()`.
 - Orders where the shopper ships to their billing address ("use billing address for shipping")
   now carry that address in the order's shipping columns too. Core's `Order::setUser()` only
   writes `OXDEL*` when a separate `oxaddress` row was selected, so every such order — for every
