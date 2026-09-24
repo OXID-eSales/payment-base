@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Controller;
 
+use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Controller\CheckoutReturnResponder;
 use OxidEsales\PaymentBase\Controller\SessionWriterInterface;
@@ -16,6 +17,8 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -184,16 +187,112 @@ final class CheckoutReturnResponderTest extends TestCase
         self::assertTrue($captured, 'requiresCapture should be set from the resolution');
     }
 
-    private function buildResponder(): CheckoutReturnResponder
+    // ── MOL-17: the return leg races the PSP webhook on the contract row ─────────────────────────
+
+    public function testWhenTheWebhookAlreadyCommittedTheContractTheReturnLegYieldsAndReportsItsOrder(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $this->dispatcher->method('dispatch')->willReturnCallback(function (object $event): object {
+            if ($event instanceof PaymentAuthorizedEvent) {
+                throw new StaleContractException('contr_1', 2, 4);
+            }
+            return $event;
+        });
+        $fresh = $this->contractInState(ContractState::fulfilled(), 'order_from_webhook');
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $contracts->method('findById')->with('contr_1')->willReturn($fresh);
+        $written = [];
+
+        $orderId = $this->buildResponder($contracts, $written)->respond('mollie', $this->contract, $this->resolver, []);
+
+        self::assertSame('order_from_webhook', $orderId);
+        self::assertSame(['order_from_webhook'], $written, 'the thank-you page still gets its order');
+    }
+
+    public function testWhenTheFreshContractIsStillOpenTheChainRunsOnceMoreOnIt(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $fresh = $this->contractInState(ContractState::pending(), 'order_fresh');
+        $seenContracts = [];
+        $calls = 0;
+        $this->dispatcher->method('dispatch')->willReturnCallback(function (object $event) use (&$calls, &$seenContracts): object {
+            $calls++;
+            if ($event instanceof PaymentAuthorizedEvent) {
+                $seenContracts[] = $event->getContext()->getContract();
+                if ($calls === 2) {
+                    throw new StaleContractException('contr_1', 2, 3);
+                }
+            }
+            return $event;
+        });
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $contracts->method('findById')->willReturn($fresh);
+
+        $orderId = $this->buildResponder($contracts)->respond('mollie', $this->contract, $this->resolver, []);
+
+        self::assertSame('order_fresh', $orderId);
+        self::assertSame(4, $calls, 'two events, then the same two again on the fresh copy');
+        self::assertSame($fresh, $seenContracts[1], 'the second pass works on the reloaded contract');
+    }
+
+    public function testASecondStaleRefusalIsLeftToTheWebhook(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $this->dispatcher->method('dispatch')->willReturnCallback(static function (object $event): object {
+            if ($event instanceof PaymentAuthorizedEvent) {
+                throw new StaleContractException('contr_1', 2, 3);
+            }
+            return $event;
+        });
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $contracts->method('findById')->willReturn($this->contractInState(ContractState::pending(), 'ord_x'));
+
+        self::assertNull($this->buildResponder($contracts)->respond('mollie', $this->contract, $this->resolver, []));
+    }
+
+    public function testWithoutARepositoryAStaleSaveIsReportedAsFailure(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $this->dispatcher->method('dispatch')->willReturnCallback(static function (object $event): object {
+            if ($event instanceof PaymentAuthorizedEvent) {
+                throw new StaleContractException('contr_1', 2, 3);
+            }
+            return $event;
+        });
+
+        self::assertNull($this->buildResponder()->respond('mollie', $this->contract, $this->resolver, []));
+    }
+
+    private function contractInState(ContractState $state, string $orderId): PaymentContractInterface&MockObject
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn('contr_1');
+        $contract->method('getState')->willReturn($state);
+        $contract->method('getStateValue')->willReturn($state->getValue());
+        $contract->method('getOrderId')->willReturn($orderId);
+
+        return $contract;
+    }
+
+    /**
+     * @param list<string> $written collects the order ids handed to the session writer
+     */
+    private function buildResponder(?ContractRepositoryInterface $contracts = null, array &$written = []): CheckoutReturnResponder
     {
         // The real writer uses OXID's Registry::getSession(); tests
         // only care about dispatch + context + orderId return, so pass
         // a no-op writer.
-        $writer = new class implements SessionWriterInterface {
-            public function writeSessChallenge(string $orderId): void
+        $writer = new class ($written) implements SessionWriterInterface {
+            /** @param list<string> $written */
+            public function __construct(private array &$written)
             {
             }
+
+            public function writeSessChallenge(string $orderId): void
+            {
+                $this->written[] = $orderId;
+            }
         };
-        return new CheckoutReturnResponder($this->dispatcher, $writer);
+        return new CheckoutReturnResponder($this->dispatcher, $writer, contracts: $contracts);
     }
 }

@@ -15,6 +15,7 @@ use DateTime;
 use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use RuntimeException;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\CaptureRefundTracker;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
@@ -29,7 +30,7 @@ use ReflectionException;
  *
  * @SuppressWarnings(PHPMD)
  */
-class DoctrineContractRepository implements ContractRepositoryInterface
+class DoctrineContractRepository implements ContractRepositoryInterface, ContractStateQueryInterface
 {
     private const TABLE_CONTRACTS = 'oe_payments_contract';
 
@@ -243,22 +244,55 @@ class DoctrineContractRepository implements ContractRepositoryInterface
     }
 
     /**
-     * @throws Exception
+     * @inheritDoc
+     */
+    public function findByStateAndProvider(string $state, string $provider, ?int $limit = null): array
+    {
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXSTATE = :state AND OXPROVIDER = :provider ORDER BY OXCREATED ASC';
+        if ($limit !== null) {
+            // MySQL will not take a bound parameter in LIMIT under real prepared statements.
+            $sql .= ' LIMIT ' . max(1, $limit);
+        }
+
+        try {
+            $rows = $this->connection->fetchAllAssociative($sql, ['state' => $state, 'provider' => $provider]);
+        } catch (Exception $e) {
+            throw new RuntimeException('Failed to query contracts by state and provider: ' . $e->getMessage(), 0, $e);
+        }
+
+        return array_values(array_map(fn (array $row): PaymentContractInterface => $this->hydrateContract($row), $rows));
+    }
+
+    /**
+     * MOL-17: optimistic concurrency. The UPDATE only matches the row when it still carries the version
+     * this copy was loaded with, and moves it one up; a copy that lost the race against another writer
+     * (return leg vs. PSP webhook) gets a {@see StaleContractException} instead of overwriting.
      */
     private function saveContract(PaymentContractInterface $contract): void
     {
         $data = $this->prepareContractData($contract);
+        $expectedVersion = (int) ($data['OXVERSION'] ?? 0);
+        $data['OXVERSION'] = $expectedVersion + 1;
 
-        $exists = $this->connection->fetchOne(
-            'SELECT COUNT(*) FROM ' . self::TABLE_CONTRACTS . ' WHERE OXID = :id',
-            ['id' => $contract->getId()]
+        $affected = (int) $this->connection->update(
+            self::TABLE_CONTRACTS,
+            $data,
+            ['OXID' => $contract->getId(), 'OXVERSION' => $expectedVersion]
         );
-
-        if ($exists > 0) {
-            $this->connection->update(self::TABLE_CONTRACTS, $data, ['OXID' => $contract->getId()]);
+        if ($affected > 0) {
+            $this->setPrivateProperty($contract, 'version', $expectedVersion + 1);
             return;
         }
 
+        $current = $this->connection->fetchOne(
+            'SELECT OXVERSION FROM ' . self::TABLE_CONTRACTS . ' WHERE OXID = :id',
+            ['id' => $contract->getId()]
+        );
+        if ($current !== false) {
+            throw new StaleContractException((string) $contract->getId(), $expectedVersion, (int) $current);
+        }
+
+        $data['OXVERSION'] = $expectedVersion;
         $this->connection->insert(self::TABLE_CONTRACTS, $data);
     }
 
@@ -287,6 +321,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface
             'OXPROVIDER' => $contractArray['provider'] ?? null,
             'OXPROVIDERORDERID' => $contractArray['providerOrderId'] ?? null,
             'OXPROVIDERDATA' => $this->encodeProviderData($contractArray),
+            'OXVERSION' => (int) ($contractArray['version'] ?? 0),
             'OXCREATED' => $this->formatDateTime($createdAt),
             'OXUPDATED' => $this->formatDateTime($updatedAt),
             'OXCOMMITTEDAT' => isset($contractArray['committedAt']) ? $this->formatDateTime($contractArray['committedAt']) : null,
@@ -421,6 +456,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface
         $this->setPrivateProperty($contract, 'provider', $data['OXPROVIDER']);
         $this->setPrivateProperty($contract, 'providerOrderId', $data['OXPROVIDERORDERID']);
         $this->setPrivateProperty($contract, 'providerRedirectUrl', $this->hydrateProviderRedirectUrl($data));
+        $this->setPrivateProperty($contract, 'version', (int) ($data['OXVERSION'] ?? 0));
         $this->setPrivateProperty($contract, 'expiresAt', $this->parseDateTime($data['OXEXPIRESAT']));
         $this->setPrivateProperty($contract, 'createdAt', $this->parseDateTime($data['OXCREATED']));
         $this->setPrivateProperty($contract, 'updatedAt', $this->parseDateTime($data['OXUPDATED']));

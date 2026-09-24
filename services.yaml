@@ -64,6 +64,11 @@ services:
   # using the early-order pattern leaves the same residue.
   # --------------------------------------------------------------
 
+  # MOL-17: the state sweep a reconciliation needs, served by the same repository instance.
+  OxidEsales\PaymentBase\Repository\ContractStateQueryInterface:
+    alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
+    public: true
+
   OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface:
     class: OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository
     arguments:

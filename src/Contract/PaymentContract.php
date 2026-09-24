@@ -40,6 +40,13 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
     private ?string $providerRedirectUrl = null;
 
     /**
+     * MOL-17: the row version this copy was loaded with, exposed only through toArray()['version'] (the
+     * repository's concern, not the domain's). Bumped by the repository on each successful save; a save
+     * with a version the row no longer has is refused (StaleContractException).
+     */
+    private int $version = 0;
+
+    /**
      * Arbitrary metadata storage for provider-specific data.
      * @var array<string, mixed>
      */
@@ -494,6 +501,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             'provider' => $this->provider,
             'providerOrderId' => $this->providerOrderId,
             'providerRedirectUrl' => $this->providerRedirectUrl,
+            'version' => $this->version,
             'metadata' => $this->metadata,
             'expiresAt' => $this->expiresAt?->format('Y-m-d H:i:s'),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
@@ -521,6 +529,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $contract->provider = self::extractOptionalString($data, 'provider');
         $contract->providerOrderId = self::extractOptionalString($data, 'providerOrderId');
         $contract->providerRedirectUrl = self::extractOptionalString($data, 'providerRedirectUrl');
+        $contract->version = is_int($data['version'] ?? null) ? $data['version'] : 0;
         $contract->metadata = self::extractMetadata($data);
         $contract->conditions = self::extractConditions($data);
         self::validateStateConsistency($contract->state, $contract->conditions);

@@ -14,6 +14,9 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\StaleContractException;
+use OxidEsales\PaymentBase\Return\ReturnResolution;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -44,10 +47,16 @@ use Throwable;
  */
 class CheckoutReturnResponder
 {
+    /**
+     * MOL-17: the repository is what lets the return leg yield to a newer state when its own copy
+     * turned out stale. Optional so a consumer that wires the responder without it keeps working - it
+     * then behaves as before (a stale save surfaces as an error).
+     */
     public function __construct(
         private readonly EventDispatcherInterface $dispatcher,
         private readonly SessionWriterInterface $sessionWriter,
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly ?ContractRepositoryInterface $contracts = null,
     ) {
     }
 
@@ -87,6 +96,17 @@ class CheckoutReturnResponder
             return null;
         }
 
+        try {
+            $this->dispatchReturn($context, $resolution);
+        } catch (StaleContractException $e) {
+            return $this->settleOnNewerContract($providerName, $contract, $resolution, $extraContextKeys, $e->getMessage());
+        }
+
+        return $this->finish($context, $contract);
+    }
+
+    private function dispatchReturn(EventContext $context, ReturnResolution $resolution): void
+    {
         $context->set('requiresCapture', $resolution->requiresCapture);
         $this->dispatcher->dispatch(new CheckoutReturnCompletedEvent($context, $resolution));
         $this->dispatcher->dispatch(new PaymentAuthorizedEvent(
@@ -96,12 +116,66 @@ class CheckoutReturnResponder
             $resolution->amount,
             $resolution->currency,
         ));
+    }
 
+    private function finish(EventContext $context, PaymentContractInterface $contract): ?string
+    {
         $orderId = $this->resolveOrderId($context, $contract);
         if ($orderId !== null) {
             $this->sessionWriter->writeSessChallenge($orderId);
         }
+
         return $orderId;
+    }
+
+    /**
+     * MOL-17: the shopper's return leg and the PSP webhook race on the contract. When a handler's save
+     * is refused because the row moved on, the webhook has been here already. Reload: a committed or
+     * fulfilled contract IS the outcome this leg wanted - report its order and stop; a contract still
+     * open gets the handler chain once more on the fresh copy; a second refusal is given up on (the
+     * webhook completes the order, the shopper sees the pending notice).
+     *
+     * @param array<string, mixed> $extraContextKeys
+     */
+    private function settleOnNewerContract(
+        string $providerName,
+        PaymentContractInterface $stale,
+        ReturnResolution $resolution,
+        array $extraContextKeys,
+        string $cause,
+    ): ?string {
+        $fresh = $this->contracts?->findById((string) $stale->getId());
+        if ($fresh === null) {
+            $this->logger->warning('[CheckoutReturnResponder] stale contract and no fresh copy to fall back on', [
+                'contractId' => $stale->getId(),
+                'error' => $cause,
+            ]);
+
+            return null;
+        }
+
+        if ($fresh->getState()->isCommitted() || $fresh->getState()->isFulfilled()) {
+            $this->logger->info('[CheckoutReturnResponder] return leg yielded to the webhook', [
+                'contractId' => $fresh->getId(),
+                'state' => $fresh->getStateValue(),
+            ]);
+
+            return $this->finish($this->buildContext($providerName, $fresh, $extraContextKeys), $fresh);
+        }
+
+        $context = $this->buildContext($providerName, $fresh, $extraContextKeys);
+        try {
+            $this->dispatchReturn($context, $resolution);
+        } catch (StaleContractException $again) {
+            $this->logger->warning('[CheckoutReturnResponder] contract changed twice during the return leg; leaving it to the webhook', [
+                'contractId' => $fresh->getId(),
+                'error' => $again->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return $this->finish($context, $fresh);
     }
 
     /**
