@@ -60,6 +60,11 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
         }
 
         if (!$this->isAbandonable($contract, $contractId)) {
+            // MOL-17: settled (or already ended by the PSP webhook) means nothing to retire, but the
+            // order row stays and core would answer ORDEREXISTS for every further attempt as long
+            // as the challenge names it.
+            $this->forgetSessionChallenge($contract);
+
             return false;
         }
 

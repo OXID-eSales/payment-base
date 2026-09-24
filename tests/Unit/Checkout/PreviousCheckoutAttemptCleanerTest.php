@@ -150,16 +150,36 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
         $this->assertSame('order-2', $session->getVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE));
     }
 
-    public function testClean_WhenNothingIsRetired_KeepsTheChallenge(): void
+    /**
+     * MOL-17 (found by the MOL-18 retry e2e): when the PSP's `failed` webhook terminated the attempt
+     * before the shopper came back, nothing is left to retire - but the order row is still there and
+     * `sess_challenge` still names it, so core answers ORDEREXISTS for every further attempt. The
+     * challenge must go whenever it names the order of an attempt that is no longer open.
+     */
+    public function testClean_ForATerminalAttempt_StillForgetsTheChallengeNamingItsOrder(): void
     {
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
         $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
 
-        $contract = $this->contractInState(ContractState::committed(), 'order-1');
+        $contract = $this->contractInState(ContractState::failed(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
+        $contract->expects($this->never())->method('cancel');
+        $this->orders->expects($this->never())->method('deleteNotFinishedOrder');
 
         $this->assertFalse($cleaner->clean('contract-1'));
-        $this->assertSame('order-1', $session->getVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE));
+        $this->assertNull($session->getVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE));
+    }
+
+    public function testClean_ForACommittedAttempt_AlsoForgetsTheChallengeNamingItsOrder(): void
+    {
+        // A paid attempt's order is real and stays; a new attempt must not be forced onto its id.
+        $session = new RecordingSessionAdapter();
+        $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
+        $this->contracts->method('findById')->willReturn($this->contractInState(ContractState::committed(), 'order-1'));
+
+        $this->assertFalse($cleaner->clean('contract-1'));
+        $this->assertNull($session->getVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE));
     }
 }

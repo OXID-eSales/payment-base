@@ -18,6 +18,12 @@ Twin plan and full report in mollie-payment: `docs/dev_day_log/20260924/{sprints
 3. `330fcb4` **`ContractStateQueryInterface::findByStateAndProvider()`** (one method, own interface), served by
    the repository, aliased to the same instance — the sweep `mollie:reconcile-paid` runs on.
 
+4. **`PreviousCheckoutAttemptCleaner` forgets `sess_challenge` for settled attempts too.** Found by the MOL-18
+   retry e2e during this sprint's regression: when the PSP's `failed` webhook had already terminated the
+   attempt, the cleaner refused to retire it and left the challenge naming its (kept) order row, so the
+   next "Order now" hit `order_exists` and "payment via Mollie not available". Supersedes MOL-18's
+   "keeps the challenge for a committed attempt" test; a newer challenge naming another order is still left alone.
+
 ## Gates (final)
 
 Unit 1376 green (4 skipped, pre-existing) · Integration 133 (1 skipped) incl. the three lost-update tests ·
