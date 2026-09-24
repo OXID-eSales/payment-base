@@ -20,17 +20,8 @@ interface WebhookLogRepositoryInterface
     public function findByEventId(string $eventId): ?WebhookLog;
 
     /**
-     * Atomically claim an event for processing.
-     *
-     * Uses INSERT with unique key constraint — only one process can claim a given event ID.
-     * Returns true if this caller claimed it, false if already claimed by another process.
-     *
-     * Replaces the TOCTOU-vulnerable existsByEventId() + save() pattern.
-     *
-     * @param string $eventId Unique event identifier (e.g., 'evt_xxx')
-     * @param string $provider Provider name (e.g., 'stripe')
-     * @param string $eventType Event type (e.g., 'payment_intent.succeeded')
-     * @return bool True if event was claimed, false if already claimed
+     * Claims the event id for processing. True for a first delivery and for the retry of a delivery
+     * that ended `failed`; false for a replay of a processed delivery or one still being processed.
      */
     public function claimEvent(string $eventId, string $provider, string $eventType): bool;
 

@@ -83,14 +83,16 @@ abstract class AbstractWebhookProcessor
                 'eventType' => $event->type,
                 'error' => $e->getMessage(),
             ]);
-            $this->logWebhookResult($event, 'failed', null);
+            $this->logWebhookResult($event, 'failed', null, $e->getMessage());
             return WebhookResult::failure('processing_failed', $e->getMessage());
         }
 
         // Step 5: Update log status
         $contractId = $this->getContractIdFromResult($result);
         $status = $result->isSuccess() ? 'processed' : 'failed';
-        $this->logWebhookResult($event, $status, $contractId);
+        // A failed row keeps its reason and can be claimed again by the PSP's retry
+        // ({@see WebhookLogRepositoryInterface::claimEvent()}).
+        $this->logWebhookResult($event, $status, $contractId, $result->isSuccess() ? null : $result->error);
 
         return $result;
     }
@@ -123,14 +125,13 @@ abstract class AbstractWebhookProcessor
     /**
      * Update webhook log status after processing.
      */
-    protected function logWebhookResult(WebhookEvent $event, string $status, ?string $contractId): void
-    {
-        $this->logRepository->updateStatus(
-            $event->id,
-            $status,
-            null, // error message (null for success)
-            $contractId
-        );
+    protected function logWebhookResult(
+        WebhookEvent $event,
+        string $status,
+        ?string $contractId,
+        ?string $error = null
+    ): void {
+        $this->logRepository->updateStatus($event->id, $status, $error, $contractId);
     }
 
     /**

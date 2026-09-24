@@ -18,6 +18,10 @@ All notable changes to this module are documented here. Format follows
   `NotFinishedOrderRepositoryInterface::isNotFinished()` reads an order's `OXTRANSSTATUS`.
 
 ### Fixed
+- A webhook delivery that failed could never be retried: the event id was claimed before processing and a
+  `failed` outcome kept the claim, so the PSP's retry was answered "Already processed" (200) and the order
+  stayed wherever the failure left it. `claimEvent()` now re-claims a `failed` row atomically (processed and
+  in-flight rows stay exclusive), and the failure reason is stored on the log row.
 - A paid order could end up without a Refund action (MOL-17): the shopper's return leg and the PSP's
   `paid` webhook both saved the contract row without coordination, and the return leg's stale copy
   overwrote the webhook's `fulfilled` state with `committed`. The save is now versioned (see Added),
