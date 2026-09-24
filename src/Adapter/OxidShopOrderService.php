@@ -43,6 +43,12 @@ use Throwable;
 class OxidShopOrderService implements ShopOrderServiceInterface
 {
     /**
+     * Error code of the ShopOrderException thrown when core reports that an
+     * order for the current `sess_challenge` already exists (MOL-18).
+     */
+    public const ERROR_ORDER_EXISTS = 'order_exists';
+
+    /**
      * Cancelling an order needs the repository for the same storno + voucher
      * release the cleanup command performs, written once. Sprint 10
      * (2026-09-23): order creation now needs a collaborator too — the
@@ -126,14 +132,83 @@ class OxidShopOrderService implements ShopOrderServiceInterface
             Registry::getSession()->setVariable('ordRem', $request->orderRemark);
         }
 
-        /** @var Order $order */
-        $order = oxNew(Order::class);
+        $order = $this->newOrder();
         /** @var int $orderState */
         $orderState = $order->finalizeOrder($basket, $user, false);
 
+        $this->refuseSecondSubmission($orderState, $request);
         $this->validateOrderState($orderState, $request, $basket);
 
         return [$order, $orderState];
+    }
+
+    /**
+     * MOL-18: core answers ORDER_STATE_ORDEREXISTS when `sess_challenge`
+     * already names an oxorder row - its own guard against "Order now" clicked
+     * twice ("somebody clicked like mad on order button"). The Order object was
+     * never loaded from the basket in that case, so saving it - which this
+     * class did until 2026-09-24 - wrote a SECOND row: fresh id, no user, no
+     * articles, no payment type, total 0, and the shopper was sent to the PSP
+     * to pay for it. Eight such rows in one dev database carried committed
+     * contracts. The signal ends here, as an error the caller can name.
+     *
+     * @throws ShopOrderException with code {@see self::ERROR_ORDER_EXISTS}
+     */
+    private function refuseSecondSubmission(int $orderState, CreateOrderRequest $request): void
+    {
+        if ($orderState !== Order::ORDER_STATE_ORDEREXISTS) {
+            return;
+        }
+
+        $challenge = $this->sessionChallenge();
+        Registry::getLogger()->warning('OxidShopOrderService: refused a second submission of one checkout attempt', [
+            'order_id' => $challenge,
+            'session_id' => $request->sessionId,
+            'user_id' => $request->userId,
+        ]);
+
+        throw new ShopOrderException(
+            message: 'An order for this checkout attempt already exists',
+            errorCode: self::ERROR_ORDER_EXISTS,
+            context: [
+                'order_id' => $challenge,
+                'session_id' => $request->sessionId,
+                'user_id' => $request->userId,
+            ]
+        );
+    }
+
+    /**
+     * The one oxNew() on the creation path, as a seam: unit tests hand in an
+     * Order whose finalizeOrder() answers a chosen state without the shop.
+     */
+    protected function newOrder(): Order
+    {
+        /** @var Order $order */
+        $order = oxNew(Order::class);
+
+        return $order;
+    }
+
+    /**
+     * Seam for the session basket (Registry-backed in the shop).
+     */
+    protected function sessionBasket(): ?Basket
+    {
+        /** @var Basket|null $basket */
+        $basket = Registry::getSession()->getBasket();
+
+        return $basket;
+    }
+
+    /**
+     * The order id core will use for this checkout attempt (Registry-backed).
+     */
+    protected function sessionChallenge(): ?string
+    {
+        $challenge = Registry::getSession()->getVariable('sess_challenge');
+
+        return is_string($challenge) && $challenge !== '' ? $challenge : null;
     }
 
     /**
@@ -181,8 +256,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      */
     private function validateBasketAndUser(CreateOrderRequest $request): array
     {
-        /** @var Basket|null $basket */
-        $basket = Registry::getSession()->getBasket();
+        $basket = $this->sessionBasket();
         if (!$basket) {
             throw new ShopOrderException(
                 message: 'Basket not found in session',
@@ -211,7 +285,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      */
     private function validateOrderState(int $orderState, CreateOrderRequest $request, Basket $basket): void
     {
-        if (in_array($orderState, [Order::ORDER_STATE_OK, Order::ORDER_STATE_ORDEREXISTS], true)) {
+        if ($orderState === Order::ORDER_STATE_OK) {
             return;
         }
 
@@ -309,7 +383,6 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     {
         return match ($orderState) {
             Order::ORDER_STATE_OK => 'completed',
-            Order::ORDER_STATE_ORDEREXISTS => 'completed',
             Order::ORDER_STATE_MAILINGERROR => 'completed', // Order created but email failed
             Order::ORDER_STATE_PAYMENTERROR => 'payment_error',
             Order::ORDER_STATE_BELOWMINPRICE => 'below_minimum',
@@ -327,6 +400,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     private function mapOrderStateToErrorCode(int $orderState): string
     {
         return match ($orderState) {
+            Order::ORDER_STATE_ORDEREXISTS => self::ERROR_ORDER_EXISTS,
             Order::ORDER_STATE_PAYMENTERROR => 'payment_error',
             Order::ORDER_STATE_BELOWMINPRICE => 'below_minimum_price',
             Order::ORDER_STATE_INVALIDPAYMENT => 'invalid_payment_method',
