@@ -20,18 +20,8 @@ use OxidEsales\PaymentBase\Contract\ContractState;
  * Built from the ContractState factories so a renamed state fails a test rather than a reader.
  * `draft` is not listed: it exists for a blink before the checkout-session event and never shows.
  */
-final class ContractStateHelp
+final class ContractStateHelp implements ContractStateHelpInterface
 {
-    /** Idents the table and the hint need besides the per-row meanings. */
-    public const SHARED_IDENTS = [
-        'PAYMENT_ADMIN_HELP',
-        'PAYMENT_ADMIN_HELP_CONTRACT_STATES_INTRO',
-        'PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE',
-        'PAYMENT_ADMIN_HELP_COL_MEANING',
-        'PAYMENT_ADMIN_HELP_NONE',
-        'PAYMENT_ADMIN_HELP_CLOSE',
-    ];
-
     /**
      * @return list<ContractStateHelpRow>
      */

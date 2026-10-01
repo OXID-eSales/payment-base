@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Twig;
 
-use OxidEsales\PaymentBase\Admin\Help\ContractStateHelp;
+use OxidEsales\PaymentBase\Admin\Help\ContractStateHelpInterface;
 use OxidEsales\PaymentBase\Admin\Help\ContractStateHelpRow;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -21,7 +21,7 @@ use Twig\TwigFunction;
  */
 class ContractStateHelpExtension extends AbstractExtension
 {
-    public function __construct(private readonly ContractStateHelp $help)
+    public function __construct(private readonly ContractStateHelpInterface $help)
     {
     }
 
