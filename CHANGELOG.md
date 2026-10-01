@@ -6,6 +6,18 @@ All notable changes to this module are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- Shared "Help" for the OXID contract states (Sprint 14, MOL-10): `Admin\Help\ContractStateHelp` (one row per state a
+  checkout can reach, with a translated meaning), the Twig function `oe_payment_contract_state_help()`, the table
+  partial `@oe_payment_base/admin/help/contract_state_table.html.twig` (two columns, optional provider column) and the
+  "?" hint partial `@oe_payment_base/admin/help/contract_state_hint.html.twig` (popup layer with description + table).
+  payment-base's own Settings tab ends with a "Help" group showing the two-column table. Provider modules add their
+  column (Mollie, Stripe) and the hint next to "OXID Contract Status" on their order panels.
+
+### Changed
+- Admin label `PAYMENT_ADMIN_CONTRACT_STATE` reads "OXID Contract Status" / "OXID-Vertragsstatus".
+- `twig/twig` added to require-dev (the Twig extension is unit-tested standalone; the shop provides Twig at runtime).
+
+### Added
 - Optimistic concurrency on payment contracts (MOL-17): `oe_payments_contract.OXVERSION` (migration
   `Version20260924120000`), `DoctrineContractRepository::save()` updates only the row version it loaded
   and throws `StaleContractException` otherwise; `ContractStateQueryInterface::findByStateAndProvider()`
