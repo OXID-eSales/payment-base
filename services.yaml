@@ -389,3 +389,16 @@ services:
   OxidEsales\PaymentBase\Service\IframeCheckoutSettingsInterface:
     class: OxidEsales\PaymentBase\Service\IframeCheckoutSettings
     public: true
+
+  # Sprint 14 (MOL-10) — shared contract-state Help: one PHP table, exposed to every
+  # module's admin template as the Twig function oe_payment_contract_state_help().
+  OxidEsales\PaymentBase\Admin\Help\ContractStateHelpInterface:
+    class: OxidEsales\PaymentBase\Admin\Help\ContractStateHelp
+    public: false
+
+  OxidEsales\PaymentBase\Twig\ContractStateHelpExtension:
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Help\ContractStateHelpInterface'
+    tags:
+      - { name: twig.extension }
+    public: false

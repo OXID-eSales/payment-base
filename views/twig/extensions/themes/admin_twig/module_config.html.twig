@@ -1,0 +1,29 @@
+{% extends "module_config.html.twig" %}
+
+{#
+    Sprint 14 (MOL-10) — payment-base's Settings tab ends with a "Help" group: the OXID contract
+    states (two columns: OXID Contract Status · Meaning). Provider modules show the same table with
+    their own third column on their Settings tabs and behind the "?" on their order panels.
+
+    Several modules override this template (Mollie, Stripe, PayPal, one-page-checkout, now payment-base):
+    every stock group must keep rendering through {{ parent() }}, and the Help group is gated on this
+    module's id, so no other module's Settings page changes.
+#}
+{% block admin_module_config_group %}
+    {{ parent() }}
+
+    {% if loop.last and oView.getEditObjectId() == 'oe_payment_base' %}
+        <div class="groupExp">
+            <div class="">
+                <a href="#" onclick="_groupExp(this);return false;" class="rc"><b>{{ translate({ ident: 'PAYMENT_ADMIN_HELP' }) }}</b></a>
+                <dl>
+                    <dd class="pc-help">
+                        <p class="pc-help-intro">{{ translate({ ident: 'PAYMENT_ADMIN_HELP_CONTRACT_STATES_INTRO' }) }}</p>
+                        {% include "@oe_payment_base/admin/help/contract_state_table.html.twig" %}
+                    </dd>
+                </dl>
+                <div class="spacer"></div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{#
+    Sprint 14 (MOL-10) — the shared contract-state Help table.
+
+    Two columns always (OXID Contract Status · Meaning); a third when the including provider passes
+        providerLabel:    translation ident of its column header (e.g. "Mollie payment status")
+        providerStatuses: map row key (first state of the row) -> status text, '' = none
+    Rows come from the Twig function oe_payment_contract_state_help() (one PHP table, payment-base).
+#}
+{% set helpRows = oe_payment_contract_state_help() %}
+{% set helpProviderLabel = providerLabel|default(null) %}
+{% set helpStatuses = providerStatuses|default({}) %}
+<table class="pc-help-table">
+    <thead>
+        <tr>
+            <th>{{ translate({ ident: 'PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE' }) }}</th>
+            <th>{{ translate({ ident: 'PAYMENT_ADMIN_HELP_COL_MEANING' }) }}</th>
+            {% if helpProviderLabel %}<th>{{ translate({ ident: helpProviderLabel }) }}</th>{% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in helpRows %}
+            <tr>
+                <td>{% for state in row.states %}<code>{{ state }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</td>
+                <td>{{ translate({ ident: row.meaningIdent }) }}</td>
+                {% if helpProviderLabel %}
+                    {% set status = helpStatuses[row.key()]|default('') %}
+                    <td>{% if status %}<code>{{ status }}</code>{% else %}{{ translate({ ident: 'PAYMENT_ADMIN_HELP_NONE' }) }}{% endif %}</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<style>
+    .pc-help-table { border-collapse: collapse; margin: 6px 0 8px; }
+    .pc-help-table th, .pc-help-table td { text-align: left; vertical-align: top; padding: 4px 14px 4px 0; border-bottom: 1px solid #e5e7eb; font-size: 12px; line-height: 1.4; }
+    .pc-help-table th { font-weight: bold; color: #374151; }
+    .pc-help-table code { font-family: monospace; white-space: nowrap; }
+</style>

@@ -1,0 +1,71 @@
+{#
+    Sprint 14 (MOL-10) — the "?" next to "OXID Contract Status" on a provider's order panel.
+
+    Click (or Enter/Space) opens a layer with the provider's description and the three-column Help
+    table; the close button, Escape and a click outside close it. Include with
+        intro:            translation ident of the provider's description
+        providerLabel:    translation ident of the provider column header
+        providerStatuses: map row key -> provider status text
+        id:               optional suffix for several hints on one page
+    Self-contained: CSS and the one document-level script are emitted once per page.
+#}
+{% set hintId = 'pc-help-' ~ (id|default('contract-state')) %}
+<span class="pc-help-hint">
+    <button type="button" class="pc-help-hint-button"
+            aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ hintId }}"
+            aria-label="{{ translate({ ident: 'PAYMENT_ADMIN_HELP' }) }}"
+            data-pc-help-toggle="{{ hintId }}">?</button>
+    <div id="{{ hintId }}" class="pc-help-layer" role="dialog" aria-labelledby="{{ hintId }}-title" hidden>
+        <div class="pc-help-layer-head">
+            <strong id="{{ hintId }}-title">{{ translate({ ident: 'PAYMENT_ADMIN_HELP' }) }}</strong>
+            <button type="button" class="pc-help-layer-close" data-pc-help-close
+                    aria-label="{{ translate({ ident: 'PAYMENT_ADMIN_HELP_CLOSE' }) }}">&times;</button>
+        </div>
+        <p class="pc-help-intro">{{ translate({ ident: intro|default('PAYMENT_ADMIN_HELP_CONTRACT_STATES_INTRO') }) }}</p>
+        {% include "@oe_payment_base/admin/help/contract_state_table.html.twig" with {
+            providerLabel: providerLabel|default(null),
+            providerStatuses: providerStatuses|default({})
+        } %}
+    </div>
+</span>
+<style>
+    .pc-help-hint { position: relative; display: inline-block; margin-left: 6px; vertical-align: middle; }
+    .pc-help-hint-button { width: 18px; height: 18px; padding: 0; border: 1px solid #9ca3af; border-radius: 50%; background: #fff; color: #374151; font: bold 12px/16px sans-serif; cursor: pointer; }
+    .pc-help-hint-button:hover, .pc-help-hint-button[aria-expanded="true"] { border-color: #0b7285; color: #0b7285; }
+    .pc-help-layer { position: absolute; z-index: 1000; top: 24px; left: 0; min-width: 560px; max-width: 760px; padding: 12px 14px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 6px 24px rgba(0, 0, 0, .15); text-align: left; white-space: normal; font-weight: normal; }
+    .pc-help-layer[hidden] { display: none; }
+    .pc-help-layer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .pc-help-layer-close { border: 0; background: transparent; font-size: 18px; line-height: 1; cursor: pointer; color: #6b7280; }
+    .pc-help-intro { margin: 0 0 8px; font-size: 12px; line-height: 1.45; color: #374151; }
+</style>
+<script>
+(function () {
+    if (window.__pcHelpHintBound) { return; }
+    window.__pcHelpHintBound = true;
+    function setOpen(button, open) {
+        var layer = document.getElementById(button.getAttribute('data-pc-help-toggle'));
+        if (!layer) { return; }
+        layer.hidden = !open;
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function closeAll() {
+        var buttons = document.querySelectorAll('[data-pc-help-toggle]');
+        for (var i = 0; i < buttons.length; i++) { setOpen(buttons[i], false); }
+    }
+    document.addEventListener('click', function (event) {
+        var toggle = event.target.closest('[data-pc-help-toggle]');
+        if (toggle) {
+            var open = toggle.getAttribute('aria-expanded') !== 'true';
+            closeAll();
+            setOpen(toggle, open);
+            return;
+        }
+        if (event.target.closest('[data-pc-help-close]') || !event.target.closest('.pc-help-layer')) {
+            closeAll();
+        }
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { closeAll(); }
+    });
+}());
+</script>
