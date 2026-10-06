@@ -21,6 +21,7 @@ use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
+use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use Throwable;
 
@@ -64,11 +65,17 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      * session) and the Twig checkout share this one service. Optional, with
      * the session provider as default, so a consumer whose services.yaml
      * predates this keeps its byte-identical behaviour.
+     *
+     * Sprint 15 / S3: the attempt guard gives the headless path the
+     * one-order-per-attempt rule core enforces for sessions through
+     * `sess_challenge`. Optional for the same reason; without it the service
+     * behaves exactly as before.
      */
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
-        ?CheckoutBasketProviderInterface $basketProvider = null
+        ?CheckoutBasketProviderInterface $basketProvider = null,
+        private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null
     ) {
         $this->basketProvider = $basketProvider ?? new SessionBasketProvider();
     }
@@ -78,16 +85,26 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      */
     public function createOrder(CreateOrderRequest $request): OrderResponse
     {
+        // Claimed before the basket is even loaded: the window between two
+        // concurrent submissions is the whole point.
+        $this->attemptGuard?->claim($request);
+
         try {
             [$basket, $user] = $this->validateBasketAndUser($request);
             [$order, $orderState] = $this->finalizeAndValidateOrder($basket, $user, $request);
             $this->setOrderFieldsAfterCreation($order, $request);
-            return $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
+            $response = $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
         } catch (ShopOrderException $e) {
+            $this->attemptGuard?->release($request);
             throw $e;
         } catch (Throwable $e) {
+            $this->attemptGuard?->release($request);
             throw $this->wrapOrderCreationError($e, $request);
         }
+
+        $this->attemptGuard?->complete($request, $response->orderId);
+
+        return $response;
     }
 
     /**

@@ -141,6 +141,45 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
         }
     }
 
+    public function findOpenByUserAndBasketId(string $userId, string $basketId): ?PaymentContractInterface
+    {
+        // OXMETADATA is json_encode() output or NULL, so JSON_EXTRACT is safe;
+        // the states are the two in which the shopper has not paid yet.
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
+                WHERE OXUSERID = :userId
+                AND OXSTATE IN (:states)
+                AND JSON_UNQUOTE(JSON_EXTRACT(OXMETADATA, \'$.basket_id\')) = :basketId
+                ORDER BY OXCREATED DESC
+                LIMIT 1';
+
+        try {
+            $data = $this->connection->fetchAssociative(
+                $sql,
+                [
+                    'userId' => $userId,
+                    'basketId' => $basketId,
+                    'states' => ['not_finished', 'pending'],
+                ],
+                [
+                    'states' => Connection::PARAM_STR_ARRAY,
+                ]
+            );
+
+            if ($data === false) {
+                return null;
+            }
+
+            return $this->hydrateContract($data);
+        } catch (Exception $e) {
+            $this->logger->error('Contract query failed; returning no open attempt for the basket', [
+                'query' => __FUNCTION__,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function findByOrderId(string $orderId): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';

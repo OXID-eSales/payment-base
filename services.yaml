@@ -95,6 +95,20 @@ services:
       $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
       $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      # Sprint 15 / S3: one order per headless checkout attempt (core's
+      # sess_challenge covers the session checkout).
+      $attemptGuard: '@OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface'
+    public: true
+
+  # Sprint 15 / S3 (GRAPH-QL, 2026-10-06) — the attempt guard on
+  # `oe_payments_idempotency` (table from 2025-10-31, first consumer).
+  OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface:
+    class: OxidEsales\PaymentBase\Checkout\Guard\IdempotentAttemptGuard
     public: true
 
   # Sprint 15 / S1 (GRAPH-QL, 2026-10-06) — where the basket of a checkout
