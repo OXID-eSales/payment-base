@@ -48,6 +48,12 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: true
 
+  # Sprint 15 / S3 (split out in S8) — the headless previous-attempt lookup,
+  # served by the same Doctrine repository.
+  OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface:
+    alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
+    public: true
+
   OxidEsales\PaymentBase\Repository\DoctrineContractRepository:
     alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
     public: true

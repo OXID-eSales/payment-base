@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
 use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Tests\Unit\Checkout\RecordingSessionAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -35,6 +36,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
     private ContractRepositoryInterface&MockObject $contractRepository;
     private ShopOrderServiceInterface&MockObject $shopOrderService;
     private PreviousCheckoutAttemptCleanerInterface&MockObject $cleaner;
+    private OpenAttemptFinderInterface&MockObject $openAttemptFinder;
     private RecordingSessionAdapter $session;
     private OpenCheckoutAttemptRegistry $openAttempts;
 
@@ -43,6 +45,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
         $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
         $this->shopOrderService = $this->createMock(ShopOrderServiceInterface::class);
         $this->cleaner = $this->createMock(PreviousCheckoutAttemptCleanerInterface::class);
+        $this->openAttemptFinder = $this->createMock(OpenAttemptFinderInterface::class);
         $this->session = new RecordingSessionAdapter();
         $this->openAttempts = new OpenCheckoutAttemptRegistry(new SessionCheckoutContext($this->session));
 
@@ -57,7 +60,8 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
             $this->createMock(EventDispatcherInterface::class),
             null,
             $this->cleaner,
-            $this->openAttempts
+            $this->openAttempts,
+            $this->openAttemptFinder
         );
     }
 
@@ -204,7 +208,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
      */
     public function testWithoutARegistryEntryAHeadlessAttemptRetiresTheOpenOneForTheSameBasket(): void
     {
-        $this->contractRepository
+        $this->openAttemptFinder
             ->method('findOpenByUserAndBasketId')
             ->with('user123', 'ub-1')
             ->willReturn($this->draftContract('contract-older'));
@@ -217,7 +221,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
     public function testTheRegistryEntryWinsOverTheRepositoryLookup(): void
     {
         $this->openAttempts->remember('contract-from-registry');
-        $this->contractRepository->expects($this->never())->method('findOpenByUserAndBasketId');
+        $this->openAttemptFinder->expects($this->never())->method('findOpenByUserAndBasketId');
 
         $this->cleaner->expects($this->once())->method('clean')->with('contract-from-registry');
 
@@ -226,7 +230,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
 
     public function testTheRepositoryIsNotAskedForASessionAttempt(): void
     {
-        $this->contractRepository->expects($this->never())->method('findOpenByUserAndBasketId');
+        $this->openAttemptFinder->expects($this->never())->method('findOpenByUserAndBasketId');
         $this->cleaner->expects($this->never())->method('clean');
 
         $this->handle('contract-s2');
@@ -234,7 +238,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
 
     public function testTheRepositoryAnsweringTheCurrentContractRetiresNothing(): void
     {
-        $this->contractRepository
+        $this->openAttemptFinder
             ->method('findOpenByUserAndBasketId')
             ->willReturn($this->draftContract('contract-h4'));
         $this->cleaner->expects($this->never())->method('clean');

@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-06 · **Epic:** GRAPH-QL · **Branch:** `b-7.4.x-GRAPH-QL` in payment-base, stripe, paypal, mollie-payment
 (all cut from `b-7.4.x`; payment-base lands first, the providers' CI installs payment-base from `b-7.4.x`).
-**Status:** PLANNED — decision taken 2026-10-06: **Option B** of
+**Status:** payment-base part **DONE 2026-10-06** (S1–S8, reports in [`../done/`](../done/)); provider stories open. Decision taken 2026-10-06: **Option B** of
 [`../../20261002/reports/graphql-placed-order-and-payments.md`](../../20261002/reports/graphql-placed-order-and-payments.md)
 (keep contract-first, expose it through provider mutations; core `placeOrder` is not used for our payments).
 **Requirements:** [`../../20260903/sprints/_engeneering_requirements.md`](../../20260903/sprints/_engeneering_requirements.md)
@@ -143,3 +143,16 @@ listeners, webhook commit, catalog), **P-Mollie** (mutations, webhook commit, de
 - `src/Mcp/docs/01-developer-guide.md`, `03-building-provider-modules.md` (ACP/UCP contract and state mapping)
 - OXID GraphQL docs v13: `consuming/PlaceOrder`, `thirdpartypayments/*`, `events/BeforePlaceOrder`;
   `OXID-eSales/graphql-storefront@b-7.4.x` `src/Basket/Service/PlaceOrder.php`, `src/Basket/Infrastructure/Basket.php`
+
+## Done (2026-10-06, payment-base)
+
+- S1–S8 implemented TDD-first on `b-7.4.x-GRAPH-QL`; one report per story in `../done/`, running status in `../status.md`.
+- Final gates: Unit 1548 · Integration 148 · phpcs / PHPStan max / phpmd clean. Consumers: stripe 1587 + 100, paypal 449 + 12,
+  one-page-checkout 542 (1 pre-existing env error) + 29, opalreturns 353 + 14, mollie integration 38 — all green against
+  this branch (S8 report).
+- Deviations from this plan, each with the reason in its report: the responder keeps its own dispatch (S4); the
+  headless previous-attempt lookup is `OpenAttemptFinderInterface`, not a method on `ContractRepositoryInterface`
+  (S8); graphql-base / storefront contracts are stubbed in the test bootstraps instead of pulled into payment-base's
+  vendor (S6); a `ContractFirstPaymentHandlerInterface` marker was needed because the OPC standard handler shares the
+  `oe.payment.handler` tag (S6).
+- Phase 0 done: graphql-storefront `b-7.4.x` installed and active in the dev shop.

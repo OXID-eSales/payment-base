@@ -14,6 +14,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPend
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
 /**
@@ -47,7 +48,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
         // Optional so a consumer whose services.yaml predates this keeps
         // working - it simply does not get the cleanup.
         private readonly ?PreviousCheckoutAttemptCleanerInterface $previousAttemptCleaner = null,
-        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null
+        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null,
+        // Sprint 15 / S3: the headless "previous attempt for this basket"
+        // when the registry has nothing. Optional: a consumer whose
+        // services.yaml predates it keeps the registry-only behaviour.
+        private readonly ?OpenAttemptFinderInterface $openAttemptFinder = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
     }
@@ -154,11 +159,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
 
     private function openAttemptForBasket(PaymentContract $contract, ?string $basketId): ?string
     {
-        if ($basketId === null) {
+        if ($basketId === null || $this->openAttemptFinder === null) {
             return null;
         }
 
-        $open = $this->contractRepository->findOpenByUserAndBasketId($contract->getUserId(), $basketId);
+        $open = $this->openAttemptFinder->findOpenByUserAndBasketId($contract->getUserId(), $basketId);
 
         return $open?->getId();
     }

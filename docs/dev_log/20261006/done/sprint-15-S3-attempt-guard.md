@@ -17,7 +17,7 @@ calls for one basket would create two NOT_FINISHED orders.
 | `Checkout\Guard\IdempotentAttemptGuard` | on `oe_payments_idempotency` (table from 2025-10-31, first consumer): key `order_create:<userId>:<basketId>`, in-flight record for a 2-minute window, refusal names the order once there is one, release expires the record, after the window a new attempt is allowed. Requests without `basketId` are left to core |
 | `OxidShopOrderService::createOrder()` | claims **before** the basket is loaded, completes with the order id, releases on any failure (optional ctor arg, no guard = today's behaviour) |
 | `EarlyOrderCreationHandler` | stamps `basket_id` into the contract metadata; `retirePreviousAttempt()` asks the registry first and, for a headless attempt with nothing there, the repository: the open contract for the same user basket. Never itself |
-| `ContractRepositoryInterface::findOpenByUserAndBasketId()` (+ Doctrine) | newest contract of the user in `not_finished` / `pending` whose metadata `basket_id` matches (`JSON_EXTRACT`); authorized, committed, terminal never qualify |
+| `Repository\OpenAttemptFinderInterface::findOpenByUserAndBasketId()` (Doctrine repository implements it; **S8 correction**: it started as a method on `ContractRepositoryInterface` and broke Stripe's test doubles, so it is a separate interface now) | newest contract of the user in `not_finished` / `pending` whose metadata `basket_id` matches (`JSON_EXTRACT`); authorized, committed, terminal never qualify |
 | `CheckoutReturnResponder` | optional `HeadlessCheckoutScopeInterface`; with an active scope `writeSessChallenge()` is skipped (no session, no thank-you page) |
 | `services.yaml` | `IdempotencyRepositoryInterface` → `DoctrineIdempotencyRepository` (was unwired), guard bound, service gets `$attemptGuard` |
 
@@ -42,4 +42,4 @@ calls for one basket would create two NOT_FINISHED orders.
 - The guard's window (2 min) is a constant; make it a setting only if a real client needs it.
 - `DoctrineIdempotencyRepository` writes through the Doctrine connection; in integration tests that connection is not the one `IntegrationTestCase` rolls back, so the double-submit test deletes its record in `tearDown()`.
 - `IdempotencyRecord::isExpired()` uses the wall clock; the guard compares `getExpiresAt()` against its own `now()` seam so tests can move time.
-- `ContractRepositoryInterface` gained a method: the Doctrine class is the only implementation (mocks adapt), so this is additive in practice.
+- **S8 correction:** adding the method to `ContractRepositoryInterface` was *not* additive — five Stripe test doubles implement that interface as anonymous classes and their suites went fatal. The lookup now lives on `OpenAttemptFinderInterface`; `EarlyOrderCreationHandler` takes it as an optional 7th constructor argument (providers wire `$openAttemptFinder` in their GRAPH-QL story; without it the registry-only behaviour stays).

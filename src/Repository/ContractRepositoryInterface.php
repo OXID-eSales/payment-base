@@ -29,14 +29,6 @@ interface ContractRepositoryInterface
     public function findActiveByUserId(string $userId): ?PaymentContractInterface;
 
     /**
-     * Sprint 15 / S3: the newest contract of this user that is still open
-     * (NOT_FINISHED or PENDING - no money taken) and carries `basket_id` =
-     * $basketId in its metadata; the headless "previous attempt for this
-     * basket" when no session registry can answer. Null when there is none.
-     */
-    public function findOpenByUserAndBasketId(string $userId, string $basketId): ?PaymentContractInterface;
-
-    /**
      * Find contract by OXID order ID.
      */
     public function findByOrderId(string $orderId): ?PaymentContractInterface;

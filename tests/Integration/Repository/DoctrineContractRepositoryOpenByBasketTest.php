@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -28,10 +29,14 @@ final class DoctrineContractRepositoryOpenByBasketTest extends IntegrationTestCa
 {
     private ContractRepositoryInterface $contracts;
 
+    private OpenAttemptFinderInterface $finder;
+
     public function setUp(): void
     {
         parent::setUp();
-        $this->contracts = ContainerFactory::getInstance()->getContainer()->get(ContractRepositoryInterface::class);
+        $container = ContainerFactory::getInstance()->getContainer();
+        $this->contracts = $container->get(ContractRepositoryInterface::class);
+        $this->finder = $container->get(OpenAttemptFinderInterface::class);
     }
 
     public function testFindsTheNewestOpenContractStampedWithTheBasket(): void
@@ -49,7 +54,7 @@ final class DoctrineContractRepositoryOpenByBasketTest extends IntegrationTestCa
         $this->contracts->save($newer);
         $this->contracts->save($this->contract($user, 'ub-other'));
 
-        $found = $this->contracts->findOpenByUserAndBasketId($user, 'ub-1');
+        $found = $this->finder->findOpenByUserAndBasketId($user, 'ub-1');
 
         self::assertNotNull($found);
         self::assertSame($newer->getId(), $found->getId());
@@ -68,9 +73,9 @@ final class DoctrineContractRepositoryOpenByBasketTest extends IntegrationTestCa
         $cancelled->cancel('shopper left');
         $this->contracts->save($cancelled);
 
-        self::assertNull($this->contracts->findOpenByUserAndBasketId($user, 'ub-1'));
-        self::assertNull($this->contracts->findOpenByUserAndBasketId($user, 'never-seen'));
-        self::assertNull($this->contracts->findOpenByUserAndBasketId('nobody', 'ub-1'));
+        self::assertNull($this->finder->findOpenByUserAndBasketId($user, 'ub-1'));
+        self::assertNull($this->finder->findOpenByUserAndBasketId($user, 'never-seen'));
+        self::assertNull($this->finder->findOpenByUserAndBasketId('nobody', 'ub-1'));
     }
 
     private function contract(string $userId, string $basketId): PaymentContract

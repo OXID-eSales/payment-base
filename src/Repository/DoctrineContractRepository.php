@@ -30,7 +30,7 @@ use ReflectionException;
  *
  * @SuppressWarnings(PHPMD)
  */
-class DoctrineContractRepository implements ContractRepositoryInterface, ContractStateQueryInterface
+class DoctrineContractRepository implements ContractRepositoryInterface, OpenAttemptFinderInterface, ContractStateQueryInterface
 {
     private const TABLE_CONTRACTS = 'oe_payments_contract';
 
