@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Checkout\Headless;
 
 use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Application\Model\UserBasket;
+use OxidEsales\Eshop\Core\DatabaseProvider;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningServiceInterface;
@@ -68,7 +69,20 @@ final class AgentBuyerAndBasketTest extends IntegrationTestCase
         self::assertCount(1, $items, 'one line for the one product');
         self::assertSame(3.0, (float) $items[0]->getFieldData('oxamount'));
         self::assertSame($article->getId(), $items[0]->getFieldData('oxartid'));
-        self::assertSame('oe_payments_stripe_wallet', $row->getFieldData('oegql_paymentid'));
+
+        if ($this->storefrontPaymentColumnExists()) {
+            self::assertSame('oe_payments_stripe_wallet', $row->getFieldData('oegql_paymentid'));
+        } else {
+            // A bare shop (CI) has no graphql-storefront and so no OEGQL_PAYMENTID
+            // column; the write is dropped and the payment travels explicitly
+            // (ContractOpeningService -> HeadlessStartRequest::$paymentId).
+            self::assertNull($row->getFieldData('oegql_paymentid'), 'no storefront column to carry the payment');
+        }
+    }
+
+    private function storefrontPaymentColumnExists(): bool
+    {
+        return (bool) DatabaseProvider::getDb()->getOne("SHOW COLUMNS FROM oxuserbaskets LIKE 'OEGQL_PAYMENTID'");
     }
 
     public function testTheOpeningServiceResolvesFromTheContainer(): void
