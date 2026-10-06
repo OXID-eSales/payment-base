@@ -293,6 +293,38 @@ final class HeadlessCheckoutServiceTest extends TestCase
         }
     }
 
+    /**
+     * A provider-specific mutation knows its payment; a basket the client
+     * never ran through basketSetPayment (no storefront row payment) still
+     * starts. The row wins when it has one; a contradiction is a client error.
+     */
+    public function testStartTakesThePaymentFromTheRequestWhenTheRowHasNone(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-1', '');
+        $this->contracts->method('findById')->willReturn($this->pendingContract('contract-1'));
+
+        $result = $service->start($this->startRequest(paymentId: 'oe_payments_stripe_wallet'));
+
+        self::assertSame('contract-1', $result->contractId);
+        self::assertSame('oe_payments_stripe_wallet', $this->stripe->processedWith?->getPaymentMethodId());
+    }
+
+    public function testStartRefusesWhenTheRowPaysWithAnotherPayment(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-1', 'oe_payments_mollie');
+
+        try {
+            $service->start($this->startRequest(paymentId: 'oe_payments_stripe_wallet'));
+            self::fail('a Mollie basket must not be started with Stripe');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::PAYMENT_NOT_SUPPORTED, $e->errorCode);
+            self::assertStringContainsString('oe_payments_mollie', $e->getMessage());
+        }
+        self::assertNull($this->stripe->processedWith);
+    }
+
     public function testStartRefusesWithoutTermsConsentWhenTheShopRequiresIt(): void
     {
         $service = $this->service();
@@ -514,6 +546,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     private function startRequest(
         bool $confirmTerms = true,
         string $returnUrl = 'https://app.example.com/return',
+        ?string $paymentId = null,
     ): HeadlessStartRequest {
         return new HeadlessStartRequest(
             userId: 'user-1',
@@ -522,6 +555,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
             returnUrl: $returnUrl,
             cancelUrl: 'https://app.example.com/cancel',
             uiMode: 'hosted',
+            paymentId: $paymentId,
         );
     }
 

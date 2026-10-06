@@ -73,7 +73,7 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             );
         }
 
-        $paymentId = (string) $row->getFieldData(self::STOREFRONT_PAYMENT_FIELD);
+        $paymentId = $this->paymentIdFor($row, $request);
         $handler = $paymentId !== '' ? $this->handlers->forPaymentMethod($paymentId) : null;
         if ($handler === null) {
             throw new HeadlessCheckoutException(
@@ -197,6 +197,32 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             contractId: (string) $contract->getId(),
             contractState: $contract->getStateValue(),
         );
+    }
+
+    /**
+     * The payment this basket pays with: what the storefront stored on the
+     * row (`basketSetPayment`), else what a provider-specific mutation says
+     * about itself. Both present and different is a client error - a basket
+     * set to pay with X must not be started with Y.
+     */
+    private function paymentIdFor(UserBasket $row, HeadlessStartRequest $request): string
+    {
+        $rowPaymentId = (string) $row->getFieldData(self::STOREFRONT_PAYMENT_FIELD);
+        $requested = (string) ($request->paymentId ?? '');
+
+        if ($rowPaymentId !== '' && $requested !== '' && $rowPaymentId !== $requested) {
+            throw new HeadlessCheckoutException(
+                HeadlessCheckoutException::PAYMENT_NOT_SUPPORTED,
+                sprintf(
+                    'Basket %s is set to pay with "%s", not with "%s"',
+                    $request->basketId,
+                    $rowPaymentId,
+                    $requested
+                )
+            );
+        }
+
+        return $rowPaymentId !== '' ? $rowPaymentId : $requested;
     }
 
     private function assertReturnUrls(HeadlessStartRequest $request): void
