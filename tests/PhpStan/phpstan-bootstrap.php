@@ -113,10 +113,16 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
 if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
         . 'class User { '
+        . '  public mixed $oxuser__oxactive = null; '
+        . '  public mixed $oxuser__oxrights = null; '
+        . '  public mixed $oxuser__oxshopid = null; '
+        . '  public mixed $oxuser__oxpassword = null; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getEncodedDeliveryAddress(): string { return ""; } '
+        . '  public function save(): mixed { return true; } '
         . '}'
     );
 }
@@ -396,12 +402,20 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasket::class, false))
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . '#[\\AllowDynamicProperties] '
         . 'class UserBasket { '
+        . '  public mixed $oxuserbaskets__oxuserid = null; '
+        . '  public mixed $oxuserbaskets__oxtitle = null; '
+        . '  public mixed $oxuserbaskets__oxpublic = null; '
+        . '  public mixed $oxuserbaskets__oegql_paymentid = null; '
+        . '  public mixed $oxuserbaskets__oegql_deliverymethodid = null; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getFieldData(string $field): mixed { return null; } '
         . '  /** @return list<\\OxidEsales\\Eshop\\Application\\Model\\UserBasketItem> */ '
         . '  public function getItems(bool $blReload = false, bool $blActiveCheck = true): array { return []; } '
         . '  public function delete(?string $oxid = null): bool { return true; } '
+        . '  public function setId(?string $oxid = null): string { return (string) $oxid; } '
+        . '  public function save(): mixed { return true; } '
+        . '  public function addItemToBasket(?string $productId = null, ?float $amount = null, mixed $sel = null, bool $override = false, mixed $persParam = null): mixed { return null; } '
         . '}'
     );
 }
@@ -483,5 +497,20 @@ if (!interface_exists(\Symfony\Component\EventDispatcher\EventSubscriberInterfac
     eval(
         'namespace Symfony\\Component\\EventDispatcher; '
         . 'interface EventSubscriberInterface { public static function getSubscribedEvents(): array; }'
+    );
+}
+
+// Sprint 15 / S7 (2026-10-06) — GuestUserResolver maps ISO 3166-1 alpha-2 to the shop's country id.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Country::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Country { public function getIdByCode(string $code): mixed { return null; } }'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } } '
+        . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }

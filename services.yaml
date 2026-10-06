@@ -190,6 +190,31 @@ services:
       $cleaner: '@OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface'
     public: true
 
+  # Sprint 15 / S7 — the ACP / agent path: a described buyer becomes a shop
+  # user, described items a persisted user basket, and the contract is opened
+  # through the same chain (no PSP session; the agent pays with a token).
+  OxidEsales\PaymentBase\Service\ContractServiceInterface:
+    class: OxidEsales\PaymentBase\Service\ContractService
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningServiceInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningService
+    arguments:
+      $contractService: '@OxidEsales\PaymentBase\Service\ContractServiceInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $baskets: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\UserBasketFactoryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\UserBasketFactory
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\GuestUserResolverInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\GuestUserResolver
+    public: true
+
   # The user basket a headless contract was paid from goes on commit (core
   # deletes it in placeOrder); session contracts carry no basket id.
   OxidEsales\PaymentBase\EventSystem\Handler\UserBasketRemovalHandler:

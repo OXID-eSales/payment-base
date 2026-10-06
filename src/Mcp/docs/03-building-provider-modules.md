@@ -29,31 +29,36 @@ Your provider module must supply:
 
 ### 1. Create the Checkout Service
 
-Extend `AbstractAcpCheckoutService` and implement:
+Extend `AbstractAcpCheckoutService`. Since Sprint 15 / S7 (GRAPH-QL) the base class runs `create_checkout` on the
+shared **headless path**, so you implement only what is provider-specific:
 
-- `createCheckout()` — build a `PaymentContract` from ACP arguments, dispatch a provider event, return formatted response
-- `completePayment()` — confirm payment using the provider's SDK, dispatch `PaymentAuthorizedEvent`, return order response
+- `paymentId()` — the payment id your checkouts are paid with (e.g. `oe_payments_stripe_wallet`)
+- `providerName()` — how your provider names itself in contracts (`stripe`, `mollie`, `paypal`)
+- `completePayment()` — charge the delegated token with your SDK, then `$this->commitPaid(...)` and return the order response
+
+`createCheckout()` has a default: the ACP `buyer` becomes a shop user (`GuestUserResolverInterface`: existing account
+by e-mail or a guest account with `fulfillment_address`), the `items` a persisted `oxuserbaskets` row paying with
+`paymentId()` (`UserBasketFactoryInterface`), and the contract is opened through the same chain as every checkout
+(`ContractOpeningServiceInterface`: contract → `ContractDraftCompletedEvent` → early order → PENDING). No PSP session is
+started — the agent pays in `complete_checkout`. Override it only when your provider needs more.
 
 ```php
 namespace MyVendor\MyProvider\Mcp\Service;
 
-use OxidEsales\PaymentComponent\Mcp\Acp\AbstractAcpCheckoutService;
-use OxidEsales\PaymentComponent\Mcp\AgentContextInterface;
-use OxidEsales\PaymentComponent\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Mcp\Acp\AbstractAcpCheckoutService;
+use OxidEsales\PaymentBase\Mcp\AgentContextInterface;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 
 class MyProviderCheckoutService extends AbstractAcpCheckoutService
 {
-    public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
+    protected function paymentId(): string
     {
-        $items = $arguments['items'] ?? [];
-        $buyer = $arguments['buyer'] ?? [];
-        $currency = $arguments['currency'] ?? 'EUR';
+        return 'oe_payments_myprovider';
+    }
 
-        // 1. Build basket snapshot from items
-        // 2. Create PaymentContract via ContractService
-        // 3. Dispatch provider-specific checkout event
-        // 4. Return formatted response
-        return $this->formatter->formatCheckout($contract);
+    protected function providerName(): string
+    {
+        return 'myprovider';
     }
 
     protected function completePayment(
@@ -61,23 +66,45 @@ class MyProviderCheckoutService extends AbstractAcpCheckoutService
         array $paymentData,
         AgentContextInterface $agentContext
     ): array {
-        $token = $paymentData['token'];
+        $charge = $this->sdk->chargeDelegatedToken($paymentData['token'], $contract->getAmount(), $contract->getCurrency());
+        if (!$charge->succeeded()) {
+            return $this->formatter->validationError($charge->errorMessage(), 'payment_data.token');
+        }
 
-        // 1. Confirm payment with provider SDK using $token
-        // 2. On success: dispatch PaymentAuthorizedEvent
-        // 3. Return order response with permalink
-        return $this->formatter->formatOrder($contract, $orderPermalink);
+        // Same commit the webhooks and the headless return use: idempotent,
+        // refuses closed contracts and mismatched amounts.
+        $outcome = $this->commitPaid($contract, $charge->authorizationId(), $charge->orderId(), $charge->amount(), $charge->currency());
+        if (!$outcome->isSettled()) {
+            return $this->formatter->validationError('Payment confirmed but the order could not be committed: ' . $outcome->reason);
+        }
 
-        // On failure: return $this->formatter->validationError($errorMessage)
+        return $this->formatter->formatOrder($contract, $this->permalinkFor($outcome->orderId));
     }
 }
 ```
 
+Wire the four headless collaborators (all public services of payment-base) into your service:
+
+```yaml
+  MyVendor\MyProvider\Mcp\Service\MyProviderCheckoutService:
+    arguments:
+      $contractService: '@OxidEsales\PaymentBase\Service\ContractServiceInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $eventDispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $formatter: '@OxidEsales\PaymentBase\Mcp\Acp\AcpResponseFormatterInterface'
+      $contractOpening: '@OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningServiceInterface'
+      $userBaskets: '@OxidEsales\PaymentBase\Checkout\Headless\UserBasketFactoryInterface'
+      $buyers: '@OxidEsales\PaymentBase\Checkout\Headless\GuestUserResolverInterface'
+      $contractCommit: '@OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface'
+```
+
 The base class (`AbstractAcpCheckoutService`) already handles:
+- `createCheckout()` — see above (override only when needed)
 - `getCheckout()` — loads contract by ID, returns formatted response
 - `updateCheckout()` — updates contract metadata with `acp_` prefix
 - `cancelCheckout()` — validates contract state, calls `cancel()` on contract
 - `completeCheckout()` — validates contract, checks for token, stores agent metadata, delegates to your `completePayment()`
+- `commitPaid()` — commits through `ContractCommitServiceInterface` with `source: acp`
 
 ### 2. Create the Product Service
 

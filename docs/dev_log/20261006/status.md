@@ -11,9 +11,9 @@
 | S3 Attempt guard | **DONE** 2026-10-06 | [done/sprint-15-S3-attempt-guard.md](done/sprint-15-S3-attempt-guard.md) — Unit 1455, Integration 142, gates green; `oe_payments_idempotency` first consumer |
 | S4 Contract commit service | **DONE** 2026-10-06 | [done/sprint-15-S4-contract-commit-service.md](done/sprint-15-S4-contract-commit-service.md) — Unit 1466, Integration 142, gates green; responder left as is (reason in report) |
 | S5 Return-URL policy | **DONE** 2026-10-06 | [done/sprint-15-S5-return-url-policy.md](done/sprint-15-S5-return-url-policy.md) — Unit 1488, Integration 142, gates green; setting `sPaymentBaseHeadlessReturnOrigins` |
-| S6 GraphQL glue | IN PROGRESS | discovery: graphql-base/storefront availability, controller + permission registration |
-| S7 ACP on the same path | TODO | |
-| S8 Gates, consumers, hand-over | TODO | |
+| S6 GraphQL glue | **DONE** 2026-10-06 | [done/sprint-15-S6-headless-checkout-graphql-glue.md](done/sprint-15-S6-headless-checkout-graphql-glue.md) — Unit 1528, Integration 145, gates green; storefront installed in the dev shop (phase 0) |
+| S7 ACP on the same path | **DONE** 2026-10-06 | [done/sprint-15-S7-acp-on-the-headless-path.md](done/sprint-15-S7-acp-on-the-headless-path.md) — Unit 1548, Integration 148, gates green; default `createCheckout()` + `commitPaid()` |
+| S8 Gates, consumers, hand-over | IN PROGRESS | consumer suites against this branch, push, hand-over notes |
 
 ## Baseline (2026-10-06, before S1)
 
