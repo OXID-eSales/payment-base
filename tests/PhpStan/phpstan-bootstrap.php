@@ -99,6 +99,13 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
         . '  public function getPrice(): mixed { return null; } '
         . '  public function getBasketCurrency(): ?object { return null; } '
         . '  public function getBasketUser(): mixed { return null; } '
+        // Sprint 15 / S1 (2026-10-06) — writers UserBasketProvider uses to build
+        // the basket core finalizes from an oxuserbaskets row.
+        . '  public function setBasketUser(mixed $oUser): void {} '
+        . '  public function addToBasket(string $sProductID, float $dAmount, mixed $aSel = null, mixed $aPersParam = null, bool $blOverride = false, bool $blBundle = false, ?string $sOldBasketItemId = null): mixed { return null; } '
+        . '  public function setPayment(?string $sPaymentId = null): void {} '
+        . '  public function setShipping(?string $sShippingSetId = null): void {} '
+        . '  public function calculateBasket(bool $blForceUpdate = false): void {} '
         . '}'
     );
 }
@@ -375,6 +382,32 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
         . '  public function cancelOrder() {} '
         . '  public function getId() { return ""; } '
         . '  public function save() { return true; } '
+        . '}'
+    );
+}
+
+// Sprint 15 / S1 (2026-10-06) — the persisted basket of a headless checkout
+// (`oxuserbaskets` / `oxuserbasketitems`) that UserBasketProvider reads.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasket::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
+        . 'class UserBasket { '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  /** @return list<\\OxidEsales\\Eshop\\Application\\Model\\UserBasketItem> */ '
+        . '  public function getItems(bool $blReload = false, bool $blActiveCheck = true): array { return []; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasketItem::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class UserBasketItem { '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getSelList(): mixed { return null; } '
+        . '  public function getPersParams(): mixed { return null; } '
         . '}'
     );
 }

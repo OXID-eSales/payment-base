@@ -94,7 +94,29 @@ services:
     arguments:
       $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
+      $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
     public: true
+
+  # Sprint 15 / S1 (GRAPH-QL, 2026-10-06) — where the basket of a checkout
+  # attempt comes from. The router reads the session basket for the Twig / OPC
+  # checkout (no basket id on the request) and the persisted `oxuserbaskets`
+  # row for a headless one (GraphQL Storefront, MCP). The hash service is
+  # wired by concrete class: provider modules bind its interface id and
+  # payment-base must not add another definition of it.
+  OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface:
+    class: OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketRouter
+    arguments:
+      $sessionBaskets: '@OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider'
+      $userBaskets: '@OxidEsales\PaymentBase\Checkout\Basket\UserBasketProvider'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider: ~
+
+  OxidEsales\PaymentBase\Checkout\Basket\UserBasketProvider:
+    arguments:
+      $deliveryAddressHash: '@OxidEsales\PaymentBase\Service\DeliveryAddressHashService'
+
+  OxidEsales\PaymentBase\Service\DeliveryAddressHashService: ~
 
   OxidEsales\PaymentBase\Adapter\OxidShopOrderService:
     alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface

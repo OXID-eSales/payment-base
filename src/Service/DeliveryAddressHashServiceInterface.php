@@ -15,7 +15,8 @@ namespace OxidEsales\PaymentBase\Service;
  * Sprint 27: Moved from Stripe to payment-base.
  * Sprint 20: Encapsulates $_REQUEST modification for delivery address validation.
  *
- * OXID's Order::validateDeliveryAddress() reads from $_REQUEST['sDeliveryAddressMD5'].
+ * OXID's Order::validateDeliveryAddress() reads 'sDeliveryAddressMD5' through
+ * Registry::getRequest(), i.e. from $_POST, then $_GET (never $_REQUEST).
  * When returning from payment checkout, the original form data is lost, so we need
  * to restore this value for validation to pass.
  *
@@ -31,7 +32,8 @@ interface DeliveryAddressHashServiceInterface
     /**
      * Restore delivery address hash for OXID validation.
      *
-     * Sets the hash in $_REQUEST where OXID expects it during Order::validateDeliveryAddress().
+     * Sets the hash where OXID reads it during Order::validateDeliveryAddress()
+     * ($_POST, mirrored into $_REQUEST for this service's own readers).
      * This is necessary because returning from payment provider loses the original form POST data.
      *
      * @param string|null $hash MD5 hash of delivery address, or null to skip

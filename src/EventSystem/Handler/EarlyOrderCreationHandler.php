@@ -154,12 +154,17 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $contextPaymentId = $context->get('paymentId');
         $paymentId = is_string($contextPaymentId) ? $contextPaymentId : 'unknown_payment';
         $sessionId = (string) $context->get('sessionId', 'contract_' . $contract->getId());
+        // Sprint 15 / S1: a headless checkout names the persisted basket it
+        // pays for; the Twig checkout has none here and keeps the session basket.
+        $contextBasketId = $context->get('basketId');
+        $basketId = is_string($contextBasketId) && $contextBasketId !== '' ? $contextBasketId : null;
 
         $this->logEvent('EarlyOrderCreationHandler: Creating order', [
             'userId' => $contract->getUserId(),
             'paymentId' => $paymentId,
             'totalGross' => $basket->getTotalGross(),
             'sessionId' => $sessionId,
+            'basketId' => $basketId,
         ]);
 
         $request = new CreateOrderRequest(
@@ -171,7 +176,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
             metadata: [
                 'contract_id' => $contract->getId(),
             ],
-            initialStatus: 'NOT_FINISHED'
+            initialStatus: 'NOT_FINISHED',
+            basketId: $basketId
         );
 
         $orderResponse = $this->shopOrderService->createOrder($request);
