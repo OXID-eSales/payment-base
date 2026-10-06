@@ -251,7 +251,9 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Facad
         'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Facade; '
         . 'interface ModuleSettingServiceInterface { '
         . '  public function getBoolean(string $name, string $moduleId): bool; '
-        . '  public function getString(string $name, string $moduleId): string; '
+        // Sprint 15 / S5 (2026-10-06): the real facade answers a UnicodeString,
+        // not a string - ReturnUrlSettings calls ->toString() on it.
+        . '  public function getString(string $name, string $moduleId): \\Symfony\\Component\\String\\UnicodeString; '
         . '  public function getInteger(string $name, string $moduleId): int; '
         . '}'
     );
@@ -408,6 +410,18 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasketItem::class, fal
         . '  public function getFieldData(string $field): mixed { return null; } '
         . '  public function getSelList(): mixed { return null; } '
         . '  public function getPersParams(): mixed { return null; } '
+        . '}'
+    );
+}
+
+// Sprint 15 / S5 (2026-10-06) — symfony/string ships with the shop, not with
+// payment-base's own vendor; the facade stub above returns it.
+if (!class_exists(\Symfony\Component\String\UnicodeString::class, false)) {
+    eval(
+        'namespace Symfony\\Component\\String; '
+        . 'class UnicodeString { '
+        . '  public function toString(): string { return ""; } '
+        . '  public function __toString(): string { return ""; } '
         . '}'
     );
 }

@@ -357,6 +357,17 @@ services:
   OxidEsales\PaymentBase\Validation\Guard\ShopUrlResolverInterface:
     class: OxidEsales\PaymentBase\Validation\Guard\OxidShopUrlResolver
 
+  # Sprint 15 / S5 (GRAPH-QL, 2026-10-06) — where the PSP may send a shopper
+  # back to when a headless client names the URL: the shop itself and the
+  # origins in `sPaymentBaseHeadlessReturnOrigins`. Public: every provider's
+  # headless entry point asks it before passing a client URL to the PSP.
+  OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettingsInterface:
+    class: OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettings
+
+  OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface:
+    class: OxidEsales\PaymentBase\Checkout\ReturnUrl\AllowListReturnUrlPolicy
+    public: true
+
   OxidEsales\PaymentBase\Validation\Guard\SameOriginGuard:
     arguments:
       $shopUrlResolver: '@OxidEsales\PaymentBase\Validation\Guard\ShopUrlResolverInterface'
