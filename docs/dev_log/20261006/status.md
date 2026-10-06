@@ -9,9 +9,9 @@
 | S1 Basket provider | **DONE** 2026-10-06 `874fdca` | [done/sprint-15-S1-basket-provider.md](done/sprint-15-S1-basket-provider.md) — Unit 1410, Integration 135, gates green; fixed `DeliveryAddressHashService` ($_POST) on the way |
 | S2 Checkout context | **DONE** 2026-10-06 | [done/sprint-15-S2-checkout-context.md](done/sprint-15-S2-checkout-context.md) — Unit 1433, Integration 139, gates green; `oe_payments_sessions` is the headless store |
 | S3 Attempt guard | **DONE** 2026-10-06 | [done/sprint-15-S3-attempt-guard.md](done/sprint-15-S3-attempt-guard.md) — Unit 1455, Integration 142, gates green; `oe_payments_idempotency` first consumer |
-| S4 Contract commit service | IN PROGRESS | discovery: `ContractCommitmentHandler`, `PaymentAuthorizedEvent`, stale cleanup ordering |
-| S5 Return-URL policy | TODO | |
-| S6 GraphQL glue | TODO | needs graphql-storefront in require-dev |
+| S4 Contract commit service | **DONE** 2026-10-06 | [done/sprint-15-S4-contract-commit-service.md](done/sprint-15-S4-contract-commit-service.md) — Unit 1466, Integration 142, gates green; responder left as is (reason in report) |
+| S5 Return-URL policy | **DONE** 2026-10-06 | [done/sprint-15-S5-return-url-policy.md](done/sprint-15-S5-return-url-policy.md) — Unit 1488, Integration 142, gates green; setting `sPaymentBaseHeadlessReturnOrigins` |
+| S6 GraphQL glue | IN PROGRESS | discovery: graphql-base/storefront availability, controller + permission registration |
 | S7 ACP on the same path | TODO | |
 | S8 Gates, consumers, hand-over | TODO | |
 
