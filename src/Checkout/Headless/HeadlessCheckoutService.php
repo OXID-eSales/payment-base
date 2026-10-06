@@ -114,12 +114,13 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             providerTransactionId: null,
             returnUrl: $request->returnUrl,
             cancelUrl: $request->cancelUrl,
-            metadata: [
+            // Provider hints first, the headless keys last: a client cannot override them.
+            metadata: array_merge($request->providerOptions, [
                 'basketId' => $request->basketId,
                 'uiMode' => $request->uiMode,
                 'headless' => true,
                 'sessionId' => 'headless:' . $request->basketId,
-            ]
+            ])
         ));
 
         if (!$result->isSuccess() || $result->getContractId() === null) {

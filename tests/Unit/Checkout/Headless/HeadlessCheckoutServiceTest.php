@@ -228,6 +228,31 @@ final class HeadlessCheckoutServiceTest extends TestCase
         self::assertSame(['https://app.example.com/return', 'https://app.example.com/cancel'], $this->policy->checked);
     }
 
+    /**
+     * P-Mollie / MS1: a provider mutation may carry its own hints (Mollie's method
+     * choice); they reach the handler as metadata, but the headless keys win.
+     */
+    public function testStartHandsProviderOptionsToTheHandlerWithoutLettingThemOverrideTheHeadlessKeys(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-1', 'oe_payments_stripe_wallet');
+        $this->contracts->method('findById')->willReturn($this->pendingContract('contract-1'));
+
+        $service->start(new HeadlessStartRequest(
+            userId: 'user-1',
+            basketId: 'ub-1',
+            confirmTermsAndConditions: true,
+            returnUrl: 'https://app.example.com/return',
+            providerOptions: ['mollieMethod' => 'ideal', 'headless' => false, 'basketId' => 'forged'],
+        ));
+
+        $context = $this->stripe->processedWith;
+        self::assertNotNull($context);
+        self::assertSame('ideal', $context->getMetadataValue('mollieMethod'));
+        self::assertTrue($context->getMetadataValue('headless'), 'the headless key cannot be overridden');
+        self::assertSame('ub-1', $context->getMetadataValue('basketId'));
+    }
+
     public function testStartEntersTheBasketScopeBeforeTheHandlerRunsSoTheRegistryKeysByBasket(): void
     {
         $handler = new class ('stripe', ['oe_payments_stripe_wallet'], $this->scope) extends FakePaymentHandler {
