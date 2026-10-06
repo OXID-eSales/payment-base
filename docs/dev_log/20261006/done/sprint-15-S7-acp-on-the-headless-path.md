@@ -42,3 +42,11 @@ situation S1–S6 solved for GraphQL.
   one every Twig checkout runs; P-Stripe decides what its pending handler does for `channel = acp`.
 - The UCP REST profile is untouched (phase 4). `AcpResponseFormatter` is unchanged; `checkout_url` stays empty for
   agent checkouts (no PSP session).
+
+## Follow-up (2026-10-06, CI)
+
+`Integration\Checkout\Headless\AgentBuyerAndBasketTest::testItemsBecomeAUserBasketRowWithThePayment` failed on the
+bare CI shop: without graphql-storefront `oxuserbaskets` has no `OEGQL_PAYMENTID`, the factory's write is dropped and
+the row answers null. The code is right (the payment travels explicitly through `ContractOpeningService` →
+`HeadlessStartRequest::$paymentId`, as the factory's comment says); the test now asserts the column only when it
+exists (`2f6544e`).
