@@ -68,6 +68,9 @@ final class NoConcreteClassTypeHintRule implements Rule
         // "one impl before an interface", same reasoning as the RuleSet /
         // ValidationRequestContext VOs above.
         '#\\\\Adapter\\\\OrderShippingAddressCopier$#',
+        // Sprint 15 / S4 (2026-10-06): readonly DTOs of the commit service - a
+        // payment confirmation in and an outcome out; values, not behaviour.
+        '#\\\\Service\\\\Commit\\\\(PaymentConfirmation|CommitOutcome)$#',
 
         // Test classes
         '#Test$#',

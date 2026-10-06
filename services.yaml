@@ -111,6 +111,33 @@ services:
     class: OxidEsales\PaymentBase\Checkout\Guard\IdempotentAttemptGuard
     public: true
 
+  # Sprint 15 / S4 (GRAPH-QL, 2026-10-06) — the event dispatcher, defined here
+  # so payment-base boots without a provider module. Identical to the
+  # definition every provider carries (same classes, same tag), so whichever
+  # services.yaml merges last changes nothing.
+  OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface:
+    class: OxidEsales\PaymentBase\EventSystem\EventListenerProvider
+    arguments:
+      - !tagged_iterator payment.event_handler
+    public: true
+
+  OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface:
+    class: OxidEsales\PaymentBase\EventSystem\EventDispatcher
+    arguments:
+      - '@OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface'
+    public: true
+
+  # Sprint 15 / S4 — "the provider says paid": the one way to commit a
+  # contract outside the browser return leg. Provider webhook handlers and
+  # headless return mutations call it; idempotent; refuses closed contracts
+  # and mismatched amounts; runs the same handler chain the return leg runs.
+  OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface:
+    class: OxidEsales\PaymentBase\Service\Commit\ContractCommitService
+    arguments:
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+    public: true
+
   # Sprint 15 / S1 (GRAPH-QL, 2026-10-06) — where the basket of a checkout
   # attempt comes from. The router reads the session basket for the Twig / OPC
   # checkout (no basket id on the request) and the persisted `oxuserbaskets`
