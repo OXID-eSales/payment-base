@@ -135,11 +135,48 @@ services:
     class: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
     public: false
 
+  # Sprint 15 / S2 (GRAPH-QL, 2026-10-06) — payment-base owns the session
+  # adapter binding. The provider modules still define this id themselves
+  # (their definitions win while they exist); P-Stripe / P-Mollie / P-PayPal
+  # delete those, after which this is the one definition.
+  OxidEsales\PaymentBase\Adapter\SessionAdapterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
+    public: true
+
+  # Sprint 15 / S2 — the checkout context: the per-attempt flags that were
+  # `$_SESSION` keys. ScopedCheckoutContext is the session's context unless a
+  # headless entry point (GraphQL mutation, MCP tool) entered a
+  # HeadlessCheckoutScope for this request; then it is the persisted one in
+  # `oe_payments_sessions`. Consumers below are wired to the interface and
+  # never know which.
+  OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext:
+    arguments:
+      $session: '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+
+  OxidEsales\PaymentBase\Checkout\Context\CheckoutContextStoreInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\DoctrineCheckoutContextStore
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\Checkout\Context\PersistedCheckoutContext: ~
+
+  OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\ScopedCheckoutContext
+    arguments:
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $session: '@OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext'
+      $persisted: '@OxidEsales\PaymentBase\Checkout\Context\PersistedCheckoutContext'
+    public: true
+
   OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface:
     class: OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry
     public: false
     arguments:
-      - '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+      - '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # Public: OXID controllers get no constructor injection, so a provider's
   # return controller fetches this through the container at runtime. A private
@@ -153,7 +190,8 @@ services:
       $orderService: '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
       # MOL-18: a retired attempt must also give up the `sess_challenge` that
       # names its (kept, storno'd) order row, or core refuses every retry.
-      $session: '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+      # Sprint 15 / S2: through the checkout context (session or headless scope).
+      $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # MOL-18 — "is a checkout attempt already in flight for this session?" A
   # provider's order controller asks this before starting a new attempt and
@@ -404,6 +442,9 @@ services:
   OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface:
     class: OxidEsales\PaymentBase\Checkout\PaymentStepSkipGuard
     public: true
+    arguments:
+      # Sprint 15 / S2: the one-shot flag lives in the checkout context.
+      $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the

@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Checkout;
 
-use OxidEsales\Eshop\Core\Registry;
+use OxidEsales\PaymentBase\Adapter\OxidSessionAdapter;
+use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use Throwable;
 
@@ -35,12 +37,22 @@ class PaymentStepSkipGuard implements PaymentStepSkipGuardInterface
 {
     private const SESSION_KEY = 'oepbPaymentStepSkipped';
 
+    private readonly CheckoutContextInterface $context;
+
+    /**
+     * Sprint 15 / S2: the flag lives in the checkout context (the session for
+     * Twig, the entered scope for headless). Optional so a services.yaml that
+     * predates this keeps the session behaviour.
+     */
+    public function __construct(?CheckoutContextInterface $context = null)
+    {
+        $this->context = $context ?? new SessionCheckoutContext(new OxidSessionAdapter());
+    }
+
     public function maySkip(): bool
     {
         try {
-            $session = $this->getSession();
-
-            return $session !== null && $session->getVariable(self::SESSION_KEY) !== true;
+            return $this->context->get(self::SESSION_KEY) !== true;
         } catch (Throwable) {
             return false;
         }
@@ -49,7 +61,7 @@ class PaymentStepSkipGuard implements PaymentStepSkipGuardInterface
     public function markSkipped(): void
     {
         try {
-            $this->getSession()?->setVariable(self::SESSION_KEY, true);
+            $this->context->set(self::SESSION_KEY, true);
         } catch (Throwable) {
             // Unable to record the skip. maySkip() answers false on the same
             // failure, so the shortcut is simply not taken.
@@ -59,14 +71,9 @@ class PaymentStepSkipGuard implements PaymentStepSkipGuardInterface
     public function clear(): void
     {
         try {
-            $this->getSession()?->deleteVariable(self::SESSION_KEY);
+            $this->context->remove(self::SESSION_KEY);
         } catch (Throwable) {
             // Leaving the flag set only costs the next visit its shortcut.
         }
-    }
-
-    protected function getSession(): mixed
-    {
-        return Registry::getSession();
     }
 }

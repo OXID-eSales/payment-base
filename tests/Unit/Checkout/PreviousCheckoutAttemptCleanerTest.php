@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Checkout;
 
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleaner;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
@@ -127,7 +128,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
     {
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, new SessionCheckoutContext($session));
 
         $contract = $this->contractInState(ContractState::pending(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -141,7 +142,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
         // A newer challenge belongs to whatever attempt the shopper is on now.
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-2');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, new SessionCheckoutContext($session));
 
         $contract = $this->contractInState(ContractState::pending(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -160,7 +161,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
     {
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, new SessionCheckoutContext($session));
 
         $contract = $this->contractInState(ContractState::failed(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -176,7 +177,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
         // A paid attempt's order is real and stays; a new attempt must not be forced onto its id.
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, $session);
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, null, new SessionCheckoutContext($session));
         $this->contracts->method('findById')->willReturn($this->contractInState(ContractState::committed(), 'order-1'));
 
         $this->assertFalse($cleaner->clean('contract-1'));

@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Tests\Unit\Checkout\RecordingSessionAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,7 +43,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
         $this->shopOrderService = $this->createMock(ShopOrderServiceInterface::class);
         $this->cleaner = $this->createMock(PreviousCheckoutAttemptCleanerInterface::class);
         $this->session = new RecordingSessionAdapter();
-        $this->openAttempts = new OpenCheckoutAttemptRegistry($this->session);
+        $this->openAttempts = new OpenCheckoutAttemptRegistry(new SessionCheckoutContext($this->session));
 
         $this->shopOrderService->method('createOrder')->willReturn($this->orderResponse());
     }
