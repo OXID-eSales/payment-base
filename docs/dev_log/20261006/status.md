@@ -6,8 +6,8 @@
 
 | Story | State | Notes |
 |---|---|---|
-| S1 Basket provider | IN PROGRESS | red tests being written |
-| S2 Checkout context | TODO | |
+| S1 Basket provider | **DONE** 2026-10-06 `874fdca` | [done/sprint-15-S1-basket-provider.md](done/sprint-15-S1-basket-provider.md) — Unit 1410, Integration 135, gates green; fixed `DeliveryAddressHashService` ($_POST) on the way |
+| S2 Checkout context | IN PROGRESS | discovery: session-keyed flags, `SessionAdapterInterface` binding |
 | S3 Attempt guard | TODO | |
 | S4 Contract commit service | TODO | |
 | S5 Return-URL policy | TODO | |
