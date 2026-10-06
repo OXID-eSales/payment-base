@@ -138,6 +138,82 @@ services:
       $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
     public: true
 
+  # --------------------------------------------------------------
+  # Sprint 15 / S6 (GRAPH-QL, 2026-10-06) — the headless checkout.
+  #
+  # Provider-agnostic orchestration in Checkout\Headless (also what the MCP
+  # tools will drive); GraphQL-specific glue in GraphQL\ (mapper, right,
+  # result types, the placeOrder guard). The GraphQL glue implements
+  # graphql-base / storefront contracts that may be absent: those services
+  # are neither autowired nor autoconfigured, so the container never reflects
+  # on them, and their tags are consumed only by the GraphQL modules.
+  # --------------------------------------------------------------
+  OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistry
+    arguments:
+      # the same tag every provider already uses for the one-page checkout
+      - !tagged_iterator oe.payment.handler
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistry
+    arguments:
+      # providers: `- { name: oe.payment.return_resolver, provider: stripe }`
+      - !tagged_iterator { tag: oe.payment.return_resolver, index_by: provider }
+    public: true
+
+  # payment-base binds the session writer itself (every provider carries the
+  # same class; their definitions win while they exist).
+  OxidEsales\PaymentBase\Controller\SessionWriterInterface:
+    class: OxidEsales\PaymentBase\Controller\OxidSessionWriter
+    public: true
+
+  OxidEsales\PaymentBase\Controller\CheckoutReturnResponder:
+    arguments:
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $sessionWriter: '@OxidEsales\PaymentBase\Controller\SessionWriterInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      # S3: no sess_challenge write under a headless scope
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutService
+    arguments:
+      $handlers: '@OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface'
+      $resolvers: '@OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistryInterface'
+      $baskets: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      $returnUrls: '@OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface'
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $responder: '@OxidEsales\PaymentBase\Controller\CheckoutReturnResponder'
+      $cleaner: '@OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface'
+    public: true
+
+  # The user basket a headless contract was paid from goes on commit (core
+  # deletes it in placeOrder); session contracts carry no basket id.
+  OxidEsales\PaymentBase\EventSystem\Handler\UserBasketRemovalHandler:
+    tags:
+      - { name: payment.event_handler, priority: 10 }
+
+  OxidEsales\PaymentBase\GraphQL\Service\NamespaceMapper:
+    autowire: false
+    autoconfigure: false
+    tags: [ 'graphql_namespace_mapper' ]
+
+  OxidEsales\PaymentBase\GraphQL\Service\PermissionProvider:
+    autowire: false
+    autoconfigure: false
+    tags: [ 'graphql_permission_provider' ]
+
+  OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface'
+    tags: [ 'kernel.event_subscriber' ]
+    public: true
+
   # Sprint 15 / S1 (GRAPH-QL, 2026-10-06) — where the basket of a checkout
   # attempt comes from. The router reads the session basket for the Twig / OPC
   # checkout (no basket id on the request) and the persisted `oxuserbaskets`

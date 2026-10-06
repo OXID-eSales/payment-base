@@ -122,7 +122,10 @@ src/
 │   │   └── Payment/    # Payment lifecycle events
 │   ├── EventDispatcher.php
 │   └── EventListenerProvider.php
-├── GraphQL/            # Headless API support
+├── GraphQL/            # Headless API glue for graphql-base/-storefront (Sprint 15): namespace mapper,
+│                       #   PAYMENT_CHECKOUT right, shared Checkout*Result types, placeOrder guard
+├── Checkout/Headless/  # Provider-agnostic headless checkout: start / return / cancel on the
+│                       #   providers' tagged payment handlers and return resolvers
 ├── Middleware/         # Request/response middleware
 ├── Model/              # Domain models
 ├── Order/              # Order integration

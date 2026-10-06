@@ -68,9 +68,16 @@ final class NoConcreteClassTypeHintRule implements Rule
         // "one impl before an interface", same reasoning as the RuleSet /
         // ValidationRequestContext VOs above.
         '#\\\\Adapter\\\\OrderShippingAddressCopier$#',
+        // Sprint 15 / S6 (2026-10-06): the return responder has one implementation and is wired by
+        // the providers' services.yaml too; the headless service composes it as is.
+        '#\\\\Controller\\\\CheckoutReturnResponder$#',
         // Sprint 15 / S4 (2026-10-06): readonly DTOs of the commit service - a
         // payment confirmation in and an outcome out; values, not behaviour.
         '#\\\\Service\\\\Commit\\\\(PaymentConfirmation|CommitOutcome)$#',
+        // Sprint 15 / S6 (2026-10-06): the headless checkout's readonly request / result DTOs.
+        '#\\\\Checkout\\\\Headless\\\\Headless(StartRequest|StartResult|ReturnResult|CancelResult)$#',
+        // GraphQL result types are values handed to GraphQLite; graphql-base's own types are concrete too.
+        '#\\\\GraphQL\\\\DataType\\\\#',
 
         // Test classes
         '#Test$#',
