@@ -227,6 +227,10 @@ services:
     tags:
       - { name: payment.event_handler, priority: 10 }
 
+  # graphql-base is optional: these two classes mirror its interfaces without
+  # implementing them, because the container reflects every service class at
+  # module activation and the interfaces are absent on a shop without GraphQL.
+  # Their tags are inert until graphql-base is installed.
   OxidEsales\PaymentBase\GraphQL\Service\NamespaceMapper:
     autowire: false
     autoconfigure: false

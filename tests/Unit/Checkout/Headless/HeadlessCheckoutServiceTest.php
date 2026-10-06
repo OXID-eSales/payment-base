@@ -500,6 +500,28 @@ final class HeadlessCheckoutServiceTest extends TestCase
         self::assertSame('contract-1', $this->scope->getScopeId());
     }
 
+    /**
+     * Found end-to-end (PS6): PreviousCheckoutAttemptCleaner loads and cancels
+     * its own copy of the contract, so the instance this service loaded for
+     * the token check still said PENDING. The answer must be the repository's
+     * state after the cleanup.
+     */
+    public function testCancelAnswersTheStateTheRepositoryHoldsAfterTheCleanup(): void
+    {
+        $loadedFirst = $this->pendingContract('contract-1');
+        $loadedFirst->setMetadata('headless_token', 'tok-fixed');
+        $afterCleanup = $this->pendingContract('contract-1');
+        $afterCleanup->setMetadata('headless_token', 'tok-fixed');
+        $afterCleanup->cancel('headless cancel');
+        $this->contracts->method('findById')->willReturnOnConsecutiveCalls($loadedFirst, $afterCleanup);
+        $this->cleaner->method('clean')->willReturn(true);
+
+        $result = $this->service()->cancel('contract-1', 'tok-fixed');
+
+        self::assertTrue($result->cancelled);
+        self::assertSame('cancelled', $result->contractState);
+    }
+
     public function testCancelWithAWrongTokenIsRefused(): void
     {
         $contract = $this->pendingContract('contract-1');

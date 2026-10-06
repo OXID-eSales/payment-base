@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Service;
 
-use OxidEsales\GraphQL\Base\Framework\NamespaceMapperInterface;
 use OxidEsales\PaymentBase\GraphQL\Service\NamespaceMapper;
 use PHPUnit\Framework\TestCase;
 
@@ -19,11 +18,6 @@ use PHPUnit\Framework\TestCase;
  */
 final class NamespaceMapperTest extends TestCase
 {
-    public function testImplementsGraphqlBaseContract(): void
-    {
-        self::assertInstanceOf(NamespaceMapperInterface::class, new NamespaceMapper());
-    }
-
     public function testMapsTheGraphQlControllerAndTypeNamespacesToExistingDirectories(): void
     {
         $mapper = new NamespaceMapper();

@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Service;
 
-use OxidEsales\GraphQL\Base\Framework\PermissionProviderInterface;
 use OxidEsales\PaymentBase\GraphQL\Service\PermissionProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -20,11 +19,6 @@ use PHPUnit\Framework\TestCase;
  */
 final class PermissionProviderTest extends TestCase
 {
-    public function testImplementsGraphqlBaseContract(): void
-    {
-        self::assertInstanceOf(PermissionProviderInterface::class, new PermissionProvider());
-    }
-
     public function testGrantsPaymentCheckoutToCustomersAndNotYetOrderedButNotToAnonymous(): void
     {
         $permissions = (new PermissionProvider())->getPermissions();

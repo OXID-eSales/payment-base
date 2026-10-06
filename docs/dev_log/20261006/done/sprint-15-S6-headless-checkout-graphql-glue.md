@@ -71,3 +71,19 @@
 - Vouchers on a user basket (`oxvouchers.OEGQL_BASKETID`) and the storefront's delivery-address choice
   (`OEGQL_DELADDRESSID`) are not applied by `UserBasketProvider` yet.
 - `CheckoutReturnResponder` keeps its own dispatch (see S4 report).
+
+## Follow-up (2026-10-06, found by CI and by the Stripe PS6 proof)
+
+- **Module activation died on a shop without GraphQL** (`Tests on OXID 7.4/7.5` red since S6: *"Service Yaml for
+  moduleId of [oe_payment_base] is invalid — Interface NamespaceMapperInterface not found"*). The validator compiles
+  the container, and Symfony's compiler passes reflect (load) the class of every service definition; `NamespaceMapper`
+  and `PermissionProvider` implemented graphql-base interfaces, which do not exist there. Symfony 6.4 offers no way out
+  inside one `services.yaml` (`class` is mandatory even for factory services and is reflected; the tags cannot be
+  abstract or synthetic). So the two glue classes now **mirror** the interfaces without `implements`: graphql-base
+  only iterates the tagged services and calls the methods, it never type-checks them.
+  `Unit\GraphQL\Service\OptionalGraphQlDependencyTest` pins the method parity with the (stubbed or real) interface
+  and asserts that no service class the container reflects extends or implements anything from graphql-base or
+  GraphQLite. Same change in Stripe (`OxidEsales\Payments\Stripe\GraphQL\Service\NamespaceMapper`).
+- **`cancel` answered `pending`** for a contract it had just cancelled: `PreviousCheckoutAttemptCleaner` cancels its own
+  loaded copy, so the instance the service held for the token check was stale. `HeadlessCheckoutService::cancel()`
+  reloads the contract after the cleanup; unit test added (seen first in the Stripe Playwright spec).

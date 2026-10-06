@@ -186,6 +186,9 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         $contract = $this->authorisedContract($contractId, $contractToken);
 
         $cancelled = $this->cleaner->clean((string) $contract->getId());
+        // The cleaner works on its own copy of the contract; answer the state
+        // the repository holds now, not the one loaded before the cleanup.
+        $contract = $this->contracts->findById((string) $contract->getId()) ?? $contract;
         $this->logger->info('[HeadlessCheckoutService] cancel', [
             'contractId' => $contract->getId(),
             'cancelled' => $cancelled,
