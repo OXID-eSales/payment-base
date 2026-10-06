@@ -8,8 +8,8 @@
 |---|---|---|
 | S1 Basket provider | **DONE** 2026-10-06 `874fdca` | [done/sprint-15-S1-basket-provider.md](done/sprint-15-S1-basket-provider.md) — Unit 1410, Integration 135, gates green; fixed `DeliveryAddressHashService` ($_POST) on the way |
 | S2 Checkout context | **DONE** 2026-10-06 | [done/sprint-15-S2-checkout-context.md](done/sprint-15-S2-checkout-context.md) — Unit 1433, Integration 139, gates green; `oe_payments_sessions` is the headless store |
-| S3 Attempt guard | IN PROGRESS | discovery: `sess_challenge` verifier/writer, idempotency repository, retire-by-(user, basket) |
-| S4 Contract commit service | TODO | |
+| S3 Attempt guard | **DONE** 2026-10-06 | [done/sprint-15-S3-attempt-guard.md](done/sprint-15-S3-attempt-guard.md) — Unit 1455, Integration 142, gates green; `oe_payments_idempotency` first consumer |
+| S4 Contract commit service | IN PROGRESS | discovery: `ContractCommitmentHandler`, `PaymentAuthorizedEvent`, stale cleanup ordering |
 | S5 Return-URL policy | TODO | |
 | S6 GraphQL glue | TODO | needs graphql-storefront in require-dev |
 | S7 ACP on the same path | TODO | |
