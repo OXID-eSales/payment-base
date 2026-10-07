@@ -9,6 +9,9 @@ provider module (Stripe, Mollie, future ones) can expose a headless checkout wit
 
 ---
 
+> **Implemented (2026-10-06/07):** Option B, Sprint 15 + the three provider stories. How a client chooses the payment
+> method and the shared mutations: [`docs/graphql-headless-checkout.md`](../../../graphql-headless-checkout.md).
+
 ## 0. Short answer
 
 **payment-base is the place where headless support has to land, and today it has none.** The provider-facing code is

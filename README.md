@@ -263,6 +263,15 @@ class OrderCreationSubscriber implements SubscriberInterface
 }
 ```
 
+## Headless checkout (GraphQL Storefront, agents)
+
+The contract-first checkout is available without a Twig page: the Stripe, Mollie and PayPal modules ship
+`<provider>CheckoutStart / CheckoutReturn / CheckoutCancel` mutations over payment-base's `HeadlessCheckoutService`,
+and the provider's webhook ends the order. **The payment method is chosen by which start mutation the client calls**
+(`stripeCheckoutStart`, `mollieCheckoutStart` with an optional Mollie `method`, `paypalCheckoutStart`); the core
+`placeOrder` is refused for these payments and names the mutation to use. Details, the shared result types, error codes
+and the CLI scripts of the three modules: [docs/graphql-headless-checkout.md](docs/graphql-headless-checkout.md).
+
 ## Domain Events
 
 ### Contract Events
