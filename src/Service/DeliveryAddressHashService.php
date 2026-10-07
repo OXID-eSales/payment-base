@@ -18,6 +18,7 @@ namespace OxidEsales\PaymentBase\Service;
  * WHY $_REQUEST MODIFICATION IS NECESSARY:
  * OXID's Order::validateDeliveryAddress() (line ~2100) reads the hash from:
  *   Registry::getRequest()->getRequestEscapedParameter('sDeliveryAddressMD5')
+ * which resolves to $_POST, then $_GET (Core\Request::getRequestParameter()).
  *
  * This ultimately reads from $_REQUEST. When returning from payment checkout,
  * the original form POST data is lost. To make OXID's validation pass,
@@ -40,6 +41,16 @@ class DeliveryAddressHashService implements DeliveryAddressHashServiceInterface
 {
     private const REQUEST_KEY = 'sDeliveryAddressMD5';
 
+    /**
+     * Sprint 15 / S1 (2026-10-06): core's Request::getRequestParameter() reads
+     * `$_POST[$name]`, then `$_GET[$name]` - never `$_REQUEST`. Until today
+     * this wrote `$_REQUEST` only, so Order::validateDeliveryAddress() never
+     * saw the restored hash and answered INVALIDDELADDRESSCHANGED; the Twig
+     * checkout did not notice because the order page posts the hash itself.
+     * The first caller that has no posted form - the headless basket provider -
+     * did. Both are written now: `$_POST` is what core reads, `$_REQUEST` is
+     * what this service's readers below and existing callers look at.
+     */
     public function restoreHashForValidation(?string $hash): void
     {
         if ($hash === null || $hash === '') {
@@ -47,26 +58,29 @@ class DeliveryAddressHashService implements DeliveryAddressHashServiceInterface
         }
 
         // phpcs:ignore
+        $_POST[self::REQUEST_KEY] = $hash;
+        // phpcs:ignore
         $_REQUEST[self::REQUEST_KEY] = $hash;
     }
 
     public function getHash(): ?string
     {
         // phpcs:ignore
-        $hash = $_REQUEST[self::REQUEST_KEY] ?? null;
+        $hash = $_POST[self::REQUEST_KEY] ?? $_REQUEST[self::REQUEST_KEY] ?? null;
 
         return is_string($hash) ? $hash : null;
     }
 
     public function hasHash(): bool
     {
-        // phpcs:ignore
-        return isset($_REQUEST[self::REQUEST_KEY]) && $_REQUEST[self::REQUEST_KEY] !== '';
+        $hash = $this->getHash();
+
+        return $hash !== null && $hash !== '';
     }
 
     public function clearHash(): void
     {
         // phpcs:ignore
-        unset($_REQUEST[self::REQUEST_KEY]);
+        unset($_POST[self::REQUEST_KEY], $_REQUEST[self::REQUEST_KEY]);
     }
 }

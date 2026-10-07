@@ -48,6 +48,12 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: true
 
+  # Sprint 15 / S3 (split out in S8) — the headless previous-attempt lookup,
+  # served by the same Doctrine repository.
+  OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface:
+    alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
+    public: true
+
   OxidEsales\PaymentBase\Repository\DoctrineContractRepository:
     alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
     public: true
@@ -94,7 +100,175 @@ services:
     arguments:
       $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
+      $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      # Sprint 15 / S3: one order per headless checkout attempt (core's
+      # sess_challenge covers the session checkout).
+      $attemptGuard: '@OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface'
     public: true
+
+  # Sprint 15 / S3 (GRAPH-QL, 2026-10-06) — the attempt guard on
+  # `oe_payments_idempotency` (table from 2025-10-31, first consumer).
+  OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface:
+    class: OxidEsales\PaymentBase\Checkout\Guard\IdempotentAttemptGuard
+    public: true
+
+  # Sprint 15 / S4 (GRAPH-QL, 2026-10-06) — the event dispatcher, defined here
+  # so payment-base boots without a provider module. Identical to the
+  # definition every provider carries (same classes, same tag), so whichever
+  # services.yaml merges last changes nothing.
+  OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface:
+    class: OxidEsales\PaymentBase\EventSystem\EventListenerProvider
+    arguments:
+      - !tagged_iterator payment.event_handler
+    public: true
+
+  OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface:
+    class: OxidEsales\PaymentBase\EventSystem\EventDispatcher
+    arguments:
+      - '@OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface'
+    public: true
+
+  # Sprint 15 / S4 — "the provider says paid": the one way to commit a
+  # contract outside the browser return leg. Provider webhook handlers and
+  # headless return mutations call it; idempotent; refuses closed contracts
+  # and mismatched amounts; runs the same handler chain the return leg runs.
+  OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface:
+    class: OxidEsales\PaymentBase\Service\Commit\ContractCommitService
+    arguments:
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+    public: true
+
+  # --------------------------------------------------------------
+  # Sprint 15 / S6 (GRAPH-QL, 2026-10-06) — the headless checkout.
+  #
+  # Provider-agnostic orchestration in Checkout\Headless (also what the MCP
+  # tools will drive); GraphQL-specific glue in GraphQL\ (mapper, right,
+  # result types, the placeOrder guard). The GraphQL glue implements
+  # graphql-base / storefront contracts that may be absent: those services
+  # are neither autowired nor autoconfigured, so the container never reflects
+  # on them, and their tags are consumed only by the GraphQL modules.
+  # --------------------------------------------------------------
+  OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistry
+    arguments:
+      # the same tag every provider already uses for the one-page checkout
+      - !tagged_iterator oe.payment.handler
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistry
+    arguments:
+      # providers: `- { name: oe.payment.return_resolver, provider: stripe }`
+      - !tagged_iterator { tag: oe.payment.return_resolver, index_by: provider }
+    public: true
+
+  # payment-base binds the session writer itself (every provider carries the
+  # same class; their definitions win while they exist).
+  OxidEsales\PaymentBase\Controller\SessionWriterInterface:
+    class: OxidEsales\PaymentBase\Controller\OxidSessionWriter
+    public: true
+
+  OxidEsales\PaymentBase\Controller\CheckoutReturnResponder:
+    arguments:
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $sessionWriter: '@OxidEsales\PaymentBase\Controller\SessionWriterInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      # S3: no sess_challenge write under a headless scope
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutService
+    arguments:
+      $handlers: '@OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface'
+      $resolvers: '@OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistryInterface'
+      $baskets: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      $returnUrls: '@OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface'
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $responder: '@OxidEsales\PaymentBase\Controller\CheckoutReturnResponder'
+      $cleaner: '@OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface'
+    public: true
+
+  # Sprint 15 / S7 — the ACP / agent path: a described buyer becomes a shop
+  # user, described items a persisted user basket, and the contract is opened
+  # through the same chain (no PSP session; the agent pays with a token).
+  OxidEsales\PaymentBase\Service\ContractServiceInterface:
+    class: OxidEsales\PaymentBase\Service\ContractService
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningServiceInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\ContractOpeningService
+    arguments:
+      $contractService: '@OxidEsales\PaymentBase\Service\ContractServiceInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $baskets: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\UserBasketFactoryInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\UserBasketFactory
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\GuestUserResolverInterface:
+    class: OxidEsales\PaymentBase\Checkout\Headless\GuestUserResolver
+    public: true
+
+  # The user basket a headless contract was paid from goes on commit (core
+  # deletes it in placeOrder); session contracts carry no basket id.
+  OxidEsales\PaymentBase\EventSystem\Handler\UserBasketRemovalHandler:
+    tags:
+      - { name: payment.event_handler, priority: 10 }
+
+  # graphql-base is optional: these two classes mirror its interfaces without
+  # implementing them, because the container reflects every service class at
+  # module activation and the interfaces are absent on a shop without GraphQL.
+  # Their tags are inert until graphql-base is installed.
+  OxidEsales\PaymentBase\GraphQL\Service\NamespaceMapper:
+    autowire: false
+    autoconfigure: false
+    tags: [ 'graphql_namespace_mapper' ]
+
+  OxidEsales\PaymentBase\GraphQL\Service\PermissionProvider:
+    autowire: false
+    autoconfigure: false
+    tags: [ 'graphql_permission_provider' ]
+
+  OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistryInterface'
+    tags: [ 'kernel.event_subscriber' ]
+    public: true
+
+  # Sprint 15 / S1 (GRAPH-QL, 2026-10-06) — where the basket of a checkout
+  # attempt comes from. The router reads the session basket for the Twig / OPC
+  # checkout (no basket id on the request) and the persisted `oxuserbaskets`
+  # row for a headless one (GraphQL Storefront, MCP). The hash service is
+  # wired by concrete class: provider modules bind its interface id and
+  # payment-base must not add another definition of it.
+  OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface:
+    class: OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketRouter
+    arguments:
+      $sessionBaskets: '@OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider'
+      $userBaskets: '@OxidEsales\PaymentBase\Checkout\Basket\UserBasketProvider'
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider: ~
+
+  OxidEsales\PaymentBase\Checkout\Basket\UserBasketProvider:
+    arguments:
+      $deliveryAddressHash: '@OxidEsales\PaymentBase\Service\DeliveryAddressHashService'
+
+  OxidEsales\PaymentBase\Service\DeliveryAddressHashService: ~
 
   OxidEsales\PaymentBase\Adapter\OxidShopOrderService:
     alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
@@ -113,11 +287,48 @@ services:
     class: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
     public: false
 
+  # Sprint 15 / S2 (GRAPH-QL, 2026-10-06) — payment-base owns the session
+  # adapter binding. The provider modules still define this id themselves
+  # (their definitions win while they exist); P-Stripe / P-Mollie / P-PayPal
+  # delete those, after which this is the one definition.
+  OxidEsales\PaymentBase\Adapter\SessionAdapterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
+    public: true
+
+  # Sprint 15 / S2 — the checkout context: the per-attempt flags that were
+  # `$_SESSION` keys. ScopedCheckoutContext is the session's context unless a
+  # headless entry point (GraphQL mutation, MCP tool) entered a
+  # HeadlessCheckoutScope for this request; then it is the persisted one in
+  # `oe_payments_sessions`. Consumers below are wired to the interface and
+  # never know which.
+  OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext:
+    arguments:
+      $session: '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+
+  OxidEsales\PaymentBase\Checkout\Context\CheckoutContextStoreInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\DoctrineCheckoutContextStore
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\Checkout\Context\PersistedCheckoutContext: ~
+
+  OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface:
+    class: OxidEsales\PaymentBase\Checkout\Context\ScopedCheckoutContext
+    arguments:
+      $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $session: '@OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext'
+      $persisted: '@OxidEsales\PaymentBase\Checkout\Context\PersistedCheckoutContext'
+    public: true
+
   OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface:
     class: OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry
     public: false
     arguments:
-      - '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+      - '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # Public: OXID controllers get no constructor injection, so a provider's
   # return controller fetches this through the container at runtime. A private
@@ -131,7 +342,8 @@ services:
       $orderService: '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
       # MOL-18: a retired attempt must also give up the `sess_challenge` that
       # names its (kept, storno'd) order row, or core refuses every retry.
-      $session: '@OxidEsales\PaymentBase\Adapter\OxidSessionAdapter'
+      # Sprint 15 / S2: through the checkout context (session or headless scope).
+      $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # MOL-18 — "is a checkout attempt already in flight for this session?" A
   # provider's order controller asks this before starting a new attempt and
@@ -255,6 +467,17 @@ services:
 
   OxidEsales\PaymentBase\Validation\Guard\ShopUrlResolverInterface:
     class: OxidEsales\PaymentBase\Validation\Guard\OxidShopUrlResolver
+
+  # Sprint 15 / S5 (GRAPH-QL, 2026-10-06) — where the PSP may send a shopper
+  # back to when a headless client names the URL: the shop itself and the
+  # origins in `sPaymentBaseHeadlessReturnOrigins`. Public: every provider's
+  # headless entry point asks it before passing a client URL to the PSP.
+  OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettingsInterface:
+    class: OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettings
+
+  OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface:
+    class: OxidEsales\PaymentBase\Checkout\ReturnUrl\AllowListReturnUrlPolicy
+    public: true
 
   OxidEsales\PaymentBase\Validation\Guard\SameOriginGuard:
     arguments:
@@ -382,6 +605,9 @@ services:
   OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface:
     class: OxidEsales\PaymentBase\Checkout\PaymentStepSkipGuard
     public: true
+    arguments:
+      # Sprint 15 / S2: the one-shot flag lives in the checkout context.
+      $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
   # IFRAME-01 — "Use iframe instead of checkout button" read accessor.
   # Public so PSP modules (and the OPC footer-widget path) can resolve the

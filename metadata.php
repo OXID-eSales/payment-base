@@ -143,5 +143,17 @@ $aModule = [
             'value' => '30',
             'group' => 'cleanup',
         ],
+        // Sprint 15 / S5 (GRAPH-QL, 2026-10-06) — the storefront origins a
+        // headless client (GraphQL Storefront app, mobile app) may name as the
+        // URL the PSP sends the shopper back to. Comma-, space- or
+        // newline-separated; an entry without a scheme means https. The shop's
+        // own URL is always allowed. Empty = shop only. Anything else is an
+        // open-redirect surface and is refused.
+        [
+            'name' => 'sPaymentBaseHeadlessReturnOrigins',
+            'type' => 'str',
+            'value' => '',
+            'group' => 'headless',
+        ],
     ],
 ];

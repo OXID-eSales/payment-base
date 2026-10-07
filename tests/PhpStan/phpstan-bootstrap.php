@@ -99,6 +99,13 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
         . '  public function getPrice(): mixed { return null; } '
         . '  public function getBasketCurrency(): ?object { return null; } '
         . '  public function getBasketUser(): mixed { return null; } '
+        // Sprint 15 / S1 (2026-10-06) — writers UserBasketProvider uses to build
+        // the basket core finalizes from an oxuserbaskets row.
+        . '  public function setBasketUser(mixed $oUser): void {} '
+        . '  public function addToBasket(string $sProductID, float $dAmount, mixed $aSel = null, mixed $aPersParam = null, bool $blOverride = false, bool $blBundle = false, ?string $sOldBasketItemId = null): mixed { return null; } '
+        . '  public function setPayment(?string $sPaymentId = null): void {} '
+        . '  public function setShipping(?string $sShippingSetId = null): void {} '
+        . '  public function calculateBasket(bool $blForceUpdate = false): void {} '
         . '}'
     );
 }
@@ -106,10 +113,16 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
 if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
         . 'class User { '
+        . '  public mixed $oxuser__oxactive = null; '
+        . '  public mixed $oxuser__oxrights = null; '
+        . '  public mixed $oxuser__oxshopid = null; '
+        . '  public mixed $oxuser__oxpassword = null; '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getEncodedDeliveryAddress(): string { return ""; } '
+        . '  public function save(): mixed { return true; } '
         . '}'
     );
 }
@@ -150,6 +163,7 @@ if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
         . '  public function redirect(string $url, bool $addParams = true, int $status = 302): void {} '
         . '} '
         . 'class StubConfig { '
+        . '  public function getConfigParam(string $name): mixed { return null; } '
         . '  public function getShopUrl(): string { return ""; } '
         . '  public function getShopSecureHomeUrl(): string { return ""; } '
         . '  public function getShopId(): int { return 1; } '
@@ -244,7 +258,9 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Facad
         'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Facade; '
         . 'interface ModuleSettingServiceInterface { '
         . '  public function getBoolean(string $name, string $moduleId): bool; '
-        . '  public function getString(string $name, string $moduleId): string; '
+        // Sprint 15 / S5 (2026-10-06): the real facade answers a UnicodeString,
+        // not a string - ReturnUrlSettings calls ->toString() on it.
+        . '  public function getString(string $name, string $moduleId): \\Symfony\\Component\\String\\UnicodeString; '
         . '  public function getInteger(string $name, string $moduleId): int; '
         . '}'
     );
@@ -376,5 +392,125 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
         . '  public function getId() { return ""; } '
         . '  public function save() { return true; } '
         . '}'
+    );
+}
+
+// Sprint 15 / S1 (2026-10-06) — the persisted basket of a headless checkout
+// (`oxuserbaskets` / `oxuserbasketitems`) that UserBasketProvider reads.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasket::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
+        . 'class UserBasket { '
+        . '  public mixed $oxuserbaskets__oxuserid = null; '
+        . '  public mixed $oxuserbaskets__oxtitle = null; '
+        . '  public mixed $oxuserbaskets__oxpublic = null; '
+        . '  public mixed $oxuserbaskets__oegql_paymentid = null; '
+        . '  public mixed $oxuserbaskets__oegql_deliverymethodid = null; '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  /** @return list<\\OxidEsales\\Eshop\\Application\\Model\\UserBasketItem> */ '
+        . '  public function getItems(bool $blReload = false, bool $blActiveCheck = true): array { return []; } '
+        . '  public function delete(?string $oxid = null): bool { return true; } '
+        . '  public function setId(?string $oxid = null): string { return (string) $oxid; } '
+        . '  public function save(): mixed { return true; } '
+        . '  public function addItemToBasket(?string $productId = null, ?float $amount = null, mixed $sel = null, bool $override = false, mixed $persParam = null): mixed { return null; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasketItem::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class UserBasketItem { '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getSelList(): mixed { return null; } '
+        . '  public function getPersParams(): mixed { return null; } '
+        . '}'
+    );
+}
+
+// Sprint 15 / S5 (2026-10-06) — symfony/string ships with the shop, not with
+// payment-base's own vendor; the facade stub above returns it.
+if (!class_exists(\Symfony\Component\String\UnicodeString::class, false)) {
+    eval(
+        'namespace Symfony\\Component\\String; '
+        . 'class UnicodeString { '
+        . '  public function toString(): string { return ""; } '
+        . '  public function __toString(): string { return ""; } '
+        . '}'
+    );
+}
+
+// Sprint 15 / S6 (2026-10-06) — the GraphQL glue implements graphql-base /
+// GraphQLite / graphql-storefront / Symfony contracts that ship with the shop,
+// not with payment-base's own vendor. Minimal stubs so the glue is analysable.
+if (!interface_exists(\OxidEsales\GraphQL\Base\Framework\NamespaceMapperInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Framework; '
+        . 'interface NamespaceMapperInterface { '
+        . '  public function getControllerNamespaceMapping(): array; '
+        . '  public function getTypeNamespaceMapping(): array; '
+        . '} '
+        . 'interface PermissionProviderInterface { public function getPermissions(): array; }'
+    );
+}
+if (!class_exists(\GraphQL\Error\Error::class, false)) {
+    eval('namespace GraphQL\\Error; class Error extends \\Exception {}');
+}
+if (!class_exists(\OxidEsales\GraphQL\Base\Exception\Error::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Exception; '
+        . 'abstract class Error extends \\GraphQL\\Error\\Error { '
+        . '  public function __construct(string $message, protected $code = 0, ?\\Throwable $previous = null, protected string $category = "Exception", array $extensions = []) { parent::__construct($message, 0, $previous); } '
+        . '  public function getCategory(): string { return $this->category; } '
+        . '} '
+        . 'class ErrorCategories { '
+        . '  public const PERMISSIONERRORS = "permissionerror"; public const TOKENERRORS = "tokenerror"; '
+        . '  public const CONFIGURATIONERROR = "configurationerror"; public const REQUESTERROR = "requesterror"; '
+        . '}'
+    );
+}
+if (!class_exists(\TheCodingMachine\GraphQLite\Types\ID::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Types; '
+        . 'class ID { public function __construct(private mixed $value) {} public function val(): mixed { return $this->value; } public function __toString(): string { return (string) $this->value; } }'
+    );
+}
+if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Type::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Annotations; '
+        . '#[\\Attribute(\\Attribute::TARGET_CLASS)] class Type { public function __construct(mixed ...$args) {} } '
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Field { public function __construct(mixed ...$args) {} }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Storefront\\Basket\\Event; '
+        . 'final class BeforePlaceOrder { '
+        . '  public function __construct(private \\TheCodingMachine\\GraphQLite\\Types\\ID $basketId) {} '
+        . '  public function getBasketId(): \\TheCodingMachine\\GraphQLite\\Types\\ID { return $this->basketId; } '
+        . '}'
+    );
+}
+if (!interface_exists(\Symfony\Component\EventDispatcher\EventSubscriberInterface::class, false)) {
+    eval(
+        'namespace Symfony\\Component\\EventDispatcher; '
+        . 'interface EventSubscriberInterface { public static function getSubscribedEvents(): array; }'
+    );
+}
+
+// Sprint 15 / S7 (2026-10-06) — GuestUserResolver maps ISO 3166-1 alpha-2 to the shop's country id.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Country::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Country { public function getIdByCode(string $code): mixed { return null; } }'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } } '
+        . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }

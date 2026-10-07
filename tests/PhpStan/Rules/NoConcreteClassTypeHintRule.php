@@ -62,12 +62,22 @@ final class NoConcreteClassTypeHintRule implements Rule
         // means handling OXID's own Basket, User and Order models. OXID ships no
         // interfaces for them — same reason Price is listed above. The rule is
         // about not depending on *our* concretions.
-        '#\\\\Eshop\\\\Application\\\\Model\\\\(Basket|User|Order)$#',
+        '#\\\\Eshop\\\\Application\\\\Model\\\\(Basket|User|Order|UserBasket|UserBasketItem)$#',  // Sprint 15 / S1 (2026-10-06): + the persisted basket of a headless checkout
         // Sprint 10 (2026-09-23): pure billing-to-shipping field mapping with
         // one implementation and one caller (OxidShopOrderService) — CLAUDE.md
         // "one impl before an interface", same reasoning as the RuleSet /
         // ValidationRequestContext VOs above.
         '#\\\\Adapter\\\\OrderShippingAddressCopier$#',
+        // Sprint 15 / S6 (2026-10-06): the return responder has one implementation and is wired by
+        // the providers' services.yaml too; the headless service composes it as is.
+        '#\\\\Controller\\\\CheckoutReturnResponder$#',
+        // Sprint 15 / S4 (2026-10-06): readonly DTOs of the commit service - a
+        // payment confirmation in and an outcome out; values, not behaviour.
+        '#\\\\Service\\\\Commit\\\\(PaymentConfirmation|CommitOutcome)$#',
+        // Sprint 15 / S6 (2026-10-06): the headless checkout's readonly request / result DTOs.
+        '#\\\\Checkout\\\\Headless\\\\Headless(StartRequest|StartResult|ReturnResult|CancelResult)$#',
+        // GraphQL result types are values handed to GraphQLite; graphql-base's own types are concrete too.
+        '#\\\\GraphQL\\\\DataType\\\\#',
 
         // Test classes
         '#Test$#',

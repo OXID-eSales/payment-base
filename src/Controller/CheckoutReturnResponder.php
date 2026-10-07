@@ -14,6 +14,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
@@ -57,6 +58,9 @@ class CheckoutReturnResponder
         private readonly SessionWriterInterface $sessionWriter,
         private readonly LoggerInterface $logger = new NullLogger(),
         private readonly ?ContractRepositoryInterface $contracts = null,
+        // Sprint 15 / S3: a headless return (scope entered) has no session and
+        // no thank-you page, so `sess_challenge` is not written for it.
+        private readonly ?HeadlessCheckoutScopeInterface $scope = null,
     ) {
     }
 
@@ -121,7 +125,7 @@ class CheckoutReturnResponder
     private function finish(EventContext $context, PaymentContractInterface $contract): ?string
     {
         $orderId = $this->resolveOrderId($context, $contract);
-        if ($orderId !== null) {
+        if ($orderId !== null && !($this->scope?->isActive() ?? false)) {
             $this->sessionWriter->writeSessChallenge($orderId);
         }
 

@@ -69,6 +69,13 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Basket::class, false)) {
         . '  public function getBasketCurrency() { return null; } '
         . '  public function getProductsCount(): int { return 0; } '
         . '  public function getPaymentId() { return null; } '
+        // Sprint 15 / S1 (2026-10-06) — the writers UserBasketProvider uses to
+        // build a basket from an oxuserbaskets row; tests record them.
+        . '  public function setBasketUser($oUser) {} '
+        . '  public function addToBasket($sProductID, $dAmount, $aSel = null, $aPersParam = null, $blOverride = false, $blBundle = false, $sOldBasketItemId = null) { return null; } '
+        . '  public function setPayment($sPaymentId = null) {} '
+        . '  public function setShipping($sShippingSetId = null) {} '
+        . '  public function calculateBasket($blForceUpdate = false) {} '
         . '}'
     );
 }
@@ -78,6 +85,7 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . 'class User { '
         . '  public function getId(): ?string { return null; } '
+        . '  public function getEncodedDeliveryAddress() { return ""; } '
         . '}'
     );
 }
@@ -259,5 +267,92 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
         . '  public function cancelOrder() { self::$calls[] = "parent::cancelOrder"; } '
         . '  public function getId() { return "order-1"; } '
         . '}'
+    );
+}
+
+// Sprint 15 / S1 (2026-10-06) — the persisted basket of a headless checkout
+// (`oxuserbaskets` / `oxuserbasketitems`). UserBasketProvider reads these;
+// tests subclass them with fixed rows. #[AllowDynamicProperties] mirrors
+// BaseModel, which exposes columns (incl. graphql-storefront's
+// oxuserbaskets__oegql_deliverymethodid) as dynamic properties.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasket::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
+        . 'class UserBasket { '
+        . '  public function load(string $oxid): bool { return false; } '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getItems($blReload = false, $blActiveCheck = true) { return []; } '
+        . '  public function delete($oxid = null) { return true; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\Eshop\Application\Model\UserBasketItem::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class UserBasketItem { '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getSelList() { return null; } '
+        . '  public function getPersParams() { return null; } '
+        . '}'
+    );
+}
+
+// Sprint 15 / S6 (2026-10-06) — the GraphQL glue implements graphql-base /
+// GraphQLite / graphql-storefront / Symfony contracts that ship with the shop,
+// not with payment-base's own vendor. Minimal stubs so the glue is unit-testable.
+if (!interface_exists(\OxidEsales\GraphQL\Base\Framework\NamespaceMapperInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Framework; '
+        . 'interface NamespaceMapperInterface { '
+        . '  public function getControllerNamespaceMapping(): array; '
+        . '  public function getTypeNamespaceMapping(): array; '
+        . '} '
+        . 'interface PermissionProviderInterface { public function getPermissions(): array; }'
+    );
+}
+if (!class_exists(\GraphQL\Error\Error::class, false)) {
+    eval('namespace GraphQL\\Error; class Error extends \\Exception {}');
+}
+if (!class_exists(\OxidEsales\GraphQL\Base\Exception\Error::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Exception; '
+        . 'abstract class Error extends \\GraphQL\\Error\\Error { '
+        . '  public function __construct(string $message, protected $code = 0, ?\\Throwable $previous = null, protected string $category = "Exception", array $extensions = []) { parent::__construct($message, 0, $previous); } '
+        . '  public function getCategory(): string { return $this->category; } '
+        . '} '
+        . 'class ErrorCategories { '
+        . '  public const PERMISSIONERRORS = "permissionerror"; public const TOKENERRORS = "tokenerror"; '
+        . '  public const CONFIGURATIONERROR = "configurationerror"; public const REQUESTERROR = "requesterror"; '
+        . '}'
+    );
+}
+if (!class_exists(\TheCodingMachine\GraphQLite\Types\ID::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Types; '
+        . 'class ID { public function __construct(private mixed $value) {} public function val(): mixed { return $this->value; } public function __toString(): string { return (string) $this->value; } }'
+    );
+}
+if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Type::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Annotations; '
+        . '#[\\Attribute(\\Attribute::TARGET_CLASS)] class Type { public function __construct(mixed ...$args) {} } '
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Field { public function __construct(mixed ...$args) {} }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Storefront\\Basket\\Event; '
+        . 'final class BeforePlaceOrder { '
+        . '  public function __construct(private \\TheCodingMachine\\GraphQLite\\Types\\ID $basketId) {} '
+        . '  public function getBasketId(): \\TheCodingMachine\\GraphQLite\\Types\\ID { return $this->basketId; } '
+        . '}'
+    );
+}
+if (!interface_exists(\Symfony\Component\EventDispatcher\EventSubscriberInterface::class, false)) {
+    eval(
+        'namespace Symfony\\Component\\EventDispatcher; '
+        . 'interface EventSubscriberInterface { public static function getSubscribedEvents(): array; }'
     );
 }

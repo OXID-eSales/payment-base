@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Checkout;
 
 use OxidEsales\PaymentBase\Checkout\InFlightCheckoutAttemptResolver;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractState;
@@ -35,7 +36,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts = $this->createMock(ContractRepositoryInterface::class);
         $this->orders = $this->createMock(NotFinishedOrderRepositoryInterface::class);
         $this->resolver = new InFlightCheckoutAttemptResolver(
-            new OpenCheckoutAttemptRegistry($this->session),
+            new OpenCheckoutAttemptRegistry(new SessionCheckoutContext($this->session)),
             $this->contracts,
             $this->orders,
         );

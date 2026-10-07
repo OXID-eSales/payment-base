@@ -14,6 +14,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPend
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
 /**
@@ -47,7 +48,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
         // Optional so a consumer whose services.yaml predates this keeps
         // working - it simply does not get the cleanup.
         private readonly ?PreviousCheckoutAttemptCleanerInterface $previousAttemptCleaner = null,
-        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null
+        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null,
+        // Sprint 15 / S3: the headless "previous attempt for this basket"
+        // when the registry has nothing. Optional: a consumer whose
+        // services.yaml predates it keeps the registry-only behaviour.
+        private readonly ?OpenAttemptFinderInterface $openAttemptFinder = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
     }
@@ -87,7 +92,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ]);
 
         try {
-            $this->retirePreviousAttempt($contract);
+            $this->retirePreviousAttempt($contract, $this->basketIdOf($event));
             $orderData = $this->createOrder($contract, $event);
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
             $this->transitionContractToPending($contract, $event);
@@ -116,15 +121,24 @@ class EarlyOrderCreationHandler extends AbstractHandler
      *
      * Best-effort by design. Losing a stale order is annoying; refusing the
      * shopper's new checkout because the cleanup failed is worse.
+     *
+     * Sprint 15 / S3 - the headless rule. A headless attempt names its basket
+     * and has no session; its "previous attempt" is the open contract stamped
+     * with the same basket for the same user. The registry (the entered
+     * scope's context) is asked first; when it has nothing - another device,
+     * an expired headless context - the repository is. One open attempt per
+     * user basket, which is what the session rule means for a shopper who
+     * cannot have a session.
      */
-    private function retirePreviousAttempt(PaymentContract $contract): void
+    private function retirePreviousAttempt(PaymentContract $contract, ?string $basketId): void
     {
         if ($this->previousAttemptCleaner === null || $this->openAttempts === null) {
             return;
         }
 
         try {
-            $previousContractId = $this->openAttempts->takePrevious();
+            $previousContractId = $this->openAttempts->takePrevious()
+                ?? $this->openAttemptForBasket($contract, $basketId);
 
             if ($previousContractId === null || $previousContractId === $contract->getId()) {
                 return;
@@ -143,6 +157,28 @@ class EarlyOrderCreationHandler extends AbstractHandler
         }
     }
 
+    private function openAttemptForBasket(PaymentContract $contract, ?string $basketId): ?string
+    {
+        if ($basketId === null || $this->openAttemptFinder === null) {
+            return null;
+        }
+
+        $open = $this->openAttemptFinder->findOpenByUserAndBasketId($contract->getUserId(), $basketId);
+
+        return $open?->getId();
+    }
+
+    /**
+     * Sprint 15 / S1: a headless checkout names the persisted basket it pays
+     * for; the Twig checkout has none here and keeps the session basket.
+     */
+    private function basketIdOf(ContractDraftCompletedEvent $event): ?string
+    {
+        $contextBasketId = $event->getContext()->get('basketId');
+
+        return is_string($contextBasketId) && $contextBasketId !== '' ? $contextBasketId : null;
+    }
+
     /**
      * @return array{orderId: string, orderNumber: string}
      */
@@ -154,12 +190,19 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $contextPaymentId = $context->get('paymentId');
         $paymentId = is_string($contextPaymentId) ? $contextPaymentId : 'unknown_payment';
         $sessionId = (string) $context->get('sessionId', 'contract_' . $contract->getId());
+        $basketId = $this->basketIdOf($event);
+        if ($basketId !== null) {
+            // Sprint 15 / S3: so the next attempt for this basket, and the
+            // basket removal on commit, can find this contract without a session.
+            $contract->setMetadata('basket_id', $basketId);
+        }
 
         $this->logEvent('EarlyOrderCreationHandler: Creating order', [
             'userId' => $contract->getUserId(),
             'paymentId' => $paymentId,
             'totalGross' => $basket->getTotalGross(),
             'sessionId' => $sessionId,
+            'basketId' => $basketId,
         ]);
 
         $request = new CreateOrderRequest(
@@ -171,7 +214,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
             metadata: [
                 'contract_id' => $contract->getId(),
             ],
-            initialStatus: 'NOT_FINISHED'
+            initialStatus: 'NOT_FINISHED',
+            basketId: $basketId
         );
 
         $orderResponse = $this->shopOrderService->createOrder($request);

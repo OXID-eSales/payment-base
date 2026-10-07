@@ -15,8 +15,9 @@ namespace OxidEsales\PaymentBase\Adapter\Request;
  * Contains all necessary information to create and finalize an order
  * from the current basket/cart.
  *
- * Note: This is a provider-agnostic DTO. Basket retrieval should be handled
- * by the shop-specific implementation of ShopOrderServiceInterface.
+ * Note: This is a provider-agnostic DTO. Basket retrieval is handled by the
+ * CheckoutBasketProviderInterface the shop order service asks: the session
+ * basket when `$basketId` is null, the persisted user basket otherwise.
  *
  * @since 1.0.0
  */
@@ -30,6 +31,8 @@ readonly class CreateOrderRequest
      * @param string|null $orderRemark Customer's order remark/comment
      * @param array<string, mixed> $metadata Additional metadata to store with order
      * @param string|null $initialStatus Initial order status (e.g., 'NOT_FINISHED' for early orders)
+     * @param string|null $basketId Persisted basket (`oxuserbaskets` id) of a headless checkout -
+     *        GraphQL Storefront, MCP. Null means the session basket (Twig, OPC). Sprint 15 / S1.
      */
     public function __construct(
         public string $sessionId,
@@ -38,7 +41,8 @@ readonly class CreateOrderRequest
         public ?string $paymentTransactionId = null,
         public ?string $orderRemark = null,
         public array $metadata = [],
-        public ?string $initialStatus = null
+        public ?string $initialStatus = null,
+        public ?string $basketId = null
     ) {
     }
 }

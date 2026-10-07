@@ -29,6 +29,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_iframe_checkout'        => 'Iframe-Checkout',
     'SHOP_MODULE_GROUP_checkout_flow'          => 'Checkout-Ablauf',
     'SHOP_MODULE_GROUP_cleanup'                => 'Bereinigung',
+    'SHOP_MODULE_GROUP_headless'               => 'Headless-Checkout (GraphQL, Apps)',
 
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
@@ -43,6 +44,8 @@ $aLang = [
         => 'Bereinigungszeitraum (Tage) — Alter, ab dem eine unfertige Bestellung bereinigt wird',
     'SHOP_MODULE_iPaymentBaseStaleCheckoutMinutes'
         => 'Timeout für laufende Zahlvorgänge (Minuten) — Alter, ab dem ein Zahlvorgang freigegeben wird',
+    'SHOP_MODULE_sPaymentBaseHeadlessReturnOrigins'
+        => 'Erlaubte Rücksprung-Origins für Headless-Clients — durch Komma oder Zeilenumbruch getrennt, z. B. https://app.example.com; die Shop-URL ist immer erlaubt; leer = nur der Shop',
 
     // Sprint 14 (MOL-10) — gemeinsame „Hilfe“: OXID-Vertragsstatus und Bedeutung (Anbieter ergänzen ihre Spalte).
     'PAYMENT_ADMIN_HELP' => 'Hilfe',

@@ -19,6 +19,9 @@ use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
+use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
+use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
+use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use Throwable;
 
@@ -48,17 +51,33 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      */
     public const ERROR_ORDER_EXISTS = 'order_exists';
 
+    private readonly CheckoutBasketProviderInterface $basketProvider;
+
     /**
      * Cancelling an order needs the repository for the same storno + voucher
      * release the cleanup command performs, written once. Sprint 10
      * (2026-09-23): order creation now needs a collaborator too — the
      * post-creation step copies billing into an empty shipping address, and
      * that field mapping is its own class rather than inlined here.
+     *
+     * Sprint 15 / S1 (2026-10-06): the basket is asked from a provider, so a
+     * headless checkout (GraphQL Storefront, MCP: basket persisted by id, no
+     * session) and the Twig checkout share this one service. Optional, with
+     * the session provider as default, so a consumer whose services.yaml
+     * predates this keeps its byte-identical behaviour.
+     *
+     * Sprint 15 / S3: the attempt guard gives the headless path the
+     * one-order-per-attempt rule core enforces for sessions through
+     * `sess_challenge`. Optional for the same reason; without it the service
+     * behaves exactly as before.
      */
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
-        private readonly OrderShippingAddressCopier $shippingAddressCopier
+        private readonly OrderShippingAddressCopier $shippingAddressCopier,
+        ?CheckoutBasketProviderInterface $basketProvider = null,
+        private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null
     ) {
+        $this->basketProvider = $basketProvider ?? new SessionBasketProvider();
     }
 
     /**
@@ -66,16 +85,26 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      */
     public function createOrder(CreateOrderRequest $request): OrderResponse
     {
+        // Claimed before the basket is even loaded: the window between two
+        // concurrent submissions is the whole point.
+        $this->attemptGuard?->claim($request);
+
         try {
             [$basket, $user] = $this->validateBasketAndUser($request);
             [$order, $orderState] = $this->finalizeAndValidateOrder($basket, $user, $request);
             $this->setOrderFieldsAfterCreation($order, $request);
-            return $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
+            $response = $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
         } catch (ShopOrderException $e) {
+            $this->attemptGuard?->release($request);
             throw $e;
         } catch (Throwable $e) {
+            $this->attemptGuard?->release($request);
             throw $this->wrapOrderCreationError($e, $request);
         }
+
+        $this->attemptGuard?->complete($request, $response->orderId);
+
+        return $response;
     }
 
     /**
@@ -191,17 +220,6 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     }
 
     /**
-     * Seam for the session basket (Registry-backed in the shop).
-     */
-    protected function sessionBasket(): ?Basket
-    {
-        /** @var Basket|null $basket */
-        $basket = Registry::getSession()->getBasket();
-
-        return $basket;
-    }
-
-    /**
      * The order id core will use for this checkout attempt (Registry-backed).
      */
     protected function sessionChallenge(): ?string
@@ -249,19 +267,19 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     }
 
     /**
-     * Validate basket and user exist in session.
+     * The basket of this checkout attempt (from the provider) and its user.
      *
      * @return array{Basket, User}
      * @throws ShopOrderException
      */
     private function validateBasketAndUser(CreateOrderRequest $request): array
     {
-        $basket = $this->sessionBasket();
+        $basket = $this->basketProvider->basketFor($request);
         if (!$basket) {
             throw new ShopOrderException(
-                message: 'Basket not found in session',
+                message: 'Basket not found for this checkout attempt',
                 errorCode: 'basket_not_found',
-                context: ['session_id' => $request->sessionId]
+                context: ['session_id' => $request->sessionId, 'basket_id' => $request->basketId]
             );
         }
 

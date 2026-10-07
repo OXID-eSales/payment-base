@@ -12,11 +12,14 @@ use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Tests\Unit\Checkout\RecordingSessionAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +36,7 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
     private ContractRepositoryInterface&MockObject $contractRepository;
     private ShopOrderServiceInterface&MockObject $shopOrderService;
     private PreviousCheckoutAttemptCleanerInterface&MockObject $cleaner;
+    private OpenAttemptFinderInterface&MockObject $openAttemptFinder;
     private RecordingSessionAdapter $session;
     private OpenCheckoutAttemptRegistry $openAttempts;
 
@@ -41,8 +45,9 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
         $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
         $this->shopOrderService = $this->createMock(ShopOrderServiceInterface::class);
         $this->cleaner = $this->createMock(PreviousCheckoutAttemptCleanerInterface::class);
+        $this->openAttemptFinder = $this->createMock(OpenAttemptFinderInterface::class);
         $this->session = new RecordingSessionAdapter();
-        $this->openAttempts = new OpenCheckoutAttemptRegistry($this->session);
+        $this->openAttempts = new OpenCheckoutAttemptRegistry(new SessionCheckoutContext($this->session));
 
         $this->shopOrderService->method('createOrder')->willReturn($this->orderResponse());
     }
@@ -55,7 +60,8 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
             $this->createMock(EventDispatcherInterface::class),
             null,
             $this->cleaner,
-            $this->openAttempts
+            $this->openAttempts,
+            $this->openAttemptFinder
         );
     }
 
@@ -92,14 +98,17 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
         );
     }
 
-    private function handle(string $contractId): void
+    private function handle(string $contractId, ?string $basketId = null): PaymentContract
     {
-        $this->handler()->handle(
-            new ContractDraftCompletedEvent(
-                $this->draftContract($contractId),
-                new EventContext(['paymentId' => 'oe_payments_mollie'])
-            )
-        );
+        $contract = $this->draftContract($contractId);
+        $context = ['paymentId' => 'oe_payments_mollie'];
+        if ($basketId !== null) {
+            $context['basketId'] = $basketId;
+        }
+
+        $this->handler()->handle(new ContractDraftCompletedEvent($contract, new EventContext($context)));
+
+        return $contract;
     }
 
     public function testRetiresTheAttemptThisSessionAlreadyHadOpen(): void
@@ -166,5 +175,74 @@ final class EarlyOrderCreationHandlerRetryCleanupTest extends TestCase
         $handler->handle(new ContractDraftCompletedEvent($contract, new EventContext([])));
 
         $this->assertTrue($contract->getState()->isPending());
+    }
+
+    // ------------------------------------------------------------------
+    // Sprint 15 / S3 — the headless rule: one open attempt per user basket
+    // ------------------------------------------------------------------
+
+    /**
+     * A headless checkout names its basket; the contract remembers it so the
+     * next CheckoutStart for the same basket (and later the basket removal on
+     * commit) can find this attempt without a session.
+     */
+    public function testAHeadlessAttemptStampsItsBasketIdOnTheContract(): void
+    {
+        $contract = $this->handle('contract-h1', basketId: 'ub-1');
+
+        $this->assertSame('ub-1', $contract->getMetadata('basket_id'));
+    }
+
+    public function testASessionAttemptStampsNoBasketId(): void
+    {
+        $contract = $this->handle('contract-s1');
+
+        $this->assertNull($contract->getMetadata('basket_id'));
+    }
+
+    /**
+     * No session registry entry (another device, an expired headless context)
+     * but the repository knows an open attempt for this user's basket: it is
+     * the shopper coming back to the same basket, and that attempt is retired
+     * the way a same-session retry is.
+     */
+    public function testWithoutARegistryEntryAHeadlessAttemptRetiresTheOpenOneForTheSameBasket(): void
+    {
+        $this->openAttemptFinder
+            ->method('findOpenByUserAndBasketId')
+            ->with('user123', 'ub-1')
+            ->willReturn($this->draftContract('contract-older'));
+
+        $this->cleaner->expects($this->once())->method('clean')->with('contract-older');
+
+        $this->handle('contract-h2', basketId: 'ub-1');
+    }
+
+    public function testTheRegistryEntryWinsOverTheRepositoryLookup(): void
+    {
+        $this->openAttempts->remember('contract-from-registry');
+        $this->openAttemptFinder->expects($this->never())->method('findOpenByUserAndBasketId');
+
+        $this->cleaner->expects($this->once())->method('clean')->with('contract-from-registry');
+
+        $this->handle('contract-h3', basketId: 'ub-1');
+    }
+
+    public function testTheRepositoryIsNotAskedForASessionAttempt(): void
+    {
+        $this->openAttemptFinder->expects($this->never())->method('findOpenByUserAndBasketId');
+        $this->cleaner->expects($this->never())->method('clean');
+
+        $this->handle('contract-s2');
+    }
+
+    public function testTheRepositoryAnsweringTheCurrentContractRetiresNothing(): void
+    {
+        $this->openAttemptFinder
+            ->method('findOpenByUserAndBasketId')
+            ->willReturn($this->draftContract('contract-h4'));
+        $this->cleaner->expects($this->never())->method('clean');
+
+        $this->handle('contract-h4', basketId: 'ub-1');
     }
 }

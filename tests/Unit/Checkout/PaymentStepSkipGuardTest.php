@@ -9,55 +9,63 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Checkout;
 
+use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
 use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use OxidEsales\PaymentBase\Checkout\PaymentStepSkipGuard;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-final class GuardSpySession
+/**
+ * Sprint 15 / S2: the guard reads a CheckoutContextInterface instead of the
+ * Registry session. This double records what it was asked to write and
+ * remove, or throws on every call to model a shop that cannot answer.
+ */
+final class GuardSpyContext implements CheckoutContextInterface
 {
     /** @var list<string> */
-    public array $deleted = [];
+    public array $removed = [];
     /** @var array<string, mixed> */
     public array $written = [];
 
     /** @param array<string, mixed> $variables */
-    public function __construct(private array $variables = [])
+    public function __construct(private array $variables = [], private readonly bool $broken = false)
     {
     }
 
-    public function getVariable(string $name): mixed
+    public function getScopeId(): string
     {
-        return $this->variables[$name] ?? null;
+        $this->failIfBroken();
+
+        return 'session-1';
     }
 
-    public function setVariable(string $name, mixed $value): void
+    public function get(string $key, mixed $default = null): mixed
     {
-        $this->variables[$name] = $value;
-        $this->written[$name] = $value;
+        $this->failIfBroken();
+
+        return $this->variables[$key] ?? $default;
     }
 
-    public function deleteVariable(string $name): void
+    public function set(string $key, mixed $value): void
     {
-        unset($this->variables[$name]);
-        $this->deleted[] = $name;
-    }
-}
-
-final class TestablePaymentStepSkipGuard extends PaymentStepSkipGuard
-{
-    public function __construct(private readonly mixed $session)
-    {
+        $this->failIfBroken();
+        $this->variables[$key] = $value;
+        $this->written[$key] = $value;
     }
 
-    protected function getSession(): mixed
+    public function remove(string $key): void
     {
-        if ($this->session === 'throw') {
+        $this->failIfBroken();
+        unset($this->variables[$key]);
+        $this->removed[] = $key;
+    }
+
+    private function failIfBroken(): void
+    {
+        if ($this->broken) {
             throw new RuntimeException('no session');
         }
-
-        return $this->session;
     }
 }
 
@@ -82,19 +90,19 @@ final class PaymentStepSkipGuardTest extends TestCase
     {
         $this->assertInstanceOf(
             PaymentStepSkipGuardInterface::class,
-            new TestablePaymentStepSkipGuard(new GuardSpySession())
+            new PaymentStepSkipGuard(new GuardSpyContext())
         );
     }
 
     public function testAFreshCheckoutMaySkip(): void
     {
-        $this->assertTrue((new TestablePaymentStepSkipGuard(new GuardSpySession()))->maySkip());
+        $this->assertTrue((new PaymentStepSkipGuard(new GuardSpyContext()))->maySkip());
     }
 
     public function testASkipAlreadyTakenMayNotSkipAgain(): void
     {
-        $session = new GuardSpySession();
-        $guard = new TestablePaymentStepSkipGuard($session);
+        $session = new GuardSpyContext();
+        $guard = new PaymentStepSkipGuard($session);
 
         $guard->markSkipped();
 
@@ -108,8 +116,8 @@ final class PaymentStepSkipGuardTest extends TestCase
      */
     public function testTheSecondArrivalAfterABounceMayNotSkip(): void
     {
-        $guard = new TestablePaymentStepSkipGuard(
-            new GuardSpySession(['oepbPaymentStepSkipped' => true])
+        $guard = new PaymentStepSkipGuard(
+            new GuardSpyContext(['oepbPaymentStepSkipped' => true])
         );
 
         $this->assertFalse($guard->maySkip());
@@ -121,20 +129,20 @@ final class PaymentStepSkipGuardTest extends TestCase
      */
     public function testClearingReArmsTheShortcut(): void
     {
-        $session = new GuardSpySession(['oepbPaymentStepSkipped' => true]);
-        $guard = new TestablePaymentStepSkipGuard($session);
+        $session = new GuardSpyContext(['oepbPaymentStepSkipped' => true]);
+        $guard = new PaymentStepSkipGuard($session);
 
         $guard->clear();
 
         $this->assertTrue($guard->maySkip());
-        $this->assertSame(['oepbPaymentStepSkipped'], $session->deleted);
+        $this->assertSame(['oepbPaymentStepSkipped'], $session->removed);
     }
 
     public function testMarkingWritesTheFlag(): void
     {
-        $session = new GuardSpySession();
+        $session = new GuardSpyContext();
 
-        (new TestablePaymentStepSkipGuard($session))->markSkipped();
+        (new PaymentStepSkipGuard($session))->markSkipped();
 
         $this->assertSame(['oepbPaymentStepSkipped' => true], $session->written);
     }
@@ -145,12 +153,12 @@ final class PaymentStepSkipGuardTest extends TestCase
      */
     public function testShopFailureRefusesTheShortcut(): void
     {
-        $this->assertFalse((new TestablePaymentStepSkipGuard('throw'))->maySkip());
+        $this->assertFalse((new PaymentStepSkipGuard(new GuardSpyContext(broken: true)))->maySkip());
     }
 
     public function testShopFailureDoesNotEscapeFromMarkOrClear(): void
     {
-        $guard = new TestablePaymentStepSkipGuard('throw');
+        $guard = new PaymentStepSkipGuard(new GuardSpyContext(broken: true));
 
         $guard->markSkipped();
         $guard->clear();

@@ -17,6 +17,8 @@ use OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier;
 use OxidEsales\PaymentBase\Adapter\OxidShopOrderService;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
+use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -133,26 +135,90 @@ class FixtureBasket extends Basket
 }
 
 /**
- * The service with its three shop seams replaced: the Order core would build,
- * the session basket, and the session challenge core uses as the order id.
+ * A basket provider that answers a fixed basket and remembers the request it
+ * was asked with (Sprint 15 / S1: the service no longer reads the session
+ * itself; it asks the provider).
+ */
+class StaticBasketProvider implements CheckoutBasketProviderInterface
+{
+    public ?CreateOrderRequest $askedWith = null;
+
+    public function __construct(private readonly ?Basket $basket)
+    {
+    }
+
+    public function basketFor(CreateOrderRequest $request): ?Basket
+    {
+        $this->askedWith = $request;
+
+        return $this->basket;
+    }
+}
+
+/**
+ * Records the order in which the service talks to the attempt guard
+ * (Sprint 15 / S3), and can refuse the claim like a guard that found the
+ * same attempt already in flight.
+ */
+class SpyAttemptGuard implements CheckoutAttemptGuardInterface
+{
+    /** @var list<string> */
+    public array $calls = [];
+
+    public function __construct(private readonly bool $refuses = false)
+    {
+    }
+
+    public function claim(CreateOrderRequest $request): void
+    {
+        $this->calls[] = 'claim:' . ($request->basketId ?? '-');
+        if ($this->refuses) {
+            throw new ShopOrderException(
+                'An order for this checkout attempt already exists',
+                self::ERROR_ORDER_EXISTS,
+                ['order_id' => 'order-0', 'basket_id' => $request->basketId]
+            );
+        }
+    }
+
+    public function complete(CreateOrderRequest $request, string $orderId): void
+    {
+        $this->calls[] = 'complete:' . $orderId;
+    }
+
+    public function release(CreateOrderRequest $request): void
+    {
+        $this->calls[] = 'release:' . ($request->basketId ?? '-');
+    }
+}
+
+/**
+ * The service with its shop seams replaced: the Order core would build, the
+ * basket provider, the attempt guard, and the session challenge core uses as
+ * the order id.
  */
 class TestableOrderService extends OxidShopOrderService
 {
+    public readonly StaticBasketProvider $basketProvider;
+
     public function __construct(
         private readonly Order $order,
-        private readonly ?Basket $basket = new FixtureBasket(),
+        ?Basket $basket = new FixtureBasket(),
+        ?StaticBasketProvider $basketProvider = null,
+        ?CheckoutAttemptGuardInterface $attemptGuard = null,
     ) {
-        parent::__construct(new SpyOrderRepository(), new OrderShippingAddressCopier());
+        $this->basketProvider = $basketProvider ?? new StaticBasketProvider($basket);
+        parent::__construct(
+            new SpyOrderRepository(),
+            new OrderShippingAddressCopier(),
+            $this->basketProvider,
+            $attemptGuard
+        );
     }
 
     protected function newOrder(): Order
     {
         return $this->order;
-    }
-
-    protected function sessionBasket(): ?Basket
-    {
-        return $this->basket;
     }
 
     protected function sessionChallenge(): ?string
@@ -266,23 +332,119 @@ final class OxidShopOrderServiceTest extends TestCase
         self::assertSame(0, $order->saves);
     }
 
-    public function testCreateOrder_WithoutASessionBasket_ThrowsBasketNotFound(): void
+    public function testCreateOrder_WhenTheProviderHasNoBasket_ThrowsBasketNotFound(): void
     {
         $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK), basket: null);
 
-        $this->expectException(ShopOrderException::class);
-        $this->expectExceptionMessage('Basket not found in session');
-
-        $service->createOrder($this->request());
+        try {
+            $service->createOrder($this->request());
+            self::fail('no basket, no order');
+        } catch (ShopOrderException $e) {
+            self::assertSame('basket_not_found', $e->getErrorCode());
+            self::assertSame('sess-1', $e->getContext()['session_id']);
+        }
     }
 
-    private function request(): CreateOrderRequest
+    /**
+     * Sprint 15 / S1: the service does not know where baskets live any more.
+     * It hands the whole request to the provider, so a headless request
+     * (basket id set) and a Twig request (none) are told apart there, not here.
+     */
+    public function testCreateOrder_AsksTheBasketProviderWithTheRequest(): void
+    {
+        $provider = new StaticBasketProvider(new FixtureBasket());
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK), basketProvider: $provider);
+
+        $service->createOrder($this->request(basketId: 'ub-1'));
+
+        self::assertSame('ub-1', $provider->askedWith?->basketId);
+        self::assertSame('user-1', $provider->askedWith?->userId);
+    }
+
+    /**
+     * Sprint 15 / S3: the headless double click. The guard is asked FIRST -
+     * before the basket is even loaded - and told the order id when the order
+     * exists, so the next claim can name it.
+     */
+    public function testCreateOrder_ClaimsTheAttemptBeforeAnythingAndCompletesItWithTheOrder(): void
+    {
+        $guard = new SpyAttemptGuard();
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK), attemptGuard: $guard);
+
+        $service->createOrder($this->request(basketId: 'ub-1'));
+
+        self::assertSame(['claim:ub-1', 'complete:order-1'], $guard->calls);
+    }
+
+    public function testCreateOrder_WhenTheGuardRefuses_CreatesNothing(): void
+    {
+        $guard = new SpyAttemptGuard(refuses: true);
+        $order = new ScriptedOrder(Order::ORDER_STATE_OK);
+        $provider = new StaticBasketProvider(new FixtureBasket());
+        $service = new TestableOrderService($order, basketProvider: $provider, attemptGuard: $guard);
+
+        try {
+            $service->createOrder($this->request(basketId: 'ub-1'));
+            self::fail('a refused claim must not create an order');
+        } catch (ShopOrderException $e) {
+            self::assertSame(OxidShopOrderService::ERROR_ORDER_EXISTS, $e->getErrorCode());
+            self::assertSame('order-0', $e->getContext()['order_id']);
+        }
+
+        self::assertSame(0, $order->saves);
+        self::assertNull($provider->askedWith, 'refused before the basket is loaded');
+        self::assertSame(['claim:ub-1'], $guard->calls, 'nothing to complete or release: the claim never happened');
+    }
+
+    /**
+     * Order creation failed after the claim: the claim is given back so the
+     * shopper can retry at once instead of waiting out the window.
+     */
+    public function testCreateOrder_WhenFinalizeFails_ReleasesTheClaim(): void
+    {
+        $guard = new SpyAttemptGuard();
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_PAYMENTERROR), attemptGuard: $guard);
+
+        try {
+            $service->createOrder($this->request(basketId: 'ub-1'));
+            self::fail('payment error must surface');
+        } catch (ShopOrderException) {
+        }
+
+        self::assertSame(['claim:ub-1', 'release:ub-1'], $guard->calls);
+    }
+
+    public function testCreateOrder_WhenNoBasket_ReleasesTheClaim(): void
+    {
+        $guard = new SpyAttemptGuard();
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK), basket: null, attemptGuard: $guard);
+
+        try {
+            $service->createOrder($this->request(basketId: 'ub-1'));
+            self::fail('no basket, no order');
+        } catch (ShopOrderException) {
+        }
+
+        self::assertSame(['claim:ub-1', 'release:ub-1'], $guard->calls);
+    }
+
+    public function testCreateOrder_WithoutAGuard_BehavesAsBefore(): void
+    {
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK));
+
+        $response = $service->createOrder($this->request());
+
+        self::assertSame('order-1', $response->orderId);
+    }
+
+    private function request(?string $basketId = null): CreateOrderRequest
     {
         return new CreateOrderRequest(
             sessionId: 'sess-1',
             userId: 'user-1',
             paymentId: 'oe_payments_mollie',
             initialStatus: 'NOT_FINISHED',
+            basketId: $basketId,
         );
     }
 }

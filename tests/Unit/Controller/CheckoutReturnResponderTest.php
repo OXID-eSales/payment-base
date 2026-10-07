@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Controller;
 
+use OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Controller\CheckoutReturnResponder;
@@ -277,8 +278,45 @@ final class CheckoutReturnResponderTest extends TestCase
     /**
      * @param list<string> $written collects the order ids handed to the session writer
      */
-    private function buildResponder(?ContractRepositoryInterface $contracts = null, array &$written = []): CheckoutReturnResponder
+    /**
+     * Sprint 15 / S3: `sess_challenge` is what makes the Twig thank-you page
+     * find its order. A headless return has no session and no thank-you page;
+     * writing it would only touch a session nobody reads.
+     */
+    public function testAHeadlessReturnWritesNoSessionChallenge(): void
     {
+        $this->resolver->method('resolve')->willReturn(
+            ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'),
+        );
+        $scope = new HeadlessCheckoutScope();
+        $scope->enter('contr_1', userId: 'user-1');
+        $written = [];
+
+        $orderId = $this->buildResponder(written: $written, scope: $scope)
+            ->respond('stripe', $this->contract, $this->resolver, []);
+
+        self::assertSame('order_fallback', $orderId, 'the order is still reported');
+        self::assertSame([], $written);
+    }
+
+    public function testASessionReturnStillWritesTheSessionChallenge(): void
+    {
+        $this->resolver->method('resolve')->willReturn(
+            ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'),
+        );
+        $written = [];
+
+        $this->buildResponder(written: $written, scope: new HeadlessCheckoutScope())
+            ->respond('stripe', $this->contract, $this->resolver, []);
+
+        self::assertSame(['order_fallback'], $written);
+    }
+
+    private function buildResponder(
+        ?ContractRepositoryInterface $contracts = null,
+        array &$written = [],
+        ?HeadlessCheckoutScope $scope = null,
+    ): CheckoutReturnResponder {
         // The real writer uses OXID's Registry::getSession(); tests
         // only care about dispatch + context + orderId return, so pass
         // a no-op writer.
@@ -293,6 +331,6 @@ final class CheckoutReturnResponderTest extends TestCase
                 $this->written[] = $orderId;
             }
         };
-        return new CheckoutReturnResponder($this->dispatcher, $writer, contracts: $contracts);
+        return new CheckoutReturnResponder($this->dispatcher, $writer, contracts: $contracts, scope: $scope);
     }
 }

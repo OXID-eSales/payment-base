@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Checkout;
 
-use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
+use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
@@ -35,14 +35,16 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
     private readonly LoggerInterface $logger;
 
     /**
-     * The session is optional so a consumer whose services.yaml predates
+     * The context is optional so a consumer whose services.yaml predates
      * MOL-18 keeps working - it simply does not get the challenge rotation.
+     * Sprint 15 / S2: it is a CheckoutContextInterface (session for Twig,
+     * persisted scope for headless) instead of the session adapter.
      */
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly ShopOrderServiceInterface $orderService,
         ?LoggerInterface $logger = null,
-        private readonly ?SessionAdapterInterface $session = null
+        private readonly ?CheckoutContextInterface $context = null
     ) {
         $this->logger = $logger ?? new NullLogger();
     }
@@ -91,7 +93,7 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
      */
     private function forgetSessionChallenge(PaymentContractInterface $contract): void
     {
-        if ($this->session === null) {
+        if ($this->context === null) {
             return;
         }
 
@@ -100,11 +102,11 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
             return;
         }
 
-        if ($this->session->getVariable(self::SESSION_CHALLENGE) !== $orderId) {
+        if ($this->context->get(self::SESSION_CHALLENGE) !== $orderId) {
             return;
         }
 
-        $this->session->setVariable(self::SESSION_CHALLENGE, null);
+        $this->context->remove(self::SESSION_CHALLENGE);
     }
 
     private function isAbandonable(PaymentContractInterface $contract, string $contractId): bool

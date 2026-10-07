@@ -5,7 +5,13 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Checkout;
 
 use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
+use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
+use OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope;
+use OxidEsales\PaymentBase\Checkout\Context\PersistedCheckoutContext;
+use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry;
+use OxidEsales\PaymentBase\Tests\Unit\Checkout\Context\InMemoryCheckoutContextStore;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -15,7 +21,17 @@ use PHPUnit\Framework\TestCase;
  */
 final class OpenCheckoutAttemptRegistryTest extends TestCase
 {
-    private function sessionHolding(mixed $stored): SessionAdapterInterface
+    /**
+     * Sprint 15 / S2: the registry reads a CheckoutContextInterface. For the
+     * Twig checkout that is the session (these tests), for a headless one the
+     * persisted context - see {@see testBehavesTheSameOnEveryContext}.
+     */
+    private function sessionHolding(mixed $stored): CheckoutContextInterface
+    {
+        return new SessionCheckoutContext($this->sessionAdapterHolding($stored));
+    }
+
+    private function sessionAdapterHolding(mixed $stored): SessionAdapterInterface
     {
         return new class ($stored) implements SessionAdapterInterface {
             /** @var array<string, mixed> */
@@ -106,5 +122,37 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
     public function testPeekReportsNoOpenAttemptForAFreshSession(): void
     {
         $this->assertNull((new OpenCheckoutAttemptRegistry($this->sessionHolding(null)))->peek());
+    }
+
+    /**
+     * @return iterable<string, array{CheckoutContextInterface}>
+     */
+    public static function everyContext(): iterable
+    {
+        yield 'session (Twig / OPC)' => [new SessionCheckoutContext(new RecordingSessionAdapter())];
+
+        $scope = new HeadlessCheckoutScope();
+        $scope->enter('contract-scope-1', userId: 'user-1', basketId: 'ub-1');
+        yield 'persisted (headless)' => [new PersistedCheckoutContext($scope, new InMemoryCheckoutContextStore())];
+    }
+
+    /**
+     * Sprint 15 / S2: remember → peek → take → forgotten, identically on the
+     * session-backed and on the persisted context. The registry does not know
+     * which one it got.
+     */
+    #[DataProvider('everyContext')]
+    public function testBehavesTheSameOnEveryContext(CheckoutContextInterface $context): void
+    {
+        $registry = new OpenCheckoutAttemptRegistry($context);
+
+        self::assertNull($registry->peek());
+
+        $registry->remember('contract-1');
+        self::assertSame('contract-1', $registry->peek());
+
+        self::assertSame('contract-1', $registry->takePrevious());
+        self::assertNull($registry->peek(), 'taken once, forgotten');
+        self::assertNull($registry->takePrevious());
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Checkout;
 
-use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
+use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
 
 /**
  * Remembers the checkout attempt THIS session has open.
@@ -15,19 +15,23 @@ use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
  * session opened may be retired by this session, which is why the shop session
  * - not the contract table - is where it is recorded.
  *
+ * Sprint 15 / S2: "session" became a {@see CheckoutContextInterface}. For the
+ * Twig checkout it still is the session; for a headless checkout it is the
+ * entered scope's persisted context. Same key, same rule.
+ *
  * @since STRP-171
  */
 class OpenCheckoutAttemptRegistry implements OpenCheckoutAttemptRegistryInterface
 {
     public const SESSION_KEY = 'oepb_open_checkout_contract_id';
 
-    public function __construct(private readonly SessionAdapterInterface $session)
+    public function __construct(private readonly CheckoutContextInterface $context)
     {
     }
 
     public function remember(string $contractId): void
     {
-        $this->session->setVariable(self::SESSION_KEY, $contractId);
+        $this->context->set(self::SESSION_KEY, $contractId);
     }
 
     /**
@@ -38,14 +42,14 @@ class OpenCheckoutAttemptRegistry implements OpenCheckoutAttemptRegistryInterfac
     public function takePrevious(): ?string
     {
         $stored = $this->peek();
-        $this->session->setVariable(self::SESSION_KEY, null);
+        $this->context->remove(self::SESSION_KEY);
 
         return $stored;
     }
 
     public function peek(): ?string
     {
-        $stored = $this->session->getVariable(self::SESSION_KEY);
+        $stored = $this->context->get(self::SESSION_KEY);
 
         return is_string($stored) && $stored !== '' ? $stored : null;
     }

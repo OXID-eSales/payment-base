@@ -257,6 +257,51 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->handler->handle($event);
     }
 
+    /**
+     * Sprint 15 / S1: a headless checkout (GraphQL Storefront, MCP) names the
+     * persisted basket it is paying for. The handler carries that id into the
+     * order request; the order service's basket provider does the rest.
+     */
+    public function testHandlerPassesTheBasketIdFromTheContextIntoTheOrderRequest(): void
+    {
+        $contract = $this->createDraftContract();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet', 'basketId' => 'ub-1']);
+        $event = new ContractDraftCompletedEvent($contract, $context);
+
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->with($this->callback(function ($request) {
+                $this->assertSame('ub-1', $request->basketId);
+                return true;
+            }))
+            ->willReturn($this->createOrderResponse('778'));
+
+        $this->handler->handle($event);
+    }
+
+    /**
+     * The Twig checkout never puts a basket id into the context, and must keep
+     * getting the session basket - so the request carries null, not ''.
+     */
+    public function testHandlerLeavesTheBasketIdNullWhenTheContextHasNone(): void
+    {
+        $contract = $this->createDraftContract();
+        $context = new EventContext(['paymentId' => 'oe_payments_stripe_wallet']);
+        $event = new ContractDraftCompletedEvent($contract, $context);
+
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->with($this->callback(function ($request) {
+                $this->assertNull($request->basketId);
+                return true;
+            }))
+            ->willReturn($this->createOrderResponse('779'));
+
+        $this->handler->handle($event);
+    }
+
     public function testHandlerTransitionsContractToPending(): void
     {
         $contract = $this->createDraftContract();
