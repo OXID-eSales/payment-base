@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [v1.3.0] - 2026-10-09
 
 ### Added
 - Shared "Help" for the OXID contract states (Sprint 14, MOL-10): `Admin\Help\ContractStateHelp` (one row per state a
@@ -12,6 +12,7 @@ All notable changes to this module are documented here. Format follows
   "?" hint partial `@oe_payment_base/admin/help/contract_state_hint.html.twig` (popup layer with description + table).
   payment-base's own Settings tab ends with a "Help" group showing the two-column table. Provider modules add their
   column (Mollie, Stripe) and the hint next to "OXID Contract Status" on their order panels.
+- Added headles functionality
 
 ### Changed
 - Admin label `PAYMENT_ADMIN_CONTRACT_STATE` reads "OXID Contract Status" / "OXID-Vertragsstatus".
