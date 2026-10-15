@@ -3,6 +3,12 @@ name: Tests on OXID 7.5
 on: [ push, pull_request ]
 
 env:
+  # Disambiguates the workspace cache between the per-shop-line workflows:
+  # their keys otherwise share PHP/MySQL values while each workflow counts
+  # its own run_number — the 7.6 workflow's run 4 restored the 7.5
+  # workflow's installed shop (paypal run 38706815139), and
+  # `make addbasicservices` then duplicated every service in the compose file.
+  OXID_LINE: '7.5'
   PACKAGE_NAME: 'oxid-esales/payment-base'
   PHP_VERSION: '8.3'
   MYSQL_VERSION: '8.0'
@@ -196,7 +202,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
 
       - name: Upload configuration artifacts
         if: always()
@@ -267,7 +273,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
@@ -319,7 +325,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
