@@ -67,12 +67,27 @@ class ScriptedOrder extends Order
 {
     public int $saves = 0;
 
+    /** The active user set via setUser() before finalizeOrder() ran (PB-7.6). */
+    public ?object $activeUserBeforeFinalize = null;
+
+    private bool $finalized = false;
+
     public function __construct(private readonly int $finalizeState)
     {
     }
 
+    public function setUser($user)
+    {
+        if (!$this->finalized) {
+            $this->activeUserBeforeFinalize = $user;
+        }
+        parent::setUser($user);
+    }
+
     public function finalizeOrder($basket, $user, $recalculating = false): int
     {
+        $this->finalized = true;
+
         return $this->finalizeState;
     }
 
@@ -225,6 +240,15 @@ class TestableOrderService extends OxidShopOrderService
     {
         return 'challenge-1';
     }
+
+    /**
+     * The real seam re-loads the user via oxNew() for the full row (EE's
+     * Order::setUser() clones an EE-only field); units stay shop-free.
+     */
+    protected function activeUserForFinalize(User $user): User
+    {
+        return $user;
+    }
 }
 
 /**
@@ -297,6 +321,23 @@ final class OxidShopOrderServiceTest extends TestCase
         }
 
         self::assertSame(0, $order->saves, 'the never-loaded Order must not be written');
+    }
+
+    public function testCreateOrder_SetsTheCheckoutUserAsActiveUserBeforeFinalize(): void
+    {
+        // OXID 7.6: Order::getDelAddressInfo() only resolves a selected
+        // delivery address (`deladrid`) when the ORDER's active user owns it —
+        // and Base::getUser() falls back to loadActiveUser(), which is empty
+        // in a headless checkout. Without setUser() before finalizeOrder(),
+        // validateDeliveryAddress() drops the address from the expected hash
+        // and every deladrid checkout dies with invalid_delivery_address.
+        $order = new ScriptedOrder(Order::ORDER_STATE_OK);
+        $service = new TestableOrderService($order);
+
+        $service->createOrder($this->request());
+
+        self::assertInstanceOf(User::class, $order->activeUserBeforeFinalize);
+        self::assertSame('user-1', $order->activeUserBeforeFinalize->getId());
     }
 
     public function testCreateOrder_WhenFinalizeReportsOk_SavesOnceAndReportsTheOrder(): void

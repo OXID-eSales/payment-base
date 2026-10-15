@@ -162,8 +162,27 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         }
 
         $order = $this->newOrder();
-        /** @var int $orderState */
-        $orderState = $order->finalizeOrder($basket, $user, false);
+        // OXID 7.6: Order::getDelAddressInfo() resolves a selected delivery
+        // address (`deladrid`) only when the ORDER's active user owns it
+        // (getUser()->getUserAddresses()), and Base::getUser() falls back to
+        // loadActiveUser() — empty in a headless checkout. Without this,
+        // validateDeliveryAddress() drops the address from the expected hash
+        // and the checkout dies with invalid_delivery_address (state 7).
+        // Harmless on 7.4/7.5, where getDelAddressInfo() never asks the user.
+        //
+        // Base::$_oActUser is STATIC — scope the override to the finalize call
+        // and reset to null (= unresolved, so the next getUser() re-resolves
+        // from the session) afterwards. Leaving it set poisons every later
+        // active-user read in the process: delivery-set resolution for the
+        // next basket would run against this checkout's user.
+        // @phpstan-ignore method.notFound (Core\Base::setUser() exists on every edition; invisible through OXID's class-chain stubs)
+        $order->setUser($this->activeUserForFinalize($user));
+        try {
+            /** @var int $orderState */
+            $orderState = $order->finalizeOrder($basket, $user, false);
+        } finally {
+            $this->clearActiveUser($user);
+        }
 
         $this->refuseSecondSubmission($orderState, $request);
         $this->validateOrderState($orderState, $request, $basket);
@@ -217,6 +236,41 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         $order = oxNew(Order::class);
 
         return $order;
+    }
+
+    /**
+     * The user handed to Order::setUser() before finalizeOrder().
+     *
+     * Freshly loaded on purpose: the checkout user may be a partially
+     * populated wrapper (GraphQL Storefront's Shared\Shop\User), and the
+     * Enterprise Order::setUser() clones the EE-only `oxuser__oxustidstatus`
+     * field — "__clone method called on non-object" when that field was never
+     * loaded. A load() by id guarantees the full row on every edition.
+     */
+    protected function activeUserForFinalize(User $user): User
+    {
+        /** @var User $freshUser */
+        $freshUser = oxNew(User::class);
+        if ($freshUser->load((string) $user->getId())) {
+            return $freshUser;
+        }
+
+        return $user;
+    }
+
+    /**
+     * Clear the process-wide active user (Base::$_oActUser is static; null
+     * means "unresolved", so the next getUser() re-resolves from the session).
+     *
+     * Reset through the User instance on purpose: the Enterprise edition
+     * overrides Order::setUser() and clones an EE-only field — a null there
+     * fatals with "__clone method called on non-object" — while User inherits
+     * the plain Core\Base setter.
+     */
+    private function clearActiveUser(User $user): void
+    {
+        // @phpstan-ignore method.notFound (Core\Base::setUser() exists on every edition; invisible through OXID's class-chain stubs)
+        $user->setUser(null);
     }
 
     /**

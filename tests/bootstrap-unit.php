@@ -54,6 +54,10 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         . '  public function getFieldData(string $field): mixed { return null; } '
         . '  public function save(): mixed { return true; } '
         . '  public function finalizeOrder($basket, $user, $recalculating = false): int { return self::ORDER_STATE_OK; } '
+        // PB-7.6 (2026-10-15) — Core\Base::setUser(): OxidShopOrderService sets
+        // the checkout user as the active user before finalizeOrder(), so
+        // OXID 7.6's getDelAddressInfo() ownership check sees the owner.
+        . '  public function setUser($user) {} '
         . '}'
     );
 }
@@ -86,6 +90,10 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
         . 'class User { '
         . '  public function getId(): ?string { return null; } '
         . '  public function getEncodedDeliveryAddress() { return ""; } '
+        // PB-7.6 (2026-10-15) — Core\Base::setUser(): OxidShopOrderService
+        // clears the static active user through the User instance after
+        // finalizeOrder() (EE's Order::setUser() cannot take null).
+        . '  public function setUser($user) {} '
         . '}'
     );
 }
