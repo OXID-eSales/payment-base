@@ -26,7 +26,21 @@ final class PermissionProviderTest extends TestCase
         foreach (['oxidcustomer', 'oxidnotyetordered', 'oxidadmin'] as $group) {
             self::assertContains(PermissionProvider::PAYMENT_CHECKOUT, $permissions[$group], $group);
         }
-        self::assertArrayNotHasKey('oxidanonymous', $permissions);
+        self::assertNotContains(PermissionProvider::PAYMENT_CHECKOUT, $permissions['oxidanonymous'] ?? []);
         self::assertSame('PAYMENT_CHECKOUT', PermissionProvider::PAYMENT_CHECKOUT);
+    }
+
+    /**
+     * The sealed client config is read by the storefront before any login, with
+     * a guest's anonymous token (group oxidanonymous), so that group gets it too.
+     */
+    public function testGrantsPaymentClientConfigToEveryoneHoldingAToken(): void
+    {
+        $permissions = (new PermissionProvider())->getPermissions();
+
+        foreach (['oxidanonymous', 'oxidcustomer', 'oxidnotyetordered', 'oxidadmin'] as $group) {
+            self::assertContains(PermissionProvider::PAYMENT_CLIENT_CONFIG, $permissions[$group], $group);
+        }
+        self::assertSame('PAYMENT_CLIENT_CONFIG', PermissionProvider::PAYMENT_CLIENT_CONFIG);
     }
 }

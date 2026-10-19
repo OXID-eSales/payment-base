@@ -364,3 +364,15 @@ if (!interface_exists(\Symfony\Component\EventDispatcher\EventSubscriberInterfac
         . 'interface EventSubscriberInterface { public static function getSubscribedEvents(): array; }'
     );
 }
+
+// Sealed client config - graphql-base's Token service (the bearer JWT's claims).
+// The real class needs the shop; the reader only calls getTokenClaim().
+if (!class_exists(\OxidEsales\GraphQL\Base\Service\Token::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Service; '
+        . 'class Token { '
+        . '  public const CLAIM_TOKENID = "tokenid"; '
+        . '  public function getTokenClaim(string $claim, mixed $default = null): mixed { return $default; } '
+        . '}'
+    );
+}

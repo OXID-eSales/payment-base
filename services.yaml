@@ -241,6 +241,66 @@ services:
     autoconfigure: false
     tags: [ 'graphql_permission_provider' ]
 
+  # --------------------------------------------------------------
+  # Sealed payment client config (`paymentClientConfig` query).
+  #
+  # Each PSP module registers ONE provider that returns its allow-listed
+  # PUBLIC values (publishable key, client id, profile id), tagged
+  #   payment_base.client_config_provider
+  # and implementing ClientConfigProviderInterface. payment-base collects
+  # them, refuses anything that looks secret and seals the values for the
+  # browser that asked (docs/payments-keys.md, oxid-fe-user).
+  # --------------------------------------------------------------
+
+  OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigProviderRegistryInterface:
+    class: OxidEsales\PaymentBase\ClientConfig\ClientConfigProviderRegistry
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - !tagged_iterator payment_base.client_config_provider
+
+  OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigGuardInterface:
+    class: OxidEsales\PaymentBase\ClientConfig\ClientConfigGuard
+    autowire: false
+    autoconfigure: false
+
+  OxidEsales\PaymentBase\ClientConfig\Contract\SealInputsInterface:
+    class: OxidEsales\PaymentBase\ClientConfig\SystemSealInputs
+    autowire: false
+    autoconfigure: false
+
+  OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigSealerInterface:
+    class: OxidEsales\PaymentBase\ClientConfig\ClientConfigSealer
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\SealInputsInterface'
+
+  OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface:
+    class: OxidEsales\PaymentBase\ClientConfig\ClientConfigPublisher
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigProviderRegistryInterface'
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigGuardInterface'
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigSealerInterface'
+
+  # graphql-base's Token is optional: `@?` keeps the container compiling without it.
+  OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Service\BearerTokenIdReader
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@?OxidEsales\GraphQL\Base\Service\Token'
+
+  OxidEsales\PaymentBase\GraphQL\Controller\PaymentClientConfig:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface'
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface'
+    public: true
+
   OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:
     autowire: false
     autoconfigure: false

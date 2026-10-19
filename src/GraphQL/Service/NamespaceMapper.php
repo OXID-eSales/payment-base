@@ -11,9 +11,9 @@ namespace OxidEsales\PaymentBase\GraphQL\Service;
 
 /**
  * Tells graphql-base where payment-base's GraphQL controllers and types live.
- * The controller namespace is empty on purpose: the mutations belong to the
- * provider modules (`stripeCheckoutStart`, …); payment-base ships the shared
- * result types.
+ * The checkout mutations belong to the provider modules (`stripeCheckoutStart`,
+ * …); payment-base ships the shared result types and the one provider-neutral
+ * query, `paymentClientConfig`.
  *
  * Mirrors `OxidEsales\GraphQL\Base\Framework\NamespaceMapperInterface`
  * WITHOUT implementing it, on purpose: graphql-base is optional for this

@@ -484,6 +484,23 @@ if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Type::class, false)) 
         . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Field { public function __construct(mixed ...$args) {} }'
     );
 }
+// Sealed client config: the query attributes and graphql-base's bearer-token service.
+if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Query::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Annotations; '
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Query { public function __construct(mixed ...$args) {} } '
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Right { public function __construct(mixed ...$args) {} }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\Base\Service\Token::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Base\\Service; '
+        . 'class Token { '
+        . '  public const CLAIM_TOKENID = "tokenid"; '
+        . '  public function getTokenClaim(string $claim, mixed $default = null): mixed { return $default; } '
+        . '}'
+    );
+}
 if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::class, false)) {
     eval(
         'namespace OxidEsales\\GraphQL\\Storefront\\Basket\\Event; '

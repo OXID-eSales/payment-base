@@ -36,6 +36,8 @@ final class NoConcreteClassTypeHintRule implements Rule
         // PHP built-in classes
         '#^(DateTime|DateTimeImmutable|DateTimeInterface|Exception|Error|Throwable)#',
         '#^Reflection#',
+        '#^OpenSSLAsymmetricKey$#', // PHP's final OpenSSL key handle: the language offers no interface for it
+        '#^OxidEsales\\\\GraphQL\\\\Base\\\\Service\\\\Token$#', // graphql-base's bearer-token service (optional package, no interface)
         '#^(stdClass|ArrayObject|SplFileInfo|Closure)#',
 
         // Doctrine DBAL (infrastructure)

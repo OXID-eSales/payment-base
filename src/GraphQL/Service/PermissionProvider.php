@@ -27,14 +27,21 @@ final class PermissionProvider
     public const PAYMENT_CHECKOUT = 'PAYMENT_CHECKOUT';
 
     /**
+     * `paymentClientConfig`: read before any login, with a guest's anonymous
+     * token (group `oxidanonymous`), hence granted to that group as well.
+     */
+    public const PAYMENT_CLIENT_CONFIG = 'PAYMENT_CLIENT_CONFIG';
+
+    /**
      * @return array<string, string[]>
      */
     public function getPermissions(): array
     {
         return [
-            'oxidadmin' => [self::PAYMENT_CHECKOUT],
-            'oxidcustomer' => [self::PAYMENT_CHECKOUT],
-            'oxidnotyetordered' => [self::PAYMENT_CHECKOUT],
+            'oxidadmin' => [self::PAYMENT_CHECKOUT, self::PAYMENT_CLIENT_CONFIG],
+            'oxidcustomer' => [self::PAYMENT_CHECKOUT, self::PAYMENT_CLIENT_CONFIG],
+            'oxidnotyetordered' => [self::PAYMENT_CHECKOUT, self::PAYMENT_CLIENT_CONFIG],
+            'oxidanonymous' => [self::PAYMENT_CLIENT_CONFIG],
         ];
     }
 }

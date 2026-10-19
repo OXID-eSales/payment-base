@@ -3,6 +3,15 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Sealed payment client config (Sprint 15): GraphQL query `paymentClientConfig(provider, clientPublicKey)` returning the
+  provider's public SDK values (Stripe publishable key, PayPal client id, Mollie profile id) as an AES-256-GCM envelope
+  sealed for the asking browser (ephemeral P-256 ECDH + HKDF-SHA256, bound to provider and bearer token id). Provider
+  modules register a `ClientConfigProviderInterface` service tagged `payment_base.client_config_provider`;
+  `ClientConfigGuard` refuses secret-looking keys/values. New right `PAYMENT_CLIENT_CONFIG` (also for `oxidanonymous`).
+
 ## [v1.3.0] - 2026-10-09
 
 ### Added
