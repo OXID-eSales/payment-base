@@ -1,0 +1,7 @@
+# One known false positive, pinned by exact fingerprint (commit:file:rule:line).
+# Commit 0a11f50 built a throw-away P-256 TEST key in a unit-test helper and wrote the PEM
+# label "BEGIN EC PRIVATE KEY" as a literal; gitleaks' private-key rule matches the label.
+# No key bytes are in that line (the key is generated from the public test vector in
+# tests/fixtures). The working tree builds the label at runtime since 1aa54a9. This entry
+# only covers that one historical line; it does not narrow the scan.
+0a11f504e086b456d1818dfacb9c0a16a9d3a844:tests/Unit/ClientConfig/EcKeys.php:private-key:43
