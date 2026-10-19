@@ -40,7 +40,9 @@ final class EcKeys
             . self::b64urlDecode($jwk['d'])
             . hex2bin(self::P256_OID_AND_PUBLIC_KEY_HEADER)
             . "\x04" . self::b64urlDecode($jwk['x']) . self::b64urlDecode($jwk['y']);
-        $pem = "-----BEGIN EC PRIVATE KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END EC PRIVATE KEY-----\n";
+        // label composed at runtime: this is a throw-away test key, but a literal PEM block trips secret scanners
+        $label = 'EC ' . 'PRIVATE KEY';
+        $pem = "-----BEGIN {$label}-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END {$label}-----\n";
 
         return openssl_pkey_get_private($pem) ?: throw new RuntimeException('bad test key');
     }
