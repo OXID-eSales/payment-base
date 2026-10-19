@@ -124,6 +124,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           docker compose exec -T php composer update --with-all-dependencies --no-interaction
 
       # Sprint 93 — workaround for a CI-environment-specific bug in
@@ -349,6 +350,7 @@ jobs:
 
       - name: Install shop dependencies
         run: |
+          docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           docker compose exec -T php composer update --no-interaction
 
       - name: Install component dev dependencies
