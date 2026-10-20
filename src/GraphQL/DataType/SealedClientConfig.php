@@ -56,7 +56,8 @@ final class SealedClientConfig
         return $this->envelope->iv;
     }
 
-    #[Field]
+    // GraphQLite strips a leading "is" from method names: without the name this is `suedAt`.
+    #[Field(name: 'issuedAt')]
     public function issuedAt(): int
     {
         return $this->envelope->issuedAt;
