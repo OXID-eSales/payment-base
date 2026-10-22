@@ -358,6 +358,22 @@ if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::
         . '}'
     );
 }
+// Sprint 139c - the Order type extension: the ExtendType attribute and the storefront's Order data type.
+if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\ExtendType::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Annotations; '
+        . '#[\\Attribute(\\Attribute::TARGET_CLASS)] class ExtendType { public function __construct(mixed ...$args) {} }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\Storefront\Order\DataType\Order::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Storefront\\Order\\DataType; '
+        . 'final class Order { '
+        . '  public function __construct(private \\OxidEsales\\Eshop\\Application\\Model\\Order $order) {} '
+        . '  public function getEshopModel(): \\OxidEsales\\Eshop\\Application\\Model\\Order { return $this->order; } '
+        . '}'
+    );
+}
 if (!interface_exists(\Symfony\Component\EventDispatcher\EventSubscriberInterface::class, false)) {
     eval(
         'namespace Symfony\\Component\\EventDispatcher; '

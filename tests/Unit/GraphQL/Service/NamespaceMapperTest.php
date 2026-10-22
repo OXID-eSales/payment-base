@@ -30,4 +30,24 @@ final class NamespaceMapperTest extends TestCase
         self::assertDirectoryExists($controllers['OxidEsales\\PaymentBase\\GraphQL\\Controller']);
         self::assertDirectoryExists($types['OxidEsales\\PaymentBase\\GraphQL\\DataType']);
     }
+
+    public function testGetTypeNamespaceMapping_StorefrontInstalled_MapsTheOrderRelationNamespace(): void
+    {
+        $types = (new NamespaceMapper(storefrontInstalled: true))->getTypeNamespaceMapping();
+
+        self::assertArrayHasKey('OxidEsales\\PaymentBase\\GraphQL\\Relation', $types);
+        self::assertDirectoryExists($types['OxidEsales\\PaymentBase\\GraphQL\\Relation']);
+    }
+
+    /**
+     * The extension names the storefront's Order type; mapping it without the
+     * storefront would break the whole schema, not just this field.
+     */
+    public function testGetTypeNamespaceMapping_StorefrontAbsent_LeavesTheOrderRelationOut(): void
+    {
+        $types = (new NamespaceMapper(storefrontInstalled: false))->getTypeNamespaceMapping();
+
+        self::assertArrayNotHasKey('OxidEsales\\PaymentBase\\GraphQL\\Relation', $types);
+        self::assertArrayHasKey('OxidEsales\\PaymentBase\\GraphQL\\DataType', $types);
+    }
 }

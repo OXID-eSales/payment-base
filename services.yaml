@@ -301,6 +301,25 @@ services:
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface'
     public: true
 
+  # Sprint 139c - read side of the Order type extension (`Order.paymentContract`).
+  OxidEsales\PaymentBase\Repository\ContractSummaryQueryInterface:
+    class: OxidEsales\PaymentBase\Repository\ContractSummaryQuery
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+
+  # GraphQLite fetches an ExtendType class from the container by its FQCN, hence public.
+  # The class mentions graphql-storefront only in an attribute and a parameter type, both
+  # resolved lazily: the container can reflect it on a shop without the storefront, and
+  # NamespaceMapper maps its namespace only when the storefront is installed.
+  OxidEsales\PaymentBase\GraphQL\Relation\OrderRelationService:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractSummaryQueryInterface'
+    public: true
+
   OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:
     autowire: false
     autoconfigure: false
