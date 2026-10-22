@@ -80,6 +80,10 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\Checkout\\\\Headless\\\\Headless(StartRequest|StartResult|ReturnResult|CancelResult)$#',
         // Sprint 140a: the guest checkout's readonly values - details in, shop user out.
         '#\\\\Checkout\\\\Headless\\\\Guest(Details|Address|User)$#',
+        // Sprint 140b: the refusal the guest input factories wrap (a final exception, a value to carry) and GraphQLite's
+        // ID scalar wrapper, which the factory arguments must be typed with for GraphQLite to emit `ID`.
+        '#\\\\Checkout\\\\Headless\\\\HeadlessCheckoutException$#',
+        '#^TheCodingMachine\\\\GraphQLite\\\\Types\\\\ID$#',
         // GraphQL result types are values handed to GraphQLite; graphql-base's own types are concrete too.
         '#\\\\GraphQL\\\\DataType\\\\#',
 

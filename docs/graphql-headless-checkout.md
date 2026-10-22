@@ -131,6 +131,21 @@ So the basket is built anonymously, and the checkout start carries what the logg
 4. The checkout continues as for a logged-in user, with the guest as the shop user (contract, order, token, return and
    cancel are unchanged). A second start for the same basket with the same e-mail reuses the account.
 
+The `guest` argument is ONE input type, defined in payment-base (`GraphQL\DataType\GuestCheckoutInputFactory`) and used
+by every provider's start mutation, so the schema holds a single `GuestCheckoutInput` however many providers are active:
+
+```graphql
+input GuestCheckoutInput { email: String!, invoiceAddress: GuestAddressInput!, deliveryAddress: GuestAddressInput }
+input GuestAddressInput  { firstName: String!, lastName: String!, street: String!, streetNumber: String!, zipCode: String!,
+                           city: String!, countryId: ID!, salutation: String, company: String, additionalInfo: String,
+                           stateId: ID, phone: String }
+```
+
+The input builds the validated `GuestDetails` / `GuestAddress` value objects. Their refusals (`guest_details_required`,
+naming the field) happen while GraphQLite resolves the arguments, before the provider's controller runs, so they leave
+as `GraphQL\Exception\GuestDetailsRefused`: a graphql-base error with `extensions.errorCode` like every other refusal.
+A provider module's start mutation just declares `?GuestDetails $guest = null`; it defines no input type of its own.
+
 Not part of this: creating a password-protected account after checkout, newsletter opt-in, B2B fields. A delivery address
 different from the invoice address is stored for the guest; honouring a basket's delivery address in the order itself is
 the same gap as for logged-in baskets (see the CHANGELOG).

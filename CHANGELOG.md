@@ -19,6 +19,17 @@ All notable changes to this module are documented here. Format follows
   logged-in baskets as little as for guests, so the order ships to the invoice address. A guest's delivery address is stored
   (`oxaddress`, and in `OEGQL_DELADDRESSID` where the storefront has the column) so that applying it is one change in one place.
 
+### Shared guest input (Sprint 140b / B2)
+- The GraphQL input types of the `guest` argument are defined once, here: `GuestCheckoutInput` and `GuestAddressInput`
+  (`GraphQL\DataType\GuestCheckoutInputFactory`, `#[Factory]` methods building `GuestDetails` / `GuestAddress`). The
+  provider modules (stripe, mollie, paypal) drop their own copies and take `?GuestDetails $guest` in `<provider>CheckoutStart`;
+  GraphQL type names are schema-wide, so exactly one module may define them.
+- New `GraphQL\Exception\GuestDetailsRefused` (graphql-base `Error`, request-error category,
+  `extensions.errorCode = guest_details_required`): the value objects validate while GraphQLite resolves the arguments,
+  before any controller try/catch, so the factories turn the refusal into a client-safe error there.
+- CI: the integration workflows clear GraphQLite's schema cache after activating the module (guarded: the command exists only
+  with graphql-base active).
+
 ### Security
 - Contract token hashed at rest (Sprint 138b): `HeadlessCheckoutService` stores only the SHA-256 of the headless
   `contractToken` (`HeadlessTokenHash`) and compares hashes on return and cancel; a plaintext value in the metadata no
