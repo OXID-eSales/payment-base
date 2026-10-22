@@ -116,7 +116,7 @@ final class AllowListReturnUrlPolicyTest extends TestCase
             self::fail("$url must be rejected");
         } catch (ReturnUrlRejectedException $e) {
             self::assertSame($reason, $e->reason);
-            self::assertSame($url, $e->url);
+            self::assertSame($url, $e->fullUrl());
         }
     }
 

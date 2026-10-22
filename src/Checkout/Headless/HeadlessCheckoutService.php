@@ -238,6 +238,11 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
                 $this->returnUrls->assertAllowed($request->cancelUrl);
             }
         } catch (ReturnUrlRejectedException $e) {
+            // The full URL may carry tokens in its query: debug level only, never in the exception message.
+            $this->logger->debug('[HeadlessCheckoutService] return URL rejected', [
+                'reason' => $e->reason,
+                'url' => $e->fullUrl(),
+            ]);
             throw new HeadlessCheckoutException(
                 HeadlessCheckoutException::RETURN_URL_REJECTED,
                 $e->getMessage(),

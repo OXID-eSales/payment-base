@@ -36,6 +36,8 @@ use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 final class HeadlessUserBasketRow extends UserBasket
 {
@@ -301,6 +303,27 @@ final class HeadlessCheckoutServiceTest extends TestCase
 
         self::assertNull($this->stripe->processedWith);
         self::assertFalse($this->scope->isActive());
+    }
+
+    public function testStart_RejectedReturnUrl_ExceptionCarriesTheOriginOnlyAndTheFullUrlGoesToDebug(): void
+    {
+        $this->policy = new AllowingPolicy(rejects: 'https://evil.example/return?session_id=cs_1');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->never())->method('error');
+        $logger->expects($this->never())->method('warning');
+        $logger->expects($this->once())->method('debug')
+            ->with($this->anything(), $this->callback(
+                static fn (array $context): bool => ($context['url'] ?? null) === 'https://evil.example/return?session_id=cs_1'
+            ));
+        $service = $this->service($logger);
+
+        try {
+            $service->start($this->startRequest(returnUrl: 'https://evil.example/return?session_id=cs_1'));
+            self::fail('a rejected return URL must stop the checkout');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame('Return URL rejected (origin_not_allowed): https://evil.example', $e->getMessage());
+            self::assertStringNotContainsString('session_id', $e->getMessage());
+        }
     }
 
     public function testStartRefusesAnUnknownBasket(): void
@@ -610,7 +633,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
 
     // -------------------------------------------------------------- helpers
 
-    private function service(): TestableHeadlessCheckoutService
+    private function service(?LoggerInterface $logger = null): TestableHeadlessCheckoutService
     {
         return new TestableHeadlessCheckoutService(
             new PaymentHandlerRegistry([$this->stripe]),
@@ -621,6 +644,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
             $this->contracts,
             $this->responder,
             $this->cleaner,
+            $logger ?? new NullLogger(),
         );
     }
 

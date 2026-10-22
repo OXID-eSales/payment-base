@@ -15,6 +15,10 @@ All notable changes to this module are documented here. Format follows
   now also cover Mollie `live_`/`test_` API keys and `access_` tokens. Providers that only implement
   `ClientConfigProviderInterface` are unaffected (deny shapes only).
 
+- Log hygiene (Sprint 138d, D1): `ReturnUrlRejectedException` no longer puts the rejected URL into its message
+  (graphql-base logs every GraphQL error message): `Return URL rejected (<reason>): <scheme://host[:port]>`. The full URL
+  is `fullUrl()` (the `$url` property is private now) and is written at debug level only by `HeadlessCheckoutService`.
+
 ### Added
 - Sealed payment client config (Sprint 15): GraphQL query `paymentClientConfig(provider, clientPublicKey)` returning the
   provider's public SDK values (Stripe publishable key, PayPal client id, Mollie profile id) as an AES-256-GCM envelope

@@ -55,7 +55,7 @@ payment query, maps each contract-first id to its start mutation, and keeps `pla
   data) never authorises; migration `Version20261022100000` hashes such values in place, and a token the client
   already holds keeps working afterwards.
 - `returnUrl` / `cancelUrl` belong to the client and must be under the shop's own URL or an origin listed in the setting
-  `sPaymentBaseHeadlessReturnOrigins` (`return_url_rejected / origin_not_allowed` otherwise). Every provider appends
+  `sPaymentBaseHeadlessReturnOrigins` (`return_url_rejected / origin_not_allowed` otherwise; the error message names the origin only, never the path or query). Every provider appends
   `contract_id` to the return URL; Stripe adds `session_id`, PayPal `token` and `PayerID`, Mollie nothing.
 - Refusals are GraphQL errors with a stable `extensions.errorCode` (`HeadlessCheckoutException`): `basket_not_found`,
   `payment_not_supported`, `terms_not_confirmed`, `return_url_rejected`, `user_not_found`, `provider_failed`
