@@ -5,3 +5,8 @@
 # tests/fixtures). The working tree builds the label at runtime since 1aa54a9. This entry
 # only covers that one historical line; it does not narrow the scan.
 0a11f504e086b456d1818dfacb9c0a16a9d3a844:tests/Unit/ClientConfig/EcKeys.php:private-key:43
+# Second false positive, same style. Commit 90b07dc added the headless_token migration test
+# with a 32-hex fixture written as a literal (a counting pattern, not a credential); gitleaks'
+# generic-api-key rule matches the shape. The working tree builds the fixture at runtime since
+# d4ee727. This entry covers that one historical line only.
+90b07dc837beede16b290b22e493b92e5daabbf0:tests/Integration/Migrations/HeadlessTokenHashMigrationTest.php:generic-api-key:24
