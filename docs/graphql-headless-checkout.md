@@ -74,6 +74,30 @@ secret (`sk_`, `rk_`, `whsec_`, `access_`, Mollie `live_`/`test_` API keys), a n
 name, and every value that is not a string or a bool. A provider that only implements the base interface keeps working
 under the deny shapes alone; declare the names to get the allow-list.
 
+## Order type extension: `Order.paymentContract`
+
+payment-base extends graphql-storefront's `Order` type (`#[ExtendType]`, class `GraphQL\Relation\OrderRelationService`)
+with one field, so an order list shows the payment state without a second channel:
+
+```graphql
+{ customer { orders { orderNumber paymentContract { state provider contractId updatedAt } } } }
+```
+
+| Field | Meaning |
+|---|---|
+| `state` | the contract state: `pending`, `committed`, `fulfilled`, `cancelled`, ... (`ContractState`) |
+| `provider` | `stripe`, `paypal`, `mollie` |
+| `contractId` | the contract id (not a credential; the contract token never leaves the start answer) |
+| `updatedAt` | when the contract last changed (`DateTime`) |
+
+- `paymentContract` is `null` for an order without a contract (placed through the Twig flow or with a core payment).
+- Which orders a caller may read is the storefront's business: the list hangs on `customer { orders }`, the caller's own.
+  The extension adds a field to what the storefront already shows; it exposes no provider ids and no payloads.
+- The relation's namespace is mapped (`NamespaceMapper::getTypeNamespaceMapping()`) only when graphql-storefront is installed;
+  without it the module activates and the schema builds without the field.
+- Each order costs one contract lookup (`ContractSummaryQuery`, by `OXORDERID`, indexed). Page long order lists.
+- After installing or updating the module run `bin/oe-console oe:graphql:cache-clear`, or the schema cache will not show the field.
+
 ## Trying it
 
 Every provider module ships `bin/graph-ql-cli-test.sh` with the same commands (`schema`, `start`, `pay`, `return`,

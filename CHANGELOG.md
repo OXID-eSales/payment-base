@@ -20,6 +20,10 @@ All notable changes to this module are documented here. Format follows
   is `fullUrl()` (the `$url` property is private now) and is written at debug level only by `HeadlessCheckoutService`.
 
 ### Added
+- `Order.paymentContract` (Sprint 139c): payment-base extends graphql-storefront's `Order` type (`@ExtendType`,
+  `GraphQL\Relation\OrderRelationService`) with `paymentContract { state provider contractId updatedAt }`, `null` for an
+  order without a contract. Read by `ContractSummaryQuery` (`PaymentContractSummary` value object). The relation's namespace is
+  mapped only when graphql-storefront is installed. Run `oe:graphql:cache-clear` after the update.
 - Sealed payment client config (Sprint 15): GraphQL query `paymentClientConfig(provider, clientPublicKey)` returning the
   provider's public SDK values (Stripe publishable key, PayPal client id, Mollie profile id) as an AES-256-GCM envelope
   sealed for the asking browser (ephemeral P-256 ECDH + HKDF-SHA256, bound to provider and bearer token id). Provider
