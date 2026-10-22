@@ -21,28 +21,35 @@ use Psr\Log\NullLogger;
  */
 final class HeadlessTokenHashMigrationTest extends MigrationTestBase
 {
-    private const PLAINTEXT_TOKEN = '00112233445566778899aabbccddeeff';
+    /**
+     * Built at runtime, not a literal: a 32-hex token in the source would read
+     * like a committed credential to the secret scanner (sprint 138a rules).
+     */
+    private static function plaintextToken(): string
+    {
+        return bin2hex(str_repeat("\x5a", 16));
+    }
 
     public function testUp_PlaintextTokenInMetadata_IsReplacedByItsHash(): void
     {
-        $this->insertContract('hash-mig-1', ['headless_token' => self::PLAINTEXT_TOKEN, 'basket_id' => 'ub-1']);
+        $this->insertContract('hash-mig-1', ['headless_token' => self::plaintextToken(), 'basket_id' => 'ub-1']);
 
         $this->runMigration();
 
         $metadata = $this->metadataOf('hash-mig-1');
-        self::assertSame(hash('sha256', self::PLAINTEXT_TOKEN), $metadata['headless_token']);
-        self::assertTrue(HeadlessTokenHash::fromStored($metadata['headless_token'])->matches(self::PLAINTEXT_TOKEN));
+        self::assertSame(hash('sha256', self::plaintextToken()), $metadata['headless_token']);
+        self::assertTrue(HeadlessTokenHash::fromStored($metadata['headless_token'])->matches(self::plaintextToken()));
         self::assertSame('ub-1', $metadata['basket_id'], 'other metadata is untouched');
     }
 
     public function testUp_RunTwice_DoesNotHashTheHashAgain(): void
     {
-        $this->insertContract('hash-mig-2', ['headless_token' => self::PLAINTEXT_TOKEN]);
+        $this->insertContract('hash-mig-2', ['headless_token' => self::plaintextToken()]);
 
         $this->runMigration();
         $this->runMigration();
 
-        self::assertSame(hash('sha256', self::PLAINTEXT_TOKEN), $this->metadataOf('hash-mig-2')['headless_token']);
+        self::assertSame(hash('sha256', self::plaintextToken()), $this->metadataOf('hash-mig-2')['headless_token']);
     }
 
     public function testUp_ContractWithoutTokenOrMetadata_IsLeftAlone(): void
