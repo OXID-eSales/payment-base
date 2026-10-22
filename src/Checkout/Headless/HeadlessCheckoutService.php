@@ -34,7 +34,8 @@ use Psr\Log\NullLogger;
  * provider handler, the handler gets a PaymentContext built from the user
  * basket by the S1 provider - and does what it does for the one-page
  * checkout. The contract gets a token the client must present on return and
- * cancel; the scope moves to the contract.
+ * cancel (only its hash is stored, see HeadlessTokenHash); the scope moves to
+ * the contract.
  *
  * Return: token, then the provider's resolver through CheckoutReturnResponder,
  * exactly like the provider's Twig controller. Cancel: token, then the same
@@ -140,7 +141,7 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         }
 
         $token = $this->newToken();
-        $contract->setMetadata(self::TOKEN_METADATA_KEY, $token);
+        $contract->setMetadata(self::TOKEN_METADATA_KEY, HeadlessTokenHash::fromToken($token)->value);
         $this->contracts->save($contract);
         $this->scope->enter((string) $contract->getId(), $request->userId, $request->basketId);
 
@@ -281,8 +282,8 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             );
         }
 
-        $expected = $contract->getMetadata(self::TOKEN_METADATA_KEY);
-        if (!is_string($expected) || $expected === '' || !hash_equals($expected, $contractToken)) {
+        $stored = $contract->getMetadata(self::TOKEN_METADATA_KEY);
+        if (!is_string($stored) || $stored === '' || !HeadlessTokenHash::fromStored($stored)->matches($contractToken)) {
             throw new HeadlessCheckoutException(
                 HeadlessCheckoutException::INVALID_TOKEN,
                 sprintf('The contract token does not authorise contract %s', $contractId)

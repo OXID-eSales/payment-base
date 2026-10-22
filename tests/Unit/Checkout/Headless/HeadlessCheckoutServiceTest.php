@@ -21,6 +21,7 @@ use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutException;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutService;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessStartRequest;
+use OxidEsales\PaymentBase\Checkout\Headless\HeadlessTokenHash;
 use OxidEsales\PaymentBase\Checkout\Headless\PaymentHandlerRegistry;
 use OxidEsales\PaymentBase\Checkout\Headless\ReturnResolverRegistry;
 use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface;
@@ -221,7 +222,11 @@ final class HeadlessCheckoutServiceTest extends TestCase
         self::assertSame('stripe', $result->providerName);
 
         // the token is on the contract, the scope moved to the contract
-        self::assertSame('tok-fixed', $contract->getMetadata('headless_token'));
+        self::assertSame(
+            hash('sha256', 'tok-fixed'),
+            $contract->getMetadata('headless_token'),
+            'only the hash of the token is stored'
+        );
         self::assertSame('contract-1', $this->scope->getScopeId());
         self::assertSame('ub-1', $this->scope->getBasketId());
 
@@ -411,7 +416,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testReturnVerifiesTheTokenAndRunsTheProviderResolverThroughTheResponder(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $contract->setMetadata('order_number', '1001');
         $contract->setProvider('stripe', 'cs_1');
         $this->contracts->method('findById')->with('contract-1')->willReturn($contract);
@@ -436,7 +441,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testReturnWithAWrongTokenIsRefusedAndNothingRuns(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $this->contracts->method('findById')->willReturn($contract);
         $this->responder->expects($this->never())->method('respond');
 
@@ -446,6 +451,35 @@ final class HeadlessCheckoutServiceTest extends TestCase
         } catch (HeadlessCheckoutException $e) {
             self::assertSame(HeadlessCheckoutException::INVALID_TOKEN, $e->errorCode);
         }
+    }
+
+    public function testAuthorisedContract_PlaintextTokenInMetadata_IsRefused(): void
+    {
+        $contract = $this->pendingContract('contract-1');
+        $contract->setMetadata('headless_token', 'tok-fixed');
+        $this->contracts->method('findById')->willReturn($contract);
+        $this->responder->expects($this->never())->method('respond');
+
+        try {
+            $this->service()->return('contract-1', 'tok-fixed', []);
+            self::fail('a plaintext token at rest must not authorise');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::INVALID_TOKEN, $e->errorCode);
+        }
+    }
+
+    public function testStart_AnyRequest_StoresOnlyTheHashAndAnswersThePlaintextToken(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-1', 'oe_payments_stripe_wallet');
+        $contract = $this->pendingContract('contract-1');
+        $this->contracts->method('findById')->willReturn($contract);
+
+        $result = $service->start($this->startRequest());
+
+        self::assertSame('tok-fixed', $result->contractToken);
+        self::assertNotSame('tok-fixed', $contract->getMetadata('headless_token'));
+        self::assertTrue(HeadlessTokenHash::fromStored((string) $contract->getMetadata('headless_token'))->matches('tok-fixed'));
     }
 
     public function testReturnOfAnUnknownContractIsRefused(): void
@@ -460,7 +494,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testReturnWithoutAResolverForTheProviderIsRefused(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $contract->setProvider('paypal', 'PAY-1');
         $this->contracts->method('findById')->willReturn($contract);
 
@@ -475,7 +509,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testReturnThatDoesNotCommitReportsTheContractState(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $contract->setProvider('stripe', 'cs_1');
         $this->contracts->method('findById')->willReturn($contract);
         $this->responder->method('respond')->willReturn(null);
@@ -490,7 +524,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testReturnOfAnAlreadyCommittedContractIsIdempotent(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $contract->setProvider('stripe', 'cs_1');
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
         $contract->commitToOrder('order-1');
@@ -508,7 +542,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testCancelVerifiesTheTokenAndRetiresTheAttempt(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $this->contracts->method('findById')->willReturn($contract);
         $this->cleaner->expects($this->once())->method('clean')->with('contract-1')
             ->willReturnCallback(function () use ($contract): bool {
@@ -534,9 +568,9 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testCancelAnswersTheStateTheRepositoryHoldsAfterTheCleanup(): void
     {
         $loadedFirst = $this->pendingContract('contract-1');
-        $loadedFirst->setMetadata('headless_token', 'tok-fixed');
+        $loadedFirst->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $afterCleanup = $this->pendingContract('contract-1');
-        $afterCleanup->setMetadata('headless_token', 'tok-fixed');
+        $afterCleanup->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $afterCleanup->cancel('headless cancel');
         $this->contracts->method('findById')->willReturnOnConsecutiveCalls($loadedFirst, $afterCleanup);
         $this->cleaner->method('clean')->willReturn(true);
@@ -550,7 +584,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testCancelWithAWrongTokenIsRefused(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $this->contracts->method('findById')->willReturn($contract);
         $this->cleaner->expects($this->never())->method('clean');
 
@@ -562,7 +596,7 @@ final class HeadlessCheckoutServiceTest extends TestCase
     public function testCancelOfASettledContractIsRefusedByTheCleanerAndReported(): void
     {
         $contract = $this->pendingContract('contract-1');
-        $contract->setMetadata('headless_token', 'tok-fixed');
+        $contract->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
         $contract->commitToOrder('order-1');
         $this->contracts->method('findById')->willReturn($contract);
