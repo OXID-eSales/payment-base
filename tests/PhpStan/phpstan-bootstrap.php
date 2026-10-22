@@ -540,10 +540,19 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Country::class, false)) {
         . 'class Country { public function getIdByCode(string $code): mixed { return null; } }'
     );
 }
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Address::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
+        . 'class Address { public function save(): mixed { return true; } public function getId(): ?string { return null; } }'
+    );
+}
 if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Core; '
-        . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } } '
+        . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } '
+        . '  public function getRow(string $sql, array $params = []): mixed { return null; } '
+        . '  public function execute(string $sql, array $params = []): mixed { return null; } } '
         . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }

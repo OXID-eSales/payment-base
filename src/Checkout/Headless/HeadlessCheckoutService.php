@@ -28,9 +28,10 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Start: the return URLs pass the policy, the basket scope is entered (so the
- * open-attempt registry keys by basket and a retry retires the previous
- * attempt), the user basket row names the payment, the payment names the
+ * Start: the return URLs pass the policy, an anonymous token becomes the guest
+ * account its details describe (after every refusal that needs no account), the
+ * basket scope is entered (so the open-attempt registry keys by basket and a
+ * retry retires the previous attempt), the user basket row names the payment, the payment names the
  * provider handler, the handler gets a PaymentContext built from the user
  * basket by the S1 provider - and does what it does for the one-page
  * checkout. The contract gets a token the client must present on return and
@@ -58,6 +59,8 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         private readonly ContractRepositoryInterface $contracts,
         private readonly CheckoutReturnResponder $responder,
         private readonly PreviousCheckoutAttemptCleanerInterface $cleaner,
+        private readonly GuestUserServiceInterface $guests,
+        private readonly GuestBasketClaimInterface $basketClaim,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -94,19 +97,16 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             );
         }
 
+        // After every refusal that needs no account: a refused request must not create one.
+        $user = $this->checkoutUser($request);
+        $userId = (string) $user->getId();
+
         // Entered before the handler runs: EarlyOrderCreationHandler's
         // open-attempt registry then keys by this basket, and the second
         // start for the same basket retires the first attempt.
-        $this->scope->enter($request->basketId, $request->userId, $request->basketId);
+        $this->scope->enter($request->basketId, $userId, $request->basketId);
 
-        $basket = $this->basketFor($request, $paymentId);
-        $user = $this->loadUser($request->userId);
-        if ($user === null) {
-            throw new HeadlessCheckoutException(
-                HeadlessCheckoutException::USER_NOT_FOUND,
-                sprintf('User %s not found', $request->userId)
-            );
-        }
+        $basket = $this->basketFor($request, $paymentId, $userId);
 
         $result = $handler->processPayment(new PaymentContext(
             basket: $basket,
@@ -143,7 +143,7 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         $token = $this->newToken();
         $contract->setMetadata(self::TOKEN_METADATA_KEY, HeadlessTokenHash::fromToken($token)->value);
         $this->contracts->save($contract);
-        $this->scope->enter((string) $contract->getId(), $request->userId, $request->basketId);
+        $this->scope->enter((string) $contract->getId(), $userId, $request->basketId);
 
         $clientSecret = $result->getClientSecret();
         $renderMode = $result->getMetadataValue('renderMode');
@@ -230,6 +230,38 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         return $rowPaymentId !== '' ? $rowPaymentId : $requested;
     }
 
+    /**
+     * The shop user the checkout runs as: the token's own user, or - for an
+     * anonymous token, whose user does not exist in the shop - the guest
+     * account the request describes (the guest details are ignored for a
+     * logged-in user).
+     */
+    private function checkoutUser(HeadlessStartRequest $request): User
+    {
+        $user = $this->loadUser($request->userId);
+        if ($user !== null) {
+            return $user;
+        }
+        if ($request->guest === null) {
+            throw new HeadlessCheckoutException(
+                HeadlessCheckoutException::GUEST_DETAILS_REQUIRED,
+                'An anonymous checkout needs the guest details (email and invoice address)'
+            );
+        }
+
+        $guest = $this->guests->userFor($request->guest);
+        try {
+            $this->basketClaim->claim($request->basketId, $guest);
+        } catch (ShopOrderException $e) {
+            throw new HeadlessCheckoutException($e->getErrorCode(), $e->getMessage());
+        }
+
+        return $this->loadUser($guest->userId) ?? throw new HeadlessCheckoutException(
+            HeadlessCheckoutException::USER_NOT_FOUND,
+            sprintf('User %s not found', $guest->userId)
+        );
+    }
+
     private function assertReturnUrls(HeadlessStartRequest $request): void
     {
         try {
@@ -251,12 +283,12 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         }
     }
 
-    private function basketFor(HeadlessStartRequest $request, string $paymentId): object
+    private function basketFor(HeadlessStartRequest $request, string $paymentId, string $userId): object
     {
         try {
             $basket = $this->baskets->basketFor(new CreateOrderRequest(
                 sessionId: 'headless:' . $request->basketId,
-                userId: $request->userId,
+                userId: $userId,
                 paymentId: $paymentId,
                 basketId: $request->basketId,
             ));

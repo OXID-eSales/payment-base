@@ -17,6 +17,11 @@ use OxidEsales\PaymentBase\Adapter\PaymentHandlerResult;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope;
+use OxidEsales\PaymentBase\Checkout\Headless\GuestAddress;
+use OxidEsales\PaymentBase\Checkout\Headless\GuestBasketClaimInterface;
+use OxidEsales\PaymentBase\Checkout\Headless\GuestDetails;
+use OxidEsales\PaymentBase\Checkout\Headless\GuestUser;
+use OxidEsales\PaymentBase\Checkout\Headless\GuestUserServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutException;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutService;
 use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface;
@@ -57,9 +62,53 @@ final class HeadlessUserBasketRow extends UserBasket
 
 final class HeadlessShopUser extends User
 {
+    public function __construct(private readonly string $id = 'user-1')
+    {
+    }
+
     public function getId(): ?string
     {
-        return 'user-1';
+        return $this->id;
+    }
+}
+
+final class RecordingGuestUserService implements GuestUserServiceInterface
+{
+    public int $calls = 0;
+
+    public ?GuestDetails $askedWith = null;
+
+    public function __construct(private readonly ?HeadlessCheckoutException $throws = null)
+    {
+    }
+
+    public function userFor(GuestDetails $details): GuestUser
+    {
+        ++$this->calls;
+        $this->askedWith = $details;
+        if ($this->throws !== null) {
+            throw $this->throws;
+        }
+
+        return new GuestUser('guest-1');
+    }
+}
+
+final class RecordingGuestBasketClaim implements GuestBasketClaimInterface
+{
+    /** @var list<array{string, string}> */
+    public array $claims = [];
+
+    public function __construct(private readonly ?ShopOrderException $throws = null)
+    {
+    }
+
+    public function claim(string $basketId, GuestUser $guest): void
+    {
+        if ($this->throws !== null) {
+            throw $this->throws;
+        }
+        $this->claims[] = [$basketId, $guest->userId];
     }
 }
 
@@ -132,7 +181,7 @@ final class TestableHeadlessCheckoutService extends HeadlessCheckoutService
 
     protected function loadUser(string $userId): ?User
     {
-        return $userId === 'user-1' ? new HeadlessShopUser() : null;
+        return in_array($userId, ['user-1', 'guest-1'], true) ? new HeadlessShopUser($userId) : null;
     }
 
     protected function termsConsentRequired(): bool
@@ -169,6 +218,10 @@ final class HeadlessCheckoutServiceTest extends TestCase
 
     private AllowingPolicy $policy;
 
+    private RecordingGuestUserService $guests;
+
+    private RecordingGuestBasketClaim $basketClaim;
+
     private ReturnResolverInterface&MockObject $stripeResolver;
 
     protected function setUp(): void
@@ -180,6 +233,8 @@ final class HeadlessCheckoutServiceTest extends TestCase
         $this->stripe = new FakePaymentHandler('stripe', ['oe_payments_stripe_wallet']);
         $this->baskets = new RecordingBasketProvider();
         $this->policy = new AllowingPolicy();
+        $this->guests = new RecordingGuestUserService();
+        $this->basketClaim = new RecordingGuestBasketClaim();
         $this->stripeResolver = $this->createMock(ReturnResolverInterface::class);
     }
 
@@ -434,6 +489,119 @@ final class HeadlessCheckoutServiceTest extends TestCase
         }
     }
 
+    // ---------------------------------------------------------- guest start
+
+    public function testStart_AnonymousTokenWithGuestDetails_CreatesGuestUser(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('', 'oe_payments_stripe_wallet');
+        $this->contracts->method('findById')->willReturn($this->pendingContract('contract-1'));
+        $details = $this->guestDetails();
+
+        $result = $service->start($this->startRequest(userId: 'anon-token-user', guest: $details));
+
+        self::assertSame($details, $this->guests->askedWith);
+        self::assertSame([['ub-1', 'guest-1']], $this->basketClaim->claims, 'the guest takes over the anonymous basket');
+        self::assertSame('guest-1', $this->stripe->processedWith?->getUser()->getId(), 'the handler runs as the guest');
+        self::assertSame('guest-1', $this->baskets->askedWith?->userId);
+        self::assertSame('contract-1', $result->contractId);
+    }
+
+    public function testStart_AnonymousTokenTwiceForTheSameGuest_ReusesTheGuestUser(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('', 'oe_payments_stripe_wallet');
+        $this->contracts->method('findById')->willReturn($this->pendingContract('contract-1'));
+
+        $service->start($this->startRequest(userId: 'anon-token-user', guest: $this->guestDetails()));
+        $service->start($this->startRequest(userId: 'anon-token-user', guest: $this->guestDetails()));
+
+        self::assertSame([['ub-1', 'guest-1'], ['ub-1', 'guest-1']], $this->basketClaim->claims);
+        self::assertSame(2, $this->guests->calls, 'the service decides to reuse; the start does not remember');
+    }
+
+    public function testStart_ExistingRegisteredEmail_RefusesWithAccountExists(): void
+    {
+        $this->guests = new RecordingGuestUserService(new HeadlessCheckoutException(HeadlessCheckoutException::ACCOUNT_EXISTS, 'login'));
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('', 'oe_payments_stripe_wallet');
+
+        try {
+            $service->start($this->startRequest(userId: 'anon-token-user', guest: $this->guestDetails()));
+            self::fail('a registered e-mail must log in');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::ACCOUNT_EXISTS, $e->errorCode);
+        }
+
+        self::assertNull($this->stripe->processedWith);
+        self::assertSame([], $this->basketClaim->claims);
+        self::assertFalse($this->scope->isActive());
+    }
+
+    public function testStart_AnonymousWithoutGuestDetails_RefusesWithGuestDetailsRequired(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('', 'oe_payments_stripe_wallet');
+
+        try {
+            $service->start($this->startRequest(userId: 'anon-token-user'));
+            self::fail('an anonymous token needs guest details');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::GUEST_DETAILS_REQUIRED, $e->errorCode);
+        }
+
+        self::assertSame(0, $this->guests->calls);
+        self::assertNull($this->stripe->processedWith);
+    }
+
+    public function testStart_LoggedInUserWithGuestDetails_IgnoresTheGuestDetails(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-1', 'oe_payments_stripe_wallet');
+        $this->contracts->method('findById')->willReturn($this->pendingContract('contract-1'));
+
+        $service->start($this->startRequest(guest: $this->guestDetails()));
+
+        self::assertSame(0, $this->guests->calls);
+        self::assertSame([], $this->basketClaim->claims);
+        self::assertSame('user-1', $this->stripe->processedWith?->getUser()->getId());
+    }
+
+    public function testStart_GuestForABasketOfSomebodyElse_IsRefusedAsBasketForbidden(): void
+    {
+        $this->basketClaim = new RecordingGuestBasketClaim(new ShopOrderException('foreign', 'basket_forbidden'));
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-9', 'oe_payments_stripe_wallet');
+
+        try {
+            $service->start($this->startRequest(userId: 'anon-token-user', guest: $this->guestDetails()));
+            self::fail('another user\'s basket cannot be claimed');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame('basket_forbidden', $e->errorCode);
+        }
+
+        self::assertNull($this->stripe->processedWith);
+    }
+
+    public function testStart_UnknownBasketOrMissingTermsWithGuestDetails_CreateNoGuestUser(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('', 'oe_payments_stripe_wallet');
+
+        foreach ([
+            fn () => $service->start($this->startRequest(userId: 'anon', guest: $this->guestDetails(), confirmTerms: false)),
+            fn () => $service->start(new HeadlessStartRequest('anon', 'ub-unknown', true, 'https://app.example.com/return', guest: $this->guestDetails())),
+        ] as $attempt) {
+            try {
+                $attempt();
+                self::fail('the request must be refused');
+            } catch (HeadlessCheckoutException) {
+            }
+        }
+
+        self::assertSame(0, $this->guests->calls, 'validation first, accounts second');
+    }
+
     // --------------------------------------------------------------- return
 
     public function testReturnVerifiesTheTokenAndRunsTheProviderResolverThroughTheResponder(): void
@@ -644,6 +812,8 @@ final class HeadlessCheckoutServiceTest extends TestCase
             $this->contracts,
             $this->responder,
             $this->cleaner,
+            $this->guests,
+            $this->basketClaim,
             $logger ?? new NullLogger(),
         );
     }
@@ -652,16 +822,32 @@ final class HeadlessCheckoutServiceTest extends TestCase
         bool $confirmTerms = true,
         string $returnUrl = 'https://app.example.com/return',
         ?string $paymentId = null,
+        string $userId = 'user-1',
+        ?GuestDetails $guest = null,
     ): HeadlessStartRequest {
         return new HeadlessStartRequest(
-            userId: 'user-1',
+            userId: $userId,
             basketId: 'ub-1',
             confirmTermsAndConditions: $confirmTerms,
             returnUrl: $returnUrl,
             cancelUrl: 'https://app.example.com/cancel',
             uiMode: 'hosted',
             paymentId: $paymentId,
+            guest: $guest,
         );
+    }
+
+    private function guestDetails(): GuestDetails
+    {
+        return new GuestDetails('guest@example.com', new GuestAddress(
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            street: 'Analytical Way',
+            streetNumber: '1',
+            zipCode: '10115',
+            city: 'Berlin',
+            countryId: 'a7c40f631fc920687.20179984',
+        ));
     }
 
     private function pendingContract(string $id): PaymentContract
