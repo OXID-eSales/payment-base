@@ -5,6 +5,16 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Security
+- Contract token hashed at rest (Sprint 138b): `HeadlessCheckoutService` stores only the SHA-256 of the headless
+  `contractToken` (`HeadlessTokenHash`) and compares hashes on return and cancel; a plaintext value in the metadata no
+  longer authorises. Migration `Version20261022100000` hashes the plaintext values already stored; tokens held by
+  clients keep working.
+- `ClientConfigGuard` is an allow-list per provider: a provider implementing the new
+  `AllowListedClientConfigProviderInterface` declares `publicValueNames()` and any other name is refused. The deny shapes
+  now also cover Mollie `live_`/`test_` API keys and `access_` tokens. Providers that only implement
+  `ClientConfigProviderInterface` are unaffected (deny shapes only).
+
 ### Added
 - Sealed payment client config (Sprint 15): GraphQL query `paymentClientConfig(provider, clientPublicKey)` returning the
   provider's public SDK values (Stripe publishable key, PayPal client id, Mollie profile id) as an AES-256-GCM envelope

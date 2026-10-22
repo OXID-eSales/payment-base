@@ -49,7 +49,11 @@ payment query, maps each contract-first id to its start mutation, and keeps `pla
 | abandon | `<provider>CheckoutCancel(contractId, contractToken)` | `CheckoutCancelResult { cancelled, contractId, contractState }` — the attempt is retired, the order cancelled |
 
 - The **contract token** returned by the start is the client's proof of ownership for return and cancel; a wrong token
-  changes nothing (`invalid_token`).
+  changes nothing (`invalid_token`). The database keeps only its SHA-256 (`HeadlessTokenHash`, in
+  `oe_payments_contract.OXMETADATA.headless_token`); the plaintext token exists only in the start answer and in the
+  client, so reading the database does not authorise a return or a cancel. A plaintext value in that field (older
+  data) never authorises; migration `Version20261022100000` hashes such values in place, and a token the client
+  already holds keeps working afterwards.
 - `returnUrl` / `cancelUrl` belong to the client and must be under the shop's own URL or an origin listed in the setting
   `sPaymentBaseHeadlessReturnOrigins` (`return_url_rejected / origin_not_allowed` otherwise). Every provider appends
   `contract_id` to the return URL; Stripe adds `session_id`, PayPal `token` and `PayerID`, Mollie nothing.
@@ -59,6 +63,16 @@ payment query, maps each contract-first id to its start mutation, and keeps `pla
 - A second start for the same basket retires the first attempt (one open attempt per user basket).
 - The headless keys of the request (`basketId`, `uiMode`, `headless`, `sessionId`) cannot be overridden by a provider's
   options (`HeadlessStartRequest::$providerOptions`, used for Mollie's `method`).
+
+## Which provider values reach the browser
+
+`paymentClientConfig(provider, clientPublicKey)` seals a provider's public SDK values for the asking browser. A provider
+module implements `AllowListedClientConfigProviderInterface` (an extension of `ClientConfigProviderInterface`) and
+declares the value names in `publicValueNames()` (Stripe `publishableKey`, PayPal `clientId`, Mollie `profileId`,
+`testMode`). `ClientConfigGuard` refuses any other name, whatever its value, and in every case a value shaped like a
+secret (`sk_`, `rk_`, `whsec_`, `access_`, Mollie `live_`/`test_` API keys), a name containing "secret" or an API-key
+name, and every value that is not a string or a bool. A provider that only implements the base interface keeps working
+under the deny shapes alone; declare the names to get the allow-list.
 
 ## Trying it
 
