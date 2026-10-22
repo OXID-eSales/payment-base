@@ -5,6 +5,20 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Guest checkout (Sprint 140a, release 1.5.0)
+- `oxidanonymous` holds the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,
+  `REMOVE_BASKET_PRODUCT`, `ADD_VOUCHER`, `REMOVE_VOUCHER`) and `PAYMENT_CHECKOUT`, besides `PAYMENT_CLIENT_CONFIG`.
+- `HeadlessStartRequest` gains an optional `GuestDetails $guest` (e-mail, `GuestAddress` invoice address, optional delivery
+  address). `HeadlessCheckoutService::start()` runs, for an anonymous token (a token user that does not exist in the shop),
+  as a guest account: `GuestUserServiceInterface` (`Adapter\OxidGuestUserService`: new passwordless account, or the guest
+  account of that e-mail again) and `GuestBasketClaimInterface` (`Adapter\OxidGuestBasketClaim`: the anonymous basket,
+  which has no owner row, becomes the guest's). New `HeadlessCheckoutException` codes `guest_details_required` and
+  `account_exists`; `CheckoutStartResult` is unchanged. The constructor of `HeadlessCheckoutService` takes the two new services
+  (wired in `services.yaml`; only relevant for code that builds it by hand).
+- Known gap, not new: `UserBasketProvider` reads no delivery address from the basket row (`OEGQL_DELADDRESSID`), for
+  logged-in baskets as little as for guests, so the order ships to the invoice address. A guest's delivery address is stored
+  (`oxaddress`, and in `OEGQL_DELADDRESSID` where the storefront has the column) so that applying it is one change in one place.
+
 ### Security
 - Contract token hashed at rest (Sprint 138b): `HeadlessCheckoutService` stores only the SHA-256 of the headless
   `contractToken` (`HeadlessTokenHash`) and compares hashes on return and cancel; a plaintext value in the metadata no

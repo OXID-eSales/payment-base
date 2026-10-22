@@ -59,7 +59,8 @@ payment query, maps each contract-first id to its start mutation, and keeps `pla
   `contract_id` to the return URL; Stripe adds `session_id`, PayPal `token` and `PayerID`, Mollie nothing.
 - Refusals are GraphQL errors with a stable `extensions.errorCode` (`HeadlessCheckoutException`): `basket_not_found`,
   `payment_not_supported`, `terms_not_confirmed`, `return_url_rejected`, `user_not_found`, `provider_failed`
-  (+ `providerCode`, e.g. `MOLLIE_UI_MODE_UNSUPPORTED`), `contract_not_found`, `invalid_token`, `no_return_resolver`.
+  (+ `providerCode`, e.g. `MOLLIE_UI_MODE_UNSUPPORTED`), `contract_not_found`, `invalid_token`, `no_return_resolver`, `guest_details_required`, `account_exists`
+  (guest checkout, below).
 - A second start for the same basket retires the first attempt (one open attempt per user basket).
 - The headless keys of the request (`basketId`, `uiMode`, `headless`, `sessionId`) cannot be overridden by a provider's
   options (`HeadlessStartRequest::$providerOptions`, used for Mollie's `method`).
@@ -97,6 +98,42 @@ with one field, so an order list shows the payment state without a second channe
   without it the module activates and the schema builds without the field.
 - Each order costs one contract lookup (`ContractSummaryQuery`, by `OXORDERID`, indexed). Page long order lists.
 - After installing or updating the module run `bin/oe-console oe:graphql:cache-clear`, or the schema cache will not show the field.
+
+## Guest checkout: no account, an anonymous token
+
+A shopper without an account checks out with the token of `query { token }` (no credentials; group `oxidanonymous`).
+payment-base grants that group the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,
+`REMOVE_BASKET_PRODUCT`, `ADD_VOUCHER`, `REMOVE_VOUCHER`) and its own `PAYMENT_CHECKOUT` and `PAYMENT_CLIENT_CONFIG`, not
+`PLACE_ORDER`. What the spike of 2026-10-22 on the SDK shop showed:
+
+| Call with an anonymous token | Result |
+|---|---|
+| `basketCreate`, `basketAddItem`, `basket` | work; the basket row has **no owner** (`OXUSERID` empty, `owner: null`) |
+| the basket id used by another anonymous token | readable and writable (the 128-bit id is the capability) |
+| a logged-in user's basket | refused ("belongs to somebody else") |
+| `basketSetPayment`, `basketSetDeliveryMethod`, `basketPayments`, `basketDeliveryMethods`, `basketSetDeliveryAddress` | `@Logged`: not in the anonymous schema |
+| `placeOrder` | refused (no `PLACE_ORDER`; and refused for contract-first payments anyway) |
+
+So the basket is built anonymously, and the checkout start carries what the logged-in calls would have set:
+
+1. The provider's start mutation sends `guest` (`GuestDetails`: `email`, `invoiceAddress`, optional `deliveryAddress`; an
+   address is `salutation?`, `firstName`, `lastName`, `company?`, `additionalInfo?`, `street`, `streetNumber`, `zipCode`,
+   `city`, `countryId`, `stateId?`, `phone?`, named like the storefront's address inputs) and the payment it stands for.
+   The guest details are read only when the token's user does not exist in the shop; for a logged-in user they are ignored.
+2. `HeadlessCheckoutService::start()` validates the request first (return URLs, basket, payment, terms), then asks
+   `GuestUserServiceInterface` for the user: a new passwordless account, or the existing guest account of that e-mail with
+   the addresses of this checkout. An e-mail of a registered account (it has a password) is refused with `account_exists`
+   and changes nothing; the shopper logs in. Missing or invalid details are `guest_details_required` (the message names
+   the field, never the value). An anonymous token without details is `guest_details_required` too.
+3. `GuestBasketClaimInterface` makes the guest the owner of the ownerless basket (and records the delivery address
+   in `OEGQL_DELADDRESSID` where the storefront has the column). A basket that already has another owner is refused as
+   `basket_forbidden` and not touched.
+4. The checkout continues as for a logged-in user, with the guest as the shop user (contract, order, token, return and
+   cancel are unchanged). A second start for the same basket with the same e-mail reuses the account.
+
+Not part of this: creating a password-protected account after checkout, newsletter opt-in, B2B fields. A delivery address
+different from the invoice address is stored for the guest; honouring a basket's delivery address in the order itself is
+the same gap as for logged-in baskets (see the CHANGELOG).
 
 ## Trying it
 
