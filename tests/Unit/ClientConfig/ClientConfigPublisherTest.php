@@ -13,6 +13,7 @@ use OxidEsales\PaymentBase\ClientConfig\ClientConfigGuard;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigProviderRegistry;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigPublisher;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigSealer;
+use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigProviderInterface;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnknownClientConfigProvider;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnsafeClientConfig;
 use OxidEsales\PaymentBase\ClientConfig\SystemSealInputs;
@@ -23,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class ClientConfigPublisherTest extends TestCase
 {
-    private function publisher(FakeClientConfigProvider ...$providers): ClientConfigPublisher
+    private function publisher(ClientConfigProviderInterface ...$providers): ClientConfigPublisher
     {
         return new ClientConfigPublisher(
             new ClientConfigProviderRegistry($providers),
@@ -62,5 +63,41 @@ final class ClientConfigPublisherTest extends TestCase
         $this->expectException(UnsafeClientConfig::class);
 
         $publisher->sealedFor('stripe', EcKeys::b64urlEncode(EcKeys::rawPublicKey(EcKeys::newPrivateKey())), 'tok');
+    }
+
+    public function testSealedFor_ProviderDeclaresNames_RefusesAnUndeclaredNameWithAHarmlessValue(): void
+    {
+        $publisher = $this->publisher(
+            new AllowListedFakeClientConfigProvider('paypal', ['clientId' => 'abc', 'region' => 'eu'], ['clientId'])
+        );
+
+        $this->expectException(UnsafeClientConfig::class);
+
+        $publisher->sealedFor('paypal', EcKeys::b64urlEncode(EcKeys::rawPublicKey(EcKeys::newPrivateKey())), 'tok');
+    }
+
+    public function testSealedFor_ProviderDeclaresNames_SealsTheDeclaredValues(): void
+    {
+        $browserKey = EcKeys::newPrivateKey();
+        $publisher = $this->publisher(
+            new AllowListedFakeClientConfigProvider('mollie', ['profileId' => 'pfl_abc', 'testMode' => true], ['profileId', 'testMode'])
+        );
+
+        $envelope = $publisher->sealedFor('mollie', EcKeys::b64urlEncode(EcKeys::rawPublicKey($browserKey)), 'tok');
+
+        self::assertSame(
+            '{"profileId":"pfl_abc","testMode":true}',
+            EcKeys::open(get_object_vars($envelope), $browserKey, 'mollie', 'tok')
+        );
+    }
+
+    public function testSealedFor_ProviderWithoutDeclaredNames_KeepsWorkingUnderTheDenyShapes(): void
+    {
+        $browserKey = EcKeys::newPrivateKey();
+        $publisher = $this->publisher(new FakeClientConfigProvider('legacy', ['someKey' => 'harmless']));
+
+        $envelope = $publisher->sealedFor('legacy', EcKeys::b64urlEncode(EcKeys::rawPublicKey($browserKey)), 'tok');
+
+        self::assertSame('{"someKey":"harmless"}', EcKeys::open(get_object_vars($envelope), $browserKey, 'legacy', 'tok'));
     }
 }

@@ -18,10 +18,12 @@ interface ClientConfigGuardInterface
 {
     /**
      * @param array<mixed> $values
+     * @param list<string>|null $allowedNames the names the provider declared; null when it declared none, in which
+     *        case only the deny shapes apply
      *
      * @return array<string, string|bool>
      *
      * @throws UnsafeClientConfig
      */
-    public function assertPublic(array $values): array;
+    public function assertPublic(array $values, ?array $allowedNames = null): array;
 }

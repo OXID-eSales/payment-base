@@ -16,6 +16,8 @@ namespace OxidEsales\PaymentBase\ClientConfig\Contract;
  * module's settings and the current test/live mode.
  *
  * Register as a service with the tag `payment_base.client_config_provider`.
+ * Implement AllowListedClientConfigProviderInterface instead to also declare the
+ * value names; the guard then refuses any other name.
  * The values are an allow-list: only what the browser may see, never a
  * secret. ClientConfigGuard refuses secret-looking keys/values anyway.
  *
