@@ -16,6 +16,8 @@ namespace OxidEsales\PaymentBase\Checkout\Headless;
  * @param string|null $paymentId the provider's payment id when the mutation is provider-specific
  *        (`stripeCheckoutStart` knows it is Stripe); used when the basket row carries no payment, refused when the
  *        row names another one
+ * @param GuestDetails|null $guest who an anonymous (`oxidanonymous`) token is; read only when the token's user does not
+ *        exist in the shop, ignored for a logged-in user
  * @param array<string, mixed> $providerOptions provider-specific hints the mutation accepts (Mollie: `mollieMethod`),
  *        handed to the handler as PaymentContext metadata; the headless keys (`basketId`, `uiMode`, `headless`,
  *        `sessionId`) cannot be overridden
@@ -36,6 +38,7 @@ final readonly class HeadlessStartRequest
         public string $uiMode = 'hosted',
         public ?string $paymentId = null,
         public array $providerOptions = [],
+        public ?GuestDetails $guest = null,
     ) {
     }
 }

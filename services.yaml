@@ -194,6 +194,23 @@ services:
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       $responder: '@OxidEsales\PaymentBase\Controller\CheckoutReturnResponder'
       $cleaner: '@OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface'
+      $guests: '@OxidEsales\PaymentBase\Checkout\Headless\GuestUserServiceInterface'
+      $basketClaim: '@OxidEsales\PaymentBase\Checkout\Headless\GuestBasketClaimInterface'
+    public: true
+
+  # Sprint 140a - the guest checkout: an anonymous token's details become a
+  # passwordless shop user, and the anonymous basket (no owner row) becomes
+  # that user's. Both touch the shop's models, hence Adapter/.
+  OxidEsales\PaymentBase\Checkout\Headless\GuestUserServiceInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidGuestUserService
+    autowire: false
+    autoconfigure: false
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Headless\GuestBasketClaimInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidGuestBasketClaim
+    autowire: false
+    autoconfigure: false
     public: true
 
   # Sprint 15 / S7 — the ACP / agent path: a described buyer becomes a shop
@@ -299,6 +316,25 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface'
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface'
+    public: true
+
+  # Sprint 139c - read side of the Order type extension (`Order.paymentContract`).
+  OxidEsales\PaymentBase\Repository\ContractSummaryQueryInterface:
+    class: OxidEsales\PaymentBase\Repository\ContractSummaryQuery
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+
+  # GraphQLite fetches an ExtendType class from the container by its FQCN, hence public.
+  # The class mentions graphql-storefront only in an attribute and a parameter type, both
+  # resolved lazily: the container can reflect it on a shop without the storefront, and
+  # NamespaceMapper maps its namespace only when the storefront is installed.
+  OxidEsales\PaymentBase\GraphQL\Relation\OrderRelationService:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractSummaryQueryInterface'
     public: true
 
   OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:

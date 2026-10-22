@@ -321,13 +321,13 @@ if (!interface_exists(\OxidEsales\GraphQL\Base\Framework\NamespaceMapperInterfac
     );
 }
 if (!class_exists(\GraphQL\Error\Error::class, false)) {
-    eval('namespace GraphQL\\Error; class Error extends \\Exception {}');
+    eval('namespace GraphQL\\Error; class Error extends \\Exception { protected array $extensions = []; public function getExtensions(): array { return $this->extensions; } }');
 }
 if (!class_exists(\OxidEsales\GraphQL\Base\Exception\Error::class, false)) {
     eval(
         'namespace OxidEsales\\GraphQL\\Base\\Exception; '
         . 'abstract class Error extends \\GraphQL\\Error\\Error { '
-        . '  public function __construct(string $message, protected $code = 0, ?\\Throwable $previous = null, protected string $category = "Exception", array $extensions = []) { parent::__construct($message, 0, $previous); } '
+        . '  public function __construct(string $message, protected $code = 0, ?\\Throwable $previous = null, protected string $category = "Exception", array $extensions = []) { parent::__construct($message, 0, $previous); $this->extensions = $extensions; } '
         . '  public function getCategory(): string { return $this->category; } '
         . '} '
         . 'class ErrorCategories { '
@@ -346,7 +346,8 @@ if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Type::class, false)) 
     eval(
         'namespace TheCodingMachine\\GraphQLite\\Annotations; '
         . '#[\\Attribute(\\Attribute::TARGET_CLASS)] class Type { public function __construct(mixed ...$args) {} } '
-        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Field { public function __construct(mixed ...$args) {} }'
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Field { public function __construct(mixed ...$args) {} } '
+        . '#[\\Attribute(\\Attribute::TARGET_METHOD)] class Factory { public function __construct(mixed ...$args) {} }'
     );
 }
 if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::class, false)) {
@@ -355,6 +356,22 @@ if (!class_exists(\OxidEsales\GraphQL\Storefront\Basket\Event\BeforePlaceOrder::
         . 'final class BeforePlaceOrder { '
         . '  public function __construct(private \\TheCodingMachine\\GraphQLite\\Types\\ID $basketId) {} '
         . '  public function getBasketId(): \\TheCodingMachine\\GraphQLite\\Types\\ID { return $this->basketId; } '
+        . '}'
+    );
+}
+// Sprint 139c - the Order type extension: the ExtendType attribute and the storefront's Order data type.
+if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\ExtendType::class, false)) {
+    eval(
+        'namespace TheCodingMachine\\GraphQLite\\Annotations; '
+        . '#[\\Attribute(\\Attribute::TARGET_CLASS)] class ExtendType { public function __construct(mixed ...$args) {} }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\Storefront\Order\DataType\Order::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Storefront\\Order\\DataType; '
+        . 'final class Order { '
+        . '  public function __construct(private \\OxidEsales\\Eshop\\Application\\Model\\Order $order) {} '
+        . '  public function getEshopModel(): \\OxidEsales\\Eshop\\Application\\Model\\Order { return $this->order; } '
         . '}'
     );
 }

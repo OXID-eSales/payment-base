@@ -46,6 +46,9 @@ final class ClientConfigGuardTest extends TestCase
             'array value' => [['nested' => ['a' => 'b']]],
             'float value' => [['ratio' => 1.5]],
             'integer key' => [['pk_test_123']],
+            'mollie live api key shape' => [['profileId' => 'live_' . str_repeat('aB3', 10)]],
+            'mollie test api key shape' => [['profileId' => 'test_' . str_repeat('x9', 15)]],
+            'oauth access token shape' => [['profileId' => 'access_abcdef123456']],
         ];
     }
 
@@ -69,5 +72,48 @@ final class ClientConfigGuardTest extends TestCase
             self::assertStringNotContainsString('TOPSECRET', $e->getMessage());
             self::assertStringContainsString('publishableKey', $e->getMessage());
         }
+    }
+
+    public function testAssertPublic_MollieShapedValueOfAnotherLength_IsNotMistakenForAKey(): void
+    {
+        $values = ['label' => 'test_mode_enabled'];
+
+        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values));
+    }
+
+    public function testAssertPublic_NameOutsideTheAllowList_IsRefusedEvenWithAHarmlessValue(): void
+    {
+        $this->expectException(UnsafeClientConfig::class);
+        $this->expectExceptionMessage('allow-list');
+
+        (new ClientConfigGuard())->assertPublic(['region' => 'eu'], ['publishableKey']);
+    }
+
+    public function testAssertPublic_OnlyAllowListedNames_PassesThrough(): void
+    {
+        $values = ['profileId' => 'pfl_abc', 'testMode' => true];
+
+        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values, ['profileId', 'testMode']));
+    }
+
+    public function testAssertPublic_EmptyAllowList_RefusesEveryValue(): void
+    {
+        $this->expectException(UnsafeClientConfig::class);
+
+        (new ClientConfigGuard())->assertPublic(['profileId' => 'pfl_abc'], []);
+    }
+
+    public function testAssertPublic_AllowListedNameWithSecretShapedValue_IsStillRefused(): void
+    {
+        $this->expectException(UnsafeClientConfig::class);
+
+        (new ClientConfigGuard())->assertPublic(['publishableKey' => 'sk_live_abc'], ['publishableKey']);
+    }
+
+    public function testAssertPublic_WithoutAllowList_KeepsTheDenyShapesOnly(): void
+    {
+        $values = ['anything' => 'harmless'];
+
+        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values, null));
     }
 }

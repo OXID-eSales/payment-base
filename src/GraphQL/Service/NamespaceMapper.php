@@ -29,6 +29,15 @@ namespace OxidEsales\PaymentBase\GraphQL\Service;
  */
 final class NamespaceMapper
 {
+    private const STOREFRONT_ORDER_TYPE = 'OxidEsales\\GraphQL\\Storefront\\Order\\DataType\\Order';
+
+    /**
+     * @param bool|null $storefrontInstalled null: ask the autoloader whether graphql-storefront is there
+     */
+    public function __construct(private readonly ?bool $storefrontInstalled = null)
+    {
+    }
+
     /**
      * @return array<string, string>
      */
@@ -44,8 +53,17 @@ final class NamespaceMapper
      */
     public function getTypeNamespaceMapping(): array
     {
-        return [
+        $mapping = [
             'OxidEsales\\PaymentBase\\GraphQL\\DataType' => __DIR__ . '/../DataType/',
         ];
+
+        // The Order extension names the storefront's Order type: mapped only
+        // when that type exists, or the schema of a shop without the
+        // storefront would fail to build.
+        if ($this->storefrontInstalled ?? class_exists(self::STOREFRONT_ORDER_TYPE)) {
+            $mapping['OxidEsales\\PaymentBase\\GraphQL\\Relation'] = __DIR__ . '/../Relation/';
+        }
+
+        return $mapping;
     }
 }

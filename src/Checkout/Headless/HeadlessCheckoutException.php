@@ -38,11 +38,25 @@ final class HeadlessCheckoutException extends RuntimeException
 
     public const NO_RETURN_RESOLVER = 'no_return_resolver';
 
+    /** An anonymous token started a checkout without guest details, or the details are incomplete or invalid. */
+    public const GUEST_DETAILS_REQUIRED = 'guest_details_required';
+
+    /** The guest's e-mail belongs to a registered account: the shopper has to log in. */
+    public const ACCOUNT_EXISTS = 'account_exists';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,
         public readonly ?string $providerCode = null,
     ) {
         parent::__construct($message);
+    }
+
+    /**
+     * Names the field, never its value: the value is personal data and the message reaches the shop log.
+     */
+    public static function guestDetailsRequired(string $field): self
+    {
+        return new self(self::GUEST_DETAILS_REQUIRED, sprintf('Guest details: %s is missing or invalid', $field));
     }
 }

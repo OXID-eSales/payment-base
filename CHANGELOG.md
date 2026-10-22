@@ -5,7 +5,50 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Guest checkout (Sprint 140a, release 1.5.0)
+- `oxidanonymous` holds the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,
+  `REMOVE_BASKET_PRODUCT`, `ADD_VOUCHER`, `REMOVE_VOUCHER`) and `PAYMENT_CHECKOUT`, besides `PAYMENT_CLIENT_CONFIG`.
+- `HeadlessStartRequest` gains an optional `GuestDetails $guest` (e-mail, `GuestAddress` invoice address, optional delivery
+  address). `HeadlessCheckoutService::start()` runs, for an anonymous token (a token user that does not exist in the shop),
+  as a guest account: `GuestUserServiceInterface` (`Adapter\OxidGuestUserService`: new passwordless account, or the guest
+  account of that e-mail again) and `GuestBasketClaimInterface` (`Adapter\OxidGuestBasketClaim`: the anonymous basket,
+  which has no owner row, becomes the guest's). New `HeadlessCheckoutException` codes `guest_details_required` and
+  `account_exists`; `CheckoutStartResult` is unchanged. The constructor of `HeadlessCheckoutService` takes the two new services
+  (wired in `services.yaml`; only relevant for code that builds it by hand).
+- Known gap, not new: `UserBasketProvider` reads no delivery address from the basket row (`OEGQL_DELADDRESSID`), for
+  logged-in baskets as little as for guests, so the order ships to the invoice address. A guest's delivery address is stored
+  (`oxaddress`, and in `OEGQL_DELADDRESSID` where the storefront has the column) so that applying it is one change in one place.
+
+### Shared guest input (Sprint 140b / B2)
+- The GraphQL input types of the `guest` argument are defined once, here: `GuestCheckoutInput` and `GuestAddressInput`
+  (`GraphQL\DataType\GuestCheckoutInputFactory`, `#[Factory]` methods building `GuestDetails` / `GuestAddress`). The
+  provider modules (stripe, mollie, paypal) drop their own copies and take `?GuestDetails $guest` in `<provider>CheckoutStart`;
+  GraphQL type names are schema-wide, so exactly one module may define them.
+- New `GraphQL\Exception\GuestDetailsRefused` (graphql-base `Error`, request-error category,
+  `extensions.errorCode = guest_details_required`): the value objects validate while GraphQLite resolves the arguments,
+  before any controller try/catch, so the factories turn the refusal into a client-safe error there.
+- CI: the integration workflows clear GraphQLite's schema cache after activating the module (guarded: the command exists only
+  with graphql-base active).
+
+### Security
+- Contract token hashed at rest (Sprint 138b): `HeadlessCheckoutService` stores only the SHA-256 of the headless
+  `contractToken` (`HeadlessTokenHash`) and compares hashes on return and cancel; a plaintext value in the metadata no
+  longer authorises. Migration `Version20261022100000` hashes the plaintext values already stored; tokens held by
+  clients keep working.
+- `ClientConfigGuard` is an allow-list per provider: a provider implementing the new
+  `AllowListedClientConfigProviderInterface` declares `publicValueNames()` and any other name is refused. The deny shapes
+  now also cover Mollie `live_`/`test_` API keys and `access_` tokens. Providers that only implement
+  `ClientConfigProviderInterface` are unaffected (deny shapes only).
+
+- Log hygiene (Sprint 138d, D1): `ReturnUrlRejectedException` no longer puts the rejected URL into its message
+  (graphql-base logs every GraphQL error message): `Return URL rejected (<reason>): <scheme://host[:port]>`. The full URL
+  is `fullUrl()` (the `$url` property is private now) and is written at debug level only by `HeadlessCheckoutService`.
+
 ### Added
+- `Order.paymentContract` (Sprint 139c): payment-base extends graphql-storefront's `Order` type (`@ExtendType`,
+  `GraphQL\Relation\OrderRelationService`) with `paymentContract { state provider contractId updatedAt }`, `null` for an
+  order without a contract. Read by `ContractSummaryQuery` (`PaymentContractSummary` value object). The relation's namespace is
+  mapped only when graphql-storefront is installed. Run `oe:graphql:cache-clear` after the update.
 - Sealed payment client config (Sprint 15): GraphQL query `paymentClientConfig(provider, clientPublicKey)` returning the
   provider's public SDK values (Stripe publishable key, PayPal client id, Mollie profile id) as an AES-256-GCM envelope
   sealed for the asking browser (ephemeral P-256 ECDH + HKDF-SHA256, bound to provider and bearer token id). Provider
