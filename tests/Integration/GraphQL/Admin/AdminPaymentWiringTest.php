@@ -45,10 +45,11 @@ final class AdminPaymentWiringTest extends IntegrationTestCase
     public function tearDown(): void
     {
         // The subscribers read through the container's own connection, so the fixtures are written through it
-        // too (committed): they are removed by prefix.
+        // too (committed). Delete them after the test transaction has ended: inside it the delete would be
+        // rolled back with it.
+        parent::tearDown();
         $connection = ContainerFactory::getInstance()->getContainer()->get(ConnectionProviderInterface::class)->get();
         $connection->executeStatement("DELETE FROM oe_payments_contract WHERE OXORDERID LIKE 'a10-%'");
-        parent::tearDown();
     }
 
     public function testRightsCatalogue_ContainsThePaymentRightsOfThisModule(): void
