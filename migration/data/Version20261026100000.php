@@ -27,6 +27,7 @@ final class Version20261026100000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        $this->mapEnumColumns();
         if ($schema->hasTable(self::TABLE_NAME)) {
             return;
         }
@@ -46,9 +47,20 @@ final class Version20261026100000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        $this->mapEnumColumns();
         if ($schema->hasTable(self::TABLE_NAME)) {
             $schema->dropTable(self::TABLE_NAME);
         }
+    }
+
+    /**
+     * $schema is introspected lazily, on first use, and core tables (oxdelivery,
+     * oxseo, ...) carry ENUM columns DBAL has no type for. Without the mapping the
+     * migration dies before it starts - as Version20251031140000 also guards.
+     */
+    private function mapEnumColumns(): void
+    {
+        $this->platform->registerDoctrineTypeMapping('enum', 'string');
     }
 
     private function addIdentifierColumns(Table $table): void
