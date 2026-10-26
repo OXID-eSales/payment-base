@@ -387,10 +387,49 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
     eval(
         'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
         . 'class Order_parent { '
+        // STRP-176 (2026-10-26) — what the deferred sendOrderByEmail() uses.
+        . '  const ORDER_STATE_MAILINGERROR = 0; '
+        . '  const ORDER_STATE_OK = 1; '
+        . '  protected $_oUser = null; '
+        . '  protected $_oBasket = null; '
+        . '  protected $_oPayment = null; '
         . '  public function delete($sOxId = null) { return true; } '
         . '  public function cancelOrder() {} '
         . '  public function getId() { return ""; } '
+        . '  public function getShopId() { return 1; } '
         . '  public function save() { return true; } '
+        . '  protected function sendOrderByEmail($oUser = null, $oBasket = null, $oPayment = null) { return 1; } '
+        . '}'
+    );
+}
+
+// STRP-176 (2026-10-26) — core's Email, which the Order extension asks
+// oxNew() for (the end of the Email chain). Stubbed for the same reason as
+// Order_parent: known to static analysis instead of ignored.
+if (!class_exists(\OxidEsales\Eshop\Core\Email::class, false)) {
+    eval('namespace OxidEsales\\Eshop\\Core; class Email {}');
+}
+
+// STRP-176 (2026-10-26) — Email_parent, the virtual class of the Email
+// extension: the PHPMailer / core Email members the capture reads.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\Email_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Core; '
+        . 'class Email_parent { '
+        . '  public $From = ""; '
+        . '  public $FromName = ""; '
+        . '  public function send() { return true; } '
+        . '  public function getRecipient() { return []; } '
+        . '  public function getReplyTo() { return []; } '
+        . '  public function getCcAddresses() { return []; } '
+        . '  public function getBccAddresses() { return []; } '
+        . '  public function getFrom() { return ""; } '
+        . '  public function getFromName() { return ""; } '
+        . '  public function getSubject() { return ""; } '
+        . '  public function getBody() { return ""; } '
+        . '  public function getAltBody() { return ""; } '
+        . '  public function sendOrderEmailToUser($order, $subject = null) { return true; } '
+        . '  public function sendOrderEmailToOwner($order, $subject = null) { return true; } '
         . '}'
     );
 }

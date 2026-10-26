@@ -76,6 +76,8 @@ final class NoConcreteClassTypeHintRule implements Rule
         // Sprint 15 / S4 (2026-10-06): readonly DTOs of the commit service - a
         // payment confirmation in and an outcome out; values, not behaviour.
         '#\\\\Service\\\\Commit\\\\(PaymentConfirmation|CommitOutcome)$#',
+        // STRP-176 (2026-10-26): the readonly copy of an order mail core rendered - a value, not behaviour.
+        '#\\\\Mail\\\\DeferredOrderMail$#',
         // Sprint 15 / S6 (2026-10-06): the headless checkout's readonly request / result DTOs.
         '#\\\\Checkout\\\\Headless\\\\Headless(StartRequest|StartResult|ReturnResult|CancelResult)$#',
         // Sprint 140a: the guest checkout's readonly values - details in, shop user out.

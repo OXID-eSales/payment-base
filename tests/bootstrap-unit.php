@@ -269,11 +269,54 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
     eval(
         'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
         . 'class Order_parent { '
+        // STRP-176 (2026-10-26) — core's state codes and the three properties
+        // sendOrderByEmail() hands the mail templates, so the deferred branch
+        // can be tested without the shop.
+        . '  const ORDER_STATE_MAILINGERROR = 0; '
+        . '  const ORDER_STATE_OK = 1; '
         . '  public static array $calls = []; '
         . '  public static bool $deleteResult = true; '
+        . '  public $_oUser = null; '
+        . '  public $_oBasket = null; '
+        . '  public $_oPayment = null; '
         . '  public function delete($sOxId = null) { self::$calls[] = "parent::delete"; return self::$deleteResult; } '
         . '  public function cancelOrder() { self::$calls[] = "parent::cancelOrder"; } '
         . '  public function getId() { return "order-1"; } '
+        . '  public function getShopId() { return 1; } '
+        . '  protected function sendOrderByEmail($oUser = null, $oBasket = null, $oPayment = null) { self::$calls[] = "parent::sendOrderByEmail"; return self::ORDER_STATE_OK; } '
+        . '}'
+    );
+}
+
+// STRP-176 (2026-10-26) — Email_parent, the virtual class of the Email
+// extension. Public fields stand in for PHPMailer's state; the two order-mail
+// methods do what core's do at the end: call send().
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\Email_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Core; '
+        . 'class Email_parent { '
+        . '  public static array $calls = []; '
+        . '  public $From = ""; '
+        . '  public $FromName = ""; '
+        . '  public $Subject = ""; '
+        . '  public $Body = ""; '
+        . '  public $AltBody = ""; '
+        . '  public array $recipients = []; '
+        . '  public array $replies = []; '
+        . '  public array $cc = []; '
+        . '  public array $bcc = []; '
+        . '  public function send() { self::$calls[] = "parent::send"; return true; } '
+        . '  public function getRecipient() { return $this->recipients; } '
+        . '  public function getReplyTo() { return $this->replies; } '
+        . '  public function getCcAddresses() { return $this->cc; } '
+        . '  public function getBccAddresses() { return $this->bcc; } '
+        . '  public function getFrom() { return $this->From; } '
+        . '  public function getFromName() { return $this->FromName; } '
+        . '  public function getSubject() { return $this->Subject; } '
+        . '  public function getBody() { return $this->Body; } '
+        . '  public function getAltBody() { return $this->AltBody; } '
+        . '  public function sendOrderEmailToUser($order, $subject = null) { return $this->send(); } '
+        . '  public function sendOrderEmailToOwner($order, $subject = null) { return $this->send(); } '
         . '}'
     );
 }

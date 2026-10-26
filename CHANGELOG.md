@@ -5,6 +5,20 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Order mail waits for the payment (STRP-176, part 1 of 2)
+- Early order creation (`Adapter\OxidShopOrderService`) no longer mails "thank you for your order" before the customer
+  has paid at the PSP. The order asks to defer its confirmation mail (`Mail\DefersConfirmationMailInterface`, implemented
+  by the `Order` extension); core still renders the customer and owner mail in `finalizeOrder()`, on a capturing mailer
+  (new `Email` extension, `Mail\OrderMailCaptureInterface`), and they are stored in the new table
+  `oe_payments_order_mail` (migration `Version20261026100000`, utf8mb4) through
+  `Repository\DeferredOrderMailRepositoryInterface`.
+- Stored mails are dropped when the order is deleted or cancelled (`Order::delete()` / `cancelOrder()`), and when an
+  abandoned checkout is cancelled (`DoctrineNotFinishedOrderRepository::cancelOrder()`, which takes the mail repository as
+  an optional second constructor argument).
+- Orders that are not created by payment-base (invoice, COD, prepayment, ...) mail from `finalizeOrder()` as before.
+- **Not shippable alone:** sending the stored mails when the contract commits is part 2. Until then a paid PSP order
+  gets no confirmation mail.
+
 ### Guest checkout (Sprint 140a, release 1.5.0)
 - `oxidanonymous` holds the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,
   `REMOVE_BASKET_PRODUCT`, `ADD_VOUCHER`, `REMOVE_VOUCHER`) and `PAYMENT_CHECKOUT`, besides `PAYMENT_CLIENT_CONFIG`.

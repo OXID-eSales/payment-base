@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use OxidEsales\Eshop\Core\Email as oxEmail;
 use OxidEsales\Eshop\Core\PriceList as oxPriceList;
 use OxidEsales\Eshop\Application\Controller\PaymentController as oxPaymentController;
 use OxidEsales\Eshop\Application\Controller\OrderController as oxOrderController;
@@ -18,6 +19,7 @@ use OxidEsales\PaymentBase\Core\Events\ModuleLifecycle;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController;
+use OxidEsales\PaymentBase\Eshop\Core\Email;
 use OxidEsales\PaymentBase\Eshop\Core\PriceList;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 
@@ -54,6 +56,9 @@ $aModule = [
         // voucher stamp, and delete() drops the order row while the voucher still
         // points at it — an orphan no later action can find.
         oxOrder::class => Order::class,
+        // STRP-176 (2026-10-26) — renders the order mail at early order creation
+        // without sending it; it is sent once the PSP confirms the payment.
+        oxEmail::class => Email::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here

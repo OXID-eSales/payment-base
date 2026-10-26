@@ -19,6 +19,7 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -110,6 +111,28 @@ class ScriptedOrder extends Order
             'oxorderdate' => '2026-09-24 10:00:00',
             default => '',
         };
+    }
+}
+
+/**
+ * STRP-176 — what the payment-base Order extension is in the shop: an order
+ * that can hold its confirmation mail back. Records when it was asked to.
+ */
+class DeferringScriptedOrder extends ScriptedOrder implements DefersConfirmationMailInterface
+{
+    /** @var list<string> */
+    public array $events = [];
+
+    public function deferConfirmationMail(): void
+    {
+        $this->events[] = 'defer';
+    }
+
+    public function finalizeOrder($basket, $user, $recalculating = false): int
+    {
+        $this->events[] = 'finalize';
+
+        return parent::finalizeOrder($basket, $user, $recalculating);
     }
 }
 
@@ -338,6 +361,29 @@ final class OxidShopOrderServiceTest extends TestCase
 
         self::assertInstanceOf(User::class, $order->activeUserBeforeFinalize);
         self::assertSame('user-1', $order->activeUserBeforeFinalize->getId());
+    }
+
+    /**
+     * STRP-176 — the order is created before the customer pays at the PSP;
+     * finalizeOrder() must not mail "thank you for your order" yet.
+     */
+    public function testCreateOrder_DefersTheConfirmationMailBeforeFinalize(): void
+    {
+        $order = new DeferringScriptedOrder(Order::ORDER_STATE_OK);
+
+        (new TestableOrderService($order))->createOrder($this->request());
+
+        self::assertSame(['defer', 'finalize'], $order->events);
+    }
+
+    public function testCreateOrder_WithADeferredMail_StillReportsTheOrderCompleted(): void
+    {
+        $order = new DeferringScriptedOrder(Order::ORDER_STATE_OK);
+
+        $response = (new TestableOrderService($order))->createOrder($this->request());
+
+        self::assertSame('completed', $response->status);
+        self::assertSame(1, $order->saves);
     }
 
     public function testCreateOrder_WhenFinalizeReportsOk_SavesOnceAndReportsTheOrder(): void

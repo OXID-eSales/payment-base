@@ -30,9 +30,17 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
 
     private const STATUS_CANCELLED = 'CANCELLED';
 
+    private readonly DeferredOrderMailRepositoryInterface $deferredMails;
+
+    /**
+     * $deferredMails defaults to the Doctrine one on the same connection, so
+     * code that builds this repository by hand keeps working (STRP-176).
+     */
     public function __construct(
-        private readonly Connection $connection
+        private readonly Connection $connection,
+        ?DeferredOrderMailRepositoryInterface $deferredMails = null
     ) {
+        $this->deferredMails = $deferredMails ?? new DoctrineDeferredOrderMailRepository($connection);
     }
 
     /**
@@ -93,7 +101,28 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
             );
         }
 
-        return $affected > 0;
+        if ($affected === 0) {
+            return false;
+        }
+
+        $this->dropDeferredOrderMails($orderId);
+
+        return true;
+    }
+
+    /**
+     * STRP-176 — an abandoned checkout is never paid, so the order mails it
+     * stored at creation must never go out, and hold the customer's data for
+     * nothing. Best-effort: the storno took and must be reported as such; the
+     * sender skips stornoed orders, so a leftover row costs storage, not a mail.
+     */
+    private function dropDeferredOrderMails(string $orderId): void
+    {
+        try {
+            $this->deferredMails->deleteByOrderId($orderId);
+        } catch (RuntimeException) {
+            // The repository's message carries the SQL error; the storno stands.
+        }
     }
 
     public function isNotFinished(string $orderId): bool

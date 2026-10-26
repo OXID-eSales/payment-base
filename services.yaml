@@ -79,6 +79,16 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $deferredMails: '@OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface'
+    public: true
+
+  # STRP-176 — order mails rendered at early order creation, sent once the
+  # contract commits. Public: the Order model extension reads it through the
+  # container, as it does VoucherReleaseInterface.
+  OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineDeferredOrderMailRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
     public: true
 
   # STRP-168 — the narrow half, for consumers that only need to hand a
