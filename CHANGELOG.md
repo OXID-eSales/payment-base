@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### GraphQL stays optional
+- `InvalidClientPublicKey` and `UnknownClientConfigProvider` no longer extend graphql-base's `Error` (loading either without graphql-base was
+  a fatal): they are plain `DomainException`s (`ClientConfigRequestRefused`), and `paymentClientConfig` maps them to the new
+  `GraphQL\Exception\ClientConfigRefused` with the same message and category - the client-visible error is unchanged.
+  `GraphQLIsOptionalTest` guards the rule for all of `src/`: nothing outside `src/GraphQL/` names a GraphQL package class.
+
 ### Admin payment API (A10 part 1, release 1.5.0)
 - For `oxid-admin-graphql` (optional - payment-base still installs and passes all suites without it): the rights
   `ADMIN_PAYMENT_VIEW`, `_CAPTURE`, `_REFUND`, `_CONFIG` (tagged `graphql_admin_rights_provider`), `AdminOrder.paymentContract`
