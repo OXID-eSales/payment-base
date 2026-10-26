@@ -22,6 +22,7 @@ use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use Throwable;
 
@@ -162,6 +163,14 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         }
 
         $order = $this->newOrder();
+        // STRP-176: this order exists before the customer pays at the PSP, and
+        // core's finalizeOrder() ends by mailing "thank you for your order". The
+        // mails are stored instead and sent when the contract commits. Not
+        // deferrable only when the Order extension is missing from the chain:
+        // then the mail goes out now, as before.
+        if ($order instanceof DefersConfirmationMailInterface) {
+            $order->deferConfirmationMail();
+        }
         // OXID 7.6: Order::getDelAddressInfo() resolves a selected delivery
         // address (`deladrid`) only when the ORDER's active user owns it
         // (getUser()->getUserAddresses()), and Base::getUser() falls back to
@@ -455,7 +464,10 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     {
         return match ($orderState) {
             Order::ORDER_STATE_OK => 'completed',
-            Order::ORDER_STATE_MAILINGERROR => 'completed', // Order created but email failed
+            // Not reached from createOrder(): validateOrderState() lets only OK
+            // through. Since STRP-176 the order mail no longer goes out here, so
+            // a mail problem cannot fail the order (the deferred path answers OK).
+            Order::ORDER_STATE_MAILINGERROR => 'completed',
             Order::ORDER_STATE_PAYMENTERROR => 'payment_error',
             Order::ORDER_STATE_BELOWMINPRICE => 'below_minimum',
             Order::ORDER_STATE_INVALIDPAYMENT => 'invalid_payment',

@@ -9,9 +9,16 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Eshop\Application\Model;
 
+use OxidEsales\Eshop\Core\Email as ShopEmail;
+use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
+use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
+use OxidEsales\PaymentBase\Mail\OrderMailCaptureInterface;
+use OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\VoucherReleaseInterface;
 use OxidEsales\PaymentBase\Service\VoucherReleaseSettingsInterface;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -32,10 +39,28 @@ use Throwable;
  * {@see VoucherReleaseInterface}, which is also what the cleanup command and
  * the checkout-retry cleanup call.
  *
+ * STRP-176 — the order mail of a PSP checkout waits for the payment. Early
+ * order creation runs finalizeOrder() before the customer pays at the PSP, and
+ * core ends finalizeOrder() by mailing "thank you for your order". When the
+ * order is deferred, core still renders both mails, on a capturing mailer, and
+ * they are stored until the contract commits. Stored mails go with the order
+ * when it is deleted or cancelled.
+ *
  * @since 2026-09-03
  */
-class Order extends Order_parent
+class Order extends Order_parent implements DefersConfirmationMailInterface
 {
+    private bool $confirmationMailDeferred = false;
+
+    /**
+     * Called by the early order creation of payment-base, before finalizeOrder().
+     * Lives on this object only: nothing else that finalizes an order changes.
+     */
+    public function deferConfirmationMail(): void
+    {
+        $this->confirmationMailDeferred = true;
+    }
+
     /**
      * @param string|null $sOxId
      *
@@ -47,7 +72,12 @@ class Order extends Order_parent
         // is not in oxorder any more and can never be matched again.
         $this->releaseVouchersOfThisOrder($sOxId);
 
-        return (bool) parent::delete($sOxId);
+        $deleted = (bool) parent::delete($sOxId);
+        if ($deleted) {
+            $this->dropDeferredOrderMails($sOxId);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -79,6 +109,130 @@ class Order extends Order_parent
         // save() succeeded, and the coupon follows that same signal rather than
         // inventing a second notion of "the storno took".
         $this->releaseVouchersOfThisOrder();
+
+        // A cancelled order is never confirmed; its mail must not go out later.
+        $this->dropDeferredOrderMails();
+    }
+
+    /**
+     * Core's signature, untyped, for the chain reason cancelOrder() gives.
+     *
+     * @param mixed $oUser
+     * @param mixed $oBasket
+     * @param mixed $oPayment
+     *
+     * @return int
+     */
+    protected function sendOrderByEmail($oUser = null, $oBasket = null, $oPayment = null)
+    {
+        if (!$this->confirmationMailDeferred) {
+            return parent::sendOrderByEmail($oUser, $oBasket, $oPayment);
+        }
+
+        $mailer = $this->newOrderMailer();
+        if ($mailer === null) {
+            // Without the Email extension nothing can keep the mail, and nothing
+            // would send it later: an early mail beats none.
+            $this->getOrderMailLogger()->warning(
+                '[STRP-176] Email extension missing from the chain, order mail sent at order creation',
+                ['orderId' => (string) $this->getId()]
+            );
+
+            return parent::sendOrderByEmail($oUser, $oBasket, $oPayment);
+        }
+
+        return $this->storeOrderMails($mailer, $oUser, $oBasket, $oPayment);
+    }
+
+    /**
+     * What core's sendOrderByEmail() does - the three assignments the mail
+     * templates read, then the customer and the owner mail - but on a mailer
+     * that keeps the mails. Repeated rather than reused because core creates
+     * its Email inside the method and offers no way to hand it another.
+     *
+     * Always ORDER_STATE_OK: the order creation refuses every other state, and
+     * a mail the customer only gets after paying must not stop them from paying.
+     * A mail that cannot be built or stored is logged instead.
+     */
+    private function storeOrderMails(OrderMailCaptureInterface $mailer, mixed $user, mixed $basket, mixed $payment): int
+    {
+        $this->_oUser = $user;
+        $this->_oBasket = $basket;
+        $this->_oPayment = $payment;
+
+        $mailer->captureAs(DeferredOrderMail::KIND_CUSTOMER);
+        if (!$mailer->sendOrderEmailToUser($this)) {
+            $this->logOrderMailGap('the customer order mail could not be built');
+        }
+        $mailer->captureAs(DeferredOrderMail::KIND_OWNER);
+        $mailer->sendOrderEmailToOwner($this);
+
+        try {
+            $this->getDeferredOrderMails()->save(
+                (string) $this->getId(),
+                (int) $this->getShopId(),
+                $mailer->takeCapturedMails()
+            );
+        } catch (Throwable $e) {
+            $this->logOrderMailGap('order mail could not be stored', $e->getMessage());
+        }
+
+        return self::ORDER_STATE_OK;
+    }
+
+    private function logOrderMailGap(string $what, string $error = ''): void
+    {
+        $this->getOrderMailLogger()->error('[STRP-176] ' . $what . ', it will not be sent', [
+            'orderId' => (string) $this->getId(),
+            'error' => $error,
+        ]);
+    }
+
+    /**
+     * Best-effort, like the voucher release: a stale row is a cleanup job, a
+     * failing delete or storno is an outage.
+     */
+    private function dropDeferredOrderMails(?string $orderId = null): void
+    {
+        $id = $orderId ?? (string) $this->getId();
+        if ($id === '') {
+            return;
+        }
+
+        try {
+            $this->getDeferredOrderMails()->deleteByOrderId($id);
+        } catch (Throwable $e) {
+            $this->getOrderMailLogger()->error('[STRP-176] stored order mails of an ended order not removed', [
+                'orderId' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * The end of the Email chain; null when this module's extension is not in
+     * it (module chain not regenerated after activation).
+     */
+    protected function newOrderMailer(): ?OrderMailCaptureInterface
+    {
+        $mailer = oxNew(ShopEmail::class);
+
+        return $mailer instanceof OrderMailCaptureInterface ? $mailer : null;
+    }
+
+    protected function getDeferredOrderMails(): DeferredOrderMailRepositoryInterface
+    {
+        /** @var DeferredOrderMailRepositoryInterface $mails */
+        $mails = ContainerFactory::getInstance()
+            ->getContainer()
+            ->get(DeferredOrderMailRepositoryInterface::class);
+
+        return $mails;
+    }
+
+    protected function getOrderMailLogger(): LoggerInterface
+    {
+        return Registry::getLogger();
     }
 
     /**

@@ -79,6 +79,16 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $deferredMails: '@OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface'
+    public: true
+
+  # STRP-176 — order mails rendered at early order creation, sent once the
+  # contract commits. Public: the Order model extension reads it through the
+  # container, as it does VoucherReleaseInterface.
+  OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineDeferredOrderMailRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
     public: true
 
   # STRP-168 — the narrow half, for consumers that only need to hand a
@@ -243,6 +253,16 @@ services:
   OxidEsales\PaymentBase\EventSystem\Handler\UserBasketRemovalHandler:
     tags:
       - { name: payment.event_handler, priority: 10 }
+
+  # STRP-176 — the order mails stored at early order creation go out once the
+  # payment is confirmed. Last on commit: the mail is the one step a failure
+  # of which must not hold back anything else.
+  OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidShopMailSender
+
+  OxidEsales\PaymentBase\EventSystem\Handler\OrderConfirmationMailHandler:
+    tags:
+      - { name: payment.event_handler, priority: 5 }
 
   # graphql-base is optional: these two classes mirror its interfaces without
   # implementing them, because the container reflects every service class at
