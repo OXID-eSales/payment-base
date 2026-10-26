@@ -464,7 +464,10 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     {
         return match ($orderState) {
             Order::ORDER_STATE_OK => 'completed',
-            Order::ORDER_STATE_MAILINGERROR => 'completed', // Order created but email failed
+            // Not reached from createOrder(): validateOrderState() lets only OK
+            // through. Since STRP-176 the order mail no longer goes out here, so
+            // a mail problem cannot fail the order (the deferred path answers OK).
+            Order::ORDER_STATE_MAILINGERROR => 'completed',
             Order::ORDER_STATE_PAYMENTERROR => 'payment_error',
             Order::ORDER_STATE_BELOWMINPRICE => 'below_minimum',
             Order::ORDER_STATE_INVALIDPAYMENT => 'invalid_payment',
