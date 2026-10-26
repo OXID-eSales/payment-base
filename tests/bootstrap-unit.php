@@ -468,3 +468,6 @@ if (!class_exists(\OxidEsales\GraphQL\Base\Service\Token::class, false)) {
         . '}'
     );
 }
+
+// A10 - stand-ins of the optional oxid-admin-graphql classes payment-base's admin payment API relies on.
+require_once __DIR__ . '/Support/admin-api-stubs.php';
