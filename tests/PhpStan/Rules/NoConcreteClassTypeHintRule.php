@@ -60,6 +60,9 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\Validation\\\\RuleSet$#',                // Sprint 119: RuleSet is a final VO — no interface needed
         '#\\\\Validation\\\\Guard\\\\ValidationRequestContext$#', // Sprint 119: immutable request-context VO — single concrete type
         '#\\\\Eshop\\\\Core\\\\Price$#',                          // Sprint 125: OXID core Price is a concrete value-type, no interface exists
+        // STRP-176 (2026-10-26): OXID's Email and Shop models, which the mail sender drives; no interfaces exist.
+        '#^OxidEsales\\\\Eshop\\\\Core\\\\Email$#',
+        '#^OxidEsales\\\\Eshop\\\\Application\\\\Model\\\\Shop$#',
         // 2026-09-01: payment-base took ownership of order finalization, which
         // means handling OXID's own Basket, User and Order models. OXID ships no
         // interfaces for them — same reason Price is listed above. The rule is
@@ -77,7 +80,7 @@ final class NoConcreteClassTypeHintRule implements Rule
         // payment confirmation in and an outcome out; values, not behaviour.
         '#\\\\Service\\\\Commit\\\\(PaymentConfirmation|CommitOutcome)$#',
         // STRP-176 (2026-10-26): the readonly copy of an order mail core rendered - a value, not behaviour.
-        '#\\\\Mail\\\\DeferredOrderMail$#',
+        '#\\\\Mail\\\\(DeferredOrderMail|StoredOrderMail)$#',
         // Sprint 15 / S6 (2026-10-06): the headless checkout's readonly request / result DTOs.
         '#\\\\Checkout\\\\Headless\\\\Headless(StartRequest|StartResult|ReturnResult|CancelResult)$#',
         // Sprint 140a: the guest checkout's readonly values - details in, shop user out.

@@ -407,7 +407,27 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
 // oxNew() for (the end of the Email chain). Stubbed for the same reason as
 // Order_parent: known to static analysis instead of ignored.
 if (!class_exists(\OxidEsales\Eshop\Core\Email::class, false)) {
-    eval('namespace OxidEsales\\Eshop\\Core; class Email {}');
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Email { '
+        . '  public function setSmtp($shop = null) {} '
+        . '  public function setFrom($address, $name = "", $auto = true) { return true; } '
+        . '  public function setRecipient($address = null, $name = null) {} '
+        . '  public function setReplyTo($email = null, $name = null) {} '
+        . '  public function addCC($address, $name = "") { return true; } '
+        . '  public function addBCC($address, $name = "") { return true; } '
+        . '  public function setSubject($subject = null) {} '
+        . '  public function setBody($body = null, $clearSid = true) {} '
+        . '  public function setAltBody($altBody = null, $clearSid = true) {} '
+        . '  public function send() { return true; } '
+        . '}'
+    );
+}
+
+// STRP-176 (2026-10-26) — core's Shop, which OxidShopMailSender loads for the
+// SMTP settings of the order's shop.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Shop::class, false)) {
+    eval('namespace OxidEsales\\Eshop\\Application\\Model; class Shop { public function load($oxid) { return true; } }');
 }
 
 // STRP-176 (2026-10-26) — Email_parent, the virtual class of the Email

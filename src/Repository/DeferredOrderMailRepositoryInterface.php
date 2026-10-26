@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Repository;
 
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
+use OxidEsales\PaymentBase\Mail\StoredOrderMail;
 
 /**
  * STRP-176 — where the order mails of an unpaid order wait for the payment.
@@ -31,4 +32,29 @@ interface DeferredOrderMailRepositoryInterface
      * @return int how many mails were removed
      */
     public function deleteByOrderId(string $orderId): int;
+
+    /**
+     * The mails of $orderId nobody is sending, as long as the order is still in
+     * oxorder and not stornoed: a cancelled order is never confirmed, not even
+     * when a late payment commits its contract.
+     *
+     * @return list<StoredOrderMail>
+     */
+    public function findUnsentByOrderId(string $orderId): array;
+
+    /**
+     * Takes one mail for sending. False when another sender (the other leg of
+     * the same payment) already holds it.
+     */
+    public function claim(string $mailId): bool;
+
+    /**
+     * Gives a claimed mail back, after its send failed.
+     */
+    public function release(string $mailId): void;
+
+    /**
+     * Removes one mail, once sent.
+     */
+    public function delete(string $mailId): void;
 }

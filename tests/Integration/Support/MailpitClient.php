@@ -50,6 +50,30 @@ final class MailpitClient
     }
 
     /**
+     * @return list<array{id: string, subject: string}> newest first
+     */
+    public function messagesTo(string $address): array
+    {
+        $result = $this->get('/search?' . http_build_query(['query' => 'to:' . $address]));
+        $messages = is_array($result) && is_array($result['messages'] ?? null) ? $result['messages'] : [];
+
+        return array_values(array_map(
+            static fn (mixed $m): array => [
+                'id' => is_array($m) ? (string) ($m['ID'] ?? '') : '',
+                'subject' => is_array($m) ? (string) ($m['Subject'] ?? '') : '',
+            ],
+            $messages
+        ));
+    }
+
+    public function textOf(string $messageId): string
+    {
+        $message = $this->get('/message/' . rawurlencode($messageId));
+
+        return is_array($message) ? (string) ($message['Text'] ?? '') . (string) ($message['HTML'] ?? '') : '';
+    }
+
+    /**
      * @return array<mixed>|null
      */
     private function get(string $path): ?array

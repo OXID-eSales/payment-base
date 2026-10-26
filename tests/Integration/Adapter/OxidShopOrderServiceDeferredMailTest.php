@@ -10,14 +10,14 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Integration\Adapter;
 
 use OxidEsales\Eshop\Application\Model\Order;
-use OxidEsales\Eshop\Core\DatabaseProvider;
+use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Tests\Integration\Support\CheckoutFixture;
-use OxidEsales\PaymentBase\Tests\Integration\Support\MailpitClient;
+use OxidEsales\PaymentBase\Tests\Integration\Support\DeferredOrderMailFixture;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -31,47 +31,18 @@ use PHPUnit\Framework\Attributes\Group;
 final class OxidShopOrderServiceDeferredMailTest extends IntegrationTestCase
 {
     use CheckoutFixture;
-
-    private MailpitClient $mailpit;
-
-    /** @var list<string> */
-    private array $orderIds = [];
-
-    private ?ContainerFactory $containerBeforeTest = null;
+    use DeferredOrderMailFixture;
 
     public function setUp(): void
     {
         parent::setUp();
-        // cleanupCaching() replaces the legacy DB object between tests while the
-        // container keeps the connection it was built with. Rebuilt here, the
-        // repositories write on the connection the test transaction runs on;
-        // otherwise their rows commit outside it and outlive the rollback.
-        // The previous container comes back in tearDown(): later test classes
-        // (OxidShopOrderServiceHeadlessDoubleSubmitTest) depend on the one they
-        // would have had without this class.
-        $this->containerBeforeTest = $this->factoryInstance()->getValue();
-        ContainerFactory::resetContainer();
-        $this->mailpit = new MailpitClient();
-        if (!$this->mailpit->isReachable()) {
-            self::markTestSkipped('Mailpit (http://mailpit:8025) is not reachable');
-        }
+        $this->setUpDeferredOrderMails();
     }
 
     public function tearDown(): void
     {
-        unset($_POST['sDeliveryAddressMD5']);
         parent::tearDown();
-        // After the rollback, so it also catches rows a future harness change
-        // lets escape it: the table holds customer data, on a shared database.
-        foreach ($this->orderIds as $orderId) {
-            DatabaseProvider::getDb()->execute('DELETE FROM oe_payments_order_mail WHERE OXORDERID = ?', [$orderId]);
-        }
-        $this->factoryInstance()->setValue(null, $this->containerBeforeTest);
-    }
-
-    private function factoryInstance(): \ReflectionProperty
-    {
-        return new \ReflectionProperty(ContainerFactory::class, 'instance');
+        $this->tearDownDeferredOrderMails();
     }
 
     public function testCreateOrder_SendsNoMailAndStoresTheCustomerAndOwnerMail(): void
@@ -136,39 +107,12 @@ final class OxidShopOrderServiceDeferredMailTest extends IntegrationTestCase
         self::assertSame([], $this->storedMails($orderId));
     }
 
-    private function remember(string $orderId): string
-    {
-        $this->orderIds[] = $orderId;
-
-        return $orderId;
-    }
-
-    private function checkoutUser(string $suffix): \OxidEsales\Eshop\Application\Model\User
+    private function checkoutUser(string $suffix): User
     {
         $user = $this->createFixtureUser('strp176_' . $suffix);
         $this->putOneArticleInBasketFor($user);
         $_POST['sDeliveryAddressMD5'] = $user->getEncodedDeliveryAddress();
 
         return $user;
-    }
-
-    private function addressOf(\OxidEsales\Eshop\Application\Model\User $user): string
-    {
-        return (string) $user->getFieldData('oxusername');
-    }
-
-    /**
-     * @return list<array<string, string>>
-     */
-    private function storedMails(string $orderId): array
-    {
-        /** @var list<array<string, string>> $rows */
-        $rows = DatabaseProvider::getDb(DatabaseProvider::FETCH_MODE_ASSOC)->getAll(
-            "SELECT OXKIND, OXRECIPIENTS, OXSUBJECT, OXBODY FROM oe_payments_order_mail
-             WHERE OXORDERID = :id ORDER BY FIELD(OXKIND, 'customer', 'owner')",
-            [':id' => $orderId]
-        );
-
-        return $rows;
     }
 }

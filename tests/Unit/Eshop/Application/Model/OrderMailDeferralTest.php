@@ -95,24 +95,30 @@ final class OrderMailDeferralTest extends TestCase
         self::assertSame($payment, $order->_oPayment);
     }
 
-    public function testSendOrderByEmail_WhenDeferredAndCustomerMailCannotBeBuilt_ReturnsMailingError(): void
+    /**
+     * OxidShopOrderService refuses every state but OK, so MAILINGERROR here
+     * would abort a valid checkout over a mail the customer gets only after
+     * paying anyway. The order goes on; the gap is logged.
+     */
+    public function testSendOrderByEmail_WhenDeferredAndTheCustomerMailCannotBeBuilt_ReturnsOkAndLogsError(): void
     {
-        // Same answer core gives when the customer mail fails.
         $mailer = new RenderingMailer();
         $mailer->recipients = [];
         $order = $this->order($mailer);
         $order->deferConfirmationMail();
 
-        self::assertSame(Order::ORDER_STATE_MAILINGERROR, $order->callSendOrderByEmail());
+        self::assertSame(Order::ORDER_STATE_OK, $order->callSendOrderByEmail());
+
+        self::assertSame('error', $this->logger->records[0][0]);
     }
 
-    public function testSendOrderByEmail_WhenStoringFails_LogsErrorAndReturnsMailingError(): void
+    public function testSendOrderByEmail_WhenStoringFails_ReturnsOkAndLogsError(): void
     {
         $this->store->failWith = new RuntimeException('db down');
         $order = $this->order();
         $order->deferConfirmationMail();
 
-        self::assertSame(Order::ORDER_STATE_MAILINGERROR, $order->callSendOrderByEmail());
+        self::assertSame(Order::ORDER_STATE_OK, $order->callSendOrderByEmail());
 
         self::assertSame('error', $this->logger->records[0][0]);
         self::assertStringContainsString('order-1', (string) json_encode($this->logger->records[0][2]));
@@ -217,6 +223,24 @@ final class SpyDeferredOrderMails implements DeferredOrderMailRepositoryInterfac
         $this->deleted[] = $orderId;
 
         return 2;
+    }
+
+    public function findUnsentByOrderId(string $orderId): array
+    {
+        return [];
+    }
+
+    public function claim(string $mailId): bool
+    {
+        return false;
+    }
+
+    public function release(string $mailId): void
+    {
+    }
+
+    public function delete(string $mailId): void
+    {
     }
 }
 

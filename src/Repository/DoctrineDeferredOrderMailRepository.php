@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Repository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
+use OxidEsales\PaymentBase\Mail\StoredOrderMail;
 use RuntimeException;
 
 /**
@@ -57,6 +58,118 @@ class DoctrineDeferredOrderMailRepository implements DeferredOrderMailRepository
                 $e
             );
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function findUnsentByOrderId(string $orderId): array
+    {
+        $sql = 'SELECT m.* FROM ' . self::TABLE_NAME . ' m
+                JOIN oxorder o ON o.OXID = m.OXORDERID
+                WHERE m.OXORDERID = :orderId AND m.OXCLAIMEDAT IS NULL AND o.OXSTORNO = 0
+                ORDER BY m.OXTIMESTAMP, m.OXKIND';
+
+        try {
+            $rows = $this->connection->fetchAllAssociative($sql, ['orderId' => $orderId]);
+        } catch (Exception $e) {
+            throw new RuntimeException(
+                'Failed to read the deferred order mails of order ' . $orderId . ': ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+
+        return array_map(fn (array $row): StoredOrderMail => $this->fromRow($row), $rows);
+    }
+
+    public function claim(string $mailId): bool
+    {
+        return $this->write(
+            fn (): int => (int) $this->connection->executeStatement(
+                'UPDATE ' . self::TABLE_NAME . ' SET OXCLAIMEDAT = NOW() WHERE OXID = :id AND OXCLAIMEDAT IS NULL',
+                ['id' => $mailId]
+            ),
+            'claim',
+            $mailId
+        ) === 1;
+    }
+
+    public function release(string $mailId): void
+    {
+        $this->write(
+            fn (): int => (int) $this->connection->update(self::TABLE_NAME, ['OXCLAIMEDAT' => null], ['OXID' => $mailId]),
+            'release',
+            $mailId
+        );
+    }
+
+    public function delete(string $mailId): void
+    {
+        $this->write(
+            fn (): int => (int) $this->connection->delete(self::TABLE_NAME, ['OXID' => $mailId]),
+            'delete',
+            $mailId
+        );
+    }
+
+    /**
+     * @param callable(): int $statement
+     */
+    private function write(callable $statement, string $action, string $mailId): int
+    {
+        try {
+            return $statement();
+        } catch (Exception $e) {
+            throw new RuntimeException(
+                'Failed to ' . $action . ' deferred order mail ' . $mailId . ': ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function fromRow(array $row): StoredOrderMail
+    {
+        return new StoredOrderMail(
+            id: (string) $row['OXID'],
+            shopId: (int) $row['OXSHOPID'],
+            mail: new DeferredOrderMail(
+                kind: (string) $row['OXKIND'],
+                from: (string) $row['OXFROM'],
+                fromName: (string) $row['OXFROMNAME'],
+                recipients: $this->addressList($row['OXRECIPIENTS']),
+                replyTo: $this->addressList($row['OXREPLYTO']),
+                cc: $this->addressList($row['OXCC']),
+                bcc: $this->addressList($row['OXBCC']),
+                subject: (string) $row['OXSUBJECT'],
+                body: (string) $row['OXBODY'],
+                altBody: (string) $row['OXALTBODY'],
+            ),
+        );
+    }
+
+    /**
+     * @return list<array{0: string, 1: string}>
+     */
+    private function addressList(mixed $json): array
+    {
+        $decoded = json_decode((string) $json, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $pairs = [];
+        foreach ($decoded as $pair) {
+            if (is_array($pair) && isset($pair[0])) {
+                $pairs[] = [(string) $pair[0], (string) ($pair[1] ?? '')];
+            }
+        }
+
+        return $pairs;
     }
 
     /**

@@ -80,6 +80,10 @@ final class Version20261026100000 extends AbstractMigration
         $table->addColumn('OXTIMESTAMP', Types::DATETIME_MUTABLE, [
             'columnDefinition' => 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP',
         ]);
+        $table->addColumn('OXCLAIMEDAT', Types::DATETIME_MUTABLE, [
+            'notnull' => false,
+            'comment' => 'set while a sender holds the mail (return and webhook leg race); NULL = waiting',
+        ]);
     }
 
     private function addEnvelopeColumns(Table $table): void

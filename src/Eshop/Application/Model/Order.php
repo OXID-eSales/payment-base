@@ -149,6 +149,10 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
      * templates read, then the customer and the owner mail - but on a mailer
      * that keeps the mails. Repeated rather than reused because core creates
      * its Email inside the method and offers no way to hand it another.
+     *
+     * Always ORDER_STATE_OK: the order creation refuses every other state, and
+     * a mail the customer only gets after paying must not stop them from paying.
+     * A mail that cannot be built or stored is logged instead.
      */
     private function storeOrderMails(OrderMailCaptureInterface $mailer, mixed $user, mixed $basket, mixed $payment): int
     {
@@ -157,7 +161,9 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
         $this->_oPayment = $payment;
 
         $mailer->captureAs(DeferredOrderMail::KIND_CUSTOMER);
-        $customerMailBuilt = (bool) $mailer->sendOrderEmailToUser($this);
+        if (!$mailer->sendOrderEmailToUser($this)) {
+            $this->logOrderMailGap('the customer order mail could not be built');
+        }
         $mailer->captureAs(DeferredOrderMail::KIND_OWNER);
         $mailer->sendOrderEmailToOwner($this);
 
@@ -168,15 +174,18 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
                 $mailer->takeCapturedMails()
             );
         } catch (Throwable $e) {
-            $this->getOrderMailLogger()->error('[STRP-176] order mail could not be stored, it will not be sent', [
-                'orderId' => (string) $this->getId(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return self::ORDER_STATE_MAILINGERROR;
+            $this->logOrderMailGap('order mail could not be stored', $e->getMessage());
         }
 
-        return $customerMailBuilt ? self::ORDER_STATE_OK : self::ORDER_STATE_MAILINGERROR;
+        return self::ORDER_STATE_OK;
+    }
+
+    private function logOrderMailGap(string $what, string $error = ''): void
+    {
+        $this->getOrderMailLogger()->error('[STRP-176] ' . $what . ', it will not be sent', [
+            'orderId' => (string) $this->getId(),
+            'error' => $error,
+        ]);
     }
 
     /**

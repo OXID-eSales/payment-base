@@ -40,6 +40,60 @@ final class DoctrineDeferredOrderMailRepositoryTest extends IntegrationTestCase
         $this->connection->executeStatement(
             "DELETE FROM oe_payments_order_mail WHERE OXORDERID LIKE 'pbtest\\_mail\\_%'"
         );
+        $this->connection->executeStatement("DELETE FROM oxorder WHERE OXID LIKE 'pbtest\\_mail\\_%'");
+    }
+
+    public function testFindUnsentByOrderId_ReturnsTheMailsOfALiveOrderAsStored(): void
+    {
+        $this->seedOrder('pbtest_mail_live', storno: 0);
+        $this->repository->save('pbtest_mail_live', 1, [$this->mail('customer'), $this->mail('owner')]);
+
+        $found = $this->repository->findUnsentByOrderId('pbtest_mail_live');
+
+        self::assertSame(['customer', 'owner'], array_map(static fn ($m): string => $m->mail->kind, $found));
+        self::assertEquals($this->mail('customer'), $found[0]->mail);
+        self::assertSame(1, $found[0]->shopId);
+    }
+
+    public function testFindUnsentByOrderId_IgnoresStornoedAndMissingOrders(): void
+    {
+        $this->seedOrder('pbtest_mail_storno', storno: 1);
+        $this->repository->save('pbtest_mail_storno', 1, [$this->mail('customer')]);
+        $this->repository->save('pbtest_mail_gone', 1, [$this->mail('customer')]);
+
+        self::assertSame([], $this->repository->findUnsentByOrderId('pbtest_mail_storno'));
+        self::assertSame([], $this->repository->findUnsentByOrderId('pbtest_mail_gone'));
+    }
+
+    public function testClaim_SucceedsOnceUntilReleased(): void
+    {
+        $this->seedOrder('pbtest_mail_claim', storno: 0);
+        $this->repository->save('pbtest_mail_claim', 1, [$this->mail('customer')]);
+        $mailId = $this->repository->findUnsentByOrderId('pbtest_mail_claim')[0]->id;
+
+        self::assertTrue($this->repository->claim($mailId));
+        self::assertFalse($this->repository->claim($mailId), 'the other leg must not get it');
+        self::assertSame([], $this->repository->findUnsentByOrderId('pbtest_mail_claim'), 'a claimed mail is not unsent');
+
+        $this->repository->release($mailId);
+
+        self::assertTrue($this->repository->claim($mailId));
+    }
+
+    public function testDelete_RemovesTheOneMail(): void
+    {
+        $this->seedOrder('pbtest_mail_del', storno: 0);
+        $this->repository->save('pbtest_mail_del', 1, [$this->mail('customer'), $this->mail('owner')]);
+        $mailId = $this->repository->findUnsentByOrderId('pbtest_mail_del')[0]->id;
+
+        $this->repository->delete($mailId);
+
+        self::assertSame(1, $this->countFor('pbtest_mail_del'));
+    }
+
+    private function seedOrder(string $orderId, int $storno): void
+    {
+        $this->connection->insert('oxorder', ['OXID' => $orderId, 'OXSHOPID' => 1, 'OXSTORNO' => $storno]);
     }
 
     public function testSave_KeepsTheRenderedMailByteForByte_IncludingNonLatinText(): void

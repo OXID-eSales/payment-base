@@ -288,6 +288,38 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
     );
 }
 
+// STRP-176 (2026-10-26) — core's Email as OxidShopMailSender drives it when
+// it sends a stored order mail: every call is recorded, send() answers
+// $sendResult. And core's Shop, which the sender loads for its SMTP settings.
+if (!class_exists(\OxidEsales\Eshop\Core\Email::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core; '
+        . 'class Email { '
+        . '  public array $calls = []; '
+        . '  public bool $sendResult = true; '
+        . '  public function setSmtp($shop = null) { $this->calls[] = ["setSmtp", $shop]; } '
+        . '  public function setFrom($address, $name = "", $auto = true) { $this->calls[] = ["setFrom", $address, $name]; return true; } '
+        . '  public function setRecipient($address = null, $name = null) { $this->calls[] = ["setRecipient", $address, $name]; } '
+        . '  public function setReplyTo($email = null, $name = null) { $this->calls[] = ["setReplyTo", $email, $name]; } '
+        . '  public function addCC($address, $name = "") { $this->calls[] = ["addCC", $address, $name]; return true; } '
+        . '  public function addBCC($address, $name = "") { $this->calls[] = ["addBCC", $address, $name]; return true; } '
+        . '  public function setSubject($subject = null) { $this->calls[] = ["setSubject", $subject]; } '
+        . '  public function setBody($body = null, $clearSid = true) { $this->calls[] = ["setBody", $body]; } '
+        . '  public function setAltBody($altBody = null, $clearSid = true) { $this->calls[] = ["setAltBody", $altBody]; } '
+        . '  public function send() { $this->calls[] = ["send"]; return $this->sendResult; } '
+        . '}'
+    );
+}
+
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Shop::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class Shop { '
+        . '  public function load($oxid) { return false; } '
+        . '}'
+    );
+}
+
 // STRP-176 (2026-10-26) — Email_parent, the virtual class of the Email
 // extension. Public fields stand in for PHPMailer's state; the two order-mail
 // methods do what core's do at the end: call send().

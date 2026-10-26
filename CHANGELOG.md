@@ -5,7 +5,7 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
-### Order mail waits for the payment (STRP-176, part 1 of 2)
+### Order mail waits for the payment (STRP-176)
 - Early order creation (`Adapter\OxidShopOrderService`) no longer mails "thank you for your order" before the customer
   has paid at the PSP. The order asks to defer its confirmation mail (`Mail\DefersConfirmationMailInterface`, implemented
   by the `Order` extension); core still renders the customer and owner mail in `finalizeOrder()`, on a capturing mailer
@@ -16,8 +16,16 @@ All notable changes to this module are documented here. Format follows
   abandoned checkout is cancelled (`DoctrineNotFinishedOrderRepository::cancelOrder()`, which takes the mail repository as
   an optional second constructor argument).
 - Orders that are not created by payment-base (invoice, COD, prepayment, ...) mail from `finalizeOrder()` as before.
-- **Not shippable alone:** sending the stored mails when the contract commits is part 2. Until then a paid PSP order
-  gets no confirmation mail.
+- The stored mails go out when the contract commits: new `EventSystem\Handler\OrderConfirmationMailHandler` on
+  `ContractCommittedEvent` (priority 5, after the basket removal), through `Adapter\ShopMailSenderInterface`
+  (`OxidShopMailSender`: core's `Email`, the SMTP settings of the order's shop). Each mail is claimed before it is sent
+  (`OXCLAIMEDAT`), so the return and the webhook leg - or a replayed webhook - send it once. Mails of a stornoed or
+  deleted order are never sent. A mail the shop's mailer refuses stays stored, released, and is logged; the commit is
+  never affected.
+- A deferred order always answers `ORDER_STATE_OK`: a mail that cannot be built or stored is logged, but no longer
+  aborts the checkout (`OxidShopOrderService` refuses every other state).
+- **Behaviour change for every PSP on payment-base (Stripe, PayPal, Mollie):** the order confirmation mail now arrives
+  after the payment is confirmed, not when the customer is sent to the PSP. A checkout cancelled at the PSP sends none.
 
 ### Guest checkout (Sprint 140a, release 1.5.0)
 - `oxidanonymous` holds the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,

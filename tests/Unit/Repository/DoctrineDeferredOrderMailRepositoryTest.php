@@ -105,6 +105,89 @@ final class DoctrineDeferredOrderMailRepositoryTest extends TestCase
         self::assertSame(2, (new DoctrineDeferredOrderMailRepository($connection))->deleteByOrderId('order-1'));
     }
 
+    public function testFindUnsentByOrderId_RebuildsTheStoredMails(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('fetchAllAssociative')->willReturn([[
+            'OXID' => 'mail-1',
+            'OXSHOPID' => '3',
+            'OXKIND' => 'customer',
+            'OXFROM' => 'order@shop.test',
+            'OXFROMNAME' => 'My Shop',
+            'OXRECIPIENTS' => '[["jane@example.test","Jane Doe"]]',
+            'OXREPLYTO' => '[["order@shop.test","My Shop"]]',
+            'OXCC' => '[]',
+            'OXBCC' => '[["audit@shop.test",""]]',
+            'OXSUBJECT' => 'Your order (#42)',
+            'OXBODY' => '<p>Thank you</p>',
+            'OXALTBODY' => 'Thank you',
+        ]]);
+
+        $found = (new DoctrineDeferredOrderMailRepository($connection))->findUnsentByOrderId('order-1');
+
+        self::assertCount(1, $found);
+        self::assertSame('mail-1', $found[0]->id);
+        self::assertSame(3, $found[0]->shopId);
+        self::assertEquals($this->mail(DeferredOrderMail::KIND_CUSTOMER), $found[0]->mail);
+    }
+
+    public function testFindUnsentByOrderId_AsksOnlyForUnclaimedMailsOfALiveOrder(): void
+    {
+        // A stornoed or deleted order is never confirmed - even when a late
+        // payment commits its contract after the cleanup cancelled it.
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->with(
+                $this->callback(static fn (string $sql): bool => str_contains($sql, 'OXCLAIMEDAT IS NULL')
+                    && str_contains($sql, 'JOIN oxorder')
+                    && str_contains($sql, 'OXSTORNO = 0')),
+                ['orderId' => 'order-1']
+            )
+            ->willReturn([]);
+
+        self::assertSame([], (new DoctrineDeferredOrderMailRepository($connection))->findUnsentByOrderId('order-1'));
+    }
+
+    public function testClaim_WhenTheGuardedUpdateTookTheRow_ReturnsTrue(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('executeStatement')
+            ->with($this->stringContains('OXCLAIMEDAT IS NULL'), ['id' => 'mail-1'])
+            ->willReturn(1);
+
+        self::assertTrue((new DoctrineDeferredOrderMailRepository($connection))->claim('mail-1'));
+    }
+
+    public function testClaim_WhenAnotherSenderHoldsTheRow_ReturnsFalse(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('executeStatement')->willReturn(0);
+
+        self::assertFalse((new DoctrineDeferredOrderMailRepository($connection))->claim('mail-1'));
+    }
+
+    public function testRelease_ClearsTheClaim(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('update')
+            ->with('oe_payments_order_mail', ['OXCLAIMEDAT' => null], ['OXID' => 'mail-1']);
+
+        (new DoctrineDeferredOrderMailRepository($connection))->release('mail-1');
+    }
+
+    public function testDelete_RemovesTheOneMail(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())
+            ->method('delete')
+            ->with('oe_payments_order_mail', ['OXID' => 'mail-1']);
+
+        (new DoctrineDeferredOrderMailRepository($connection))->delete('mail-1');
+    }
+
     private function mail(string $kind): DeferredOrderMail
     {
         return new DeferredOrderMail(

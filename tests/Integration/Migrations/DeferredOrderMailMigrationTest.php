@@ -24,7 +24,7 @@ final class DeferredOrderMailMigrationTest extends MigrationTestBase
         foreach (
             [
                 'OXID', 'OXORDERID', 'OXSHOPID', 'OXKIND', 'OXFROM', 'OXFROMNAME', 'OXRECIPIENTS', 'OXREPLYTO',
-                'OXCC', 'OXBCC', 'OXSUBJECT', 'OXBODY', 'OXALTBODY', 'OXTIMESTAMP',
+                'OXCC', 'OXBCC', 'OXSUBJECT', 'OXBODY', 'OXALTBODY', 'OXTIMESTAMP', 'OXCLAIMEDAT',
             ] as $column
         ) {
             $this->assertColumnExists('oe_payments_order_mail', $column);
