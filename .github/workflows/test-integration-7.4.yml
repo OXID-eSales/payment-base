@@ -141,6 +141,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # The order mails (STRP-176 integration tests) are rendered from the storefront theme's
+          # email templates; without a theme Mailpit receives the template names instead.
+          docker compose exec -T php composer require oxid-esales/apex-theme:dev-b-7.4.x --no-interaction --no-update
           if [ '${{ matrix.graphql }}' = 'with' ]; then
             docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           fi
@@ -192,6 +195,10 @@ jobs:
         run: |
           docker compose exec -T php bin/oe-console oe:database:reset \
             --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
+
+      - name: Activate theme
+        run: |
+          docker compose exec -T php bin/oe-console oe:theme:activate apex
 
       # GraphQL is optional for the payment modules, so every shop is installed twice. 'with':
       # graphql-base and graphql-storefront are installed and active before the payment modules, so
