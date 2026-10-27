@@ -744,3 +744,123 @@ services:
     tags:
       - { name: twig.extension }
     public: false
+
+  # --------------------------------------------------------------
+  # A10 - the admin payment API (oxid-admin-graphql): rights, `AdminOrder.paymentContract`,
+  # `adminPaymentCapture/Refund/Void`, and the answers to the admin API's order and payment events.
+  #
+  # Every integration is optional. The admin API's services are reached only through `@?` (null when it is not
+  # installed), and the classes below implement nothing of it (the container reflects every service class at
+  # module activation): they mirror its contracts, like the GraphQL glue above. Its tags are inert without it,
+  # and NamespaceMapper maps the controller, types and the AdminOrder extension only when it is there.
+  # --------------------------------------------------------------
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentRightsProvider:
+    autowire: false
+    autoconfigure: false
+    tags: [ 'graphql_admin_rights_provider' ]
+
+  # Every provider module binds this id the same way (same class and connection); payment-base's own compile
+  # needs it too, so that the module activates standalone.
+  OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+    public: false
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      - '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      - '@oxid_esales.monolog.logger'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotencyInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStepUpInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminStepUp
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@?OxidEsales\GraphQL\Admin\Mfa\Service\StepUp'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminAuditInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminAudit
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@?OxidEsales\GraphQL\Admin\Audit\Service\AuditRecorder'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\DbalRequestShopOrders
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperationsInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperations
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotencyInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStepUpInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminAuditInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface'
+      - '@oxid_esales.monolog.logger'
+
+  # GraphQLite fetches controllers and ExtendType classes from the container by FQCN, hence public. Both name
+  # classes of the admin API only in attributes and parameter types, which are resolved lazily.
+  OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentMutations:
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperationsInterface'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation:
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\OrderChangeGuardSubscriber:
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+    tags: [ 'kernel.event_subscriber' ]
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\OrderCancelledSubscriber:
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
+      - '@oxid_esales.monolog.logger'
+    tags: [ 'kernel.event_subscriber' ]
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\PaymentOwnershipSubscriber:
+    autowire: false
+    autoconfigure: false
+    public: true
+    tags: [ 'kernel.event_subscriber' ]

@@ -5,6 +5,26 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+## [v1.5.0] - 2026-10-27
+
+### GraphQL stays optional
+- `InvalidClientPublicKey` and `UnknownClientConfigProvider` no longer extend graphql-base's `Error` (loading either without graphql-base was
+  a fatal): they are plain `DomainException`s (`ClientConfigRequestRefused`), and `paymentClientConfig` maps them to the new
+  `GraphQL\Exception\ClientConfigRefused` with the same message and category - the client-visible error is unchanged.
+  `GraphQLIsOptionalTest` guards the rule for all of `src/`: nothing outside `src/GraphQL/` names a GraphQL package class.
+
+### Admin payment API (A10 part 1, release 1.5.0)
+- For `oxid-admin-graphql` (optional - payment-base still installs and passes all suites without it): the rights
+  `ADMIN_PAYMENT_VIEW`, `_CAPTURE`, `_REFUND`, `_CONFIG` (tagged `graphql_admin_rights_provider`), `AdminOrder.paymentContract`
+  (`AdminPaymentContract`: provider, state, amounts, bounds, transactions), the mutations `adminPaymentCapture`,
+  `adminPaymentRefund`, `adminPaymentVoid` (step-up for capture and refund, idempotency on `oe_payments_idempotency`, audit
+  through the admin recorder, delegation to the panel providers of the classic Payment tab), and subscribers for the
+  admin events `AdminOrderChangeGuard` (no item/payment/delivery change after a capture), `AdminOrderCancelled` (log only)
+  and `AdminPaymentOwnership` (the Stripe, PayPal and Mollie rows are provider-owned). See `docs/admin-payment-api.md`.
+- `services.yaml` binds `TransactionRepositoryInterface` (the same definition every provider module already has).
+- `GraphQL\Service\NamespaceMapper` takes a second optional argument (`adminApiInstalled`).
+- Dev: the optional admin classes have shared stand-ins (`tests/Support/admin-api-stubs.php`) for the unit suite and PHPStan.
+
 ### Order mail waits for the payment (STRP-176)
 - Early order creation (`Adapter\OxidShopOrderService`) no longer mails "thank you for your order" before the customer
   has paid at the PSP. The order asks to defer its confirmation mail (`Mail\DefersConfirmationMailInterface`, implemented
@@ -26,6 +46,7 @@ All notable changes to this module are documented here. Format follows
   aborts the checkout (`OxidShopOrderService` refuses every other state).
 - **Behaviour change for every PSP on payment-base (Stripe, PayPal, Mollie):** the order confirmation mail now arrives
   after the payment is confirmed, not when the customer is sent to the PSP. A checkout cancelled at the PSP sends none.
+
 
 ### Guest checkout (Sprint 140a, release 1.5.0)
 - `oxidanonymous` holds the storefront's basket rights (`CREATE_BASKET`, `VIEW_BASKET`, `ADD_PRODUCT_TO_BASKET`,

@@ -9,27 +9,18 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\ClientConfig\Exception;
 
-use OxidEsales\GraphQL\Base\Exception\Error;
-use OxidEsales\GraphQL\Base\Exception\ErrorCategories;
-
 /**
  * Client-safe: `clientPublicKey` is not a raw P-256 point (65 bytes,
  * 0x04 || X || Y, base64url).
  *
  * @since 1.4.0
  */
-final class InvalidClientPublicKey extends Error
+final class InvalidClientPublicKey extends ClientConfigRequestRefused
 {
     public function __construct(string $reason)
     {
         parent::__construct(
-            message: 'Invalid clientPublicKey: ' . $reason,
-            category: ErrorCategories::REQUESTERROR
+            message: 'Invalid clientPublicKey: ' . $reason
         );
-    }
-
-    public function getCategory(): string
-    {
-        return ErrorCategories::REQUESTERROR;
     }
 }

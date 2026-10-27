@@ -163,6 +163,15 @@ Two things curl-level clients trip over: OXID empties the basket for user agents
 default is one — send a browser-like `User-Agent`), and the storefront hides `#[Logged]` fields (the `basketSet*`
 mutations and the provider mutations) from anonymous introspection — log in first.
 
+## GraphQL is optional: no GraphQL references outside `src/GraphQL/`
+
+payment-base (and the provider modules) must work with and without graphql-base, graphql-storefront, GraphQLite, webonyx
+and oxid-admin-graphql. So only code under `src/GraphQL/` may `use`, extend, implement or type-hint a class of those
+packages. Everything else throws plain domain exceptions, and the GraphQL layer maps them to client-safe errors (example:
+`ClientConfigRequestRefused` becomes `GraphQL\Exception\ClientConfigRefused` in the `paymentClientConfig` controller).
+`tests/Unit/GraphQL/GraphQLIsOptionalTest` enforces it: a static scan of every other file, and a child process that
+declares every other class where none of the packages exist (it must not use `tests/bootstrap-unit.php`, which stubs them).
+
 ## For a new provider module
 
 The checklist is in `dev_log/20261006/done/sprint-15-S8-gates-consumers-handover.md`; the Mollie story

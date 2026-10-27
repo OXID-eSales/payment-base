@@ -272,6 +272,13 @@ and the provider's webhook ends the order. **The payment method is chosen by whi
 `placeOrder` is refused for these payments and names the mutation to use. Details, the shared result types, error codes
 and the CLI scripts of the three modules: [docs/graphql-headless-checkout.md](docs/graphql-headless-checkout.md).
 
+## Admin payment API
+
+With `oxid-admin-graphql` installed (optional), payment-base adds the payment of an order to the admin API: the rights
+`ADMIN_PAYMENT_*`, `AdminOrder.paymentContract`, and `adminPaymentCapture` / `adminPaymentRefund` / `adminPaymentVoid` in front
+of the provider modules' own capture, refund and cancel code, plus the answers to the admin API's order and payment-ownership
+events. Without it nothing changes. [docs/admin-payment-api.md](docs/admin-payment-api.md).
+
 ## Domain Events
 
 ### Contract Events

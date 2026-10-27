@@ -616,3 +616,6 @@ if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
         . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }
+
+// A10 - the optional oxid-admin-graphql classes the admin payment API relies on (shared with the unit suite).
+require_once __DIR__ . '/../Support/admin-api-stubs.php';

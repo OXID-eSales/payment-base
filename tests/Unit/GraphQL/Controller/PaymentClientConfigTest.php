@@ -13,14 +13,19 @@ use OxidEsales\PaymentBase\ClientConfig\ClientConfigGuard;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigProviderRegistry;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigPublisher;
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigSealer;
+use OxidEsales\GraphQL\Base\Exception\Error;
+use OxidEsales\GraphQL\Base\Exception\ErrorCategories;
+use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface;
 use OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface;
 use OxidEsales\PaymentBase\ClientConfig\Exception\InvalidClientPublicKey;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnknownClientConfigProvider;
 use OxidEsales\PaymentBase\ClientConfig\SystemSealInputs;
+use OxidEsales\PaymentBase\ClientConfig\ValueObject\SealedEnvelope;
 use OxidEsales\PaymentBase\GraphQL\Controller\PaymentClientConfig;
 use OxidEsales\PaymentBase\Tests\Unit\ClientConfig\EcKeys;
 use OxidEsales\PaymentBase\Tests\Unit\ClientConfig\FakeClientConfigProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class FixedTokenId implements TokenIdReaderInterface
 {
@@ -96,17 +101,56 @@ final class PaymentClientConfigTest extends TestCase
         self::assertNotNull(EcKeys::open($envelope, $browserKey, 'stripe', ''));
     }
 
-    public function testAnUnknownProviderIsRefused(): void
+    /**
+     * The client-visible answer must not change since the domain exceptions stopped being graphql-base errors:
+     * headless clients (oxid-fe-user, hydroxid) match on the message and the category. These never carried an
+     * `errorCode` extension, and still do not.
+     */
+    public function testAnUnknownProviderIsRefusedWithTheSameClientVisibleError(): void
     {
-        $this->expectException(UnknownClientConfigProvider::class);
+        $error = $this->refusal(fn () => $this->controller('t')->paymentClientConfig('klarna', 'x'));
 
-        $this->controller('t')->paymentClientConfig('klarna', 'x');
+        self::assertSame('Unknown payment provider "klarna"', $error->getMessage());
+        self::assertSame(ErrorCategories::REQUESTERROR, $error->getCategory());
+        self::assertTrue($error->isClientSafe());
+        self::assertSame([], $error->getExtensions() ?? []);
+        self::assertInstanceOf(UnknownClientConfigProvider::class, $error->getPrevious());
     }
 
-    public function testAMalformedClientKeyIsRefused(): void
+    public function testAMalformedClientKeyIsRefusedWithTheSameClientVisibleError(): void
     {
-        $this->expectException(InvalidClientPublicKey::class);
+        $error = $this->refusal(fn () => $this->controller('t')->paymentClientConfig('stripe', 'AAAA'));
 
-        $this->controller('t')->paymentClientConfig('stripe', 'AAAA');
+        self::assertSame('Invalid clientPublicKey: expected an uncompressed point of 65 bytes', $error->getMessage());
+        self::assertSame(ErrorCategories::REQUESTERROR, $error->getCategory());
+        self::assertTrue($error->isClientSafe());
+        self::assertSame([], $error->getExtensions() ?? []);
+        self::assertInstanceOf(InvalidClientPublicKey::class, $error->getPrevious());
+    }
+
+    public function testAnUnexpectedFailureIsNotTurnedIntoAClientSafeError(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        $controller = new PaymentClientConfig(
+            new class implements ClientConfigPublisherInterface {
+                public function sealedFor(string $providerId, string $clientPublicKey, string $tokenId): SealedEnvelope
+                {
+                    throw new RuntimeException('provider exploded');
+                }
+            },
+            new FixedTokenId('t')
+        );
+        $controller->paymentClientConfig('stripe', 'x');
+    }
+
+    private function refusal(callable $call): Error
+    {
+        try {
+            $call();
+        } catch (Error $error) {
+            return $error;
+        }
+        self::fail('the query was not refused with a GraphQL error');
     }
 }
