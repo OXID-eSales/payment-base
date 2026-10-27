@@ -5,6 +5,8 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+## [v1.5.0] - 2026-10-27
+
 ### GraphQL stays optional
 - `InvalidClientPublicKey` and `UnknownClientConfigProvider` no longer extend graphql-base's `Error` (loading either without graphql-base was
   a fatal): they are plain `DomainException`s (`ClientConfigRequestRefused`), and `paymentClientConfig` maps them to the new
