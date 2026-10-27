@@ -330,12 +330,20 @@ services:
     arguments:
       - '@?OxidEsales\GraphQL\Base\Service\Token'
 
-  OxidEsales\PaymentBase\GraphQL\Controller\PaymentClientConfig:
+  oe_payment_base.graphql.payment_client_config:
+    class: OxidEsales\PaymentBase\GraphQL\Controller\PaymentClientConfig
     autowire: false
     autoconfigure: false
     arguments:
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface'
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface'
+
+  # OXID 7.5+ RoutePass reflects the method attributes of every public service *definition* at container
+  # compile; on a shop without GraphQLite resolving those attribute classes kills the compile (module
+  # activation). So the definition is private and GraphQLite, which fetches the class by its FQCN from
+  # the container, reaches it through a public alias, which RoutePass does not visit.
+  OxidEsales\PaymentBase\GraphQL\Controller\PaymentClientConfig:
+    alias: oe_payment_base.graphql.payment_client_config
     public: true
 
   # Sprint 139c - read side of the Order type extension (`Order.paymentContract`).
@@ -350,11 +358,16 @@ services:
   # The class mentions graphql-storefront only in an attribute and a parameter type, both
   # resolved lazily: the container can reflect it on a shop without the storefront, and
   # NamespaceMapper maps its namespace only when the storefront is installed.
-  OxidEsales\PaymentBase\GraphQL\Relation\OrderRelationService:
+  oe_payment_base.graphql.order_relation_service:
+    class: OxidEsales\PaymentBase\GraphQL\Relation\OrderRelationService
     autowire: false
     autoconfigure: false
     arguments:
       - '@OxidEsales\PaymentBase\Repository\ContractSummaryQueryInterface'
+
+  # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
+  OxidEsales\PaymentBase\GraphQL\Relation\OrderRelationService:
+    alias: oe_payment_base.graphql.order_relation_service
     public: true
 
   OxidEsales\PaymentBase\GraphQL\Subscriber\RefusePlaceOrderForContractFirstPayments:
@@ -828,19 +841,29 @@ services:
 
   # GraphQLite fetches controllers and ExtendType classes from the container by FQCN, hence public. Both name
   # classes of the admin API only in attributes and parameter types, which are resolved lazily.
-  OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentMutations:
+  oe_payment_base.graphql.admin_payment_mutations:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentMutations
     autowire: false
     autoconfigure: false
-    public: true
     arguments:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperationsInterface'
 
-  OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation:
+  # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
+  OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentMutations:
+    alias: oe_payment_base.graphql.admin_payment_mutations
+    public: true
+
+  oe_payment_base.graphql.admin_order_payment_relation:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation
     autowire: false
     autoconfigure: false
-    public: true
     arguments:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
+
+  # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
+  OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation:
+    alias: oe_payment_base.graphql.admin_order_payment_relation
+    public: true
 
   OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\OrderChangeGuardSubscriber:
     autowire: false

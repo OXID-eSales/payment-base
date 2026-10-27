@@ -96,6 +96,42 @@ final class OptionalGraphQlDependencyTest extends TestCase
     }
 
     /**
+     * OXID 7.5+ RoutePass reads the attributes of every public service definition and its methods at container
+     * compile. Resolving an absent GraphQLite attribute class there fatals the compile, so module activation dies
+     * on a shop without GraphQL (CI "without" runs, 2026-10-27). GraphQL classes the container must hand out by
+     * their FQCN get a private definition and a public alias instead; RoutePass does not visit aliases.
+     */
+    public function testNoPublicServiceDefinitionCarriesAGraphQlAttribute(): void
+    {
+        $yaml = Yaml::parseFile(__DIR__ . '/../../../../services.yaml', Yaml::PARSE_CUSTOM_TAGS);
+        $services = $yaml['services'] ?? [];
+        $publicByDefault = (bool) ($services['_defaults']['public'] ?? false);
+
+        $offenders = [];
+        foreach ($services as $id => $definition) {
+            $class = $this->reflectedClassOf((string) $id, $definition);
+            $public = is_array($definition) ? (bool) ($definition['public'] ?? $publicByDefault) : $publicByDefault;
+            if ($class === null || !$public || !class_exists($class)) {
+                continue;
+            }
+            $reflection = new \ReflectionClass($class);
+            $attributes = $reflection->getAttributes();
+            foreach ($reflection->getMethods() as $method) {
+                $attributes = [...$attributes, ...$method->getAttributes()];
+            }
+            foreach ($attributes as $attribute) {
+                foreach (self::OPTIONAL_NAMESPACES as $optional) {
+                    if (str_starts_with($attribute->getName(), $optional)) {
+                        $offenders[] = "$id -> {$attribute->getName()}";
+                    }
+                }
+            }
+        }
+
+        self::assertSame([], array_values(array_unique($offenders)), 'public definition: use a private one + public alias');
+    }
+
+    /**
      * Mirrors Symfony: an explicit `class` wins; a class-looking id is its own class.
      *
      * @param array<string, mixed>|string|null $definition
