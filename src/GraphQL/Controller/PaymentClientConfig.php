@@ -11,7 +11,9 @@ namespace OxidEsales\PaymentBase\GraphQL\Controller;
 
 use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface;
 use OxidEsales\PaymentBase\ClientConfig\Contract\TokenIdReaderInterface;
+use OxidEsales\PaymentBase\ClientConfig\Exception\ClientConfigRequestRefused;
 use OxidEsales\PaymentBase\GraphQL\DataType\SealedClientConfig;
+use OxidEsales\PaymentBase\GraphQL\Exception\ClientConfigRefused;
 use TheCodingMachine\GraphQLite\Annotations\Query;
 use TheCodingMachine\GraphQLite\Annotations\Right;
 
@@ -41,8 +43,12 @@ final class PaymentClientConfig
     #[Right('PAYMENT_CLIENT_CONFIG')]
     public function paymentClientConfig(string $provider, string $clientPublicKey): SealedClientConfig
     {
-        return new SealedClientConfig(
-            $this->publisher->sealedFor($provider, $clientPublicKey, $this->tokenIdReader->tokenId())
-        );
+        try {
+            return new SealedClientConfig(
+                $this->publisher->sealedFor($provider, $clientPublicKey, $this->tokenIdReader->tokenId())
+            );
+        } catch (ClientConfigRequestRefused $refusal) {
+            throw new ClientConfigRefused($refusal);
+        }
     }
 }

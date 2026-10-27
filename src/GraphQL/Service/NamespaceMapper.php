@@ -30,12 +30,16 @@ namespace OxidEsales\PaymentBase\GraphQL\Service;
 final class NamespaceMapper
 {
     private const STOREFRONT_ORDER_TYPE = 'OxidEsales\\GraphQL\\Storefront\\Order\\DataType\\Order';
+    private const ADMIN_ORDER_TYPE = 'OxidEsales\\GraphQL\\Admin\\Order\\DataType\\AdminOrder';
 
     /**
      * @param bool|null $storefrontInstalled null: ask the autoloader whether graphql-storefront is there
+     * @param bool|null $adminApiInstalled   null: ask the autoloader whether oxid-admin-graphql is there
      */
-    public function __construct(private readonly ?bool $storefrontInstalled = null)
-    {
+    public function __construct(
+        private readonly ?bool $storefrontInstalled = null,
+        private readonly ?bool $adminApiInstalled = null,
+    ) {
     }
 
     /**
@@ -43,9 +47,15 @@ final class NamespaceMapper
      */
     public function getControllerNamespaceMapping(): array
     {
-        return [
+        $mapping = [
             'OxidEsales\\PaymentBase\\GraphQL\\Controller' => __DIR__ . '/../Controller/',
         ];
+        // The admin payment mutations name types of the admin API: mapped only when it is installed.
+        if ($this->adminApiAvailable()) {
+            $mapping['OxidEsales\\PaymentBase\\GraphQL\\Admin\\Controller'] = __DIR__ . '/../Admin/Controller/';
+        }
+
+        return $mapping;
     }
 
     /**
@@ -64,6 +74,17 @@ final class NamespaceMapper
             $mapping['OxidEsales\\PaymentBase\\GraphQL\\Relation'] = __DIR__ . '/../Relation/';
         }
 
+        // Same reasoning for the admin API: its error interface and AdminOrder are what these types are made of.
+        if ($this->adminApiAvailable()) {
+            $mapping['OxidEsales\\PaymentBase\\GraphQL\\Admin\\DataType'] = __DIR__ . '/../Admin/DataType/';
+            $mapping['OxidEsales\\PaymentBase\\GraphQL\\Admin\\Relation'] = __DIR__ . '/../Admin/Relation/';
+        }
+
         return $mapping;
+    }
+
+    private function adminApiAvailable(): bool
+    {
+        return $this->adminApiInstalled ?? class_exists(self::ADMIN_ORDER_TYPE);
     }
 }

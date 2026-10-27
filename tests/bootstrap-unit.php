@@ -404,6 +404,7 @@ if (!class_exists(\OxidEsales\GraphQL\Base\Exception\Error::class, false)) {
         . 'abstract class Error extends \\GraphQL\\Error\\Error { '
         . '  public function __construct(string $message, protected $code = 0, ?\\Throwable $previous = null, protected string $category = "Exception", array $extensions = []) { parent::__construct($message, 0, $previous); $this->extensions = $extensions; } '
         . '  public function getCategory(): string { return $this->category; } '
+        . '  public function isClientSafe(): bool { return true; } '
         . '} '
         . 'class ErrorCategories { '
         . '  public const PERMISSIONERRORS = "permissionerror"; public const TOKENERRORS = "tokenerror"; '
@@ -468,3 +469,6 @@ if (!class_exists(\OxidEsales\GraphQL\Base\Service\Token::class, false)) {
         . '}'
     );
 }
+
+// A10 - stand-ins of the optional oxid-admin-graphql classes payment-base's admin payment API relies on.
+require_once __DIR__ . '/Support/admin-api-stubs.php';

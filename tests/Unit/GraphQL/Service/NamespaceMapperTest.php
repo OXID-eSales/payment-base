@@ -50,4 +50,30 @@ final class NamespaceMapperTest extends TestCase
         self::assertArrayNotHasKey('OxidEsales\\PaymentBase\\GraphQL\\Relation', $types);
         self::assertArrayHasKey('OxidEsales\\PaymentBase\\GraphQL\\DataType', $types);
     }
+
+    public function testAdminApiInstalled_MapsTheAdminPaymentControllersTypesAndOrderRelation(): void
+    {
+        $mapper = new NamespaceMapper(storefrontInstalled: false, adminApiInstalled: true);
+
+        $controllers = $mapper->getControllerNamespaceMapping();
+        $types = $mapper->getTypeNamespaceMapping();
+
+        self::assertDirectoryExists($controllers['OxidEsales\\PaymentBase\\GraphQL\\Admin\\Controller']);
+        self::assertDirectoryExists($types['OxidEsales\\PaymentBase\\GraphQL\\Admin\\DataType']);
+        self::assertDirectoryExists($types['OxidEsales\\PaymentBase\\GraphQL\\Admin\\Relation']);
+    }
+
+    /**
+     * The admin types name classes of oxid-admin-graphql (its error interface, AdminOrder): mapped without it,
+     * the schema of a shop without the admin API would fail to build.
+     */
+    public function testAdminApiAbsent_MapsNothingOfTheAdminPaymentApi(): void
+    {
+        $mapper = new NamespaceMapper(storefrontInstalled: true, adminApiInstalled: false);
+
+        self::assertArrayNotHasKey('OxidEsales\\PaymentBase\\GraphQL\\Admin\\Controller', $mapper->getControllerNamespaceMapping());
+        foreach (array_keys($mapper->getTypeNamespaceMapping()) as $namespace) {
+            self::assertStringNotContainsString('GraphQL\\Admin\\', $namespace . '\\');
+        }
+    }
 }
