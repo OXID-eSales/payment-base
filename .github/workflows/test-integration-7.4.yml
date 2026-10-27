@@ -144,6 +144,9 @@ jobs:
           # The order mails (STRP-176 integration tests) are rendered from the storefront theme's
           # email templates; without a theme Mailpit receives the template names instead.
           docker compose exec -T php composer require oxid-esales/apex-theme:dev-b-7.4.x --no-interaction --no-update
+          # apex requires twig-component "*"; Packagist's newest (v2.8.x, the 7.5 line) autowires core's
+          # HtmlSanitizerInterface, which shop 7.4 does not have, and every container compile fails.
+          docker compose exec -T php composer require oxid-esales/twig-component:dev-b-7.4.x --no-interaction --no-update
           if [ '${{ matrix.graphql }}' = 'with' ]; then
             docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           fi
