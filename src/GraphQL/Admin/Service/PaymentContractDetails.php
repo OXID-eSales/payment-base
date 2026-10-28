@@ -41,6 +41,7 @@ final readonly class PaymentContractDetails
         public string $currency,
         public array $transactions,
         private ?AdminActionOptions $declaredActionOptions = null,
+        private ?LazyActionBounds $declaredBounds = null,
     ) {
     }
 
@@ -52,6 +53,10 @@ final readonly class PaymentContractDetails
 
     public function amountCapturable(): float
     {
+        $declared = $this->declaredBounds?->get();
+        if ($declared?->capturable !== null) {
+            return $declared->capturable;
+        }
         if (!in_array($this->state, self::CAPTURABLE_STATES, true) || $this->amountCaptured > Money::HALF_CENT_EPSILON) {
             return 0.0;
         }
@@ -61,12 +66,22 @@ final readonly class PaymentContractDetails
 
     public function amountRefundable(): float
     {
+        $declared = $this->declaredBounds?->get();
+        if ($declared?->refundable !== null) {
+            return $declared->refundable;
+        }
         if (!in_array($this->state, self::REFUNDABLE_STATES, true)) {
             return 0.0;
         }
         $rest = $this->amountCaptured - $this->amountRefunded;
 
         return $rest < Money::HALF_CENT_EPSILON ? 0.0 : $rest;
+    }
+
+    /** The provider declared bounds and could not read them: nothing is offered and a write is refused. */
+    public function providerBoundsUnavailable(): bool
+    {
+        return $this->declaredBounds?->get()?->available === false;
     }
 
     /**

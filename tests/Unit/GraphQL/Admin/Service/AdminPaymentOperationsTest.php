@@ -10,9 +10,11 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Service;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
 use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
 use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperations;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
@@ -24,6 +26,7 @@ use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\AdapterEffects;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\ContractFactory;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\CountingStepUp;
+use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakeBoundsPanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakeOptionsPanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakePanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\InMemoryContracts;
@@ -390,6 +393,67 @@ final class AdminPaymentOperationsTest extends TestCase
         self::assertSame([], $this->adapter->calls);
     }
 
+    // --- provider bounds (PAY-1 S4) -----------------------------------------------------------------------------
+
+    public function testProviderCapturableBound_AllowsAFurtherCapture_ThePaymentBaseNumbersWouldRefuse(): void
+    {
+        $this->useBounds(static fn (): AdminActionBounds => new AdminActionBounds(capturable: 70.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 30.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-2', 'paypal', 100.0, 30.0));
+
+        // the fake adapter cannot re-capture a captured contract; what is proven is that the rule let the call through
+        $accepted = $this->operations()->capture('order-1', 70.0, 'key-capture-1')->refusal();
+        $tooMuch = $this->operations()->capture('order-2', 70.01, 'key-capture-2')->refusal();
+
+        self::assertContains($accepted?->code, ['provider_failed', 'not_confirmed'], 'passed the bound, reached the provider');
+        self::assertSame('exceeds_capturable', $tooMuch?->code);
+        self::assertCount(1, $this->adapter->calls);
+    }
+
+    public function testProviderRefundableBound_LowerThanTheLocalOne_IsTheLimit(): void
+    {
+        $this->useBounds(static fn (): AdminActionBounds => new AdminActionBounds(refundable: 10.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        $refusal = $this->operations()->refund('order-1', 20.0, null, 'key-refund-1')->refusal();
+
+        self::assertSame('exceeds_refundable', $refusal?->code);
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testProviderBoundNotReadable_RefusesTheWriteAsProviderUnavailable_AndZeroesTheRead(): void
+    {
+        $this->useBounds(static function (): never {
+            throw new \RuntimeException('provider down');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+        $this->contracts->save(ContractFactory::authorized('order-2'));
+
+        $refund = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1');
+        $capture = $this->operations()->capture('order-2', null, 'key-capture-1');
+        $void = $this->operations()->void('order-2', 'key-void-1');
+
+        self::assertSame(['orderId', 'provider_unavailable'], [$refund->refusal()?->field, $refund->refusal()?->code]);
+        self::assertSame('provider_unavailable', $capture->refusal()?->code);
+        self::assertSame('provider_unavailable', $void->refusal()?->code);
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testProviderWithoutBounds_GetsTheSameAnswersAsBefore(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        self::assertSame('exceeds_refundable', $this->operations()->refund('order-1', 101.0, null, 'key-refund-1')->refusal()?->code);
+    }
+
+    /**
+     * @param \Closure(\OxidEsales\PaymentBase\Contract\PaymentContractInterface): ?AdminActionBounds $answer
+     */
+    private function useBounds(\Closure $answer): void
+    {
+        $this->panel = new FakeBoundsPanelProvider($this->adapter, $answer);
+    }
+
     // --- audit ------------------------------------------------------------------------------------------------
 
     public function testEveryCallIsAudited_WithFieldNamesAndTheAmountOnly(): void
@@ -561,7 +625,7 @@ final class AdminPaymentOperationsTest extends TestCase
         };
 
         return new AdminPaymentOperations(
-            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), new PanelActionOptionsResolver($registry, new NullLogger())),
+            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), new PanelActionOptionsResolver($registry, new NullLogger()), new PanelActionBoundsResolver($registry, new NullLogger())),
             new PanelProviderActionRunner($registry, $this->contracts, new NullLogger()),
             new OperationIdempotency($this->idempotencyRows, static fn (): DateTimeImmutable => $now),
             $this->stepUp,

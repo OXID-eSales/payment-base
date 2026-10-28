@@ -94,7 +94,7 @@ final class NoConcreteClassTypeHintRule implements Rule
         // A10: the admin payment API - its GraphQL types, and the readonly values its service layer passes around
         // (a payment's read model, a refusal, an operation's request and outcome, an idempotency claim): values, not behaviour.
         '#\\\\GraphQL\\\\Admin\\\\DataType\\\\#',
-        '#\\\\GraphQL\\\\Admin\\\\Service\\\\(PaymentContractDetails|PaymentTransactionDetails|PaymentRefusal|PaymentOperationResult|AdminPaymentOperation|IdempotencyClaim|AdminStateHelp|AdminStateHelpRow)$#',
+        '#\\\\GraphQL\\\\Admin\\\\Service\\\\(PaymentContractDetails|PaymentTransactionDetails|PaymentRefusal|PaymentOperationResult|AdminPaymentOperation|IdempotencyClaim|AdminStateHelp|AdminStateHelpRow|LazyActionBounds)$#',
         '#\\\\Admin\\\\Help\\\\ContractStateHelpRow$#', // PAY-1: the final readonly row VO of the shared state Help
         // A10: the admin API's final classes with no interface (optional package, like graphql-base's Token above):
         // its audit recorder, its step-up guard and the payment-ownership event.

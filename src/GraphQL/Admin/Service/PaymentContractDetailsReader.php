@@ -26,6 +26,7 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
         private readonly ContractRepositoryInterface $contracts,
         private readonly TransactionRepositoryInterface $transactions,
         private readonly ?AdminActionOptionsResolverInterface $actionOptions = null,
+        private readonly ?AdminActionBoundsResolverInterface $bounds = null,
     ) {
     }
 
@@ -46,6 +47,7 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
             currency: $contract->getCurrency(),
             transactions: $this->transactionsOf($contract),
             declaredActionOptions: $this->actionOptions?->optionsFor($contract),
+            declaredBounds: $this->bounds?->boundsFor($contract),
         );
     }
 

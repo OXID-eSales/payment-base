@@ -23,7 +23,7 @@ final class PaymentOperationRules
 {
     public static function refusalFor(AdminPaymentOperation $operation, PaymentContractDetails $payment): ?PaymentRefusal
     {
-        return self::textRefusal($operation, $payment->actionOptions()) ?? match ($operation->kind) {
+        return self::textRefusal($operation, $payment->actionOptions()) ?? self::unavailableRefusal($payment) ?? match ($operation->kind) {
             AdminPaymentOperation::CAPTURE => self::capture($operation, $payment),
             AdminPaymentOperation::REFUND => self::refund($operation, $payment),
             default => self::void($payment),
@@ -51,6 +51,13 @@ final class PaymentOperationRules
         }
 
         return PaymentRefusal::invalid('reason', 'reason_invalid', 'The reason is not one the payment provider accepts');
+    }
+
+    private static function unavailableRefusal(PaymentContractDetails $payment): ?PaymentRefusal
+    {
+        return $payment->providerBoundsUnavailable()
+            ? PaymentRefusal::invalid('orderId', 'provider_unavailable', 'The payment provider\'s limits could not be read; try again later')
+            : null;
     }
 
     private static function capture(AdminPaymentOperation $operation, PaymentContractDetails $payment): ?PaymentRefusal

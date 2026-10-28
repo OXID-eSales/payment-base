@@ -793,6 +793,15 @@ services:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
       - '@oxid_esales.monolog.logger'
 
+  # PAY-1 S4: a panel provider may also implement Admin\Contract\AdminActionBoundsProviderInterface.
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionBoundsResolverInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@oxid_esales.monolog.logger'
+
   OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader
     autowire: false
@@ -801,6 +810,7 @@ services:
       - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionBoundsResolverInterface'
 
   OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner
