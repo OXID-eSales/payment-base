@@ -3,6 +3,12 @@ name: Tests on OXID 7.6
 on: [ push, pull_request ]
 
 env:
+  # Composer in the php container downloads the dist zips from api.github.com. Without credentials GitHub
+  # refuses those bursts from the shared runner IPs ("curl error 7 ... Connection refused" for every
+  # package at once, runs 40681842184 / 40681842117). Handed to each composer call with
+  # `docker compose exec -e COMPOSER_AUTH`, so it never lands in the container's composer home, which the
+  # workspace cache saves. setup-php does the same for the host composer.
+  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
   # Disambiguates the workspace cache between the per-shop-line workflows:
   # their keys otherwise share PHP/MySQL values while each workflow counts
   # its own run_number — the 7.6 workflow's run 4 restored the 7.5
@@ -128,11 +134,11 @@ jobs:
         run: |
           # The order mails (STRP-176 integration tests) are rendered from the storefront theme's
           # email templates; without a theme Mailpit receives the template names instead.
-          docker compose exec -T php composer require oxid-esales/apex-theme:dev-b-7.6.x --no-interaction --no-update
+          docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/apex-theme:dev-b-7.6.x --no-interaction --no-update
           if [ '${{ matrix.graphql }}' = 'with' ]; then
-            docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
+            docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           fi
-          docker compose exec -T php composer update --with-all-dependencies --no-interaction
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --with-all-dependencies --no-interaction
 
       # Sprint 93 — workaround for a CI-environment-specific bug in
       # `oxid-esales/oxideshop-unified-namespace-generator` (commit
@@ -200,7 +206,7 @@ jobs:
           else
             present=''
             for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
-              if docker compose exec -T php composer show "$package" > /dev/null 2>&1; then
+              if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
                 present="$present $package"
               fi
             done
@@ -287,7 +293,7 @@ jobs:
 
       - name: Install component dependencies
         working-directory: source/test-module
-        run: composer install --no-interaction
+        run: $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh composer install --no-interaction
 
       - name: Run style check
         run: |
@@ -341,7 +347,7 @@ jobs:
 
       - name: Install component dependencies
         run: |
-          docker compose exec -T \
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH \
             php bash -c "cd /var/www/test-module && composer install --no-interaction"
 
       - name: Run isolated unit tests
@@ -395,20 +401,20 @@ jobs:
       - name: Install shop dependencies
         run: |
           if [ '${{ matrix.graphql }}' = 'with' ]; then
-            docker compose exec -T php composer require oxid-esales/graphql-storefront --no-interaction --no-update
+            docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/graphql-storefront --no-interaction --no-update
           fi
-          docker compose exec -T php composer update --no-interaction
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --no-interaction
 
       - name: Install component dev dependencies
         run: |
-          docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php bash -c "cd /var/www/test-module && composer install --no-interaction"
 
       # Composer runs only the root package's scripts: hook the module's migrate command into the
       # shop's composer.json as a project does (README, "Migrations"), then prove an update runs it.
       - name: Kick off migrations with composer update
         run: |
           docker compose exec -T php php -r '$f = "composer.json"; $j = json_decode(file_get_contents($f)); $j->scripts ??= new stdClass(); foreach (["post-install-cmd", "post-update-cmd"] as $h) { $j->scripts->$h = array_values(array_unique(array_merge((array) ($j->scripts->$h ?? []), ["oe-payment-base-migrate"]))); } file_put_contents($f, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");'
-          docker compose exec -T php composer require oxid-esales/payment-base --no-interaction 2>&1 | tee composer-require.log
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/payment-base --no-interaction 2>&1 | tee composer-require.log
           grep -q "\[payment-base\] migrations done" composer-require.log
 
       - name: GraphQL ${{ matrix.graphql }} - check the shop before the tests
@@ -424,7 +430,7 @@ jobs:
           else
             present=''
             for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
-              if docker compose exec -T php composer show "$package" > /dev/null 2>&1; then
+              if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
                 present="$present $package"
               fi
             done
