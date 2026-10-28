@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\DataType;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentContract;
 use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentTransaction;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetails;
@@ -64,6 +65,25 @@ final class AdminPaymentContractTest extends TestCase
         self::assertSame([0.0, 50.0], [$captured->amountCapturable(), $captured->amountRefundable()]);
     }
 
+    public function testActionOptions_DefaultToFreeText_AndShowTheProvidersDeclaration(): void
+    {
+        $plain = new AdminPaymentContract(new PaymentContractDetails('c', 'stripe', 'authorized', 80.0, 0.0, 0.0, 'EUR', []));
+        $declared = new AdminPaymentContract(new PaymentContractDetails('c', 'stripe', 'authorized', 80.0, 0.0, 0.0, 'EUR', [], new AdminActionOptions(['duplicate'], ['abandoned'], true, 40)));
+
+        self::assertSame([[], [], false, 255], [
+            $plain->actionOptions()->refundReasons(),
+            $plain->actionOptions()->voidReasons(),
+            $plain->actionOptions()->refundDescription(),
+            $plain->actionOptions()->reasonMaxLength(),
+        ]);
+        self::assertSame([['duplicate'], ['abandoned'], true, 40], [
+            $declared->actionOptions()->refundReasons(),
+            $declared->actionOptions()->voidReasons(),
+            $declared->actionOptions()->refundDescription(),
+            $declared->actionOptions()->reasonMaxLength(),
+        ]);
+    }
+
     public function testTheTypeCarriesNoProviderPayloadOrSecret(): void
     {
         $methods = array_map(
@@ -74,7 +94,7 @@ final class AdminPaymentContractTest extends TestCase
         sort($exposed);
 
         self::assertSame(
-            ['amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'contractId', 'currency', 'provider', 'state', 'transactions'],
+            ['actionOptions', 'amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'contractId', 'currency', 'provider', 'state', 'transactions'],
             $exposed,
         );
     }

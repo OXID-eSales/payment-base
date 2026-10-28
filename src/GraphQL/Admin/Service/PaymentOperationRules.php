@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
 
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\Math\Money\Money;
 
 /**
@@ -22,11 +23,34 @@ final class PaymentOperationRules
 {
     public static function refusalFor(AdminPaymentOperation $operation, PaymentContractDetails $payment): ?PaymentRefusal
     {
-        return match ($operation->kind) {
+        return self::textRefusal($operation, $payment->actionOptions()) ?? match ($operation->kind) {
             AdminPaymentOperation::CAPTURE => self::capture($operation, $payment),
             AdminPaymentOperation::REFUND => self::refund($operation, $payment),
             default => self::void($payment),
         };
+    }
+
+    /**
+     * The provider's own say on the free text: its limit, and, where it declares a list, the only reasons it takes.
+     */
+    private static function textRefusal(AdminPaymentOperation $operation, AdminActionOptions $options): ?PaymentRefusal
+    {
+        $limit = $options->reasonMaxLength;
+        foreach (['reason' => $operation->reason, 'description' => $operation->description] as $field => $text) {
+            if ($text !== null && strlen($text) > $limit) {
+                return PaymentRefusal::invalid($field, 'too_long', sprintf('The %s is longer than %d characters', $field, $limit));
+            }
+        }
+        $allowed = match ($operation->kind) {
+            AdminPaymentOperation::REFUND => $options->refundReasons,
+            AdminPaymentOperation::VOID => $options->voidReasons,
+            default => [],
+        };
+        if ($operation->reason === null || $allowed === [] || in_array($operation->reason, $allowed, true)) {
+            return null;
+        }
+
+        return PaymentRefusal::invalid('reason', 'reason_invalid', 'The reason is not one the payment provider accepts');
     }
 
     private static function capture(AdminPaymentOperation $operation, PaymentContractDetails $payment): ?PaymentRefusal

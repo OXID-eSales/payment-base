@@ -81,10 +81,12 @@ final class AdminPaymentWiringTest extends IntegrationTestCase
         self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*amountAuthorised: Float![^}]*transactions: \[AdminPaymentTransaction!\]!/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*providerReference: String/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*contractId: String!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*actionOptions: AdminPaymentActionOptions!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentActionOptions \{[^}]*refundReasons: \[String!\]![^}]*voidReasons: \[String!\]![^}]*refundDescription: Boolean![^}]*reasonMaxLength: Int!/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*currency: String!/s', $schema);
-        self::assertStringContainsString('adminPaymentCapture(orderId: ID!, amount: Float = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
-        self::assertStringContainsString('adminPaymentRefund(orderId: ID!, amount: Float!, reason: String = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
-        self::assertStringContainsString('adminPaymentVoid(orderId: ID!, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertStringContainsString('adminPaymentCapture(orderId: ID!, amount: Float = null, idempotencyKey: String = null, reason: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertStringContainsString('adminPaymentRefund(orderId: ID!, amount: Float!, reason: String = null, idempotencyKey: String = null, description: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertStringContainsString('adminPaymentVoid(orderId: ID!, idempotencyKey: String = null, reason: String = null): AdminPaymentOperationPayload!', $schema);
     }
 
     public function testSchema_HasTheStateHelpQuery(): void

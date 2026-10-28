@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
 
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\Math\Money\MinorUnitConverter;
 use OxidEsales\PaymentBase\Math\Money\Money;
 
@@ -39,7 +40,14 @@ final readonly class PaymentContractDetails
         public float $amountRefunded,
         public string $currency,
         public array $transactions,
+        private ?AdminActionOptions $declaredActionOptions = null,
     ) {
+    }
+
+    /** What the provider accepts as reasons and description; free text when it declares nothing. */
+    public function actionOptions(): AdminActionOptions
+    {
+        return $this->declaredActionOptions ?? AdminActionOptions::freeText();
     }
 
     public function amountCapturable(): float

@@ -89,6 +89,13 @@ final class AdminPaymentContract
         return $this->payment->currency;
     }
 
+    /** What the provider accepts as the reason of a refund or void and as a refund description. */
+    #[Field]
+    public function actionOptions(): AdminPaymentActionOptions
+    {
+        return new AdminPaymentActionOptions($this->payment->actionOptions());
+    }
+
     /**
      * @return AdminPaymentTransaction[]
      */

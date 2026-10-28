@@ -784,6 +784,15 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: false
 
+  # PAY-1 S3: a panel provider may also implement Admin\Contract\AdminActionOptionsProviderInterface.
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@oxid_esales.monolog.logger'
+
   OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader
     autowire: false
@@ -791,6 +800,7 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface'
 
   OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner
