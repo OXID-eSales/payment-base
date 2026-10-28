@@ -11,23 +11,30 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Support;
 
 use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Core\DatabaseProvider;
+use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
+use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use ReflectionProperty;
 
 /**
  * STRP-176 — what the order-mail integration tests share: a container bound to
- * the connection the test transaction runs on, cleanup of stored mails on the
- * shared database, and the local Mailpit.
+ * the connection the test transaction runs on, a real contract row for every
+ * order (the mails wait on it), cleanup on the shared database, and the local
+ * Mailpit.
  *
- * Call setUpDeferredOrderMails() after parent::setUp() and
- * tearDownDeferredOrderMails() after parent::tearDown().
+ * Needs CheckoutFixture. Call setUpDeferredOrderMails() after parent::setUp()
+ * and tearDownDeferredOrderMails() after parent::tearDown().
  */
 trait DeferredOrderMailFixture
 {
     private MailpitClient $mailpit;
 
     /** @var list<string> */
-    private array $orderIds = [];
+    private array $contractIds = [];
 
     private ?ContainerFactory $containerBeforeTest = null;
 
@@ -53,18 +60,57 @@ trait DeferredOrderMailFixture
     {
         unset($_POST['sDeliveryAddressMD5']);
         // After the rollback, so it also catches rows a future harness change
-        // lets escape it: the table holds customer data, on a shared database.
-        foreach ($this->orderIds as $orderId) {
-            DatabaseProvider::getDb()->execute('DELETE FROM oe_payments_order_mail WHERE OXORDERID = ?', [$orderId]);
+        // lets escape it: the mails hold customer data, on a shared database.
+        foreach ($this->contractIds as $contractId) {
+            DatabaseProvider::getDb()->execute('DELETE FROM oe_payments_contract WHERE OXID = ?', [$contractId]);
         }
         $this->factoryInstance()->setValue(null, $this->containerBeforeTest);
     }
 
-    private function remember(string $orderId): string
+    /**
+     * What a PSP checkout does: a contract first, then the order that names it,
+     * then the contract learns its order (EarlyOrderCreationHandler).
+     *
+     * @return array{0: string, 1: string} order id, contract id
+     */
+    private function createOrderOnContract(User $user): array
     {
-        $this->orderIds[] = $orderId;
+        $contractId = 'strp176-' . substr(md5(uniqid('', true)), 0, 24);
+        $this->contractIds[] = $contractId;
+        $this->contracts()->save(new PaymentContract(1, (string) $user->getId(), BasketSnapshot::fromArray([
+            'items' => [], 'discounts' => [], 'totalGross' => 10.0, 'totalNet' => 8.4, 'totalVat' => 1.6, 'currency' => 'EUR',
+        ]), $contractId));
 
-        return $orderId;
+        Registry::getSession()->setVariable('sess_challenge', md5(uniqid((string) mt_rand(), true)));
+        $orderId = $this->orderService()->createOrder(new CreateOrderRequest(
+            sessionId: (string) Registry::getSession()->getId(),
+            userId: (string) $user->getId(),
+            paymentId: self::PAYMENT_ID,
+            metadata: ['contract_id' => $contractId],
+            initialStatus: 'NOT_FINISHED',
+        ))->orderId;
+        DatabaseProvider::getDb()->execute(
+            'UPDATE oe_payments_contract SET OXORDERID = ? WHERE OXID = ?',
+            [$orderId, $contractId]
+        );
+
+        return [$orderId, $contractId];
+    }
+
+    private function orderService(): ShopOrderServiceInterface
+    {
+        /** @var ShopOrderServiceInterface $service */
+        $service = ContainerFactory::getInstance()->getContainer()->get(ShopOrderServiceInterface::class);
+
+        return $service;
+    }
+
+    private function contracts(): ContractRepositoryInterface
+    {
+        /** @var ContractRepositoryInterface $contracts */
+        $contracts = ContainerFactory::getInstance()->getContainer()->get(ContractRepositoryInterface::class);
+
+        return $contracts;
     }
 
     private function addressOf(User $user): string
@@ -73,18 +119,22 @@ trait DeferredOrderMailFixture
     }
 
     /**
-     * @return list<array<string, string>>
+     * @return array{state: ?string, mails: list<array<string, mixed>>, sentAt: ?string}
      */
-    private function storedMails(string $orderId): array
+    private function orderMailsOn(string $contractId): array
     {
-        /** @var list<array<string, string>> $rows */
-        $rows = DatabaseProvider::getDb(DatabaseProvider::FETCH_MODE_ASSOC)->getAll(
-            "SELECT OXKIND, OXRECIPIENTS, OXSUBJECT, OXBODY FROM oe_payments_order_mail
-             WHERE OXORDERID = :id ORDER BY FIELD(OXKIND, 'customer', 'owner')",
-            [':id' => $orderId]
+        /** @var array<string, ?string> $row */
+        $row = DatabaseProvider::getDb(DatabaseProvider::FETCH_MODE_ASSOC)->getRow(
+            'SELECT OXORDERMAILSTATE, OXORDERMAILS, OXORDERMAILSENTAT FROM oe_payments_contract WHERE OXID = :id',
+            [':id' => $contractId]
         );
+        $mails = json_decode((string) ($row['OXORDERMAILS'] ?? ''), true);
 
-        return $rows;
+        return [
+            'state' => $row['OXORDERMAILSTATE'] ?? null,
+            'mails' => is_array($mails) ? $mails : [],
+            'sentAt' => $row['OXORDERMAILSENTAT'] ?? null,
+        ];
     }
 
     private function factoryInstance(): ReflectionProperty

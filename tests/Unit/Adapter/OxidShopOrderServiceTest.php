@@ -19,7 +19,11 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface;
+use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
+use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
+use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -109,6 +113,7 @@ class ScriptedOrder extends Order
         return match ($field) {
             'oxordernr' => 42,
             'oxorderdate' => '2026-09-24 10:00:00',
+            'oxshopid' => 1,
             default => '',
         };
     }
@@ -123,9 +128,21 @@ class DeferringScriptedOrder extends ScriptedOrder implements DefersConfirmation
     /** @var list<string> */
     public array $events = [];
 
+    /** @var list<DeferredOrderMail> what finalizeOrder() "rendered" */
+    public array $rendered = [];
+
     public function deferConfirmationMail(): void
     {
         $this->events[] = 'defer';
+    }
+
+    public function takeDeferredMails(): array
+    {
+        $this->events[] = 'take';
+        $mails = $this->rendered;
+        $this->rendered = [];
+
+        return $mails;
     }
 
     public function finalizeOrder($basket, $user, $recalculating = false): int
@@ -133,6 +150,60 @@ class DeferringScriptedOrder extends ScriptedOrder implements DefersConfirmation
         $this->events[] = 'finalize';
 
         return parent::finalizeOrder($basket, $user, $recalculating);
+    }
+}
+
+/**
+ * STRP-176 — the contract row the mails wait on.
+ */
+class SpyContractOrderMails implements ContractOrderMailStoreInterface
+{
+    /** @var list<array{0: string, 1: list<DeferredOrderMail>}> */
+    public array $stashed = [];
+
+    public bool $rowExists = true;
+
+    public ?\RuntimeException $failWith = null;
+
+    public function stash(string $contractId, array $mails): bool
+    {
+        if ($this->failWith !== null) {
+            throw $this->failWith;
+        }
+        $this->stashed[] = [$contractId, $mails];
+
+        return $this->rowExists;
+    }
+
+    public function claim(string $contractId): ?ClaimedOrderMails
+    {
+        return null;
+    }
+
+    public function markSent(string $contractId): void
+    {
+    }
+
+    public function markFailed(string $contractId, array $unsent): void
+    {
+    }
+
+    public function dropByOrderId(string $orderId): int
+    {
+        return 0;
+    }
+}
+
+class SpyMailSender implements ShopMailSenderInterface
+{
+    /** @var list<array{0: string, 1: int}> kind, shop */
+    public array $sent = [];
+
+    public function send(DeferredOrderMail $mail, int $shopId): bool
+    {
+        $this->sent[] = [$mail->kind, $shopId];
+
+        return true;
     }
 }
 
@@ -244,13 +315,17 @@ class TestableOrderService extends OxidShopOrderService
         ?Basket $basket = new FixtureBasket(),
         ?StaticBasketProvider $basketProvider = null,
         ?CheckoutAttemptGuardInterface $attemptGuard = null,
+        ?ContractOrderMailStoreInterface $orderMails = null,
+        ?ShopMailSenderInterface $mailSender = null,
     ) {
         $this->basketProvider = $basketProvider ?? new StaticBasketProvider($basket);
         parent::__construct(
             new SpyOrderRepository(),
             new OrderShippingAddressCopier(),
             $this->basketProvider,
-            $attemptGuard
+            $attemptGuard,
+            $orderMails,
+            $mailSender
         );
     }
 
@@ -373,7 +448,75 @@ final class OxidShopOrderServiceTest extends TestCase
 
         (new TestableOrderService($order))->createOrder($this->request());
 
-        self::assertSame(['defer', 'finalize'], $order->events);
+        self::assertSame(['defer', 'finalize', 'take'], $order->events);
+    }
+
+    public function testCreateOrder_KeepsTheRenderedMailsOnTheContractTheRequestNames(): void
+    {
+        $order = $this->orderThatRendered();
+        $mails = new SpyContractOrderMails();
+        $sender = new SpyMailSender();
+
+        (new TestableOrderService($order, orderMails: $mails, mailSender: $sender))
+            ->createOrder($this->requestFor('contract-1'));
+
+        self::assertSame(['defer', 'finalize', 'take'], $order->events);
+        self::assertCount(1, $mails->stashed);
+        self::assertSame('contract-1', $mails->stashed[0][0]);
+        self::assertSame(['customer', 'owner'], array_map(
+            static fn (DeferredOrderMail $mail): string => $mail->kind,
+            $mails->stashed[0][1]
+        ));
+        self::assertSame([], $sender->sent, 'nothing goes out before the payment');
+    }
+
+    public function testCreateOrder_WithoutAContractId_SendsTheMailsNow(): void
+    {
+        $mails = new SpyContractOrderMails();
+        $sender = new SpyMailSender();
+
+        (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
+            ->createOrder($this->request());
+
+        self::assertSame([], $mails->stashed);
+        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+    }
+
+    public function testCreateOrder_WhenTheContractRowIsMissing_SendsTheMailsNow(): void
+    {
+        $mails = new SpyContractOrderMails();
+        $mails->rowExists = false;
+        $sender = new SpyMailSender();
+
+        (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
+            ->createOrder($this->requestFor('contract-1'));
+
+        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+    }
+
+    public function testCreateOrder_WhenKeepingTheMailsFails_SendsThemNowAndTheCheckoutGoesOn(): void
+    {
+        $mails = new SpyContractOrderMails();
+        $mails->failWith = new \RuntimeException('db down');
+        $sender = new SpyMailSender();
+
+        $response = (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
+            ->createOrder($this->requestFor('contract-1'));
+
+        self::assertSame('completed', $response->status);
+        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+    }
+
+    public function testCreateOrder_WithoutAStore_SendsTheMailsNow(): void
+    {
+        // A services.yaml override from before 1.6.0 builds the service
+        // without the store: the mail goes out as before STRP-176.
+        $sender = new SpyMailSender();
+
+        (new TestableOrderService($this->orderThatRendered(), mailSender: $sender))
+            ->createOrder($this->requestFor('contract-1'));
+
+        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
     }
 
     public function testCreateOrder_WithADeferredMail_StillReportsTheOrderCompleted(): void
@@ -522,6 +665,27 @@ final class OxidShopOrderServiceTest extends TestCase
         $response = $service->createOrder($this->request());
 
         self::assertSame('order-1', $response->orderId);
+    }
+
+    private function requestFor(string $contractId): CreateOrderRequest
+    {
+        return new CreateOrderRequest(
+            sessionId: 'sess-1',
+            userId: 'user-1',
+            paymentId: 'oe_payments_mollie',
+            metadata: ['contract_id' => $contractId],
+            initialStatus: 'NOT_FINISHED',
+        );
+    }
+
+    private function orderThatRendered(): DeferringScriptedOrder
+    {
+        $order = new DeferringScriptedOrder(Order::ORDER_STATE_OK);
+        foreach ([DeferredOrderMail::KIND_CUSTOMER, DeferredOrderMail::KIND_OWNER] as $kind) {
+            $order->rendered[] = new DeferredOrderMail($kind, 'order@shop.test', 'Shop', [['jane@example.test', 'Jane']], [], [], [], 'Your order (#42)', '<p>Thanks</p>', 'Thanks');
+        }
+
+        return $order;
     }
 
     private function request(?string $basketId = null): CreateOrderRequest

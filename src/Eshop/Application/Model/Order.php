@@ -15,7 +15,7 @@ use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Mail\OrderMailCaptureInterface;
-use OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use OxidEsales\PaymentBase\Repository\VoucherReleaseInterface;
 use OxidEsales\PaymentBase\Service\VoucherReleaseSettingsInterface;
 use Psr\Log\LoggerInterface;
@@ -43,14 +43,18 @@ use Throwable;
  * order creation runs finalizeOrder() before the customer pays at the PSP, and
  * core ends finalizeOrder() by mailing "thank you for your order". When the
  * order is deferred, core still renders both mails, on a capturing mailer, and
- * they are stored until the contract commits. Stored mails go with the order
- * when it is deleted or cancelled.
+ * this object keeps them until the order creation hands them to the contract
+ * (it knows the contract, the order does not). Mails waiting on a contract go
+ * when the order is deleted or cancelled.
  *
  * @since 2026-09-03
  */
 class Order extends Order_parent implements DefersConfirmationMailInterface
 {
     private bool $confirmationMailDeferred = false;
+
+    /** @var list<DeferredOrderMail> */
+    private array $deferredMails = [];
 
     /**
      * Called by the early order creation of payment-base, before finalizeOrder().
@@ -59,6 +63,19 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
     public function deferConfirmationMail(): void
     {
         $this->confirmationMailDeferred = true;
+    }
+
+    /**
+     * The mails the last deferred finalizeOrder() rendered, once.
+     *
+     * @return list<DeferredOrderMail>
+     */
+    public function takeDeferredMails(): array
+    {
+        $mails = $this->deferredMails;
+        $this->deferredMails = [];
+
+        return $mails;
     }
 
     /**
@@ -141,7 +158,7 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
             return parent::sendOrderByEmail($oUser, $oBasket, $oPayment);
         }
 
-        return $this->storeOrderMails($mailer, $oUser, $oBasket, $oPayment);
+        return $this->keepOrderMails($mailer, $oUser, $oBasket, $oPayment);
     }
 
     /**
@@ -152,9 +169,9 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
      *
      * Always ORDER_STATE_OK: the order creation refuses every other state, and
      * a mail the customer only gets after paying must not stop them from paying.
-     * A mail that cannot be built or stored is logged instead.
+     * A mail that cannot be built is logged instead.
      */
-    private function storeOrderMails(OrderMailCaptureInterface $mailer, mixed $user, mixed $basket, mixed $payment): int
+    private function keepOrderMails(OrderMailCaptureInterface $mailer, mixed $user, mixed $basket, mixed $payment): int
     {
         $this->_oUser = $user;
         $this->_oBasket = $basket;
@@ -166,25 +183,15 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
         }
         $mailer->captureAs(DeferredOrderMail::KIND_OWNER);
         $mailer->sendOrderEmailToOwner($this);
-
-        try {
-            $this->getDeferredOrderMails()->save(
-                (string) $this->getId(),
-                (int) $this->getShopId(),
-                $mailer->takeCapturedMails()
-            );
-        } catch (Throwable $e) {
-            $this->logOrderMailGap('order mail could not be stored', $e->getMessage());
-        }
+        $this->deferredMails = $mailer->takeCapturedMails();
 
         return self::ORDER_STATE_OK;
     }
 
-    private function logOrderMailGap(string $what, string $error = ''): void
+    private function logOrderMailGap(string $what): void
     {
         $this->getOrderMailLogger()->error('[STRP-176] ' . $what . ', it will not be sent', [
             'orderId' => (string) $this->getId(),
-            'error' => $error,
         ]);
     }
 
@@ -200,9 +207,9 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
         }
 
         try {
-            $this->getDeferredOrderMails()->deleteByOrderId($id);
+            $this->getContractOrderMails()->dropByOrderId($id);
         } catch (Throwable $e) {
-            $this->getOrderMailLogger()->error('[STRP-176] stored order mails of an ended order not removed', [
+            $this->getOrderMailLogger()->error('[STRP-176] waiting order mails of an ended order not dropped', [
                 'orderId' => $id,
                 'error' => $e->getMessage(),
             ]);
@@ -220,12 +227,12 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
         return $mailer instanceof OrderMailCaptureInterface ? $mailer : null;
     }
 
-    protected function getDeferredOrderMails(): DeferredOrderMailRepositoryInterface
+    protected function getContractOrderMails(): ContractOrderMailStoreInterface
     {
-        /** @var DeferredOrderMailRepositoryInterface $mails */
+        /** @var ContractOrderMailStoreInterface $mails */
         $mails = ContainerFactory::getInstance()
             ->getContainer()
-            ->get(DeferredOrderMailRepositoryInterface::class);
+            ->get(ContractOrderMailStoreInterface::class);
 
         return $mails;
     }

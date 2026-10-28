@@ -79,14 +79,15 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
-      $deferredMails: '@OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface'
+      $deferredMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
     public: true
 
-  # STRP-176 — order mails rendered at early order creation, sent once the
-  # contract commits. Public: the Order model extension reads it through the
-  # container, as it does VoucherReleaseInterface.
-  OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface:
-    class: OxidEsales\PaymentBase\Repository\DoctrineDeferredOrderMailRepository
+  # STRP-176 — order mails rendered at early order creation wait on their
+  # contract row (with their sent status) until the contract commits. Public:
+  # the Order model extension reads it through the container, as it does
+  # VoucherReleaseInterface.
+  OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface:
+    class: OxidEsales\PaymentBase\Repository\DoctrineContractOrderMailStore
     arguments:
       $connection: '@doctrine.dbal.connection'
     public: true
@@ -114,6 +115,9 @@ services:
       # Sprint 15 / S3: one order per headless checkout attempt (core's
       # sess_challenge covers the session checkout).
       $attemptGuard: '@OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface'
+      # STRP-176: the order mails wait on the contract; sent at once without it.
+      $orderMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
+      $mailSender: '@OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface'
     public: true
 
   # Sprint 15 / S3 (GRAPH-QL, 2026-10-06) — the attempt guard on
@@ -254,7 +258,7 @@ services:
     tags:
       - { name: payment.event_handler, priority: 10 }
 
-  # STRP-176 — the order mails stored at early order creation go out once the
+  # STRP-176 — the order mails kept on the contract at early order creation go out once the
   # payment is confirmed. Last on commit: the mail is the one step a failure
   # of which must not hold back anything else.
   OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface:
