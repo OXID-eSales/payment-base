@@ -26,11 +26,13 @@ interface ProviderActionRunnerInterface
     /** The provider threw; the reason is in the log, never in the answer. */
     public const FAILED = 'failed';
 
+    /** The provider refused with a sentence meant for the admin ({@see \OxidEsales\PaymentBase\Admin\Panel\AdminActionRefusedException}). */
+    public const REFUSED = 'refused';
+
     /**
      * @param string               $action  `capture`, `refund` or `cancel`, as the classic tab names them
      * @param array<string, mixed> $request the classic tab's form fields (`capture_amount`, `refund_amount`, `refund_reason`, ...)
      *
-     * @return self::RAN|self::UNAVAILABLE|self::FAILED
      */
-    public function run(string $provider, string $orderId, string $action, array $request): string;
+    public function run(string $provider, string $orderId, string $action, array $request): ProviderActionOutcome;
 }

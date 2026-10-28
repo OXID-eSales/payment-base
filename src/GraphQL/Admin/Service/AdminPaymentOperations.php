@@ -115,7 +115,8 @@ final class AdminPaymentOperations implements AdminPaymentOperationsInterface
     {
         $outcome = $this->provider->run($before->provider, $operation->orderId, $operation->providerAction(), $this->requestFor($operation, $before));
 
-        return match ($outcome) {
+        return match ($outcome->status) {
+            ProviderActionRunnerInterface::REFUSED => PaymentRefusal::invalid('orderId', 'provider_refused', (string) $outcome->refusalMessage),
             ProviderActionRunnerInterface::UNAVAILABLE => PaymentRefusal::invalid('orderId', 'provider_unavailable', 'No payment provider module handles this payment'),
             ProviderActionRunnerInterface::FAILED => PaymentRefusal::invalid('orderId', 'provider_failed', 'The payment provider refused or could not complete the action'),
             default => null,

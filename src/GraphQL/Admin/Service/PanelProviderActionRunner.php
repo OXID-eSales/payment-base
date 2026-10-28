@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
 
 use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\Panel\AdminActionRefusedException;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use Psr\Log\LoggerInterface;
@@ -32,15 +33,24 @@ final class PanelProviderActionRunner implements ProviderActionRunnerInterface
     ) {
     }
 
-    public function run(string $provider, string $orderId, string $action, array $request): string
+    public function run(string $provider, string $orderId, string $action, array $request): ProviderActionOutcome
     {
         $panel = $this->panels->resolveByProviderName($provider);
         $contract = $this->contracts->findByOrderId($orderId);
         if ($panel === null || $contract === null) {
-            return self::UNAVAILABLE;
+            return ProviderActionOutcome::unavailable();
         }
         try {
             $panel->handleAction($action, $request, new PaymentPanelContext($orderId, '', $contract));
+        } catch (AdminActionRefusedException $refusal) {
+            $this->logger->info('Admin payment action refused by the provider', [
+                'orderId' => $orderId,
+                'provider' => $provider,
+                'action' => $action,
+                'refusalCode' => $refusal->refusalCode(),
+            ]);
+
+            return ProviderActionOutcome::refused($refusal->refusalCode(), $refusal->getMessage());
         } catch (Throwable $failure) {
             $this->logger->error('Admin payment action failed at the provider', [
                 'orderId' => $orderId,
@@ -49,9 +59,9 @@ final class PanelProviderActionRunner implements ProviderActionRunnerInterface
                 'exception' => $failure::class,
                 'reason' => $failure->getMessage(),
             ]);
-            return self::FAILED;
+            return ProviderActionOutcome::failed();
         }
 
-        return self::RAN;
+        return ProviderActionOutcome::ran();
     }
 }

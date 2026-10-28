@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
 use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\Panel\AdminActionRefusedException;
 use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver;
@@ -20,6 +21,7 @@ use OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperations;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentRefusal;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentOperationResult;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
@@ -391,6 +393,37 @@ final class AdminPaymentOperationsTest extends TestCase
 
         self::assertSame(['idempotencyKey', 'invalid_key'], [$refusal?->field, $refusal?->code]);
         self::assertSame([], $this->adapter->calls);
+    }
+
+    // --- typed refusals (PAY-1 S5) --------------------------------------------------------------------------
+
+    public function testProviderRefusal_BecomesProviderRefusedWithTheProvidersSentence_AndTheKeyIsReleased(): void
+    {
+        $this->adapter = new FakePanelProvider('paypal', static function (): void {
+            throw new AdminActionRefusedException('amount_below_minimum', 'The amount is below the provider minimum.');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        $refusal = $this->operations()->refund('order-1', 0.5, null, 'key-refund-1')->refusal();
+
+        self::assertSame(PaymentRefusal::INVALID, $refusal?->kind);
+        self::assertSame(['orderId', 'provider_refused', 'The amount is below the provider minimum.'], [$refusal->field, $refusal->code, $refusal->message]);
+        self::assertSame('provider_refused', $this->audit->rows[0]['outcome']);
+        $this->adapter = new FakePanelProvider('paypal', AdapterEffects::successful());
+        self::assertNull($this->operations()->refund('order-1', 5.0, null, 'key-refund-1')->refusal(), 'the key was released');
+    }
+
+    public function testOtherProviderExceptions_StillAreProviderFailed_WithoutTheirMessage(): void
+    {
+        $this->adapter = new FakePanelProvider('paypal', static function (): void {
+            throw new \RuntimeException('secret token abc');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $refusal = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1')->refusal();
+
+        self::assertSame('provider_failed', $refusal?->code);
+        self::assertStringNotContainsString('secret', $refusal->message);
     }
 
     // --- provider bounds (PAY-1 S4) -----------------------------------------------------------------------------

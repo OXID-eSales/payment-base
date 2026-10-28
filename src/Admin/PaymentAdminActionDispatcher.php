@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Admin;
 
 use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
+use OxidEsales\PaymentBase\Admin\Panel\AdminActionRefusedException;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
 
@@ -22,8 +23,10 @@ use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
  */
 class PaymentAdminActionDispatcher
 {
-    public function __construct(private readonly PaymentPanelRegistryInterface $registry)
-    {
+    public function __construct(
+        private readonly PaymentPanelRegistryInterface $registry,
+        private readonly ?AdminRefusalFeedbackInterface $refusalFeedback = null,
+    ) {
     }
 
     /**
@@ -41,6 +44,11 @@ class PaymentAdminActionDispatcher
             ));
         }
 
-        $provider->handleAction($action, $request, $context);
+        try {
+            $provider->handleAction($action, $request, $context);
+        } catch (AdminActionRefusedException $refusal) {
+            // The provider refused with a sentence for the admin: the classic tab shows it, it is no failure.
+            $this->refusalFeedback?->show($refusal);
+        }
     }
 }

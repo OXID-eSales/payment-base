@@ -18,9 +18,15 @@ services:
       - !tagged_iterator oe.payment.admin_panel
     public: true
 
+  # PAY-1 S5: where the classic tab shows an AdminActionRefusedException of a provider.
+  OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface:
+    class: OxidEsales\PaymentBase\Admin\OxidAdminRefusalFeedback
+    public: true
+
   OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher:
     arguments:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface'
     public: true
 
   # Admin controller — instantiated by OXID via metadata.php `controllers`
