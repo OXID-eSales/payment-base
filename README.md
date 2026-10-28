@@ -33,6 +33,25 @@ vendor/bin/oe-eshop-db_migrate migrations:migrate
 `oxid-esales/oxideshop-doctrine-migration-wrapper` provides that command and is part of the
 OXID eShop installation, so it does not have to be required separately.
 
+### Run them on every `composer install` / `composer update`
+
+The module ships `vendor/bin/oe-payment-base-migrate`, which runs only this module's suite
+(`oe_payment_base`). Composer runs scripts of the project's own `composer.json` only, never those of
+a dependency, so add it there:
+
+```json
+"scripts": {
+    "post-install-cmd": ["oe-payment-base-migrate"],
+    "post-update-cmd": ["oe-payment-base-migrate"]
+}
+```
+
+Keep any commands that are already listed (append to the arrays). The command skips itself while
+the shop is not set up yet (no migration wrapper, or `source/config.inc.php` still holds the
+`<dbHost>` placeholder), so a first `composer install` works. Once the shop is set up, a failing
+migration fails the composer run. The module must be installed (`oe:module:install`); it does not
+have to be active.
+
 ## Requirements
 
 - OXID eShop 7.4 or 7.5

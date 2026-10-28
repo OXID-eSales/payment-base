@@ -2,6 +2,9 @@
     "name": "oxid-esales/payment-base",
     "description": "Provider-agnostic payment component with smart-contract architecture and shared admin Payment tab",
     "type": "oxideshop-module",
+    "bin": [
+        "bin/oe-payment-base-migrate"
+    ],
     "keywords": [
         "oxid",
         "modules",

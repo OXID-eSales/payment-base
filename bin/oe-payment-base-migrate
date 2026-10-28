@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+#
+# Copyright © OXID eSales AG. All rights reserved.
+# See LICENSE file for license details.
+#
+# Runs the payment-base database migrations (suite oe_payment_base) through the
+# shop's migration wrapper. Meant for the project's composer.json, so every
+# `composer install` / `composer update` brings the schema in line with the
+# installed module version:
+#
+#   "scripts": {
+#     "post-install-cmd": ["oe-payment-base-migrate"],
+#     "post-update-cmd": ["oe-payment-base-migrate"]
+#   }
+#
+# Composer runs only the ROOT package's scripts, never a dependency's, so the
+# module cannot hook itself in; the project does it with the two lines above.
+#
+# Skips (exit 0) while there is nothing to migrate yet: no migration wrapper,
+# or a shop whose config.inc.php is not filled in (first install, CI before the
+# shop setup). Otherwise a failing migration fails the composer run - a schema
+# behind the code must not go unnoticed.
+#
+# Run from the project root (composer does). Usage: oe-payment-base-migrate
+
+set -euo pipefail
+
+PROJECT_ROOT="${OE_PROJECT_ROOT:-$(pwd)}"
+WRAPPER="$PROJECT_ROOT/vendor/bin/oe-eshop-db_migrate"
+SHOP_CONFIG="$PROJECT_ROOT/source/config.inc.php"
+
+if [ ! -x "$WRAPPER" ]; then
+    echo "[payment-base] migrations skipped: $WRAPPER not found (run from the shop project root)"
+    exit 0
+fi
+
+if [ ! -f "$SHOP_CONFIG" ] || grep -q "<dbHost>" "$SHOP_CONFIG"; then
+    echo "[payment-base] migrations skipped: the shop is not set up yet ($SHOP_CONFIG)"
+    exit 0
+fi
+
+echo "[payment-base] running migrations (suite oe_payment_base)"
+cd "$PROJECT_ROOT"
+"$WRAPPER" migrations:migrate oe_payment_base
+echo "[payment-base] migrations done"
