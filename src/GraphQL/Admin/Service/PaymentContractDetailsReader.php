@@ -58,6 +58,7 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
                 type: $transaction->getType(),
                 status: $transaction->getStatus(),
                 amount: $transaction->getAmount(),
+                currency: $transaction->getCurrency(),
                 createdAt: $transaction->getCreatedAt(),
                 providerReference: $transaction->getTransactionId(),
             ),

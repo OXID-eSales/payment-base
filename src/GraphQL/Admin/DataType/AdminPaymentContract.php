@@ -31,6 +31,13 @@ final class AdminPaymentContract
     {
     }
 
+    /** The contract's own id, as the classic Payment panels show it. */
+    #[Field]
+    public function contractId(): string
+    {
+        return $this->payment->contractId;
+    }
+
     /** stripe | paypal | mollie */
     #[Field]
     public function provider(): string

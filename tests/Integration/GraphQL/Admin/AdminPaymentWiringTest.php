@@ -79,6 +79,8 @@ final class AdminPaymentWiringTest extends IntegrationTestCase
         self::assertMatchesRegularExpression('/type AdminOrder \{[^}]*paymentContract: AdminPaymentContract/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*amountAuthorised: Float![^}]*transactions: \[AdminPaymentTransaction!\]!/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*providerReference: String/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*contractId: String!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*currency: String!/s', $schema);
         self::assertStringContainsString('adminPaymentCapture(orderId: ID!, amount: Float = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
         self::assertStringContainsString('adminPaymentRefund(orderId: ID!, amount: Float!, reason: String = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
         self::assertStringContainsString('adminPaymentVoid(orderId: ID!, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);

@@ -29,11 +29,12 @@ final class AdminPaymentContractTest extends TestCase
             100.0,
             25.0,
             'EUR',
-            [new PaymentTransactionDetails('t-1', 'refund', 'completed', 25.0, $createdAt, 'REF-1')],
+            [new PaymentTransactionDetails('t-1', 'refund', 'completed', 25.0, 'EUR', $createdAt, 'REF-1')],
         );
 
         $contract = new AdminPaymentContract($details);
 
+        self::assertSame('c-1', $contract->contractId());
         self::assertSame('paypal', $contract->provider());
         self::assertSame('READY_TO_COMMIT', $contract->state());
         self::assertSame(100.0, $contract->amountAuthorised());
@@ -43,11 +44,12 @@ final class AdminPaymentContractTest extends TestCase
         $transactions = $contract->transactions();
         self::assertCount(1, $transactions);
         self::assertInstanceOf(AdminPaymentTransaction::class, $transactions[0]);
-        self::assertSame(['t-1', 'refund', 'completed', 25.0, $createdAt, 'REF-1'], [
+        self::assertSame(['t-1', 'refund', 'completed', 25.0, 'EUR', $createdAt, 'REF-1'], [
             $transactions[0]->id(),
             $transactions[0]->type(),
             $transactions[0]->status(),
             $transactions[0]->amount(),
+            $transactions[0]->currency(),
             $transactions[0]->createdAt(),
             $transactions[0]->providerReference(),
         ]);
@@ -72,7 +74,7 @@ final class AdminPaymentContractTest extends TestCase
         sort($exposed);
 
         self::assertSame(
-            ['amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'currency', 'provider', 'state', 'transactions'],
+            ['amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'contractId', 'currency', 'provider', 'state', 'transactions'],
             $exposed,
         );
     }

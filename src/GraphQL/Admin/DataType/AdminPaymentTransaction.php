@@ -51,6 +51,13 @@ final class AdminPaymentTransaction
         return $this->transaction->amount;
     }
 
+    /** ISO 4217 code of the transaction's amount. */
+    #[Field]
+    public function currency(): string
+    {
+        return $this->transaction->currency;
+    }
+
     #[Field]
     public function createdAt(): DateTimeImmutable
     {

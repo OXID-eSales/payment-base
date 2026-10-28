@@ -37,6 +37,7 @@ final class PaymentContractDetailsReaderTest extends TestCase
         $details = $this->reader([])->findByOrderId('order-1');
 
         self::assertNotNull($details);
+        self::assertSame((string) $this->contracts->findByOrderId('order-1')?->getId(), $details->contractId);
         self::assertSame('mollie', $details->provider);
         self::assertSame('fulfilled', $details->state);
         self::assertSame(100.0, $details->amountAuthorised);
@@ -73,6 +74,7 @@ final class PaymentContractDetailsReaderTest extends TestCase
         self::assertSame('completed', $row->status);
         self::assertSame(100.0, $row->amount);
         self::assertSame('CAP-123', $row->providerReference);
+        self::assertSame('EUR', $row->currency);
     }
 
     /**
