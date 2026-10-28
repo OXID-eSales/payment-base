@@ -12,19 +12,17 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Adapter;
 use OxidEsales\Eshop\Application\Model\Order;
 use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Core\Registry;
-use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
-use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Tests\Integration\Support\CheckoutFixture;
 use OxidEsales\PaymentBase\Tests\Integration\Support\DeferredOrderMailFixture;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * STRP-176 — the order payment-base creates before the customer pays at the
- * PSP sends no "thank you for your order"; core's rendering of it is stored.
- * Real mail through msmtp into Mailpit, each test with its own customer
- * address (the fixture user's), so the shared inbox is only ever queried.
+ * PSP sends no "thank you for your order"; core's rendering of it waits on the
+ * contract row as "pending". Real mail through msmtp into Mailpit, each test
+ * with its own customer address (the fixture user's), so the shared inbox is
+ * only ever queried.
  */
 #[Group('integration')]
 #[Group('mailpit')]
@@ -45,19 +43,22 @@ final class OxidShopOrderServiceDeferredMailTest extends IntegrationTestCase
         $this->tearDownDeferredOrderMails();
     }
 
-    public function testCreateOrder_SendsNoMailAndStoresTheCustomerAndOwnerMail(): void
+    public function testCreateOrder_SendsNoMailAndKeepsCustomerAndOwnerMailOnTheContract(): void
     {
         $user = $this->checkoutUser('defer');
 
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
 
-        $rows = $this->storedMails($orderId);
-        self::assertSame(['customer', 'owner'], array_column($rows, 'OXKIND'));
-        self::assertSame([[$this->addressOf($user), 'Bill-First Bill-Last']], json_decode($rows[0]['OXRECIPIENTS'], true));
+        $kept = $this->orderMailsOn($contractId);
+        self::assertSame('pending', $kept['state']);
+        self::assertNull($kept['sentAt']);
+        self::assertSame(['customer', 'owner'], array_column($kept['mails'], 'kind'));
+        self::assertSame([[$this->addressOf($user), 'Bill-First Bill-Last']], $kept['mails'][0]['recipients']);
         $orderNr = (string) $this->loadOrder($orderId)->getFieldData('oxordernr');
-        self::assertStringContainsString('(#' . $orderNr . ')', $rows[0]['OXSUBJECT']);
-        self::assertStringContainsString('Checkout fixture article', $rows[0]['OXBODY'], 'rendered with the real basket');
-        self::assertNotSame('', $rows[1]['OXBODY']);
+        self::assertStringContainsString('(#' . $orderNr . ')', $kept['mails'][0]['subject']);
+        self::assertStringContainsString('Checkout fixture article', $kept['mails'][0]['body'], 'rendered with the real basket');
+        self::assertStringContainsString('€', $kept['mails'][0]['body'], 'the latin1 table keeps every character');
+        self::assertNotSame('', $kept['mails'][1]['body']);
 
         // A positive control in the next test proves mail does arrive; give
         // Mailpit the same window before calling it absent.
@@ -74,37 +75,36 @@ final class OxidShopOrderServiceDeferredMailTest extends IntegrationTestCase
         $state = $order->finalizeOrder(Registry::getSession()->getBasket(), $user);
 
         self::assertSame(Order::ORDER_STATE_OK, $state);
-        self::assertSame([], $this->storedMails($this->remember((string) $order->getId())));
         self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 1));
     }
 
-    public function testCancellingTheAbandonedCheckout_DropsItsStoredMails(): void
+    public function testCreateOrder_WithoutAContract_SendsTheMailAtOnce(): void
     {
-        $user = $this->checkoutUser('abandon');
-        Registry::getSession()->setVariable('sess_challenge', md5(uniqid((string) mt_rand(), true)));
-        $service = ContainerFactory::getInstance()->getContainer()->get(ShopOrderServiceInterface::class);
-        $orderId = $service->createOrder(new CreateOrderRequest(
-            sessionId: (string) Registry::getSession()->getId(),
-            userId: $user->getId(),
-            paymentId: self::PAYMENT_ID,
-            initialStatus: 'NOT_FINISHED',
-        ))->orderId;
-        $this->remember($orderId);
-        self::assertCount(2, $this->storedMails($orderId));
+        // Nothing to keep the mail on: better before the payment than never.
+        $user = $this->checkoutUser('nocon');
 
-        self::assertTrue($service->deleteNotFinishedOrder($orderId));
+        $this->createOrderFor($user);
 
-        self::assertSame([], $this->storedMails($orderId));
+        self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 1));
     }
 
-    public function testDeletingTheOrder_DropsItsStoredMails(): void
+    public function testCancellingTheAbandonedCheckout_DropsItsWaitingMails(): void
     {
-        $orderId = $this->remember($this->createOrderFor($this->checkoutUser('delete')));
-        self::assertCount(2, $this->storedMails($orderId));
+        [$orderId, $contractId] = $this->createOrderOnContract($this->checkoutUser('abandon'));
+        self::assertSame('pending', $this->orderMailsOn($contractId)['state']);
+
+        self::assertTrue($this->orderService()->deleteNotFinishedOrder($orderId));
+
+        self::assertSame(['state' => 'dropped', 'mails' => [], 'sentAt' => null], $this->orderMailsOn($contractId));
+    }
+
+    public function testDeletingTheOrder_DropsItsWaitingMails(): void
+    {
+        [$orderId, $contractId] = $this->createOrderOnContract($this->checkoutUser('delete'));
 
         self::assertTrue($this->loadOrder($orderId)->delete());
 
-        self::assertSame([], $this->storedMails($orderId));
+        self::assertSame(['state' => 'dropped', 'mails' => [], 'sentAt' => null], $this->orderMailsOn($contractId));
     }
 
     private function checkoutUser(string $suffix): User

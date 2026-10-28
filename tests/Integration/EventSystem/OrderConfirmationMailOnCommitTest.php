@@ -28,9 +28,10 @@ use PHPUnit\Framework\Attributes\Group;
 
 /**
  * STRP-176 — when the contract commits (the PSP confirmed the payment), the
- * order mails stored at early order creation go out: once, in the language
- * of the order, with the totals the customer paid. Through the real event
- * dispatcher, the real handler wiring and real mail into Mailpit.
+ * order mails kept on it at early order creation go out: once, in the
+ * language of the order, with the totals the customer paid, and the contract
+ * records that it sent them. Through the real event dispatcher, the real
+ * handler wiring and real mail into Mailpit.
  */
 #[Group('integration')]
 #[Group('mailpit')]
@@ -53,28 +54,31 @@ final class OrderConfirmationMailOnCommitTest extends IntegrationTestCase
         $this->tearDownDeferredOrderMails();
     }
 
-    public function testCommit_SendsOneCustomerAndOneOwnerMailAndDropsTheStoredCopies(): void
+    public function testCommit_SendsOneCustomerAndOneOwnerMailAndMarksTheContractSent(): void
     {
         $user = $this->checkoutUser('commit');
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
         $orderNr = (string) $this->loadOrder($orderId)->getFieldData('oxordernr');
 
-        $this->commit($orderId);
+        $this->commit($contractId, $orderId);
 
         self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 1));
         self::assertStringContainsString('(#' . $orderNr . ')', $this->mailpit->messagesTo($this->addressOf($user))[0]['subject']);
         self::assertTrue($this->ownerMailArrivedFor($orderNr), 'the shop owner gets the order mail too');
-        self::assertSame([], $this->storedMails($orderId));
+        $kept = $this->orderMailsOn($contractId);
+        self::assertSame('sent', $kept['state']);
+        self::assertNotNull($kept['sentAt']);
+        self::assertSame([], $kept['mails'], 'the customer data goes once the mail is out');
     }
 
     public function testCommitSeenTwice_SendsTheMailOnce(): void
     {
         // The return leg and the webhook leg, or a replayed webhook.
         $user = $this->checkoutUser('twice');
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
 
-        $this->commit($orderId);
-        $this->commit($orderId);
+        $this->commit($contractId, $orderId);
+        $this->commit($contractId, $orderId);
 
         self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 2, 4000));
     }
@@ -82,14 +86,15 @@ final class OrderConfirmationMailOnCommitTest extends IntegrationTestCase
     public function testCommitOfAStornoedOrder_SendsNothing(): void
     {
         // A late payment can commit the contract of an order the cleanup
-        // already cancelled - straight SQL, so the stored rows are still there.
+        // already cancelled - straight SQL, so the mails are still pending.
         $user = $this->checkoutUser('storno');
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
         DatabaseProvider::getDb()->execute('UPDATE oxorder SET OXSTORNO = 1 WHERE OXID = ?', [$orderId]);
 
-        $this->commit($orderId);
+        $this->commit($contractId, $orderId);
 
         self::assertSame(0, $this->mailpit->waitForCountTo($this->addressOf($user), 1, 3000));
+        self::assertSame('pending', $this->orderMailsOn($contractId)['state']);
     }
 
     public function testCommitInAnotherLanguage_SendsTheMailInTheOrdersLanguage(): void
@@ -99,11 +104,11 @@ final class OrderConfirmationMailOnCommitTest extends IntegrationTestCase
         Registry::getLang()->setBaseLanguage(1);
         Registry::getLang()->setTplLanguage(1);
         $user = $this->checkoutUser('english');
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
         Registry::getLang()->setBaseLanguage(0);
         Registry::getLang()->setTplLanguage(0);
 
-        $this->commit($orderId);
+        $this->commit($contractId, $orderId);
 
         self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 1));
         self::assertStringStartsWith('Your order at', $this->mailpit->messagesTo($this->addressOf($user))[0]['subject']);
@@ -123,12 +128,12 @@ final class OrderConfirmationMailOnCommitTest extends IntegrationTestCase
         $basket->calculateBasket();
         Registry::getSession()->setBasket($basket);
         $_POST['sDeliveryAddressMD5'] = $user->getEncodedDeliveryAddress();
-        $orderId = $this->remember($this->createOrderFor($user));
+        [$orderId, $contractId] = $this->createOrderOnContract($user);
         $total = Registry::getLang()->formatCurrency(
             (float) $this->loadOrder($orderId)->getFieldData('oxtotalordersum')
         );
 
-        $this->commit($orderId);
+        $this->commit($contractId, $orderId);
 
         self::assertSame(1, $this->mailpit->waitForCountTo($this->addressOf($user), 1));
         $text = $this->mailpit->textOf($this->mailpit->messagesTo($this->addressOf($user))[0]['id']);
@@ -137,12 +142,12 @@ final class OrderConfirmationMailOnCommitTest extends IntegrationTestCase
         self::assertStringContainsString($total, $text, 'the mail shows the total that was charged');
     }
 
-    private function commit(string $orderId): void
+    private function commit(string $contractId, string $orderId): void
     {
         $snapshot = BasketSnapshot::fromArray([
             'items' => [], 'discounts' => [], 'totalGross' => 10.0, 'totalNet' => 8.4, 'totalVat' => 1.6, 'currency' => 'EUR',
         ]);
-        $contract = new PaymentContract(1, 'strp176-user', $snapshot, 'strp176-contract-' . $orderId);
+        $contract = new PaymentContract(1, 'strp176-user', $snapshot, $contractId);
 
         /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = ContainerFactory::getInstance()->getContainer()->get(EventDispatcherInterface::class);

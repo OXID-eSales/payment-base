@@ -5,6 +5,28 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Order mail waits on the contract, no table of its own (STRP-176 follow-up)
+- **Changed:** the order mails rendered at early order creation wait on their contract row, not in
+  `oe_payments_order_mail`. Three new nullable columns on `oe_payments_contract` (migration `Version20261028100000`):
+  `OXORDERMAILSTATE` (`pending`, `sending`, `sent`, `failed`, `dropped`; `NULL` = nothing deferred), `OXORDERMAILS` (the
+  rendered mails as ASCII JSON, cleared once sent or dropped) and `OXORDERMAILSENTAT`. The columns are not part of the
+  `PaymentContract` entity: a contract `save()` never writes them and they never bump `OXVERSION`.
+- New `Repository\ContractOrderMailStoreInterface` (`DoctrineContractOrderMailStore`): `stash`, `claim` (pending →
+  sending, skipped for a stornoed order), `markSent`, `markFailed` (keeps only the mails that did not go out),
+  `dropByOrderId`. New value object `Mail\ClaimedOrderMails`.
+- The `Order` extension only captures the mails now; `Mail\DefersConfirmationMailInterface` gains `takeDeferredMails()`.
+  `Adapter\OxidShopOrderService` keeps them on the contract named in `metadata.contract_id` (new optional constructor
+  arguments `$orderMails` and `$mailSender`). Without a contract id, a contract row or a working store, the mails are
+  sent at once and the reason is logged - never lost silently.
+- `OrderConfirmationMailHandler` claims the mails by contract id, sends them and records `sent` (or `failed`, with only
+  the unsent mails kept for a resend by hand). `DoctrineNotFinishedOrderRepository` takes the new store as its optional
+  second constructor argument.
+- **Migration:** mails still waiting in `oe_payments_order_mail` are moved to the contract of their order (a claimed but
+  unsent mail becomes `failed`, so it is never sent twice by itself); rows whose order or contract no longer exists are
+  dropped with the table. `down()` recreates the empty 1.5.0 table: mails waiting on contracts are lost on a downgrade.
+- **Removed:** `oe_payments_order_mail`, `Repository\DeferredOrderMailRepositoryInterface`,
+  `DoctrineDeferredOrderMailRepository` and `Mail\StoredOrderMail` (all `@since 1.5.0`, used by no provider module).
+
 ## [v1.5.0] - 2026-10-27
 
 ### GraphQL stays optional

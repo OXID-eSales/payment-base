@@ -11,8 +11,9 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
-use OxidEsales\PaymentBase\Mail\StoredOrderMail;
-use OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface;
+use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
+use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
+use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
@@ -21,19 +22,21 @@ use Throwable;
  * STRP-176 — "thank you for your order" goes out once the PSP has confirmed
  * the payment.
  *
- * Early order creation stores the customer and owner mail core rendered (see
- * the Order extension). The commit is the moment the payment is confirmed, on
- * the return leg or the webhook leg, whichever is first; each stored mail is
- * claimed before it is sent, so the other leg - or a replayed webhook - cannot
- * send it again. A mail that fails stays stored, released, and is logged: the
- * payment is taken, and a mail problem must never undo or block the commit.
+ * Early order creation keeps the customer and owner mail core rendered on the
+ * contract (see OxidShopOrderService). The commit is the moment the payment is
+ * confirmed, on the return leg or the webhook leg, whichever is first; the
+ * mails are claimed on the contract row before they are sent, so the other
+ * leg - or a replayed webhook - cannot send them again. The row then records
+ * "sent" and when. A mail that fails is kept there as "failed" and logged:
+ * the payment is taken, and a mail problem must never undo or block the
+ * commit.
  *
  * @since 1.5.0
  */
 class OrderConfirmationMailHandler implements HandlerInterface
 {
     public function __construct(
-        private readonly DeferredOrderMailRepositoryInterface $mails,
+        private readonly ContractOrderMailStoreInterface $mails,
         private readonly ShopMailSenderInterface $sender,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
@@ -46,62 +49,66 @@ class OrderConfirmationMailHandler implements HandlerInterface
 
     public function handle(object $event): void
     {
-        if (!$event instanceof ContractCommittedEvent || $event->getOrderId() === '') {
+        if (!$event instanceof ContractCommittedEvent || $event->getContractId() === '') {
             return;
         }
 
-        $orderId = $event->getOrderId();
+        $context = ['contractId' => $event->getContractId(), 'orderId' => $event->getOrderId()];
         try {
-            $unsent = $this->mails->findUnsentByOrderId($orderId);
+            $claimed = $this->mails->claim($event->getContractId());
+            if ($claimed === null) {
+                // Nothing deferred, the other leg holds them, already sent, or
+                // the order was cancelled.
+                return;
+            }
+
+            $this->sendAll($claimed);
         } catch (Throwable $e) {
-            $this->logger->error('[OrderConfirmationMailHandler] stored order mails could not be read', [
-                'orderId' => $orderId,
-                'contractId' => $event->getContractId(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return;
-        }
-
-        foreach ($unsent as $stored) {
-            $this->sendOnce($stored, $orderId);
+            $this->logger->error(
+                '[OrderConfirmationMailHandler] order mails not sent',
+                $context + ['error' => $e->getMessage()]
+            );
         }
     }
 
-    private function sendOnce(StoredOrderMail $stored, string $orderId): void
+    private function sendAll(ClaimedOrderMails $claimed): void
     {
-        $context = ['orderId' => $orderId, 'mailId' => $stored->id, 'kind' => $stored->mail->kind];
-
-        try {
-            if (!$this->mails->claim($stored->id)) {
-                // The other leg of the same payment is sending it.
-                return;
+        $context = ['contractId' => $claimed->contractId, 'orderId' => $claimed->orderId];
+        $unsent = [];
+        foreach ($claimed->mails as $mail) {
+            if (!$this->sendOne($mail, $claimed->shopId, $context)) {
+                $unsent[] = $mail;
             }
-
-            if (!$this->sender->send($stored->mail, $stored->shopId)) {
-                $this->giveBack($stored, $context, 'the shop mailer refused the order mail');
-
-                return;
-            }
-
-            $this->mails->delete($stored->id);
-            $this->logger->info('[OrderConfirmationMailHandler] order mail sent after payment', $context);
-        } catch (Throwable $e) {
-            $this->giveBack($stored, $context + ['error' => $e->getMessage()], 'order mail not sent');
         }
+
+        if ($unsent !== []) {
+            $this->mails->markFailed($claimed->contractId, $unsent);
+            $this->logger->error('[OrderConfirmationMailHandler] order mails kept on the contract for a resend', $context
+                + ['kinds' => array_map(static fn (DeferredOrderMail $mail): string => $mail->kind, $unsent)]);
+
+            return;
+        }
+
+        $this->mails->markSent($claimed->contractId);
+        $this->logger->info('[OrderConfirmationMailHandler] order mails sent after payment', $context);
     }
 
     /**
      * @param array<string, string> $context
      */
-    private function giveBack(StoredOrderMail $stored, array $context, string $message): void
+    private function sendOne(DeferredOrderMail $mail, int $shopId, array $context): bool
     {
-        $this->logger->error('[OrderConfirmationMailHandler] ' . $message . ', kept for a resend', $context);
-
         try {
-            $this->mails->release($stored->id);
-        } catch (Throwable) {
-            // Logged above; a claim left set only keeps it from a second send.
+            if ($this->sender->send($mail, $shopId)) {
+                return true;
+            }
+            $this->logger->error('[OrderConfirmationMailHandler] the shop mailer refused the order mail', $context
+                + ['kind' => $mail->kind]);
+        } catch (Throwable $e) {
+            $this->logger->error('[OrderConfirmationMailHandler] order mail not sent', $context
+                + ['kind' => $mail->kind, 'error' => $e->getMessage()]);
         }
+
+        return false;
     }
 }

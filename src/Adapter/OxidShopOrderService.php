@@ -22,7 +22,9 @@ use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
+use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use Throwable;
 
@@ -71,12 +73,19 @@ class OxidShopOrderService implements ShopOrderServiceInterface
      * one-order-per-attempt rule core enforces for sessions through
      * `sess_challenge`. Optional for the same reason; without it the service
      * behaves exactly as before.
+     *
+     * STRP-176 (1.6.0): the order mails rendered at creation wait on the
+     * contract the request names. Optional for the same reason; without the
+     * store they are sent at once, as before STRP-176, and without the sender
+     * too they are lost - logged at ERROR.
      */
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
         ?CheckoutBasketProviderInterface $basketProvider = null,
-        private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null
+        private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
+        private readonly ?ContractOrderMailStoreInterface $orderMails = null,
+        private readonly ?ShopMailSenderInterface $mailSender = null
     ) {
         $this->basketProvider = $basketProvider ?? new SessionBasketProvider();
     }
@@ -165,7 +174,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         $order = $this->newOrder();
         // STRP-176: this order exists before the customer pays at the PSP, and
         // core's finalizeOrder() ends by mailing "thank you for your order". The
-        // mails are stored instead and sent when the contract commits. Not
+        // mails are kept on the contract instead and sent when it commits. Not
         // deferrable only when the Order extension is missing from the chain:
         // then the mail goes out now, as before.
         if ($order instanceof DefersConfirmationMailInterface) {
@@ -195,8 +204,71 @@ class OxidShopOrderService implements ShopOrderServiceInterface
 
         $this->refuseSecondSubmission($orderState, $request);
         $this->validateOrderState($orderState, $request, $basket);
+        $this->keepOrderMailsOnContract($order, $request);
 
         return [$order, $orderState];
+    }
+
+    /**
+     * STRP-176 — the order knows its mails, the request knows the contract.
+     *
+     * Every failure ends in an immediate send: the order exists and the
+     * checkout goes on either way, and a mail sent before the payment (the
+     * behaviour before STRP-176) beats one that never comes.
+     */
+    private function keepOrderMailsOnContract(Order $order, CreateOrderRequest $request): void
+    {
+        if (!$order instanceof DefersConfirmationMailInterface) {
+            return;
+        }
+        $mails = $order->takeDeferredMails();
+        if ($mails === []) {
+            return;
+        }
+
+        $contractId = $request->metadata['contract_id'] ?? null;
+        $context = ['order_id' => (string) $order->getId(), 'contract_id' => $contractId];
+        if ($this->orderMails === null || !is_string($contractId) || $contractId === '') {
+            $this->sendOrderMailsNow($mails, $order, 'warning', 'no contract to keep the order mails on', $context);
+
+            return;
+        }
+
+        try {
+            if (!$this->orderMails->stash($contractId, $mails)) {
+                $this->sendOrderMailsNow($mails, $order, 'warning', 'contract row not found', $context);
+            }
+        } catch (Throwable $e) {
+            $context['error'] = $e->getMessage();
+            $this->sendOrderMailsNow($mails, $order, 'error', 'order mails could not be kept', $context);
+        }
+    }
+
+    /**
+     * @param list<DeferredOrderMail> $mails
+     * @param array<string, mixed> $context
+     */
+    private function sendOrderMailsNow(array $mails, Order $order, string $level, string $why, array $context): void
+    {
+        Registry::getLogger()->log($level, '[STRP-176] ' . $why . ', order mails sent before the payment', $context);
+        if ($this->mailSender === null) {
+            Registry::getLogger()->error('[STRP-176] no mail sender, the order mails are lost', $context);
+
+            return;
+        }
+
+        foreach ($mails as $mail) {
+            try {
+                if (!$this->mailSender->send($mail, (int) $order->getFieldData('oxshopid'))) {
+                    Registry::getLogger()->error('[STRP-176] order mail not sent', $context + ['kind' => $mail->kind]);
+                }
+            } catch (Throwable $e) {
+                Registry::getLogger()->error(
+                    '[STRP-176] order mail not sent',
+                    $context + ['kind' => $mail->kind, 'error' => $e->getMessage()]
+                );
+            }
+        }
     }
 
     /**

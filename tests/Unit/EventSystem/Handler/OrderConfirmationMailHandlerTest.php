@@ -17,61 +17,61 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\OrderConfirmationMailHandler;
+use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
-use OxidEsales\PaymentBase\Mail\StoredOrderMail;
-use OxidEsales\PaymentBase\Repository\DeferredOrderMailRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use Stringable;
 
-final class FakeOrderMailStore implements DeferredOrderMailRepositoryInterface
+final class FakeOrderMailStore implements ContractOrderMailStoreInterface
 {
-    /** @var list<StoredOrderMail> */
-    public array $unsent = [];
+    /** @var list<DeferredOrderMail> what claim() hands out; [] = nothing to claim */
+    public array $pending = [];
 
     /** @var list<string> */
     public array $calls = [];
 
-    /** @var list<string> */
-    public array $heldElsewhere = [];
+    /** @var list<string> subjects passed to markFailed() */
+    public array $keptForResend = [];
 
-    public ?RuntimeException $failFind = null;
+    public ?RuntimeException $failClaim = null;
 
-    public function save(string $orderId, int $shopId, array $mails): void
+    public function stash(string $contractId, array $mails): bool
     {
+        return true;
     }
 
-    public function deleteByOrderId(string $orderId): int
+    public function claim(string $contractId): ?ClaimedOrderMails
+    {
+        if ($this->failClaim !== null) {
+            throw $this->failClaim;
+        }
+        $this->calls[] = 'claim:' . $contractId;
+        if ($this->pending === []) {
+            return null;
+        }
+        $mails = $this->pending;
+        $this->pending = [];
+
+        return new ClaimedOrderMails($contractId, 'order-1', 2, $mails);
+    }
+
+    public function markSent(string $contractId): void
+    {
+        $this->calls[] = 'sent:' . $contractId;
+    }
+
+    public function markFailed(string $contractId, array $unsent): void
+    {
+        $this->calls[] = 'failed:' . $contractId;
+        $this->keptForResend = array_map(static fn (DeferredOrderMail $mail): string => $mail->subject, $unsent);
+    }
+
+    public function dropByOrderId(string $orderId): int
     {
         return 0;
-    }
-
-    public function findUnsentByOrderId(string $orderId): array
-    {
-        if ($this->failFind !== null) {
-            throw $this->failFind;
-        }
-        $this->calls[] = 'find:' . $orderId;
-
-        return $this->unsent;
-    }
-
-    public function claim(string $mailId): bool
-    {
-        $this->calls[] = 'claim:' . $mailId;
-
-        return !in_array($mailId, $this->heldElsewhere, true);
-    }
-
-    public function release(string $mailId): void
-    {
-        $this->calls[] = 'release:' . $mailId;
-    }
-
-    public function delete(string $mailId): void
-    {
-        $this->calls[] = 'delete:' . $mailId;
     }
 }
 
@@ -117,9 +117,9 @@ final class LevelLogger extends AbstractLogger
 }
 
 /**
- * STRP-176 — the order mails stored at early order creation go out when the
- * PSP has confirmed the payment, once, whichever leg (return or webhook)
- * commits the contract.
+ * STRP-176 — the order mails kept on the contract at early order creation go
+ * out when the PSP has confirmed the payment, once, whichever leg (return or
+ * webhook) commits the contract; the contract records the outcome.
  */
 final class OrderConfirmationMailHandlerTest extends TestCase
 {
@@ -142,80 +142,60 @@ final class OrderConfirmationMailHandlerTest extends TestCase
         self::assertSame(ContractCommittedEvent::class, OrderConfirmationMailHandler::getHandledEventClass());
     }
 
-    public function testHandle_OnCommit_SendsEveryUnsentMailOfTheOrderAndDeletesIt(): void
+    public function testHandle_OnCommit_ClaimsSendsBothWithTheContractsShopAndMarksSent(): void
     {
-        $this->store->unsent = [$this->stored('m-1', 'customer mail'), $this->stored('m-2', 'owner mail')];
+        $this->store->pending = [$this->mail('customer mail'), $this->mail('owner mail')];
 
-        $this->handler->handle($this->committed('order-1'));
+        $this->handler->handle($this->committed());
 
         self::assertSame([['customer mail', 2], ['owner mail', 2]], $this->sender->sent);
-        self::assertSame(
-            ['find:order-1', 'claim:m-1', 'delete:m-1', 'claim:m-2', 'delete:m-2'],
-            $this->store->calls
-        );
+        self::assertSame(['claim:contract-1', 'sent:contract-1'], $this->store->calls);
     }
 
-    public function testHandle_WhenAnotherSenderHoldsAMail_SkipsThatMail(): void
+    public function testHandle_WhenThereIsNothingToClaim_SendsNothing(): void
     {
-        // The return leg and the webhook leg can both see the commit.
-        $this->store->unsent = [$this->stored('m-1', 'customer mail'), $this->stored('m-2', 'owner mail')];
-        $this->store->heldElsewhere = ['m-1'];
-
-        $this->handler->handle($this->committed('order-1'));
-
-        self::assertSame([['owner mail', 2]], $this->sender->sent);
-        self::assertNotContains('delete:m-1', $this->store->calls);
-    }
-
-    public function testHandle_WhenNoStoredMails_DoesNothing(): void
-    {
-        // Orders created before this release, a replayed webhook, a stornoed order.
-        $this->handler->handle($this->committed('order-1'));
+        // Nothing deferred (order from before 1.5.0), the other leg holds the
+        // mails, a replayed webhook, or a stornoed order.
+        $this->handler->handle($this->committed());
 
         self::assertSame([], $this->sender->sent);
-        self::assertSame(['find:order-1'], $this->store->calls);
+        self::assertSame(['claim:contract-1'], $this->store->calls);
     }
 
-    public function testHandle_WhenTheMailerRefuses_KeepsTheRowReleasedAndLogsError(): void
+    public function testHandle_WhenOneMailIsRefused_KeepsOnlyThatOneAsFailedAndLogsError(): void
     {
-        $this->store->unsent = [$this->stored('m-1', 'customer mail'), $this->stored('m-2', 'owner mail')];
-        $this->sender->outcome = ['customer mail' => false];
+        $this->store->pending = [$this->mail('customer mail'), $this->mail('owner mail')];
+        $this->sender->outcome = ['owner mail' => false];
 
-        $this->handler->handle($this->committed('order-1'));
+        $this->handler->handle($this->committed());
 
-        self::assertContains('release:m-1', $this->store->calls);
-        self::assertNotContains('delete:m-1', $this->store->calls);
-        self::assertSame([['owner mail', 2]], $this->sender->sent, 'one failed mail does not stop the next');
+        self::assertSame([['customer mail', 2]], $this->sender->sent);
+        self::assertSame(['claim:contract-1', 'failed:contract-1'], $this->store->calls);
+        self::assertSame(['owner mail'], $this->store->keptForResend, 'never the mail the customer already has');
         self::assertContains('error', $this->logger->levels());
     }
 
-    public function testHandle_WhenTheSenderThrows_ReleasesLogsAndDoesNotThrow(): void
+    public function testHandle_WhenTheSenderThrows_MarksFailedLogsAndDoesNotThrow(): void
     {
         // The payment is taken; a mail problem must never undo or block the commit.
-        $this->store->unsent = [$this->stored('m-1', 'customer mail')];
+        $this->store->pending = [$this->mail('customer mail'), $this->mail('owner mail')];
         $this->sender->outcome = ['customer mail' => new RuntimeException('smtp down')];
 
-        $this->handler->handle($this->committed('order-1'));
+        $this->handler->handle($this->committed());
 
-        self::assertContains('release:m-1', $this->store->calls);
+        self::assertSame([['owner mail', 2]], $this->sender->sent, 'one failed mail does not stop the next');
+        self::assertSame(['customer mail'], $this->store->keptForResend);
         self::assertSame('error', $this->logger->records[0][0]);
-        self::assertSame('m-1', $this->logger->records[0][2]['mailId']);
+        self::assertSame('contract-1', $this->logger->records[0][2]['contractId']);
     }
 
-    public function testHandle_WhenTheStoreCannotBeRead_LogsErrorAndDoesNotThrow(): void
+    public function testHandle_WhenTheStoreFails_LogsErrorAndDoesNotThrow(): void
     {
-        $this->store->failFind = new RuntimeException('db down');
+        $this->store->failClaim = new RuntimeException('db down');
 
-        $this->handler->handle($this->committed('order-1'));
+        $this->handler->handle($this->committed());
 
         self::assertSame(['error'], $this->logger->levels());
-    }
-
-    public function testHandle_WithoutAnOrderId_DoesNothing(): void
-    {
-        $this->handler->handle($this->committed(''));
-
-        self::assertSame([], $this->store->calls);
     }
 
     public function testHandle_IgnoresOtherEvents(): void
@@ -225,9 +205,9 @@ final class OrderConfirmationMailHandlerTest extends TestCase
         self::assertSame([], $this->store->calls);
     }
 
-    private function committed(string $orderId): ContractCommittedEvent
+    private function committed(): ContractCommittedEvent
     {
-        return new ContractCommittedEvent($this->contract(), new EventContext(), $orderId);
+        return new ContractCommittedEvent($this->contract(), new EventContext(), 'order-1');
     }
 
     private function contract(): PaymentContract
@@ -239,9 +219,9 @@ final class OrderConfirmationMailHandlerTest extends TestCase
         return new PaymentContract(1, 'user-1', $snapshot, 'contract-1');
     }
 
-    private function stored(string $id, string $subject): StoredOrderMail
+    private function mail(string $subject): DeferredOrderMail
     {
-        return new StoredOrderMail($id, 2, new DeferredOrderMail(
+        return new DeferredOrderMail(
             kind: DeferredOrderMail::KIND_CUSTOMER,
             from: 'order@shop.test',
             fromName: 'My Shop',
@@ -252,6 +232,6 @@ final class OrderConfirmationMailHandlerTest extends TestCase
             subject: $subject,
             body: '<p>Thank you</p>',
             altBody: 'Thank you',
-        ));
+        );
     }
 }

@@ -30,7 +30,7 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
 
     private const STATUS_CANCELLED = 'CANCELLED';
 
-    private readonly DeferredOrderMailRepositoryInterface $deferredMails;
+    private readonly ContractOrderMailStoreInterface $deferredMails;
 
     /**
      * $deferredMails defaults to the Doctrine one on the same connection, so
@@ -38,9 +38,9 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
      */
     public function __construct(
         private readonly Connection $connection,
-        ?DeferredOrderMailRepositoryInterface $deferredMails = null
+        ?ContractOrderMailStoreInterface $deferredMails = null
     ) {
-        $this->deferredMails = $deferredMails ?? new DoctrineDeferredOrderMailRepository($connection);
+        $this->deferredMails = $deferredMails ?? new DoctrineContractOrderMailStore($connection);
     }
 
     /**
@@ -111,17 +111,18 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
     }
 
     /**
-     * STRP-176 — an abandoned checkout is never paid, so the order mails it
-     * stored at creation must never go out, and hold the customer's data for
-     * nothing. Best-effort: the storno took and must be reported as such; the
-     * sender skips stornoed orders, so a leftover row costs storage, not a mail.
+     * STRP-176 — an abandoned checkout is never paid, so the order mails
+     * waiting on its contract must never go out, and hold the customer's data
+     * for nothing. Best-effort: the storno took and must be reported as such;
+     * the sender skips stornoed orders, so leftover mails cost storage, not a
+     * mail.
      */
     private function dropDeferredOrderMails(string $orderId): void
     {
         try {
-            $this->deferredMails->deleteByOrderId($orderId);
+            $this->deferredMails->dropByOrderId($orderId);
         } catch (RuntimeException) {
-            // The repository's message carries the SQL error; the storno stands.
+            // The store's message carries the SQL error; the storno stands.
         }
     }
 

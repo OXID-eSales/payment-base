@@ -19,8 +19,16 @@ namespace OxidEsales\PaymentBase\Mail;
 interface DefersConfirmationMailInterface
 {
     /**
-     * The next finalizeOrder() renders the order mails but stores them instead
+     * The next finalizeOrder() renders the order mails but keeps them instead
      * of sending them.
      */
     public function deferConfirmationMail(): void;
+
+    /**
+     * What that finalizeOrder() rendered, handed over once (since 1.6.0): the
+     * order creation keeps it on the contract until the payment is confirmed.
+     *
+     * @return list<DeferredOrderMail>
+     */
+    public function takeDeferredMails(): array;
 }
