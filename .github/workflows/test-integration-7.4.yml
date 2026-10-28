@@ -366,7 +366,7 @@ jobs:
       - name: Install component dependencies
         run: |
           $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH \
-            php bash -c \"cd /var/www/test-module && composer install --no-interaction"
+            php bash -c "cd /var/www/test-module && composer install --no-interaction"
 
       - name: Run isolated unit tests
         run: |
