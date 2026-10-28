@@ -869,6 +869,34 @@ services:
     alias: oe_payment_base.graphql.admin_order_payment_relation
     public: true
 
+  # PAY-1 S2: the contract-state Help for the admin API. Providers tag a ContractStateHelpProviderInterface with
+  # `oe.payment.admin_state_help` to add their status column; none registered = the shared columns only.
+  OxidEsales\PaymentBase\Admin\Help\HelpTranslatorInterface:
+    class: OxidEsales\PaymentBase\Admin\Help\LangFileHelpTranslator
+    autowire: false
+    autoconfigure: false
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReaderInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReader
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Help\ContractStateHelpInterface'
+      - '@OxidEsales\PaymentBase\Admin\Help\HelpTranslatorInterface'
+      - !tagged_iterator oe.payment.admin_state_help
+
+  oe_payment_base.graphql.admin_payment_queries:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReaderInterface'
+
+  # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
+  OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries:
+    alias: oe_payment_base.graphql.admin_payment_queries
+    public: true
+
   OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\OrderChangeGuardSubscriber:
     autowire: false
     autoconfigure: false
