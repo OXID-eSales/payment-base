@@ -15,11 +15,10 @@ namespace OxidEsales\PaymentBase\Core\Events;
  * Intentionally a no-op:
  *
  * - Database schema is owned by Doctrine migrations under
- *   `migration/data/`. CI invokes them via `doctrine-migrations
- *   migrate --configuration=vendor/oxid-esales/payment-base/migration/migrations.yml`
- *   as part of the existing shop-install workflow. Local devs run the
- *   same command or `bin/oe-console oe:migrations:migrate` depending
- *   on the project.
+ *   `migration/data/`. They run with the shop's migration wrapper
+ *   (`vendor/bin/oe-eshop-db_migrate migrations:migrate`), and after every
+ *   `composer install` / `update` when the project's composer.json calls
+ *   `oe-payment-base-migrate` (see README, "Migrations").
  * - Services and the admin tab are registered declaratively
  *   (services.yaml + menu.xml) — no imperative wiring on activation.
  * - Deactivation removes the admin tab automatically via OXID's menu

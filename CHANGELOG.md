@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Migrations run after `composer install` / `composer update`
+- New `vendor/bin/oe-payment-base-migrate` (composer `bin`): runs the `oe_payment_base` suite through
+  `oe-eshop-db_migrate`. Add it to the project's `post-install-cmd` and `post-update-cmd` (see README) - composer runs only
+  the root package's scripts. It skips while the shop is not set up; afterwards a failing migration fails the composer run.
+- Removed `bin/run-migrations.sh` (it called plain `doctrine-migrations` and was not hooked into anything).
+
 ### Order mail waits on the contract, no table of its own (STRP-176 follow-up)
 - **Changed:** the order mails rendered at early order creation wait on their contract row, not in
   `oe_payments_order_mail`. Three new nullable columns on `oe_payments_contract` (migration `Version20261028100000`):
