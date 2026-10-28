@@ -5,6 +5,13 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Superadmin check for secrets (PAY-10 S2) - minor, additive
+- New `GraphQL\Admin\Service\AdminSuperadminCheckInterface` (`isSuperadmin(): bool`, public service) and
+  `OxidAdminSuperadminCheck`, backed by oxid-admin-graphql's roles (the built-in `superadmin` role) when installed; fails
+  closed (`false`) without the admin module, without a session or on any error. Provider modules use it to restrict API-key,
+  secret and connection changes to the superadmin (see `docs/admin-payment-api.md`).
+- After upgrading: delete `var/cache/container/container_cache_shop_*.php` and run `bin/oe-console oe:graphql:cache-clear`.
+
 ### Admin payment API parity (PAY-1) - minor, additive
 - `AdminPaymentContract.contractId`, `AdminPaymentTransaction.currency`.
 - New query `adminPaymentContractStateHelp(provider, language): AdminPaymentStateHelp` (right `ADMIN_PAYMENT_VIEW`): the

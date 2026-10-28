@@ -15,6 +15,11 @@ use OxidEsales\GraphQL\Admin\Authorization\DataType\RightDefinition;
 use OxidEsales\GraphQL\Admin\Authorization\Service\RightsProviderInterface;
 use OxidEsales\GraphQL\Admin\Checkout\DataType\AdminPaymentOwnership;
 use OxidEsales\GraphQL\Admin\Checkout\DataType\PaymentClaim;
+use OxidEsales\GraphQL\Admin\AdminSession\DataType\AdminSession;
+use OxidEsales\GraphQL\Admin\AdminSession\Service\CurrentAdminSession;
+use OxidEsales\GraphQL\Admin\Authorization\DataType\Role;
+use OxidEsales\GraphQL\Admin\Authorization\Infrastructure\RoleRepositoryInterface;
+use OxidEsales\GraphQL\Admin\Authorization\Infrastructure\UserRoleRepositoryInterface;
 use OxidEsales\GraphQL\Admin\Mfa\Service\StepUp;
 use OxidEsales\GraphQL\Admin\Order\DataType\AdminOrder;
 use OxidEsales\GraphQL\Admin\Order\DataType\AdminOrderCancelled;
@@ -58,6 +63,10 @@ final class AdminModuleParityTest extends TestCase
         yield 'AdminPaymentOwnership::claim' => [AdminPaymentOwnership::class, 'claim', ['string', '?array'], 'void'];
         yield 'AdminPaymentOwnership::claimed' => [AdminPaymentOwnership::class, 'claimed', [], '?' . PaymentClaim::class];
         yield 'StepUp::require' => [StepUp::class, 'require', ['int'], \OxidEsales\GraphQL\Admin\AdminSession\DataType\AdminSession::class];
+        yield 'CurrentAdminSession::current' => [CurrentAdminSession::class, 'current', [], AdminSession::class];
+        yield 'UserRoleRepositoryInterface::roleIdsOf' => [UserRoleRepositoryInterface::class, 'roleIdsOf', ['string'], 'array'];
+        yield 'RoleRepositoryInterface::findVisibleByIds' => [RoleRepositoryInterface::class, 'findVisibleByIds', ['array'], 'array'];
+        yield 'Role::holdsEverything' => [Role::class, 'holdsEverything', [], 'bool'];
         yield 'AuditRecorder::auditedAdmin' => [AuditRecorder::class, 'auditedAdmin', ['string', \Closure::class], 'mixed'];
         yield 'AuditTrail::on' => [AuditTrail::class, 'on', ['string', 'string'], 'self'];
         yield 'AuditTrail::field' => [AuditTrail::class, 'field', ['string'], 'self'];
@@ -103,6 +112,10 @@ final class AdminModuleParityTest extends TestCase
         self::assertSame('string', (string) $id->getType());
 
         self::assertSame(300, StepUp::FIVE_MINUTES);
+        self::assertSame('superadmin', Role::SUPERADMIN);
+        self::assertSame(['string', 'int', 'string', 'string', 'bool', 'array', 'string'], self::constructorTypes(Role::class));
+        $userId = new \ReflectionProperty(AdminSession::class, 'userId');
+        self::assertTrue($userId->isPublic() && $userId->isReadOnly());
         self::assertSame(['title', 'description'], PaymentClaim::DEFAULT_READ_ONLY);
         self::assertTrue((new ReflectionClass(OrderChangeKind::class))->isEnum());
         foreach (['Items', 'Addresses', 'Payment', 'DeliverySet'] as $case) {

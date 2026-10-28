@@ -97,8 +97,8 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\GraphQL\\\\Admin\\\\Service\\\\(PaymentContractDetails|PaymentTransactionDetails|PaymentRefusal|PaymentOperationResult|AdminPaymentOperation|IdempotencyClaim|AdminStateHelp|AdminStateHelpRow|LazyActionBounds)$#',
         '#\\\\Admin\\\\Help\\\\ContractStateHelpRow$#', // PAY-1: the final readonly row VO of the shared state Help
         // A10: the admin API's final classes with no interface (optional package, like graphql-base's Token above):
-        // its audit recorder, its step-up guard and the payment-ownership event.
-        '#^OxidEsales\\\\GraphQL\\\\Admin\\\\(Audit\\\\Service\\\\AuditRecorder|Mfa\\\\Service\\\\StepUp|Checkout\\\\DataType\\\\AdminPaymentOwnership)$#',
+        // its audit recorder, its step-up guard, the current admin session (PAY-10) and the payment-ownership event.
+        '#^OxidEsales\\\\GraphQL\\\\Admin\\\\(Audit\\\\Service\\\\AuditRecorder|Mfa\\\\Service\\\\StepUp|AdminSession\\\\Service\\\\CurrentAdminSession|Checkout\\\\DataType\\\\AdminPaymentOwnership)$#',
 
         // Test classes
         '#Test$#',
