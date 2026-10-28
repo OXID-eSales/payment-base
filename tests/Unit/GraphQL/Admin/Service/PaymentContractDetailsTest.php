@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Service;
 
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\LazyActionBounds;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetails;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +45,64 @@ final class PaymentContractDetailsTest extends TestCase
 
         self::assertEqualsWithDelta($expectedCapturable, $details->amountCapturable(), 0.0001);
         self::assertEqualsWithDelta($expectedRefundable, $details->amountRefundable(), 0.0001);
+    }
+
+    public function testProviderBounds_ReplaceTheLocalNumbers_WhereTheProviderAnswers(): void
+    {
+        $multiCapture = $this->withBounds('fulfilled', 30.0, 0.0, new LazyActionBounds(static fn (): AdminActionBounds => new AdminActionBounds(70.0, 12.0)));
+
+        self::assertSame(70.0, $multiCapture->amountCapturable(), 'the remainder Mollie still holds, though the shop recorded a capture');
+        self::assertSame(12.0, $multiCapture->amountRefundable());
+        self::assertFalse($multiCapture->providerBoundsUnavailable());
+    }
+
+    public function testProviderBounds_OmittedSide_KeepsThePaymentBaseNumber(): void
+    {
+        $details = $this->withBounds('fulfilled', 100.0, 30.0, new LazyActionBounds(static fn (): AdminActionBounds => new AdminActionBounds(refundable: 20.0)));
+
+        self::assertSame(0.0, $details->amountCapturable());
+        self::assertSame(20.0, $details->amountRefundable());
+    }
+
+    public function testProviderBounds_NoOpinion_KeepsTheLocalNumbers(): void
+    {
+        $details = $this->withBounds('authorized', 0.0, 0.0, new LazyActionBounds(static fn (): ?AdminActionBounds => null));
+
+        self::assertSame(100.0, $details->amountCapturable());
+    }
+
+    public function testProviderBounds_Unreadable_FailClosed_AndAreReportedAsUnavailable(): void
+    {
+        $details = $this->withBounds('fulfilled', 100.0, 0.0, new LazyActionBounds(static fn (): AdminActionBounds => AdminActionBounds::unavailable()));
+
+        self::assertSame([0.0, 0.0], [$details->amountCapturable(), $details->amountRefundable()]);
+        self::assertTrue($details->providerBoundsUnavailable());
+    }
+
+    public function testProviderBounds_AreAskedOnce_NoMatterHowOftenTheyAreRead(): void
+    {
+        $asked = 0;
+        $details = $this->withBounds('fulfilled', 100.0, 0.0, new LazyActionBounds(static function () use (&$asked): AdminActionBounds {
+            ++$asked;
+
+            return new AdminActionBounds(1.0, 2.0);
+        }));
+
+        $details->amountCapturable();
+        $details->amountRefundable();
+        $details->providerBoundsUnavailable();
+
+        self::assertSame(1, $asked);
+    }
+
+    public function testWithoutProviderBounds_NothingIsAsked_AndTheNumbersAreToday(): void
+    {
+        self::assertFalse($this->withBounds('authorized', 0.0, 0.0, null)->providerBoundsUnavailable());
+    }
+
+    private function withBounds(string $state, float $captured, float $refunded, ?LazyActionBounds $bounds): PaymentContractDetails
+    {
+        return new PaymentContractDetails('c', 'mollie', $state, 100.0, $captured, $refunded, 'EUR', [], null, $bounds);
     }
 
     public function testFingerprint_ChangesWithStateAndAmounts_NotWithTransactionsOnly(): void

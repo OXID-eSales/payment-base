@@ -10,17 +10,26 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Service;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
+use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelProviderInterface;
+use OxidEsales\PaymentBase\Admin\Panel\AdminActionRefusedException;
 use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperations;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentRefusal;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentOperationResult;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\AdapterEffects;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\ContractFactory;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\CountingStepUp;
+use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakeBoundsPanelProvider;
+use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakeOptionsPanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakePanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\InMemoryContracts;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\InMemoryIdempotency;
@@ -41,6 +50,7 @@ final class AdminPaymentOperationsTest extends TestCase
     private CountingStepUp $stepUp;
     private FakePanelProvider $adapter;
     private bool $orderInShop = true;
+    private ?PaymentPanelProviderInterface $panel = null;
 
     protected function setUp(): void
     {
@@ -385,6 +395,98 @@ final class AdminPaymentOperationsTest extends TestCase
         self::assertSame([], $this->adapter->calls);
     }
 
+    // --- typed refusals (PAY-1 S5) --------------------------------------------------------------------------
+
+    public function testProviderRefusal_BecomesProviderRefusedWithTheProvidersSentence_AndTheKeyIsReleased(): void
+    {
+        $this->adapter = new FakePanelProvider('paypal', static function (): void {
+            throw new AdminActionRefusedException('amount_below_minimum', 'The amount is below the provider minimum.');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        $refusal = $this->operations()->refund('order-1', 0.5, null, 'key-refund-1')->refusal();
+
+        self::assertSame(PaymentRefusal::INVALID, $refusal?->kind);
+        self::assertSame(['orderId', 'provider_refused', 'The amount is below the provider minimum.'], [$refusal->field, $refusal->code, $refusal->message]);
+        self::assertSame('provider_refused', $this->audit->rows[0]['outcome']);
+        $this->adapter = new FakePanelProvider('paypal', AdapterEffects::successful());
+        self::assertNull($this->operations()->refund('order-1', 5.0, null, 'key-refund-1')->refusal(), 'the key was released');
+    }
+
+    public function testOtherProviderExceptions_StillAreProviderFailed_WithoutTheirMessage(): void
+    {
+        $this->adapter = new FakePanelProvider('paypal', static function (): void {
+            throw new \RuntimeException('secret token abc');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $refusal = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1')->refusal();
+
+        self::assertSame('provider_failed', $refusal?->code);
+        self::assertStringNotContainsString('secret', $refusal->message);
+    }
+
+    // --- provider bounds (PAY-1 S4) -----------------------------------------------------------------------------
+
+    public function testProviderCapturableBound_AllowsAFurtherCapture_ThePaymentBaseNumbersWouldRefuse(): void
+    {
+        $this->useBounds(static fn (): AdminActionBounds => new AdminActionBounds(capturable: 70.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 30.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-2', 'paypal', 100.0, 30.0));
+
+        // the fake adapter cannot re-capture a captured contract; what is proven is that the rule let the call through
+        $accepted = $this->operations()->capture('order-1', 70.0, 'key-capture-1')->refusal();
+        $tooMuch = $this->operations()->capture('order-2', 70.01, 'key-capture-2')->refusal();
+
+        self::assertContains($accepted?->code, ['provider_failed', 'not_confirmed'], 'passed the bound, reached the provider');
+        self::assertSame('exceeds_capturable', $tooMuch?->code);
+        self::assertCount(1, $this->adapter->calls);
+    }
+
+    public function testProviderRefundableBound_LowerThanTheLocalOne_IsTheLimit(): void
+    {
+        $this->useBounds(static fn (): AdminActionBounds => new AdminActionBounds(refundable: 10.0));
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        $refusal = $this->operations()->refund('order-1', 20.0, null, 'key-refund-1')->refusal();
+
+        self::assertSame('exceeds_refundable', $refusal?->code);
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testProviderBoundNotReadable_RefusesTheWriteAsProviderUnavailable_AndZeroesTheRead(): void
+    {
+        $this->useBounds(static function (): never {
+            throw new \RuntimeException('provider down');
+        });
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+        $this->contracts->save(ContractFactory::authorized('order-2'));
+
+        $refund = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1');
+        $capture = $this->operations()->capture('order-2', null, 'key-capture-1');
+        $void = $this->operations()->void('order-2', 'key-void-1');
+
+        self::assertSame(['orderId', 'provider_unavailable'], [$refund->refusal()?->field, $refund->refusal()?->code]);
+        self::assertSame('provider_unavailable', $capture->refusal()?->code);
+        self::assertSame('provider_unavailable', $void->refusal()?->code);
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testProviderWithoutBounds_GetsTheSameAnswersAsBefore(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        self::assertSame('exceeds_refundable', $this->operations()->refund('order-1', 101.0, null, 'key-refund-1')->refusal()?->code);
+    }
+
+    /**
+     * @param \Closure(\OxidEsales\PaymentBase\Contract\PaymentContractInterface): ?AdminActionBounds $answer
+     */
+    private function useBounds(\Closure $answer): void
+    {
+        $this->panel = new FakeBoundsPanelProvider($this->adapter, $answer);
+    }
+
     // --- audit ------------------------------------------------------------------------------------------------
 
     public function testEveryCallIsAudited_WithFieldNamesAndTheAmountOnly(): void
@@ -415,9 +517,135 @@ final class AdminPaymentOperationsTest extends TestCase
         self::assertSame([[], []], array_column($this->audit->rows, 'fields'));
     }
 
+    // --- reasons and description (PAY-1 S3) ---------------------------------------------------------------
+
+    public function testCapture_Reason_IsHandedOverAsCaptureReason(): void
+    {
+        $this->contracts->save(ContractFactory::authorized('order-1'));
+
+        $this->operations()->capture('order-1', null, 'key-capture-1', 'Goods shipped');
+
+        self::assertSame('Goods shipped', $this->adapter->calls[0]['request']['capture_reason']);
+    }
+
+    public function testVoid_Reason_IsHandedOverAsCancelReason(): void
+    {
+        $this->contracts->save(ContractFactory::authorized('order-1'));
+
+        $this->operations()->void('order-1', 'key-void-1', 'Customer cancelled');
+
+        self::assertSame('Customer cancelled', $this->adapter->calls[0]['request']['cancel_reason']);
+    }
+
+    public function testRefund_Description_IsHandedOverAsRefundDescription(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $this->operations()->refund('order-1', 10.0, null, 'key-refund-1', 'Refund for order 1');
+
+        self::assertSame('Refund for order 1', $this->adapter->calls[0]['request']['refund_description']);
+        self::assertArrayNotHasKey('refund_reason', $this->adapter->calls[0]['request']);
+    }
+
+    public function testBlankReasonAndDescription_AreNotSent(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $this->operations()->refund('order-1', 10.0, '  ', 'key-refund-1', '');
+
+        self::assertSame(['refund_amount' => 10.0, 'idempotency_key' => 'key-refund-1'], $this->adapter->calls[0]['request']);
+    }
+
+    public function testProviderWithoutOptions_AcceptsAnyRefundReasonWithinTheCeiling(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $result = $this->operations()->refund('order-1', 10.0, 'anything at all', 'key-refund-1');
+
+        self::assertNull($result->refusal());
+    }
+
+    public function testProviderWithAReasonList_RefusesAReasonOutsideIt_BeforeTheProviderIsCalled(): void
+    {
+        $this->useOptions(new AdminActionOptions(['duplicate', 'fraudulent'], ['abandoned'], false, 255));
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+        $this->contracts->save(ContractFactory::authorized('order-2'));
+
+        $refund = $this->operations()->refund('order-1', 10.0, 'because', 'key-refund-1')->refusal();
+        $void = $this->operations()->void('order-2', 'key-void-1', 'duplicate')->refusal();
+
+        self::assertSame(['reason', 'reason_invalid'], [$refund?->field, $refund?->code]);
+        self::assertSame(['reason', 'reason_invalid'], [$void?->field, $void?->code], 'the void list is its own');
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testProviderWithAReasonList_AcceptsAListedReason_AndAnOmittedOne(): void
+    {
+        $this->useOptions(new AdminActionOptions(['duplicate'], [], false, 255));
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+
+        self::assertNull($this->operations()->refund('order-1', 10.0, 'duplicate', 'key-refund-1')->refusal());
+        self::assertNull($this->operations()->refund('order-1', 10.0, null, 'key-refund-2')->refusal());
+        self::assertSame('duplicate', $this->adapter->calls[0]['request']['refund_reason']);
+    }
+
+    public function testProviderLimit_IsEnforcedOnReasonAndDescription_AsTooLong(): void
+    {
+        $this->useOptions(new AdminActionOptions([], [], true, 10));
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+        $this->contracts->save(ContractFactory::authorized('order-2'));
+
+        $reason = $this->operations()->refund('order-1', 5.0, str_repeat('x', 11), 'key-refund-1')->refusal();
+        $description = $this->operations()->refund('order-1', 5.0, null, 'key-refund-2', str_repeat('x', 11))->refusal();
+        $capture = $this->operations()->capture('order-2', null, 'key-capture-1', str_repeat('x', 11))->refusal();
+
+        self::assertSame(['reason', 'too_long'], [$reason?->field, $reason?->code]);
+        self::assertSame(['description', 'too_long'], [$description?->field, $description?->code]);
+        self::assertSame(['reason', 'too_long'], [$capture?->field, $capture?->code]);
+        self::assertSame([], $this->adapter->calls);
+    }
+
+    public function testDescriptionWithControlCharacters_IsRefused(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $refusal = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1', "a\nb")->refusal();
+
+        self::assertSame(['description', 'invalid_characters'], [$refusal?->field, $refusal?->code]);
+    }
+
+    public function testAuditNamesReasonAndDescriptionAsFields_NeverTheirValues(): void
+    {
+        $this->contracts->save(ContractFactory::fulfilled('order-1', 'paypal', 100.0, 100.0));
+        $this->contracts->save(ContractFactory::authorized('order-2'));
+
+        $this->operations()->refund('order-1', 10.0, 'r', 'key-refund-1', 'secret text');
+        $this->operations()->capture('order-2', null, 'key-capture-1', 'why');
+
+        self::assertSame([['amount', 'reason', 'description'], ['reason']], array_column($this->audit->rows, 'fields'));
+        self::assertStringNotContainsString('secret', (string) json_encode($this->audit->rows));
+    }
+
+    public function testActionOptionsOfTheProvider_AreOnThePaymentRead(): void
+    {
+        $options = new AdminActionOptions(['duplicate'], [], true, 40);
+        $this->useOptions($options);
+        $this->contracts->save(ContractFactory::fulfilled('order-1'));
+
+        $payment = $this->operations()->refund('order-1', 5.0, null, 'key-refund-1')->payment();
+
+        self::assertSame($options, $payment->actionOptions());
+    }
+
+    private function useOptions(AdminActionOptions $options): void
+    {
+        $this->panel = new FakeOptionsPanelProvider($this->adapter, $options);
+    }
+
     private function operations(): AdminPaymentOperations
     {
         $now = new DateTimeImmutable('2026-10-26 10:00:00');
+        $registry = new PaymentPanelRegistry([$this->panel ?? $this->adapter]);
         $shop = new class ($this->orderInShop) implements RequestShopOrdersInterface {
             public function __construct(private readonly bool $contains)
             {
@@ -430,8 +658,8 @@ final class AdminPaymentOperationsTest extends TestCase
         };
 
         return new AdminPaymentOperations(
-            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class)),
-            new PanelProviderActionRunner(new PaymentPanelRegistry([$this->adapter]), $this->contracts, new NullLogger()),
+            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), new PanelActionOptionsResolver($registry, new NullLogger()), new PanelActionBoundsResolver($registry, new NullLogger())),
+            new PanelProviderActionRunner($registry, $this->contracts, new NullLogger()),
             new OperationIdempotency($this->idempotencyRows, static fn (): DateTimeImmutable => $now),
             $this->stepUp,
             $this->audit,

@@ -32,19 +32,19 @@ final class AdminPaymentOperations implements AdminPaymentOperationsInterface
     ) {
     }
 
-    public function capture(string $orderId, ?float $amount, ?string $idempotencyKey): PaymentOperationResult
+    public function capture(string $orderId, ?float $amount, ?string $idempotencyKey, ?string $reason = null): PaymentOperationResult
     {
-        return $this->run(AdminPaymentOperation::capture($orderId, $amount, $idempotencyKey));
+        return $this->run(AdminPaymentOperation::capture($orderId, $amount, $idempotencyKey, $reason));
     }
 
-    public function refund(string $orderId, float $amount, ?string $reason, ?string $idempotencyKey): PaymentOperationResult
+    public function refund(string $orderId, float $amount, ?string $reason, ?string $idempotencyKey, ?string $description = null): PaymentOperationResult
     {
-        return $this->run(AdminPaymentOperation::refund($orderId, $amount, $reason, $idempotencyKey));
+        return $this->run(AdminPaymentOperation::refund($orderId, $amount, $reason, $idempotencyKey, $description));
     }
 
-    public function void(string $orderId, ?string $idempotencyKey): PaymentOperationResult
+    public function void(string $orderId, ?string $idempotencyKey, ?string $reason = null): PaymentOperationResult
     {
-        return $this->run(AdminPaymentOperation::void($orderId, $idempotencyKey));
+        return $this->run(AdminPaymentOperation::void($orderId, $idempotencyKey, $reason));
     }
 
     private function run(AdminPaymentOperation $operation): PaymentOperationResult
@@ -115,7 +115,8 @@ final class AdminPaymentOperations implements AdminPaymentOperationsInterface
     {
         $outcome = $this->provider->run($before->provider, $operation->orderId, $operation->providerAction(), $this->requestFor($operation, $before));
 
-        return match ($outcome) {
+        return match ($outcome->status) {
+            ProviderActionRunnerInterface::REFUSED => PaymentRefusal::invalid('orderId', 'provider_refused', (string) $outcome->refusalMessage),
             ProviderActionRunnerInterface::UNAVAILABLE => PaymentRefusal::invalid('orderId', 'provider_unavailable', 'No payment provider module handles this payment'),
             ProviderActionRunnerInterface::FAILED => PaymentRefusal::invalid('orderId', 'provider_failed', 'The payment provider refused or could not complete the action'),
             default => null,
@@ -134,7 +135,10 @@ final class AdminPaymentOperations implements AdminPaymentOperationsInterface
             $request[$operation->kind . '_amount'] = $payment->roundToMinorUnit($operation->amount);
         }
         if ($operation->reason !== null) {
-            $request['refund_reason'] = $operation->reason;
+            $request[$operation->reasonField()] = $operation->reason;
+        }
+        if ($operation->description !== null) {
+            $request['refund_description'] = $operation->description;
         }
         if ($operation->clientKey !== null) {
             $request['idempotency_key'] = $operation->clientKey;

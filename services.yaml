@@ -18,9 +18,15 @@ services:
       - !tagged_iterator oe.payment.admin_panel
     public: true
 
+  # PAY-1 S5: where the classic tab shows an AdminActionRefusedException of a provider.
+  OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface:
+    class: OxidEsales\PaymentBase\Admin\OxidAdminRefusalFeedback
+    public: true
+
   OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher:
     arguments:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface'
     public: true
 
   # Admin controller — instantiated by OXID via metadata.php `controllers`
@@ -784,6 +790,24 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: false
 
+  # PAY-1 S3: a panel provider may also implement Admin\Contract\AdminActionOptionsProviderInterface.
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@oxid_esales.monolog.logger'
+
+  # PAY-1 S4: a panel provider may also implement Admin\Contract\AdminActionBoundsProviderInterface.
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionBoundsResolverInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
+      - '@oxid_esales.monolog.logger'
+
   OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader
     autowire: false
@@ -791,6 +815,8 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionBoundsResolverInterface'
 
   OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner
@@ -867,6 +893,34 @@ services:
   # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
   OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation:
     alias: oe_payment_base.graphql.admin_order_payment_relation
+    public: true
+
+  # PAY-1 S2: the contract-state Help for the admin API. Providers tag a ContractStateHelpProviderInterface with
+  # `oe.payment.admin_state_help` to add their status column; none registered = the shared columns only.
+  OxidEsales\PaymentBase\Admin\Help\HelpTranslatorInterface:
+    class: OxidEsales\PaymentBase\Admin\Help\LangFileHelpTranslator
+    autowire: false
+    autoconfigure: false
+
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReaderInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReader
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\Admin\Help\ContractStateHelpInterface'
+      - '@OxidEsales\PaymentBase\Admin\Help\HelpTranslatorInterface'
+      - !tagged_iterator oe.payment.admin_state_help
+
+  oe_payment_base.graphql.admin_payment_queries:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReaderInterface'
+
+  # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
+  OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries:
+    alias: oe_payment_base.graphql.admin_payment_queries
     public: true
 
   OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\OrderChangeGuardSubscriber:

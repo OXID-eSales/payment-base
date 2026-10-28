@@ -34,7 +34,7 @@ final class PaymentMutationsTest extends TestCase
 
     public function testAdminPaymentCapture_DelegatesAndAnswersThePaymentAfterwards(): void
     {
-        $this->operations->expects(self::once())->method('capture')->with('order-1', 40.0, 'key-12345678')
+        $this->operations->expects(self::once())->method('capture')->with('order-1', 40.0, 'key-12345678', null)
             ->willReturn(PaymentOperationResult::done($this->payment('FULFILLED')));
 
         $payload = $this->mutations()->adminPaymentCapture(new ID('order-1'), 40.0, 'key-12345678');
@@ -45,15 +45,29 @@ final class PaymentMutationsTest extends TestCase
 
     public function testAdminPaymentRefund_DelegatesWithAmountReasonAndKey(): void
     {
-        $this->operations->expects(self::once())->method('refund')->with('order-1', 12.5, 'damaged', 'key-12345678')
+        $this->operations->expects(self::once())->method('refund')->with('order-1', 12.5, 'damaged', 'key-12345678', null)
             ->willReturn(PaymentOperationResult::done($this->payment('FULFILLED')));
 
         $this->mutations()->adminPaymentRefund(new ID('order-1'), 12.5, 'damaged', 'key-12345678');
     }
 
+    public function testTheNewReasonAndDescriptionArguments_AreDelegated(): void
+    {
+        $this->operations->expects(self::once())->method('capture')->with('order-1', null, null, 'shipped')
+            ->willReturn(PaymentOperationResult::done($this->payment('FULFILLED')));
+        $this->operations->expects(self::once())->method('refund')->with('order-1', 5.0, null, null, 'desc')
+            ->willReturn(PaymentOperationResult::done($this->payment('FULFILLED')));
+        $this->operations->expects(self::once())->method('void')->with('order-1', null, 'why')
+            ->willReturn(PaymentOperationResult::done($this->payment('CANCELLED')));
+
+        $this->mutations()->adminPaymentCapture(new ID('order-1'), reason: 'shipped');
+        $this->mutations()->adminPaymentRefund(new ID('order-1'), 5.0, description: 'desc');
+        $this->mutations()->adminPaymentVoid(new ID('order-1'), reason: 'why');
+    }
+
     public function testAdminPaymentVoid_Delegates(): void
     {
-        $this->operations->expects(self::once())->method('void')->with('order-1', null)
+        $this->operations->expects(self::once())->method('void')->with('order-1', null, null)
             ->willReturn(PaymentOperationResult::done($this->payment('CANCELLED')));
 
         $payload = $this->mutations()->adminPaymentVoid(new ID('order-1'));

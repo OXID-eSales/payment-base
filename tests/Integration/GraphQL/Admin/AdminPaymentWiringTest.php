@@ -20,6 +20,7 @@ use OxidEsales\GraphQL\Admin\Order\DataType\OrderChangeKind;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries;
 use OxidEsales\PaymentBase\GraphQL\Service\NamespaceMapper;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Integration\Support\AdminSchemaProbe;
@@ -79,9 +80,36 @@ final class AdminPaymentWiringTest extends IntegrationTestCase
         self::assertMatchesRegularExpression('/type AdminOrder \{[^}]*paymentContract: AdminPaymentContract/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*amountAuthorised: Float![^}]*transactions: \[AdminPaymentTransaction!\]!/s', $schema);
         self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*providerReference: String/s', $schema);
-        self::assertStringContainsString('adminPaymentCapture(orderId: ID!, amount: Float = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
-        self::assertStringContainsString('adminPaymentRefund(orderId: ID!, amount: Float!, reason: String = null, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
-        self::assertStringContainsString('adminPaymentVoid(orderId: ID!, idempotencyKey: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*contractId: String!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentContract \{[^}]*actionOptions: AdminPaymentActionOptions!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentActionOptions \{[^}]*refundReasons: \[String!\]![^}]*voidReasons: \[String!\]![^}]*refundDescription: Boolean![^}]*reasonMaxLength: Int!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentTransaction \{[^}]*currency: String!/s', $schema);
+        self::assertStringContainsString('adminPaymentCapture(orderId: ID!, amount: Float = null, idempotencyKey: String = null, reason: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertStringContainsString('adminPaymentRefund(orderId: ID!, amount: Float!, reason: String = null, idempotencyKey: String = null, description: String = null): AdminPaymentOperationPayload!', $schema);
+        self::assertStringContainsString('adminPaymentVoid(orderId: ID!, idempotencyKey: String = null, reason: String = null): AdminPaymentOperationPayload!', $schema);
+    }
+
+    public function testSchema_HasTheStateHelpQuery(): void
+    {
+        $schema = AdminSchemaProbe::sdl();
+
+        self::assertStringContainsString('adminPaymentContractStateHelp(provider: String = null, language: String = null): AdminPaymentStateHelp!', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentStateHelp \{[^}]*providerLabel: String[^!][^}]*rows: \[AdminPaymentStateHelpRow!\]!/s', $schema);
+        self::assertMatchesRegularExpression('/type AdminPaymentStateHelpRow \{[^}]*state: String![^}]*states: \[String!\]![^}]*meaning: String![^}]*providerStatus: String\n/s', $schema);
+    }
+
+    public function testStateHelpQuery_InTheRealContainer_AnswersTheSharedRowsWithoutAProviderColumn(): void
+    {
+        $queries = $this->service(PaymentQueries::class);
+        self::assertInstanceOf(PaymentQueries::class, $queries);
+
+        $help = $queries->adminPaymentContractStateHelp('no-such-provider', 'de');
+
+        self::assertNull($help->providerLabel());
+        self::assertCount(8, $help->rows());
+        self::assertSame('NOT_FINISHED', $help->rows()[0]->state());
+        self::assertNotSame('PAYMENT_ADMIN_HELP_STATE_NOT_FINISHED', $help->rows()[0]->meaning(), 'the lang file was found');
+        self::assertNull($help->rows()[0]->providerStatus());
     }
 
     public function testOwnershipEvent_RealDispatcher_PayPalRowIsClaimed_AShopRowIsNot(): void

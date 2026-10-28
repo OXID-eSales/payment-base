@@ -32,24 +32,30 @@ final readonly class AdminPaymentOperation
         public ?float $amount,
         public ?string $reason,
         public ?string $clientKey,
+        public ?string $description = null,
     ) {
     }
 
-    public static function capture(string $orderId, ?float $amount, ?string $clientKey): self
+    public static function capture(string $orderId, ?float $amount, ?string $clientKey, ?string $reason = null): self
     {
-        return new self(self::CAPTURE, $orderId, $amount, null, $clientKey);
+        return new self(self::CAPTURE, $orderId, $amount, self::blankToNull($reason), $clientKey);
     }
 
-    public static function refund(string $orderId, float $amount, ?string $reason, ?string $clientKey): self
+    public static function refund(string $orderId, float $amount, ?string $reason, ?string $clientKey, ?string $description = null): self
     {
-        $trimmed = $reason === null ? '' : trim($reason);
-
-        return new self(self::REFUND, $orderId, $amount, $trimmed === '' ? null : $trimmed, $clientKey);
+        return new self(self::REFUND, $orderId, $amount, self::blankToNull($reason), $clientKey, self::blankToNull($description));
     }
 
-    public static function void(string $orderId, ?string $clientKey): self
+    public static function void(string $orderId, ?string $clientKey, ?string $reason = null): self
     {
-        return new self(self::VOID, $orderId, null, null, $clientKey);
+        return new self(self::VOID, $orderId, null, self::blankToNull($reason), $clientKey);
+    }
+
+    private static function blankToNull(?string $text): ?string
+    {
+        $trimmed = $text === null ? '' : trim($text);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 
     /** The name in the audit log and in the GraphQL schema. */
@@ -84,7 +90,14 @@ final readonly class AdminPaymentOperation
         return array_values(array_filter([
             $this->amount === null ? null : 'amount',
             $this->reason === null ? null : 'reason',
+            $this->description === null ? null : 'description',
         ]));
+    }
+
+    /** The classic tab's form field that carries the reason of this operation (`capture_reason`, `refund_reason`, `cancel_reason`). */
+    public function reasonField(): string
+    {
+        return $this->providerAction() . '_reason';
     }
 
     public function inputRefusal(): ?PaymentRefusal
@@ -92,15 +105,24 @@ final readonly class AdminPaymentOperation
         if ($this->clientKey !== null && preg_match(self::KEY_PATTERN, $this->clientKey) !== 1) {
             return PaymentRefusal::invalid('idempotencyKey', 'invalid_key', 'The idempotency key must be 8 to 64 letters, digits, "-" or "_"');
         }
-        if ($this->reason === null) {
+
+        return $this->textRefusal('reason', $this->reason) ?? $this->textRefusal('description', $this->description);
+    }
+
+    /**
+     * The text fields of the call: what the shop's reader sees, never more than the API's ceiling, no control characters.
+     */
+    private function textRefusal(string $field, ?string $text): ?PaymentRefusal
+    {
+        if ($text === null) {
             return null;
         }
-        if (strlen($this->reason) > self::MAX_REASON_LENGTH) {
-            return PaymentRefusal::invalid('reason', 'too_long', 'The reason is longer than 255 characters');
+        if (strlen($text) > self::MAX_REASON_LENGTH) {
+            return PaymentRefusal::invalid($field, 'too_long', sprintf('The %s is longer than %d characters', $field, self::MAX_REASON_LENGTH));
         }
 
-        return preg_match(self::CONTROL_CHARACTERS, $this->reason) === 1
-            ? PaymentRefusal::invalid('reason', 'invalid_characters', 'The reason must not contain control characters')
+        return preg_match(self::CONTROL_CHARACTERS, $text) === 1
+            ? PaymentRefusal::invalid($field, 'invalid_characters', sprintf('The %s must not contain control characters', $field))
             : null;
     }
 }

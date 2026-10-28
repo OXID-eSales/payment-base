@@ -31,6 +31,13 @@ final class AdminPaymentContract
     {
     }
 
+    /** The contract's own id, as the classic Payment panels show it. */
+    #[Field]
+    public function contractId(): string
+    {
+        return $this->payment->contractId;
+    }
+
     /** stripe | paypal | mollie */
     #[Field]
     public function provider(): string
@@ -80,6 +87,13 @@ final class AdminPaymentContract
     public function currency(): string
     {
         return $this->payment->currency;
+    }
+
+    /** What the provider accepts as the reason of a refund or void and as a refund description. */
+    #[Field]
+    public function actionOptions(): AdminPaymentActionOptions
+    {
+        return new AdminPaymentActionOptions($this->payment->actionOptions());
     }
 
     /**

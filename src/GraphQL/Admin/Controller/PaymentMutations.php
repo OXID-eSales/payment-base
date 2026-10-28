@@ -34,32 +34,35 @@ final class PaymentMutations
     }
 
     /**
-     * Captures an authorised payment; without `amount` the full authorisation. Needs a step-up.
+     * Captures an authorised payment; without `amount` the full authorisation. `reason` is free text for the provider
+     * (`capture_reason`). Needs a step-up.
      */
     #[Mutation]
     #[Right(PaymentRightsProvider::CAPTURE)]
-    public function adminPaymentCapture(ID $orderId, ?float $amount = null, ?string $idempotencyKey = null): AdminPaymentOperationPayload
+    public function adminPaymentCapture(ID $orderId, ?float $amount = null, ?string $idempotencyKey = null, ?string $reason = null): AdminPaymentOperationPayload
     {
-        return AdminPaymentOperationPayload::of($this->operations->capture((string) $orderId, $amount, $idempotencyKey));
+        return AdminPaymentOperationPayload::of($this->operations->capture((string) $orderId, $amount, $idempotencyKey, $reason));
     }
 
     /**
-     * Refunds part or all of what was captured. Needs a step-up.
+     * Refunds part or all of what was captured. `reason` is checked against the provider's declared list when it has
+     * one (`reason_invalid`); `description` is the free text the provider shows with the refund. Needs a step-up.
      */
     #[Mutation]
     #[Right(PaymentRightsProvider::REFUND)]
-    public function adminPaymentRefund(ID $orderId, float $amount, ?string $reason = null, ?string $idempotencyKey = null): AdminPaymentOperationPayload
+    public function adminPaymentRefund(ID $orderId, float $amount, ?string $reason = null, ?string $idempotencyKey = null, ?string $description = null): AdminPaymentOperationPayload
     {
-        return AdminPaymentOperationPayload::of($this->operations->refund((string) $orderId, $amount, $reason, $idempotencyKey));
+        return AdminPaymentOperationPayload::of($this->operations->refund((string) $orderId, $amount, $reason, $idempotencyKey, $description));
     }
 
     /**
-     * Releases an open authorisation (nothing was captured). Guarded by the capture right: it is the reverse of one.
+     * Releases an open authorisation (nothing was captured). Guarded by the capture right: it is the reverse of one. `reason`
+     * is checked against the provider's declared void reasons when it has a list (`reason_invalid`).
      */
     #[Mutation]
     #[Right(PaymentRightsProvider::CAPTURE)]
-    public function adminPaymentVoid(ID $orderId, ?string $idempotencyKey = null): AdminPaymentOperationPayload
+    public function adminPaymentVoid(ID $orderId, ?string $idempotencyKey = null, ?string $reason = null): AdminPaymentOperationPayload
     {
-        return AdminPaymentOperationPayload::of($this->operations->void((string) $orderId, $idempotencyKey));
+        return AdminPaymentOperationPayload::of($this->operations->void((string) $orderId, $idempotencyKey, $reason));
     }
 }

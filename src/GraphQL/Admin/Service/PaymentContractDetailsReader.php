@@ -25,6 +25,8 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,
         private readonly TransactionRepositoryInterface $transactions,
+        private readonly ?AdminActionOptionsResolverInterface $actionOptions = null,
+        private readonly ?AdminActionBoundsResolverInterface $bounds = null,
     ) {
     }
 
@@ -44,6 +46,8 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
             amountRefunded: $contract->getRefundedAmount() ?? 0.0,
             currency: $contract->getCurrency(),
             transactions: $this->transactionsOf($contract),
+            declaredActionOptions: $this->actionOptions?->optionsFor($contract),
+            declaredBounds: $this->bounds?->boundsFor($contract),
         );
     }
 
@@ -58,6 +62,7 @@ final class PaymentContractDetailsReader implements PaymentContractDetailsReader
                 type: $transaction->getType(),
                 status: $transaction->getStatus(),
                 amount: $transaction->getAmount(),
+                currency: $transaction->getCurrency(),
                 createdAt: $transaction->getCreatedAt(),
                 providerReference: $transaction->getTransactionId(),
             ),

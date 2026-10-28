@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\DataType;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Admin\Contract\AdminActionOptions;
 use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentContract;
 use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentTransaction;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetails;
@@ -29,11 +30,12 @@ final class AdminPaymentContractTest extends TestCase
             100.0,
             25.0,
             'EUR',
-            [new PaymentTransactionDetails('t-1', 'refund', 'completed', 25.0, $createdAt, 'REF-1')],
+            [new PaymentTransactionDetails('t-1', 'refund', 'completed', 25.0, 'EUR', $createdAt, 'REF-1')],
         );
 
         $contract = new AdminPaymentContract($details);
 
+        self::assertSame('c-1', $contract->contractId());
         self::assertSame('paypal', $contract->provider());
         self::assertSame('READY_TO_COMMIT', $contract->state());
         self::assertSame(100.0, $contract->amountAuthorised());
@@ -43,11 +45,12 @@ final class AdminPaymentContractTest extends TestCase
         $transactions = $contract->transactions();
         self::assertCount(1, $transactions);
         self::assertInstanceOf(AdminPaymentTransaction::class, $transactions[0]);
-        self::assertSame(['t-1', 'refund', 'completed', 25.0, $createdAt, 'REF-1'], [
+        self::assertSame(['t-1', 'refund', 'completed', 25.0, 'EUR', $createdAt, 'REF-1'], [
             $transactions[0]->id(),
             $transactions[0]->type(),
             $transactions[0]->status(),
             $transactions[0]->amount(),
+            $transactions[0]->currency(),
             $transactions[0]->createdAt(),
             $transactions[0]->providerReference(),
         ]);
@@ -62,6 +65,25 @@ final class AdminPaymentContractTest extends TestCase
         self::assertSame([0.0, 50.0], [$captured->amountCapturable(), $captured->amountRefundable()]);
     }
 
+    public function testActionOptions_DefaultToFreeText_AndShowTheProvidersDeclaration(): void
+    {
+        $plain = new AdminPaymentContract(new PaymentContractDetails('c', 'stripe', 'authorized', 80.0, 0.0, 0.0, 'EUR', []));
+        $declared = new AdminPaymentContract(new PaymentContractDetails('c', 'stripe', 'authorized', 80.0, 0.0, 0.0, 'EUR', [], new AdminActionOptions(['duplicate'], ['abandoned'], true, 40)));
+
+        self::assertSame([[], [], false, 255], [
+            $plain->actionOptions()->refundReasons(),
+            $plain->actionOptions()->voidReasons(),
+            $plain->actionOptions()->refundDescription(),
+            $plain->actionOptions()->reasonMaxLength(),
+        ]);
+        self::assertSame([['duplicate'], ['abandoned'], true, 40], [
+            $declared->actionOptions()->refundReasons(),
+            $declared->actionOptions()->voidReasons(),
+            $declared->actionOptions()->refundDescription(),
+            $declared->actionOptions()->reasonMaxLength(),
+        ]);
+    }
+
     public function testTheTypeCarriesNoProviderPayloadOrSecret(): void
     {
         $methods = array_map(
@@ -72,7 +94,7 @@ final class AdminPaymentContractTest extends TestCase
         sort($exposed);
 
         self::assertSame(
-            ['amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'currency', 'provider', 'state', 'transactions'],
+            ['actionOptions', 'amountAuthorised', 'amountCapturable', 'amountCaptured', 'amountRefundable', 'amountRefunded', 'contractId', 'currency', 'provider', 'state', 'transactions'],
             $exposed,
         );
     }

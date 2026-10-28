@@ -23,6 +23,7 @@ final readonly class PaymentTransactionDetails
         public string $type,
         public string $status,
         public float $amount,
+        public string $currency,
         public DateTimeImmutable $createdAt,
         public ?string $providerReference,
     ) {

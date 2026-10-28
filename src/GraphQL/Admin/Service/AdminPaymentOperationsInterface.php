@@ -17,9 +17,9 @@ namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
  */
 interface AdminPaymentOperationsInterface
 {
-    public function capture(string $orderId, ?float $amount, ?string $idempotencyKey): PaymentOperationResult;
+    public function capture(string $orderId, ?float $amount, ?string $idempotencyKey, ?string $reason = null): PaymentOperationResult;
 
-    public function refund(string $orderId, float $amount, ?string $reason, ?string $idempotencyKey): PaymentOperationResult;
+    public function refund(string $orderId, float $amount, ?string $reason, ?string $idempotencyKey, ?string $description = null): PaymentOperationResult;
 
-    public function void(string $orderId, ?string $idempotencyKey): PaymentOperationResult;
+    public function void(string $orderId, ?string $idempotencyKey, ?string $reason = null): PaymentOperationResult;
 }

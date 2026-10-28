@@ -59,6 +59,6 @@ final class AdminApiIsOptionalTest extends TestCase
 
         self::assertMatchesRegularExpression('/^OK (\d+)$/m', $output, $output);
         preg_match('/^OK (\d+)$/m', $output, $matches);
-        self::assertGreaterThanOrEqual(10, (int) $matches[1], 'the admin payment services were actually reflected');
+        self::assertGreaterThanOrEqual(15, (int) $matches[1], 'the admin payment services and the provider-facing interfaces were actually reflected');
     }
 }
