@@ -50,4 +50,13 @@ foreach ($services as $id => $definition) {
     ++$reflected;
 }
 
+// PAY-1: what a provider module implements or throws (outside src/GraphQL) must load without any GraphQL package too.
+foreach (['Admin/Contract/AdminAction*.php', 'Admin/Help/ContractStateHelpProviderInterface.php', 'Admin/Panel/AdminActionRefusedException.php'] as $pattern) {
+    foreach (glob($moduleRoot . '/src/' . $pattern) ?: [] as $file) {
+        $class = 'OxidEsales\\PaymentBase\\' . str_replace('/', '\\', substr($file, strlen($moduleRoot . '/src/'), -4));
+        new ReflectionClass($class);
+        ++$reflected;
+    }
+}
+
 echo "OK $reflected\n";

@@ -3,6 +3,27 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Admin payment API parity (PAY-1) - minor, additive
+- `AdminPaymentContract.contractId`, `AdminPaymentTransaction.currency`.
+- New query `adminPaymentContractStateHelp(provider, language): AdminPaymentStateHelp` (right `ADMIN_PAYMENT_VIEW`): the
+  contract-state Help with translated meanings (en/de) and, per provider, its status column. New
+  `Admin\Help\ContractStateHelpProviderInterface` (tag `oe.payment.admin_state_help`), `HelpTranslatorInterface`.
+- `AdminPaymentContract.actionOptions` (`refundReasons`, `voidReasons`, `refundDescription`, `reasonMaxLength`) from the new
+  optional `Admin\Contract\AdminActionOptionsProviderInterface` of a panel provider. New optional mutation arguments
+  `adminPaymentCapture(reason)`, `adminPaymentVoid(reason)`, `adminPaymentRefund(description)`; new error code `reason_invalid`,
+  `too_long` / `invalid_characters` also for `description`.
+- New optional `Admin\Contract\AdminActionBoundsProviderInterface`: a provider's live capture / refund limits replace the
+  local numbers in the read fields and the mutation checks; unreadable bounds fail closed (`provider_unavailable`).
+- New `Admin\Panel\AdminActionRefusedException`: the admin API answers `provider_refused` with the provider's sentence; the
+  classic dispatcher shows it through the shop's error display (new optional constructor argument
+  `AdminRefusalFeedbackInterface`) and does not fail.
+- Internal: `ProviderActionRunnerInterface::run()` returns a `ProviderActionOutcome` (was a string); `PaymentContractDetails`
+  and `PaymentTransactionDetails` gained constructor arguments (`currency` is the fifth of the transaction).
+- Providers that implement none of the new interfaces get the same answers as before; nothing was removed. After upgrading:
+  `bin/oe-console oe:graphql:cache-clear`.
+
 ## [v1.6.0] - 2026-10-28
 
 ### Migrations run after `composer install` / `composer update`

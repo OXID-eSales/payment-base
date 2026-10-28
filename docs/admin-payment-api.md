@@ -17,7 +17,7 @@ every service class loads in a PHP process where none of the optional packages e
 
 | Right | Grants |
 | --- | --- |
-| `ADMIN_PAYMENT_VIEW` | `AdminOrder.paymentContract` (state, amounts, transactions) |
+| `ADMIN_PAYMENT_VIEW` | `AdminOrder.paymentContract` (state, amounts, transactions, action options), `adminPaymentContractStateHelp` |
 | `ADMIN_PAYMENT_CAPTURE` | `adminPaymentCapture`, `adminPaymentVoid` (releasing an authorisation is the reverse of a capture) |
 | `ADMIN_PAYMENT_REFUND` | `adminPaymentRefund` |
 | `ADMIN_PAYMENT_CONFIG` | defined for the providers' settings screens; no operation of payment-base uses it |
@@ -27,10 +27,10 @@ holds them, other roles get them through `adminRoleCreate` / `adminRoleModify`.
 
 ## `AdminOrder.paymentContract: AdminPaymentContract`
 
-Null for an order that was not paid through a provider module. Fields: `provider`, `state` (`DRAFT`, `NOT_FINISHED`,
+Null for an order that was not paid through a provider module. Fields: `contractId` (the contract's own id), `provider`, `state` (`DRAFT`, `NOT_FINISHED`,
 `PENDING`, `AUTHORIZED`, `READY_TO_COMMIT`, `COMMITTED`, `FULFILLED`, `CANCELLED`, `EXPIRED`, `FAILED`), `amountAuthorised`,
-`amountCaptured`, `amountRefunded`, `currency`, `transactions { id type status amount createdAt providerReference }`, and the
-two bounds the screen offers: `amountCapturable`, `amountRefundable` (computed once, in `PaymentContractDetails`, the same
+`amountCaptured`, `amountRefunded`, `currency`, `transactions { id type status amount currency createdAt providerReference }`,
+`actionOptions` (below), and the two bounds the screen offers: `amountCapturable`, `amountRefundable` (computed once, in `PaymentContractDetails`, the same
 numbers the mutations enforce). No secrets, no raw provider payload; provider plugins add their read-only details with
 their own `#[ExtendType(AdminPaymentTransaction)]`.
 
@@ -43,9 +43,12 @@ All answer `AdminPaymentOperationPayload { paymentContract, errors }` (the payme
 
 | Operation | Right | Step-up |
 | --- | --- | --- |
-| `adminPaymentCapture(orderId, amount?, idempotencyKey?)` | `ADMIN_PAYMENT_CAPTURE` | yes |
-| `adminPaymentRefund(orderId, amount, reason?, idempotencyKey?)` | `ADMIN_PAYMENT_REFUND` | yes |
-| `adminPaymentVoid(orderId, idempotencyKey?)` | `ADMIN_PAYMENT_CAPTURE` | no (moves no money) |
+| `adminPaymentCapture(orderId, amount?, idempotencyKey?, reason?)` | `ADMIN_PAYMENT_CAPTURE` | yes |
+| `adminPaymentRefund(orderId, amount, reason?, idempotencyKey?, description?)` | `ADMIN_PAYMENT_REFUND` | yes |
+| `adminPaymentVoid(orderId, idempotencyKey?, reason?)` | `ADMIN_PAYMENT_CAPTURE` | no (moves no money) |
+
+The free texts reach the provider as the classic tab's form fields: `capture_reason`, `refund_reason`, `cancel_reason`,
+`refund_description`.
 
 - **Delegation.** `PanelProviderActionRunner` hands `capture` / `refund` / `cancel` and the classic tab's form fields
   (`capture_amount`, `refund_amount`, `refund_reason`) to the panel provider of the contract's provider: the provider's own
@@ -57,13 +60,56 @@ All answer `AdminPaymentOperationPayload { paymentContract, errors }` (the payme
   order, amount and the payment's state. A finished record lives 24 hours: a retry with the same key reports the earlier
   success without calling the provider; a refused or unconfirmed call releases its key.
 - **Audit.** Through the admin module's recorder (`auditedAdmin`): entity `order`, field names, the amount as the only value;
-  a refusal is recorded as the failure it is. The free-text `reason` is a field name, never a value.
+  a refusal is recorded as the failure it is. The free texts `reason` and `description` are field names, never values.
 - **Scope.** The order must belong to the shop of the request (`oxorder.OXSHOPID`), else `not_found`.
 - **Errors** (payload `errors`): `NotFoundError`; `ValidationError { field, code }` with the codes `invalid_key`, `too_long` /
   `invalid_characters` (reason), `amount_invalid`, `exceeds_capturable`, `exceeds_refundable`, `not_capturable`,
-  `not_refundable`, `not_voidable`, `in_progress`, `provider_unavailable`, `provider_failed` (the provider threw; the reason is
+  `not_refundable`, `not_voidable`, `in_progress`, `reason_invalid`, `provider_unavailable`, `provider_refused` (the provider
+  refused with a sentence for the admin; it is the error's message), `provider_failed` (the provider threw; the reason is
   in the log, never in the answer), `not_confirmed`. A missing right, session or step-up is a GraphQL error with
   `extensions.errorCode`, as everywhere in the admin API.
+
+## What a provider module adds (all optional)
+
+A provider that implements none of these gets the answers of before; every interface lives outside `src/GraphQL`, so a
+provider implements it without any GraphQL package (`AdminApiIsOptionalTest` loads them where none exists).
+
+| To offer | Implement | Where it shows |
+| --- | --- | --- |
+| a provider column in the state Help | `Admin\Help\ContractStateHelpProviderInterface` (`providerName`, `providerLabel`, `providerStatuses` keyed `not_finished` ... `failed`), tag `oe.payment.admin_state_help` | `adminPaymentContractStateHelp(provider)` |
+| allowed reasons, description, text limit | `Admin\Contract\AdminActionOptionsProviderInterface::actionOptions(contract): AdminActionOptions` on the panel provider | `AdminPaymentContract.actionOptions`; `reason_invalid`, `too_long` on the mutations |
+| live capture / refund limits | `Admin\Contract\AdminActionBoundsProviderInterface::boundsFor(contract): ?AdminActionBounds` on the panel provider | `amountCapturable` / `amountRefundable` and the mutation checks |
+| a readable refusal | throw `Admin\Panel\AdminActionRefusedException(code, sentence[, feedbackRecorded])` from `handleAction` | `ValidationError provider_refused`; the classic tab shows it too |
+
+### `adminPaymentContractStateHelp(provider: String, language: String): AdminPaymentStateHelp!`
+
+Right `ADMIN_PAYMENT_VIEW`. `AdminPaymentStateHelp { providerLabel, rows { state, states, meaning, providerStatus } }`: one row per
+contract state in ladder order (`COMMITTED` and `FULFILLED` share a row: `states` lists both), the meaning translated from the
+module's own lang files in `language` (`en`, `de`; English otherwise, default `en`). `providerLabel` and `providerStatus` are
+null when `provider` is omitted, names a module that registers no `ContractStateHelpProviderInterface`, or lists no status for
+the row. An unknown provider is not an error.
+
+### `AdminPaymentContract.actionOptions`
+
+`{ refundReasons: [String!]!, voidReasons: [String!]!, refundDescription: Boolean!, reasonMaxLength: Int! }`. A provider that
+declares nothing answers `[]`, `[]`, `false`, `255`. A non-empty list is the only set the mutation accepts (`reason_invalid`,
+field `reason`); empty means free text. `reasonMaxLength` (1 to 255) is enforced as `too_long` on `reason` and `description`.
+Capture reasons are free text (length and control characters only).
+
+### Provider bounds
+
+When the panel provider implements `AdminActionBoundsProviderInterface`, its numbers replace payment-base's local ones
+(Mollie's multi-capture remainder, its live refundable amount): the read fields and the mutation rules use the same value.
+The provider is asked lazily and at most once per read. A side the provider leaves out keeps payment-base's number. If it
+cannot be read (exception or `AdminActionBounds::unavailable()`), both bounds read 0 and a write is refused with
+`provider_unavailable`: a bound that cannot be read is never replaced by a guess.
+
+### Typed refusals
+
+`AdminActionRefusedException` carries the provider's machine code (logged) and one human sentence (cut at 255 characters, no
+ids, no payloads, no secrets), which is the `provider_refused` error's message. The classic Payment tab does not fail on it:
+`PaymentAdminActionDispatcher` shows the sentence through the shop's error display, unless the provider passes
+`feedbackRecorded: true` because it already recorded its own classic feedback.
 
 ## Subscribers (the admin API's events)
 
