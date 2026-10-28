@@ -400,6 +400,16 @@ jobs:
           fi
           $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T php composer update --no-interaction
 
+      # TEMPORARY (diagnosing composer "Connection refused" from api.github.com): never fails the job.
+      - name: Diagnose GitHub API reachability
+        continue-on-error: true
+        run: |
+          echo "--- host"; getent ahosts api.github.com | head -4 || true
+          curl -sS -4 -o /dev/null -w "host v4 %{http_code} %{remote_ip}\n" https://api.github.com/ || true
+          curl -sS -6 -o /dev/null -w "host v6 %{http_code} %{remote_ip}\n" https://api.github.com/ || true
+          echo "--- php container"
+          docker compose exec -T php bash -c 'getent ahosts api.github.com | head -4; composer --version; cat /etc/resolv.conf | grep -v "^#"; ip -6 route 2>/dev/null | head -3; for v in 4 6; do curl -sS -$v -o /dev/null -w "container v$v %{http_code} %{remote_ip}\n" https://api.github.com/ || true; done; curl -sS -o /dev/null -w "container default %{http_code} %{remote_ip}\n" https://api.github.com/repos/symfony/console/zipball/21f1bc2296f7ff6043241a8dcbc09559b3732820 || true' || true
+
       - name: Install component dev dependencies
         run: |
           $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T php bash -c "cd /var/www/test-module && composer install --no-interaction"
