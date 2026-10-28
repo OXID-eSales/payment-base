@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [v1.6.0] - 2026-10-28
 
 ### Migrations run after `composer install` / `composer update`
 - New `vendor/bin/oe-payment-base-migrate` (composer `bin`): runs the `oe_payment_base` suite through
