@@ -841,6 +841,16 @@ services:
     arguments:
       - '@?OxidEsales\GraphQL\Admin\Mfa\Service\StepUp'
 
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminSuperadminCheckInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminSuperadminCheck
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@?OxidEsales\GraphQL\Admin\AdminSession\Service\CurrentAdminSession'
+      - '@?OxidEsales\GraphQL\Admin\Authorization\Infrastructure\UserRoleRepositoryInterface'
+      - '@?OxidEsales\GraphQL\Admin\Authorization\Infrastructure\RoleRepositoryInterface'
+
   OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminAuditInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminAudit
     autowire: false

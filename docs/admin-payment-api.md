@@ -69,6 +69,24 @@ The free texts reach the provider as the classic tab's form fields: `capture_rea
   in the log, never in the answer), `not_confirmed`. A missing right, session or step-up is a GraphQL error with
   `extensions.errorCode`, as everywhere in the admin API.
 
+## Who may change secrets: the superadmin check (PAY-10)
+
+`ADMIN_PAYMENT_CONFIG` opens a provider's settings, but API keys, client secrets, webhook signing secrets and the
+connection itself belong to the built-in **superadmin** role only. The admin API of a provider module asks
+`GraphQL\Admin\Service\AdminSuperadminCheckInterface::isSuperadmin(): bool` (public service, beside
+`AdminStepUpInterface`; no GraphQL type in the signature, so a provider module loads it without the admin package).
+
+- `OxidAdminSuperadminCheck` reads the admin module through its roles: the user of the request's admin session, their
+  role ids (`UserRoleRepositoryInterface`), the visible roles of the shop (`RoleRepositoryInterface`), and
+  `Role::holdsEverything()` (built-in role with code `superadmin`). A custom role with every payment right is not a
+  superadmin.
+- The admin module is optional (services wired with `@?`). Without it, without a valid session, or on any error the answer
+  is `false`: the secret does not change.
+- **Order of the checks in a provider's mutation:** right (`ADMIN_PAYMENT_CONFIG`), then superadmin, then step-up. A
+  non-superadmin is refused with `superadmin_required` and is never asked for a second factor for something they may not do.
+- Providers answer `superadmin_required` as a validation-style entry of the payload `errors`
+  (`{ field, code: superadmin_required }`) and expose `secretsEditable: Boolean!` on their config type.
+
 ## What a provider module adds (all optional)
 
 A provider that implements none of these gets the answers of before; every interface lives outside `src/GraphQL`, so a
