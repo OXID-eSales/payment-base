@@ -469,6 +469,16 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
+  # OPC-175 — the order of the session's open attempt. Public: the Voucher
+  # model extension reaches it through ContainerFactory (models get no
+  # constructor injection).
+  OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptOrderInterface:
+    class: OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptOrder
+    public: true
+    arguments:
+      $openAttempts: '@OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+
   # Public: OXID controllers get no constructor injection, so a provider's
   # return controller fetches this through the container at runtime. A private
   # id would be inlined away and that lookup would fail - silently, since such

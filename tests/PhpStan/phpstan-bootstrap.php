@@ -407,6 +407,35 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
     );
 }
 
+// OPC-175 (2026-10-29) — Voucher_parent, the OXID virtual class the voucher
+// extension extends, and core's VoucherException it throws. Stubbed with the
+// members the extension uses, so the parent calls stay type-checked.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Voucher::class, false)) {
+    eval('namespace OxidEsales\\Eshop\\Application\\Model; class Voucher {}');
+}
+if (!class_exists(\OxidEsales\Eshop\Core\Exception\VoucherException::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core\\Exception; '
+        . 'class VoucherException extends \\Exception { '
+        . '  public function setMessage(string $message): void {} '
+        . '  public function setVoucherNr(string $voucherNr): void {} '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Voucher_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
+        . 'class Voucher_parent { '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getViewName(): string { return "oxvouchers"; } '
+        . '  public function getSerie(): VoucherSerieStub { return new VoucherSerieStub(); } '
+        . '  protected function isAvailable() { return true; } '
+        . '  protected function isAvailableInOtherOrder($oUser) { return true; } '
+        . '} '
+        . 'class VoucherSerieStub { public function getFieldData(string $field): mixed { return null; } }'
+    );
+}
+
 // STRP-176 (2026-10-26) — core's Email, which the Order extension asks
 // oxNew() for (the end of the Email chain). Stubbed for the same reason as
 // Order_parent: known to static analysis instead of ignored.
