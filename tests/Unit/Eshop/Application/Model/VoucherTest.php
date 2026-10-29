@@ -117,12 +117,12 @@ final class VoucherTest extends TestCase
         self::assertTrue($voucher->callIsAvailable());
     }
 
-    public function testIsAvailable_WhenTheOpenAttemptCannotBeRead_KeepsTheCoreRule(): void
+    public function testIsAvailable_WhenTheOpenAttemptCannotBeRead_Fails(): void
     {
         $voucher = $this->voucherUsedBy('order-open');
         $voucher->resolverFails = true;
 
-        $this->expectExceptionMessage('core: ERROR_MESSAGE_VOUCHER_NOVOUCHER');
+        $this->expectExceptionMessage('container unavailable');
         $voucher->callIsAvailable();
     }
 
@@ -165,13 +165,12 @@ final class VoucherTest extends TestCase
         $voucher->callIsAvailableInOtherOrder();
     }
 
-    public function testIsAvailableInOtherOrder_WhenTheOpenAttemptCannotBeRead_AsksCore(): void
+    public function testIsAvailableInOtherOrder_WhenTheOpenAttemptCannotBeRead_Fails(): void
     {
         $voucher = $this->voucherUsedBy('order-open');
         $voucher->resolverFails = true;
-        $voucher->usedBefore = true;
 
-        $this->expectExceptionMessage('core: ERROR_MESSAGE_VOUCHER_NOTALLOWEDSAMESERIES');
+        $this->expectExceptionMessage('container unavailable');
         $voucher->callIsAvailableInOtherOrder();
     }
 

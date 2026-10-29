@@ -13,7 +13,6 @@ use OxidEsales\Eshop\Core\DatabaseProvider;
 use OxidEsales\Eshop\Core\Exception\VoucherException;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptOrderInterface;
-use Throwable;
 
 /**
  * OPC-175 / S2a — the coupon stays in the basket while its checkout attempt is
@@ -28,10 +27,8 @@ use Throwable;
  * discount.
  *
  * A row that the session's own open attempt holds is the customer's coupon,
- * not someone else's. This extension accepts exactly that row. The retire of
- * the attempt (PreviousCheckoutAttemptCleaner) releases it before the next
- * order marks it again. Every other row keeps core's rules, and so does
- * everything when the open attempt cannot be read.
+ * not someone else's. This extension accepts exactly that row; every other
+ * row keeps core's rules.
  *
  * Methods without a native return type: core declares none, and the first
  * extension in a module chain that adds one breaks every module below it
@@ -86,16 +83,9 @@ class Voucher extends Voucher_parent
         return $orderId === $this->openAttemptOrderId();
     }
 
-    /**
-     * Best-effort: when the attempt cannot be read, core's rules apply.
-     */
     private function openAttemptOrderId(): ?string
     {
-        try {
-            return $this->getOpenCheckoutAttemptOrder()->orderId();
-        } catch (Throwable) {
-            return null;
-        }
+        return $this->getOpenCheckoutAttemptOrder()->orderId();
     }
 
     protected function getOpenCheckoutAttemptOrder(): OpenCheckoutAttemptOrderInterface
