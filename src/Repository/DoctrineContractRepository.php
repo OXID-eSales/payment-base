@@ -180,19 +180,9 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
         }
     }
 
-    /**
-     * OPC-175: an order can have more than one contract - the customer changed
-     * the payment method, the order was kept, the old contract was cancelled.
-     * The active one answers: a contract that has not ended (cancelled,
-     * expired, failed) first, then the newest. Fulfilled is the paid end and
-     * counts as active.
-     */
     public function findByOrderId(string $orderId): ?PaymentContractInterface
     {
-        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
-                WHERE OXORDERID = :orderId
-                ORDER BY OXSTATE IN (\'cancelled\', \'expired\', \'failed\') ASC, OXCREATED DESC, OXID DESC
-                LIMIT 1';
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';
 
         try {
             $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
