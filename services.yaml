@@ -112,11 +112,41 @@ services:
   # that winner finalized every provider's orders — on one installation Stripe's
   # copy was finalizing Mollie payments. The copies branched on nothing, so there
   # is one implementation now and the PSP modules no longer bind this id.
+  # OPC-175 — one order, one contract: a new contract gets a new order, a
+  # contract that continues the open attempt gets its order written again.
+  OxidEsales\PaymentBase\Adapter\EarlyOrderWriter:
+    arguments:
+      $orderService: '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
+      $orderRewriter: '@OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\EarlyOrderWriter
+    public: true
+
+  # OPC-175 — the same service rewrites the order of an open attempt (ISP:
+  # only payment-base's order service implements it).
+  OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
+    public: true
+
+  # OPC-175 / S4: the order of a contract that ended at the provider ends with it.
+  OxidEsales\PaymentBase\Adapter\LinkedOrderEndingInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidLinkedOrderEnding
+    public: true
+
+  # OPC-175 / S4 (G9): core restock of an ended order.
+  OxidEsales\PaymentBase\Adapter\OrderRestockInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidOrderRestock
+    public: true
+
   OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidShopOrderService
     arguments:
       $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
+      # OPC-175 / S4 (G9): an ended unfinished order gives its stock back.
+      $restock: '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
       $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
       # Sprint 15 / S3: one order per headless checkout attempt (core's
       # sess_challenge covers the session checkout).
@@ -469,6 +499,32 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
+  # OPC-175 — each provider closes its own payment page when the customer
+  # changes the payment method (Stripe, Mollie and PayPal each tag one).
+  OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers:
+    arguments:
+      $closers: !tagged_iterator oe.payment.attempt_closer
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface:
+    alias: OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers
+    public: true
+
+  # OPC-175 / S2g — the contract that replaced a provider attempt (late money).
+  OxidEsales\PaymentBase\Repository\ReplacedAttemptFinderInterface:
+    alias: OxidEsales\PaymentBase\Repository\ContractRepositoryInterface
+    public: true
+
+  # OPC-175 — the order of the session's open attempt. Public: the Voucher
+  # model extension reaches it through ContainerFactory (models get no
+  # constructor injection).
+  OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptOrderInterface:
+    class: OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptOrder
+    public: true
+    arguments:
+      $openAttempts: '@OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+
   # Public: OXID controllers get no constructor injection, so a provider's
   # return controller fetches this through the container at runtime. A private
   # id would be inlined away and that lookup would fail - silently, since such
@@ -518,6 +574,7 @@ services:
     arguments:
       $orderRepository:    '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $restock:            '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
 

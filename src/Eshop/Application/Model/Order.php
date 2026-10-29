@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Eshop\Application\Model;
 
+use OxidEsales\Eshop\Application\Model\Basket;
+use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Core\Email as ShopEmail;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\PaymentBase\Adapter\RewritableOrderInterface;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Mail\OrderMailCaptureInterface;
@@ -49,7 +52,7 @@ use Throwable;
  *
  * @since 2026-09-03
  */
-class Order extends Order_parent implements DefersConfirmationMailInterface
+class Order extends Order_parent implements DefersConfirmationMailInterface, RewritableOrderInterface
 {
     private bool $confirmationMailDeferred = false;
 
@@ -60,6 +63,41 @@ class Order extends Order_parent implements DefersConfirmationMailInterface
      * Called by the early order creation of payment-base, before finalizeOrder().
      * Lives on this object only: nothing else that finalizes an order changes.
      */
+    /**
+     * OPC-175 — the same order, written again from the current basket.
+     *
+     * Core's recalculate mode (finalizeOrder(..., true)) keeps the id and the
+     * order number and writes payment, totals and lines from the basket. It
+     * treats every basket line as a new order line, so the old lines go first:
+     * OrderArticle::delete() gives their stock back, the new lines take it
+     * again on save. The recalculate mode marks no vouchers and sends no mail;
+     * both are done here: the order's vouchers are released and the basket's
+     * marked, and the mails are rendered on the capturing mailer (STRP-176).
+     */
+    public function rewriteFromBasket(Basket $basket, User $user): int
+    {
+        foreach ($this->getOrderArticles() as $orderArticle) {
+            $orderArticle->delete();
+        }
+        $this->getVoucherRelease()->releaseVouchers((string) $this->getId());
+
+        $orderState = $this->finalizeOrder($basket, $user, true);
+        if ($orderState !== self::ORDER_STATE_OK) {
+            return $orderState;
+        }
+
+        $this->markVouchers($basket, $user);
+        $this->setOrderStatus('NOT_FINISHED');
+        $this->updateOrderDate();
+
+        $this->deferConfirmationMail();
+        // getPaymentType() caches the payment the order had before the
+        // rewrite; the mail must name the new one.
+        $this->_oPaymentType = null;
+
+        return $this->sendOrderByEmail($user, $basket, $this->getPaymentType());
+    }
+
     public function deferConfirmationMail(): void
     {
         $this->confirmationMailDeferred = true;

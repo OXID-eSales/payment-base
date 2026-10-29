@@ -13,6 +13,7 @@ use OxidEsales\Eshop\Application\Model\Basket;
 use OxidEsales\Eshop\Application\Model\Order;
 use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
+use OxidEsales\PaymentBase\Adapter\OrderRestockInterface;
 use OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier;
 use OxidEsales\PaymentBase\Adapter\OxidShopOrderService;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
@@ -30,7 +31,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * Records what the canonical adapter asked the repository to do.
  */
-class SpyOrderRepository implements NotFinishedOrderRepositoryInterface
+/** OPC-175 / S4: also the restock, so one call list shows the order of the steps. */
+class SpyOrderRepository implements NotFinishedOrderRepositoryInterface, OrderRestockInterface
 {
     /** @var list<string> */
     public array $calls = [];
@@ -61,6 +63,11 @@ class SpyOrderRepository implements NotFinishedOrderRepositoryInterface
     public function isNotFinished(string $orderId): bool
     {
         return true;
+    }
+
+    public function restock(string $orderId): void
+    {
+        $this->calls[] = "restock:$orderId";
     }
 }
 
@@ -319,9 +326,11 @@ class TestableOrderService extends OxidShopOrderService
         ?ShopMailSenderInterface $mailSender = null,
     ) {
         $this->basketProvider = $basketProvider ?? new StaticBasketProvider($basket);
+        $repository = new SpyOrderRepository();
         parent::__construct(
-            new SpyOrderRepository(),
+            $repository,
             new OrderShippingAddressCopier(),
+            $repository,
             $this->basketProvider,
             $attemptGuard,
             $orderMails,
@@ -367,21 +376,22 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $this->assertInstanceOf(
             ShopOrderServiceInterface::class,
-            new OxidShopOrderService(new SpyOrderRepository(), new OrderShippingAddressCopier())
+            new OxidShopOrderService(new SpyOrderRepository(), new OrderShippingAddressCopier(), new SpyOrderRepository())
         );
     }
 
     /**
-     * Cancelling is the same storno + voucher release the cleanup command does,
-     * written once rather than copied into each provider's adapter.
+     * Cancelling is the same storno + voucher release + restock (OPC-175 / S4)
+     * the cleanup command does, written once rather than copied into each
+     * provider's adapter.
      */
-    public function testCancellingStornosTheOrderThenReleasesItsVouchers(): void
+    public function testCancellingStornosTheOrderThenReleasesItsVouchersAndStock(): void
     {
         $repository = new SpyOrderRepository();
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier());
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository);
         $this->assertTrue($service->deleteNotFinishedOrder('order-1'));
-        $this->assertSame(['cancel:order-1', 'vouchers:order-1'], $repository->calls);
+        $this->assertSame(['cancel:order-1', 'vouchers:order-1', 'restock:order-1'], $repository->calls);
     }
 
     /**
@@ -393,9 +403,9 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository(cancelSucceeds: false);
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier());
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository);
         $this->assertFalse($service->deleteNotFinishedOrder('order-1'));
-        $this->assertSame(['cancel:order-1'], $repository->calls, 'vouchers must not be released');
+        $this->assertSame(['cancel:order-1'], $repository->calls, 'vouchers and stock must not be released');
     }
 
     /**

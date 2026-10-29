@@ -470,5 +470,28 @@ if (!class_exists(\OxidEsales\GraphQL\Base\Service\Token::class, false)) {
     );
 }
 
+// OPC-175 / S2a — Voucher_parent is an OXID virtual class created at
+// activation. The stub behaves like core's two checks the extension wraps:
+// isAvailable() refuses a row with OXORDERID set, isAvailableInOtherOrder()
+// refuses when the series allows one use only and the user used it already.
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Voucher_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
+        . 'class Voucher_parent { '
+        . '  public array $fields = []; '
+        . '  public bool $usedBefore = false; '
+        . '  public function getFieldData($name) { return $this->fields[strtolower($name)] ?? null; } '
+        . '  protected function isAvailable() { '
+        . '    if ((string) $this->getFieldData("oxorderid") === "") { return true; } '
+        . '    throw new \\RuntimeException("core: ERROR_MESSAGE_VOUCHER_NOVOUCHER"); '
+        . '  } '
+        . '  protected function isAvailableInOtherOrder($oUser) { '
+        . '    if ($this->usedBefore) { throw new \\RuntimeException("core: ERROR_MESSAGE_VOUCHER_NOTALLOWEDSAMESERIES"); } '
+        . '    return true; '
+        . '  } '
+        . '}'
+    );
+}
+
 // A10 - stand-ins of the optional oxid-admin-graphql classes payment-base's admin payment API relies on.
 require_once __DIR__ . '/Support/admin-api-stubs.php';

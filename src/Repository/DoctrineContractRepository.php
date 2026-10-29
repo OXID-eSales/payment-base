@@ -30,7 +30,7 @@ use ReflectionException;
  *
  * @SuppressWarnings(PHPMD)
  */
-class DoctrineContractRepository implements ContractRepositoryInterface, OpenAttemptFinderInterface, ContractStateQueryInterface
+class DoctrineContractRepository implements ContractRepositoryInterface, OpenAttemptFinderInterface, ContractStateQueryInterface, ReplacedAttemptFinderInterface
 {
     private const TABLE_CONTRACTS = 'oe_payments_contract';
 
@@ -180,6 +180,20 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
         }
     }
 
+    /**
+     * OPC-175 / S2g: the history lives in OXMETADATA (`replaced_attempts`).
+     */
+    public function findByReplacedAttempt(string $providerOrderId): ?PaymentContractInterface
+    {
+        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
+                WHERE JSON_SEARCH(OXMETADATA, \'one\', :providerOrderId, NULL, \'$.replaced_attempts[*].providerOrderId\') IS NOT NULL
+                LIMIT 1';
+
+        $data = $this->connection->fetchAssociative($sql, ['providerOrderId' => $providerOrderId]);
+
+        return $data === false ? null : $this->hydrateContract($data);
+    }
+
     public function findByOrderId(string $orderId): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';
@@ -299,7 +313,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
             throw new RuntimeException('Failed to query contracts by state and provider: ' . $e->getMessage(), 0, $e);
         }
 
-        return array_values(array_map(fn (array $row): PaymentContractInterface => $this->hydrateContract($row), $rows));
+        return array_map(fn (array $row): PaymentContractInterface => $this->hydrateContract($row), $rows);
     }
 
     /**

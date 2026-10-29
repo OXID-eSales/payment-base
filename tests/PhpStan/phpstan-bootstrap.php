@@ -32,6 +32,13 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\Admin\AdminDetailsCon
         . '}'
     );
 }
+// OPC-175 / S4 — core's restock primitive.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\OrderArticle::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class OrderArticle { public function cancelOrderArticle(): mixed { return null; } }'
+    );
+}
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
@@ -50,6 +57,11 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         . '  public mixed $oxorder__oxfolder = null; '
         . '  public mixed $oxorder__oxtransid = null; '
         . '  public mixed $oxorder__oxtransstatus = null; '
+        // OPC-175 / S4 — what OxidLinkedOrderEnding and OxidOrderRestock use.
+        . '  public mixed $oxorder__oxpaid = null; '
+        . '  public function cancelOrder(): mixed { return null; } '
+        . '  /** @return list<\\OxidEsales\\Eshop\\Application\\Model\\OrderArticle> */ '
+        . '  public function getOrderArticles($blExcludeCanceled = false): array { return []; } '
         . '  public mixed $oxorder__oxordernr = null; '
         . '  public mixed $oxorder__oxorderdate = null; '
         // Sprint 10 (2026-09-23) — OrderShippingAddressCopier writes these
@@ -403,7 +415,46 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
         . '  public function getShopId() { return 1; } '
         . '  public function save() { return true; } '
         . '  protected function sendOrderByEmail($oUser = null, $oBasket = null, $oPayment = null) { return 1; } '
+        // OPC-175 — what rewriteFromBasket() uses of core's Order.
+        . '  protected $_oPaymentType = null; '
+        . '  /** @return list<\\OxidEsales\\PaymentBase\\Eshop\\Application\\Model\\OrderArticleStub> */ '
+        . '  public function getOrderArticles($blExcludeCanceled = false): array { return []; } '
+        . '  public function finalizeOrder(\\OxidEsales\\Eshop\\Application\\Model\\Basket $oBasket, $oUser, $blRecalculatingOrder = false): int { return 1; } '
+        . '  protected function markVouchers($oBasket, $oUser): void {} '
+        . '  protected function setOrderStatus($sStatus): void {} '
+        . '  protected function updateOrderDate(): void {} '
+        . '  public function getPaymentType(): mixed { return null; } '
+        . '} '
+        . 'class OrderArticleStub { public function delete($oxid = null): bool { return true; } }'
+    );
+}
+
+// OPC-175 (2026-10-29) — Voucher_parent, the OXID virtual class the voucher
+// extension extends, and core's VoucherException it throws. Stubbed with the
+// members the extension uses, so the parent calls stay type-checked.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\Voucher::class, false)) {
+    eval('namespace OxidEsales\\Eshop\\Application\\Model; class Voucher {}');
+}
+if (!class_exists(\OxidEsales\Eshop\Core\Exception\VoucherException::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core\\Exception; '
+        . 'class VoucherException extends \\Exception { '
+        . '  public function setMessage(string $message): void {} '
+        . '  public function setVoucherNr(string $voucherNr): void {} '
         . '}'
+    );
+}
+if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Voucher_parent::class, false)) {
+    eval(
+        'namespace OxidEsales\\PaymentBase\\Eshop\\Application\\Model; '
+        . 'class Voucher_parent { '
+        . '  public function getFieldData(string $field): mixed { return null; } '
+        . '  public function getViewName(): string { return "oxvouchers"; } '
+        . '  public function getSerie(): VoucherSerieStub { return new VoucherSerieStub(); } '
+        . '  protected function isAvailable() { return true; } '
+        . '  protected function isAvailableInOtherOrder($oUser) { return true; } '
+        . '} '
+        . 'class VoucherSerieStub { public function getFieldData(string $field): mixed { return null; } }'
     );
 }
 
@@ -616,7 +667,11 @@ if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
         'namespace OxidEsales\\Eshop\\Core; '
         . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } '
         . '  public function getRow(string $sql, array $params = []): mixed { return null; } '
-        . '  public function execute(string $sql, array $params = []): mixed { return null; } } '
+        . '  public function execute(string $sql, array $params = []): mixed { return null; } '
+        // OPC-175: the order rewrite runs in one transaction.
+        . '  public function startTransaction(): void {} '
+        . '  public function commitTransaction(): void {} '
+        . '  public function rollbackTransaction(): void {} } '
         . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }

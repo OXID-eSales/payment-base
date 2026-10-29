@@ -15,6 +15,7 @@ use OxidEsales\Eshop\Application\Model\Basket;
 use OxidEsales\Eshop\Application\Model\Order;
 use OxidEsales\Eshop\Application\Model\User;
 use OxidEsales\Eshop\Core\Exception\ArticleException;
+use OxidEsales\Eshop\Core\DatabaseProvider;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
@@ -46,7 +47,7 @@ use Throwable;
  *
  * @since 1.0.0
  */
-class OxidShopOrderService implements ShopOrderServiceInterface
+class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewriterInterface
 {
     /**
      * Error code of the ShopOrderException thrown when core reports that an
@@ -82,6 +83,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
+        private readonly OrderRestockInterface $restock,
         ?CheckoutBasketProviderInterface $basketProvider = null,
         private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
         private readonly ?ContractOrderMailStoreInterface $orderMails = null,
@@ -115,6 +117,90 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         $this->attemptGuard?->complete($request, $response->orderId);
 
         return $response;
+    }
+
+    /**
+     * OPC-175: the customer changed the payment method (or the basket) of the
+     * attempt they already have open. One order, one contract: the same order
+     * continues, written again from the current basket, in one transaction.
+     */
+    public function rewriteOrder(string $orderId, CreateOrderRequest $request): OrderResponse
+    {
+        [$basket, $user] = $this->validateBasketAndUser($request);
+        $order = $this->openOrderToRewrite($orderId);
+        $this->forgetChallengeNaming($orderId);
+
+        $database = DatabaseProvider::getDb();
+        $database->startTransaction();
+        try {
+            // @phpstan-ignore method.notFound (Core\Base::setUser() exists on every edition; invisible through OXID's class-chain stubs)
+            $order->setUser($this->activeUserForFinalize($user));
+            try {
+                $orderState = $order->rewriteFromBasket($basket, $user);
+            } finally {
+                $this->clearActiveUser($user);
+            }
+            $this->validateOrderState($orderState, $request, $basket);
+            $this->keepRewrittenOrderMailsOnContract($order, $request);
+            $database->commitTransaction();
+        } catch (Throwable $e) {
+            $database->rollbackTransaction();
+            throw $e;
+        }
+
+        return $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
+    }
+
+    /**
+     * @return Order&RewritableOrderInterface
+     */
+    private function openOrderToRewrite(string $orderId): Order
+    {
+        $order = $this->newOrder();
+        $isOpen = $order->load($orderId)
+            && $order->getFieldData('oxtransstatus') === 'NOT_FINISHED'
+            && (int) $order->getFieldData('oxstorno') === 0;
+
+        if (!$isOpen || !$order instanceof RewritableOrderInterface) {
+            throw new ShopOrderException(
+                message: 'Only an open (NOT_FINISHED, not cancelled) order can be written again',
+                errorCode: 'order_not_rewritable',
+                context: ['order_id' => $orderId],
+            );
+        }
+
+        return $order;
+    }
+
+    /**
+     * Core's finalizeOrder() answers ORDEREXISTS while `sess_challenge` names
+     * an existing order - and this order exists by definition.
+     */
+    private function forgetChallengeNaming(string $orderId): void
+    {
+        if ($this->sessionChallenge() === $orderId) {
+            Registry::getSession()->deleteVariable('sess_challenge');
+        }
+    }
+
+    /**
+     * The rewritten order's mails replace the ones the contract holds. No
+     * second path: an order that cannot keep its mails is not rewritten.
+     */
+    private function keepRewrittenOrderMailsOnContract(Order $order, CreateOrderRequest $request): void
+    {
+        $contractId = $request->metadata['contract_id'] ?? null;
+        $mails = $order instanceof DefersConfirmationMailInterface ? $order->takeDeferredMails() : [];
+
+        $kept = $this->orderMails !== null && is_string($contractId) && $mails !== []
+            && $this->orderMails->stash($contractId, $mails);
+        if (!$kept) {
+            throw new ShopOrderException(
+                message: 'The order mails of the rewritten order could not be kept on its contract',
+                errorCode: 'order_mails_not_kept',
+                context: ['order_id' => (string) $order->getId(), 'contract_id' => $contractId],
+            );
+        }
     }
 
     /**
@@ -524,6 +610,8 @@ class OxidShopOrderService implements ShopOrderServiceInterface
         }
 
         $this->orderRepository->releaseVouchers($orderId);
+        // OPC-175 / S4 (G9): the early order took the stock.
+        $this->restock->restock($orderId);
 
         return true;
     }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use InvalidArgumentException;
+use OxidEsales\PaymentBase\Adapter\OrderRestockInterface;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
@@ -34,6 +35,8 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
     private NotFinishedOrderRepositoryInterface $orders;
     /** @var ContractRepositoryInterface&MockObject */
     private ContractRepositoryInterface $contracts;
+    /** @var OrderRestockInterface&MockObject */
+    private OrderRestockInterface $restock;
 
     protected function setUp(): void
     {
@@ -41,6 +44,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
 
         $this->orders = $this->createMock(NotFinishedOrderRepositoryInterface::class);
         $this->contracts = $this->createMock(ContractRepositoryInterface::class);
+        $this->restock = $this->createMock(OrderRestockInterface::class);
     }
 
     public function testImplementsInterface(): void
@@ -53,6 +57,11 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a', 'order-b']);
         $this->orders->expects($this->exactly(2))->method('cancelOrder')->willReturn(true);
         $this->orders->expects($this->exactly(2))->method('releaseVouchers')->willReturn(1);
+        $restocked = [];
+        $this->restock->expects($this->exactly(2))->method('restock')
+            ->willReturnCallback(static function (string $orderId) use (&$restocked): void {
+                $restocked[] = $orderId;
+            });
         $this->contracts->method('findByOrderId')->willReturn(null);
 
         $result = $this->service()->cleanup(7);
@@ -62,6 +71,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->assertSame(2, $result->vouchersReleased);
         $this->assertSame(0, $result->contractsCancelled);
         $this->assertFalse($result->dryRun);
+        $this->assertSame(['order-a', 'order-b'], $restocked, 'OPC-175 / S4 (G9): the stock comes back');
     }
 
     /**
@@ -121,6 +131,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['a', 'b', 'c']);
         $this->orders->expects($this->never())->method('cancelOrder');
         $this->orders->expects($this->never())->method('releaseVouchers');
+        $this->restock->expects($this->never())->method('restock');
         $this->contracts->expects($this->never())->method('save');
 
         $result = $this->service()->cleanup(7, dryRun: true);
@@ -187,6 +198,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['raced']);
         $this->orders->method('releaseVouchers')->willReturn(0);
         $this->orders->method('cancelOrder')->willReturn(false);
+        $this->restock->expects($this->never())->method('restock');
         $this->contracts->method('findByOrderId')->willReturn(null);
 
         $result = $this->service()->cleanup(7);
@@ -197,7 +209,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
 
     private function service(): NotFinishedOrderCleanupService
     {
-        return new NotFinishedOrderCleanupService($this->orders, $this->contracts);
+        return new NotFinishedOrderCleanupService($this->orders, $this->contracts, $this->restock);
     }
 
     /**

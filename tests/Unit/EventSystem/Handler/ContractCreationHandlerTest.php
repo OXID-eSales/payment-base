@@ -27,7 +27,12 @@ class ContractCreationHandlerTest extends TestCase
     {
         $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->dispatcher = new EventDispatcher();
-        $this->service = new ContractService($this->repository);
+        // OPC-175: no open attempt in this session - every start creates a contract.
+        $this->service = new ContractService(
+            $this->repository,
+            $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
+            new \OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers([])
+        );
         $this->handler = new GenericContractCreationHandler(
             $this->service,
             $this->dispatcher

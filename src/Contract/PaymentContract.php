@@ -98,6 +98,17 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             throw new DomainException('Order ID is required for NOT_FINISHED transition');
         }
 
+        // OPC-175: one contract, one order. A contract reopened for a new
+        // attempt keeps the order it has.
+        if ($this->orderId !== null && $this->orderId !== $orderId) {
+            throw new DomainException(sprintf(
+                'A contract has one order: contract %s belongs to order %s, not %s',
+                $this->id,
+                $this->orderId,
+                $orderId
+            ));
+        }
+
         if (empty($this->conditions)) {
             throw new DomainException('Cannot transition to NOT_FINISHED without conditions');
         }
@@ -175,19 +186,6 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         }
     }
 
-    public function failCondition(string $type, string $reason): void
-    {
-        $condition = $this->findCondition($type);
-
-        if ($condition === null) {
-            throw new DomainException("Condition type '{$type}' not found");
-        }
-
-        $condition->fail($reason);
-        $this->fail("Condition '{$type}' failed: {$reason}");
-        $this->touch();
-    }
-
     public function areAllConditionsFulfilled(): bool
     {
         if (empty($this->conditions)) {
@@ -213,7 +211,17 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             throw new DomainException('Cannot commit contract with unfulfilled conditions');
         }
 
-        $this->orderId = $orderId;
+        // OPC-175: one contract, one order. The order was linked at
+        // transitionToNotFinished() and never changes.
+        if ($orderId !== $this->orderId) {
+            throw new DomainException(sprintf(
+                'A contract has one order: contract %s belongs to order %s, not %s',
+                $this->id,
+                (string) $this->orderId,
+                $orderId
+            ));
+        }
+
         $this->state = ContractState::committed();
         $this->committedAt = new DateTime();
         $this->touch();
@@ -228,6 +236,58 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $this->state = ContractState::fulfilled();
         $this->fulfilledAt = new DateTime();
         $this->touch();
+    }
+
+    /**
+     * OPC-175 — the customer changes the payment method of the attempt they
+     * have open. One order, one contract: the same contract continues. The
+     * replaced provider attempt goes into the history (ReplacedAttempts; refunds
+     * of late money find it there), the provider data is cleared, the conditions start
+     * again, and the contract is a draft again - with its order.
+     *
+     * A draft that already has its order (reopened before, its next step did
+     * not complete) continues as it is: there is no provider attempt to record.
+     *
+     * @param array<int, string> $conditionTypes the conditions of the new attempt
+     *
+     * @throws DomainException outside an open attempt, or for a paid attempt
+     */
+    public function reopenForNewAttempt(AttemptClosure $closure, BasketSnapshot $basket, array $conditionTypes): void
+    {
+        $reopenedDraft = $this->state->isDraft() && $this->orderId !== null;
+        if (!$reopenedDraft && !$this->state->isNotFinished() && !$this->state->isPending()) {
+            throw new DomainException(
+                'Only an open attempt (NOT_FINISHED or PENDING) can be replaced, contract is ' . $this->state->getValue()
+            );
+        }
+
+        if ($closure === AttemptClosure::Paid) {
+            throw new DomainException('A paid attempt is not replaced: contract ' . $this->id);
+        }
+
+        $this->basketSnapshot = $basket;
+        $this->conditions = array_map(
+            static fn (string $type): ContractCondition => new ContractCondition($type),
+            array_values($conditionTypes)
+        );
+        $this->state = ContractState::draft();
+        $this->touch();
+        if ($this->provider === null) {
+            return;
+        }
+
+        $this->metadata[ReplacedAttempts::METADATA_KEY] = ReplacedAttempts::withAttempt(
+            $this->metadata[ReplacedAttempts::METADATA_KEY] ?? null,
+            $this->provider,
+            $this->providerOrderId,
+            $this->metadata['payment_method_id'] ?? null,
+            $closure
+        );
+        unset($this->metadata['payment_method_id']);
+
+        $this->provider = null;
+        $this->providerOrderId = null;
+        $this->providerRedirectUrl = null;
     }
 
     public function cancel(string $reason = ''): void

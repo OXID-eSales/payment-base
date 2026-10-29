@@ -13,6 +13,7 @@ use OxidEsales\Eshop\Application\Controller\PaymentController as oxPaymentContro
 use OxidEsales\Eshop\Application\Controller\OrderController as oxOrderController;
 use OxidEsales\Eshop\Application\Controller\ThankYouController as oxThankYouController;
 use OxidEsales\Eshop\Application\Model\Order as oxOrder;
+use OxidEsales\Eshop\Application\Model\Voucher as oxVoucher;
 use OxidEsales\PaymentBase\Admin\PaymentAdminController;
 use OxidEsales\PaymentBase\Controller\ValidationApiController;
 use OxidEsales\PaymentBase\Core\Events\ModuleLifecycle;
@@ -22,6 +23,7 @@ use OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController;
 use OxidEsales\PaymentBase\Eshop\Core\Email;
 use OxidEsales\PaymentBase\Eshop\Core\PriceList;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
+use OxidEsales\PaymentBase\Eshop\Application\Model\Voucher;
 
 $sMetadataVersion = '2.1';
 
@@ -59,6 +61,11 @@ $aModule = [
         // STRP-176 (2026-10-26) — renders the order mail at early order creation
         // without sending it; it is sent once the PSP confirms the payment.
         oxEmail::class => Email::class,
+        // OPC-175 (2026-10-29) — the coupon stays in the basket while its
+        // checkout attempt is open: core refuses a voucher row the early order
+        // has already marked, even when that order is the session's own
+        // unpaid attempt, and drops the coupon.
+        oxVoucher::class => Voucher::class,
     ],
     'controllers' => [
         // OXID admin menu.xml tab-resolver needs the cl=> class map here
