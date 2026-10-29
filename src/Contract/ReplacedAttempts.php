@@ -18,7 +18,7 @@ use DateTimeImmutable;
  * toArray()/fromArray() and the repository without a schema change. A refund
  * of money that arrives on a replaced attempt finds the attempt here.
  *
- * @phpstan-type ReplacedAttempt array{provider: string, providerOrderId: string, paymentMethodId: string, closure: string, replacedAt: string}
+ * @phpstan-type ReplacedAttempt array{provider: string, providerOrderId: string, paymentMethodId: string, closure: string, replacedAt: string, lateMoney?: string, lateMoneyAt?: string}
  *
  * @since OPC-175
  */
@@ -54,6 +54,41 @@ final class ReplacedAttempts
         ];
 
         return $history;
+    }
+
+    /**
+     * S2g: what happened to money that arrived on the attempt at $index (e.g.
+     * `refunded:<id>`, `released`, `refund_failed:<reason>`). Recorded once.
+     *
+     * @return list<ReplacedAttempt>
+     */
+    public static function withLateMoney(mixed $stored, int $index, string $outcome): array
+    {
+        $history = self::fromMetadata($stored);
+        if (!isset($history[$index])) {
+            throw new \OutOfRangeException('No replaced attempt ' . $index . ' on this contract');
+        }
+
+        $history[$index]['lateMoney'] = $outcome;
+        $history[$index]['lateMoneyAt'] = (new DateTimeImmutable())->format(DATE_ATOM);
+
+        return $history;
+    }
+
+    public static function lateMoneyIn(mixed $stored, int $index): ?string
+    {
+        return self::fromMetadata($stored)[$index]['lateMoney'] ?? null;
+    }
+
+    public static function indexOf(mixed $stored, string $providerOrderId): ?int
+    {
+        foreach (self::fromMetadata($stored) as $index => $attempt) {
+            if ($attempt['providerOrderId'] === $providerOrderId) {
+                return $index;
+            }
+        }
+
+        return null;
     }
 
     /**
