@@ -199,6 +199,23 @@ class PaymentContractTest extends TestCase
         $this->assertTrue($contract->getState()->isCommitted());
     }
 
+    /**
+     * OPC-175 — one contract, one order. A contract that has an order never
+     * moves to another one.
+     */
+    public function testCommitToOrder_WithAnotherOrderId_IsRefused(): void
+    {
+        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $contract->transitionToNotFinished('order_123');
+        $contract->transitionToPending();
+        $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('one order');
+        $contract->commitToOrder('order_456');
+    }
+
     public function testFulfillRequiresCommittedState(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());

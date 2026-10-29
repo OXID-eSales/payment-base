@@ -198,11 +198,13 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
     private function transitionToCommitted(PaymentContract $contract): void
     {
         $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
-        $contract->transitionToNotFinished('order_' . substr(uniqid(), -4));
+        // OPC-175: one contract, one order - it commits to the order it was linked to.
+        $orderId = 'order_' . substr(uniqid(), -4);
+        $contract->transitionToNotFinished($orderId);
         $contract->transitionToPending();
         $contract->setProvider('test', 'pi_' . substr(uniqid(), -4));
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, ['authId' => 'auth_test']);
-        $contract->commitToOrder('order_' . substr(uniqid(), -4));
+        $contract->commitToOrder($orderId);
     }
 
     /**

@@ -213,7 +213,17 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
             throw new DomainException('Cannot commit contract with unfulfilled conditions');
         }
 
-        $this->orderId = $orderId;
+        // OPC-175: one contract, one order. The order was linked at
+        // transitionToNotFinished() and never changes.
+        if ($orderId !== $this->orderId) {
+            throw new DomainException(sprintf(
+                'A contract has one order: contract %s belongs to order %s, not %s',
+                $this->id,
+                (string) $this->orderId,
+                $orderId
+            ));
+        }
+
         $this->state = ContractState::committed();
         $this->committedAt = new DateTime();
         $this->touch();

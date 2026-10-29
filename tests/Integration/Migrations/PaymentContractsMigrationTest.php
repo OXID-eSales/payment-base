@@ -83,7 +83,8 @@ class PaymentContractsMigrationTest extends MigrationTestBase
         $this->assertIndexExists(self::TABLE_CONTRACTS, 'IDX_USER');
         $this->assertIndexExists(self::TABLE_CONTRACTS, 'IDX_STATE');
         $this->assertIndexExists(self::TABLE_CONTRACTS, 'IDX_PROVIDER_ORDER');
-        $this->assertIndexExists(self::TABLE_CONTRACTS, 'IDX_ORDER');
+        // OPC-175: one order, one contract - Version20261029100000 replaced IDX_ORDER.
+        $this->assertIndexExists(self::TABLE_CONTRACTS, 'UNQ_ORDER');
     }
 
     #[Test]
