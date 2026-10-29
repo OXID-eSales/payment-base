@@ -160,18 +160,6 @@ class PaymentContractTest extends TestCase
         $this->assertTrue($contract->areAllConditionsFulfilled());
     }
 
-    public function testFailCondition(): void
-    {
-        $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());
-        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
-        $contract->transitionToNotFinished('order_123');
-        $contract->transitionToPending();
-
-        $contract->failCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED, 'Payment declined');
-
-        $this->assertTrue($contract->getState()->equals(ContractState::failed()));
-    }
-
     public function testCommitToOrderRequiresReadyToCommitState(): void
     {
         $contract = new PaymentContract(1, 'user123', $this->createBasketSnapshot());

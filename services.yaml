@@ -475,6 +475,13 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
 
+  # OPC-175 — each provider closes its own payment page when the customer
+  # changes the payment method (Stripe, Mollie and PayPal each tag one).
+  OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers:
+    arguments:
+      $closers: !tagged_iterator oe.payment.attempt_closer
+    public: true
+
   # OPC-175 — the order of the session's open attempt. Public: the Voucher
   # model extension reaches it through ContainerFactory (models get no
   # constructor injection).
