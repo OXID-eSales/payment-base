@@ -10,6 +10,9 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Integration\Adapter;
 
 use Doctrine\DBAL\Connection;
+use OxidEsales\Eshop\Application\Model\Article;
+use OxidEsales\Eshop\Core\Field;
+use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\PaymentBase\Adapter\LinkedOrderEndingInterface;
@@ -33,8 +36,8 @@ final class OxidOrderRestockTest extends TestCase
     private Connection $connection;
     /** @var list<array{0: string, 1: string, 2: string}> table/column/id to delete */
     private array $cleanup = [];
-    /** @var list<array<string, mixed>> */
-    private array $restoreArticles = [];
+    /** @var list<Article> */
+    private array $articles = [];
 
     protected function setUp(): void
     {
@@ -47,12 +50,8 @@ final class OxidOrderRestockTest extends TestCase
         foreach ($this->cleanup as [$table, $column, $id]) {
             $this->connection->executeStatement("DELETE FROM {$table} WHERE {$column} = :id", ['id' => $id]);
         }
-        foreach ($this->restoreArticles as $row) {
-            $this->connection->update(
-                'oxarticles',
-                ['OXSTOCK' => $row['OXSTOCK'], 'OXSOLDAMOUNT' => $row['OXSOLDAMOUNT']],
-                ['OXID' => $row['OXID']]
-            );
+        foreach ($this->articles as $article) {
+            $article->delete();
         }
     }
 
@@ -113,22 +112,24 @@ final class OxidOrderRestockTest extends TestCase
     }
 
     /**
-     * A real shop article (core loads it through the shop views and, on EE, the
-     * shop mapping); its stock is set for the test and put back afterwards.
+     * Saved through the shop model, so core loads it back on CE and EE (shop
+     * mapping) and on a shop without demo data; deleted the same way.
      */
     private function insertArticle(int $stock): string
     {
-        $row = $this->connection->fetchAssociative(
-            "SELECT OXID, OXSTOCK, OXSOLDAMOUNT FROM oxarticles
-             WHERE OXPARENTID = '' AND OXACTIVE = 1 AND OXVARCOUNT = 0 AND OXSHOPID = :shop
-             ORDER BY OXID LIMIT 1",
-            ['shop' => self::SHOP_ID]
-        );
-        self::assertIsArray($row, 'The shop needs one active article without variants');
-        $this->restoreArticles[] = $row;
-        $this->connection->update('oxarticles', ['OXSTOCK' => $stock], ['OXID' => $row['OXID']]);
+        $article = oxNew(Article::class);
+        $article->setId(substr('opc175_art_' . bin2hex(random_bytes(8)), 0, 32));
+        $article->oxarticles__oxshopid = new Field(Registry::getConfig()->getShopId(), Field::T_RAW);
+        $article->oxarticles__oxactive = new Field(1, Field::T_RAW);
+        $article->oxarticles__oxartnum = new Field('OPC175-RESTOCK', Field::T_RAW);
+        $article->oxarticles__oxtitle = new Field('OPC-175 restock', Field::T_RAW);
+        $article->oxarticles__oxprice = new Field(21.0, Field::T_RAW);
+        $article->oxarticles__oxstock = new Field($stock, Field::T_RAW);
+        $article->oxarticles__oxstockflag = new Field(1, Field::T_RAW);
+        $article->save();
+        $this->articles[] = $article;
 
-        return (string) $row['OXID'];
+        return (string) $article->getId();
     }
 
     private function insertNotFinishedOrderWith(string $articleId, int $amount): string
