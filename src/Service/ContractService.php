@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Service;
 
+use OxidEsales\PaymentBase\Checkout\Attempt\CheckoutAttemptAlreadyPaidException;
+use OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface;
+use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
+use OxidEsales\PaymentBase\Contract\AttemptClosure;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
@@ -15,8 +19,13 @@ class ContractService implements ContractServiceInterface
 {
     private ContractRepositoryInterface $contractRepository;
 
-    public function __construct(ContractRepositoryInterface $contractRepository)
-    {
+    public function __construct(
+        ContractRepositoryInterface $contractRepository,
+        // OPC-175: the attempt the session has open is continued, not replaced
+        // by a second contract (one order, one contract).
+        private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
+        private readonly PaymentAttemptClosersInterface $closers
+    ) {
         $this->contractRepository = $contractRepository;
     }
 
@@ -26,13 +35,6 @@ class ContractService implements ContractServiceInterface
         array $conditionTypes = []
     ): PaymentContractInterface {
         $basketSnapshot = $this->createBasketSnapshot($basket);
-
-        $contract = new PaymentContract(
-            shopId: 1,
-            userId: $userId,
-            basketSnapshot: $basketSnapshot
-        );
-
         if (empty($conditionTypes)) {
             $conditionTypes = [
                 ContractCondition::TYPE_PAYMENT_AUTHORIZED,
@@ -40,10 +42,60 @@ class ContractService implements ContractServiceInterface
             ];
         }
 
+        $open = $this->openAttemptOf($userId);
+        if ($open !== null) {
+            return $this->continueAttempt($open, $basketSnapshot, $conditionTypes);
+        }
+
+        $contract = new PaymentContract(
+            shopId: 1,
+            userId: $userId,
+            basketSnapshot: $basketSnapshot
+        );
+
         foreach ($conditionTypes as $type) {
             $contract->addCondition(new ContractCondition($type));
         }
 
+        $this->contractRepository->save($contract);
+
+        return $contract;
+    }
+
+    /**
+     * The attempt this session has open, when it belongs to this user, has its
+     * order and can still be paid (draft with order, NOT_FINISHED, PENDING).
+     */
+    private function openAttemptOf(string $userId): ?PaymentContractInterface
+    {
+        $contractId = $this->openAttempts->peek();
+        $contract = $contractId === null ? null : $this->contractRepository->findById($contractId);
+        if ($contract === null || $contract->getUserId() !== $userId || $contract->getOrderId() === null) {
+            return null;
+        }
+
+        $state = $contract->getState();
+
+        return $state->isDraft() || $state->isNotFinished() || $state->isPending() ? $contract : null;
+    }
+
+    /**
+     * The provider closes the page of the attempt the customer leaves; then the
+     * same contract takes the new basket and starts again as a draft.
+     *
+     * @param array<int, string> $conditionTypes
+     */
+    private function continueAttempt(
+        PaymentContractInterface $contract,
+        BasketSnapshot $basketSnapshot,
+        array $conditionTypes
+    ): PaymentContractInterface {
+        $closure = $contract->getProvider() === null ? AttemptClosure::Closed : $this->closers->close($contract);
+        if ($closure === AttemptClosure::Paid) {
+            throw CheckoutAttemptAlreadyPaidException::forContract((string) $contract->getId());
+        }
+
+        $contract->reopenForNewAttempt($closure, $basketSnapshot, $conditionTypes);
         $this->contractRepository->save($contract);
 
         return $contract;

@@ -204,4 +204,12 @@ interface PaymentContractInterface extends ModelInterface
      * moved" is NOT the same as "fully refunded".
      */
     public function isFullyRefunded(): bool;
+
+    /**
+     * OPC-175 — continue this contract (and its order) with a new provider
+     * attempt. One order, one contract.
+     *
+     * @param array<int, string> $conditionTypes
+     */
+    public function reopenForNewAttempt(AttemptClosure $closure, BasketSnapshot $basket, array $conditionTypes): void;
 }

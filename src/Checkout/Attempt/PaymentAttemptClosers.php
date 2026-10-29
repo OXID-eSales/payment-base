@@ -19,7 +19,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
  *
  * @since OPC-175
  */
-class PaymentAttemptClosers
+class PaymentAttemptClosers implements PaymentAttemptClosersInterface
 {
     /**
      * @param iterable<PaymentAttemptCloserInterface> $closers

@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
-use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
+use OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
-use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleanerInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
-use OxidEsales\PaymentBase\Repository\OpenAttemptFinderInterface;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
 /**
@@ -42,17 +40,13 @@ class EarlyOrderCreationHandler extends AbstractHandler
 {
     public function __construct(
         ContractRepositoryInterface $contractRepository,
-        private readonly ShopOrderServiceInterface $shopOrderService,
+        // OPC-175: creates the order of a new contract, rewrites the order of
+        // a contract that continues the open attempt (one order, one contract).
+        private readonly EarlyOrderWriterInterface $earlyOrders,
+        // The session's open attempt: the next start continues it.
+        private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
         ?EventDispatcherInterface $eventDispatcher = null,
-        private readonly ?FileLoggerInterface $eventLogger = null,
-        // Optional so a consumer whose services.yaml predates this keeps
-        // working - it simply does not get the cleanup.
-        private readonly ?PreviousCheckoutAttemptCleanerInterface $previousAttemptCleaner = null,
-        private readonly ?OpenCheckoutAttemptRegistryInterface $openAttempts = null,
-        // Sprint 15 / S3: the headless "previous attempt for this basket"
-        // when the registry has nothing. Optional: a consumer whose
-        // services.yaml predates it keeps the registry-only behaviour.
-        private readonly ?OpenAttemptFinderInterface $openAttemptFinder = null
+        private readonly ?FileLoggerInterface $eventLogger = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
     }
@@ -92,12 +86,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ]);
 
         try {
-            $this->retirePreviousAttempt($contract, $this->basketIdOf($event));
             $orderData = $this->createOrder($contract, $event);
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
             $this->transitionContractToPending($contract, $event);
             $this->dispatchOrderCreatedEvent($event, $orderData['orderId']);
-            $this->openAttempts?->remember($contract->getId());
+            $this->openAttempts->remember($contract->getId());
             $this->logEvent('EarlyOrderCreationHandler::handle() END - SUCCESS');
         } catch (\Throwable $e) {
             $this->logEvent('EarlyOrderCreationHandler: Order creation failed', [
@@ -107,65 +100,6 @@ class EarlyOrderCreationHandler extends AbstractHandler
             ]);
             throw $e;
         }
-    }
-
-    /**
-     * An order is created here BEFORE the shopper leaves for the PSP, so every
-     * retry inside one session - back button, refresh, a different payment
-     * method - would otherwise leave another NOT_FINISHED order in the backend.
-     * Retire the one this session already has open first.
-     *
-     * Scope is the session on purpose: an attempt open in another session or on
-     * another device may still be paid, and cancelling it would storno an order
-     * somebody is in the middle of paying for.
-     *
-     * Best-effort by design. Losing a stale order is annoying; refusing the
-     * shopper's new checkout because the cleanup failed is worse.
-     *
-     * Sprint 15 / S3 - the headless rule. A headless attempt names its basket
-     * and has no session; its "previous attempt" is the open contract stamped
-     * with the same basket for the same user. The registry (the entered
-     * scope's context) is asked first; when it has nothing - another device,
-     * an expired headless context - the repository is. One open attempt per
-     * user basket, which is what the session rule means for a shopper who
-     * cannot have a session.
-     */
-    private function retirePreviousAttempt(PaymentContract $contract, ?string $basketId): void
-    {
-        if ($this->previousAttemptCleaner === null || $this->openAttempts === null) {
-            return;
-        }
-
-        try {
-            $previousContractId = $this->openAttempts->takePrevious()
-                ?? $this->openAttemptForBasket($contract, $basketId);
-
-            if ($previousContractId === null || $previousContractId === $contract->getId()) {
-                return;
-            }
-
-            $this->previousAttemptCleaner->clean($previousContractId);
-            $this->logEvent('EarlyOrderCreationHandler: retired the previous checkout attempt', [
-                'previous_contract_id' => $previousContractId,
-                'contract_id' => $contract->getId(),
-            ]);
-        } catch (\Throwable $e) {
-            $this->logEvent('EarlyOrderCreationHandler: could not retire the previous attempt', [
-                'contract_id' => $contract->getId(),
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    private function openAttemptForBasket(PaymentContract $contract, ?string $basketId): ?string
-    {
-        if ($basketId === null || $this->openAttemptFinder === null) {
-            return null;
-        }
-
-        $open = $this->openAttemptFinder->findOpenByUserAndBasketId($contract->getUserId(), $basketId);
-
-        return $open?->getId();
     }
 
     /**
@@ -218,7 +152,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             basketId: $basketId
         );
 
-        $orderResponse = $this->shopOrderService->createOrder($request);
+        $orderResponse = $this->earlyOrders->write($contract, $request);
 
         $this->logEvent('EarlyOrderCreationHandler: Order created', [
             'orderId' => $orderResponse->orderId,

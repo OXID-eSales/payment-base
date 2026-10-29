@@ -112,6 +112,18 @@ services:
   # that winner finalized every provider's orders — on one installation Stripe's
   # copy was finalizing Mollie payments. The copies branched on nothing, so there
   # is one implementation now and the PSP modules no longer bind this id.
+  # OPC-175 — one order, one contract: a new contract gets a new order, a
+  # contract that continues the open attempt gets its order written again.
+  OxidEsales\PaymentBase\Adapter\EarlyOrderWriter:
+    arguments:
+      $orderService: '@OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface'
+      $orderRewriter: '@OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\EarlyOrderWriter
+    public: true
+
   # OPC-175 — the same service rewrites the order of an open attempt (ISP:
   # only payment-base's order service implements it).
   OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface:
@@ -480,6 +492,10 @@ services:
   OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers:
     arguments:
       $closers: !tagged_iterator oe.payment.attempt_closer
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface:
+    alias: OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers
     public: true
 
   # OPC-175 — the order of the session's open attempt. Public: the Voucher

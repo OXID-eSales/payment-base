@@ -245,11 +245,17 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
      * of late money find it there), the provider data is cleared, the conditions start
      * again, and the contract is a draft again - with its order.
      *
-     * @throws DomainException outside NOT_FINISHED / PENDING, or for a paid attempt
+     * A draft that already has its order (reopened before, its next step did
+     * not complete) continues as it is: there is no provider attempt to record.
+     *
+     * @param array<int, string> $conditionTypes the conditions of the new attempt
+     *
+     * @throws DomainException outside an open attempt, or for a paid attempt
      */
-    public function reopenForNewAttempt(AttemptClosure $closure): void
+    public function reopenForNewAttempt(AttemptClosure $closure, BasketSnapshot $basket, array $conditionTypes): void
     {
-        if (!$this->state->isNotFinished() && !$this->state->isPending()) {
+        $reopenedDraft = $this->state->isDraft() && $this->orderId !== null;
+        if (!$reopenedDraft && !$this->state->isNotFinished() && !$this->state->isPending()) {
             throw new DomainException(
                 'Only an open attempt (NOT_FINISHED or PENDING) can be replaced, contract is ' . $this->state->getValue()
             );
@@ -257,6 +263,17 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
         if ($closure === AttemptClosure::Paid) {
             throw new DomainException('A paid attempt is not replaced: contract ' . $this->id);
+        }
+
+        $this->basketSnapshot = $basket;
+        $this->conditions = array_map(
+            static fn (string $type): ContractCondition => new ContractCondition($type),
+            array_values($conditionTypes)
+        );
+        $this->state = ContractState::draft();
+        $this->touch();
+        if ($this->provider === null) {
+            return;
         }
 
         $this->metadata[ReplacedAttempts::METADATA_KEY] = ReplacedAttempts::withAttempt(
@@ -271,12 +288,6 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         $this->provider = null;
         $this->providerOrderId = null;
         $this->providerRedirectUrl = null;
-        $this->conditions = array_map(
-            static fn (ContractCondition $condition): ContractCondition => new ContractCondition($condition->getType()),
-            $this->conditions
-        );
-        $this->state = ContractState::draft();
-        $this->touch();
     }
 
     public function cancel(string $reason = ''): void
