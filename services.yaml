@@ -112,6 +112,12 @@ services:
   # that winner finalized every provider's orders — on one installation Stripe's
   # copy was finalizing Mollie payments. The copies branched on nothing, so there
   # is one implementation now and the PSP modules no longer bind this id.
+  # OPC-175 — the same service rewrites the order of an open attempt (ISP:
+  # only payment-base's order service implements it).
+  OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
+    public: true
+
   OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidShopOrderService
     arguments:

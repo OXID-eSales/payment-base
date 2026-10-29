@@ -403,7 +403,17 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent::
         . '  public function getShopId() { return 1; } '
         . '  public function save() { return true; } '
         . '  protected function sendOrderByEmail($oUser = null, $oBasket = null, $oPayment = null) { return 1; } '
-        . '}'
+        // OPC-175 — what rewriteFromBasket() uses of core's Order.
+        . '  protected $_oPaymentType = null; '
+        . '  /** @return list<\\OxidEsales\\PaymentBase\\Eshop\\Application\\Model\\OrderArticleStub> */ '
+        . '  public function getOrderArticles($blExcludeCanceled = false): array { return []; } '
+        . '  public function finalizeOrder(\\OxidEsales\\Eshop\\Application\\Model\\Basket $oBasket, $oUser, $blRecalculatingOrder = false): int { return 1; } '
+        . '  protected function markVouchers($oBasket, $oUser): void {} '
+        . '  protected function setOrderStatus($sStatus): void {} '
+        . '  protected function updateOrderDate(): void {} '
+        . '  public function getPaymentType(): mixed { return null; } '
+        . '} '
+        . 'class OrderArticleStub { public function delete($oxid = null): bool { return true; } }'
     );
 }
 
@@ -645,7 +655,11 @@ if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
         'namespace OxidEsales\\Eshop\\Core; '
         . 'class StubDb { public function getOne(string $sql, array $params = []): mixed { return null; } '
         . '  public function getRow(string $sql, array $params = []): mixed { return null; } '
-        . '  public function execute(string $sql, array $params = []): mixed { return null; } } '
+        . '  public function execute(string $sql, array $params = []): mixed { return null; } '
+        // OPC-175: the order rewrite runs in one transaction.
+        . '  public function startTransaction(): void {} '
+        . '  public function commitTransaction(): void {} '
+        . '  public function rollbackTransaction(): void {} } '
         . 'class DatabaseProvider { public static function getDb(): StubDb { return new StubDb(); } }'
     );
 }
