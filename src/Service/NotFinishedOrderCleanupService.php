@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Service;
 
 use InvalidArgumentException;
+use OxidEsales\PaymentBase\Adapter\OrderRestockInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
@@ -32,6 +33,7 @@ class NotFinishedOrderCleanupService implements NotFinishedOrderCleanupServiceIn
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly ContractRepositoryInterface $contractRepository,
+        private readonly OrderRestockInterface $restock,
         ?LoggerInterface $logger = null
     ) {
         $this->logger = $logger ?? new NullLogger();
@@ -87,6 +89,8 @@ class NotFinishedOrderCleanupService implements NotFinishedOrderCleanupServiceIn
 
                 $ordersCancelled++;
                 $vouchersReleased += $this->orderRepository->releaseVouchers($orderId);
+                // OPC-175 / S4 (G9): the early order took the stock.
+                $this->restock->restock($orderId);
                 $contractsCancelled += $this->cancelLinkedContract($orderId) ? 1 : 0;
             } catch (Throwable $e) {
                 // One locked or malformed row must not strand the rest of the

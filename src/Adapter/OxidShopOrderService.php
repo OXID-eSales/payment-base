@@ -83,6 +83,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
+        private readonly OrderRestockInterface $restock,
         ?CheckoutBasketProviderInterface $basketProvider = null,
         private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
         private readonly ?ContractOrderMailStoreInterface $orderMails = null,
@@ -609,6 +610,8 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         }
 
         $this->orderRepository->releaseVouchers($orderId);
+        // OPC-175 / S4 (G9): the early order took the stock.
+        $this->restock->restock($orderId);
 
         return true;
     }

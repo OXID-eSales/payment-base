@@ -32,6 +32,13 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\Admin\AdminDetailsCon
         . '}'
     );
 }
+// OPC-175 / S4 — core's restock primitive.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\OrderArticle::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . 'class OrderArticle { public function cancelOrderArticle(): mixed { return null; } }'
+    );
+}
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
@@ -50,6 +57,11 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         . '  public mixed $oxorder__oxfolder = null; '
         . '  public mixed $oxorder__oxtransid = null; '
         . '  public mixed $oxorder__oxtransstatus = null; '
+        // OPC-175 / S4 — what OxidLinkedOrderEnding and OxidOrderRestock use.
+        . '  public mixed $oxorder__oxpaid = null; '
+        . '  public function cancelOrder(): mixed { return null; } '
+        . '  /** @return list<\\OxidEsales\\Eshop\\Application\\Model\\OrderArticle> */ '
+        . '  public function getOrderArticles($blExcludeCanceled = false): array { return []; } '
         . '  public mixed $oxorder__oxordernr = null; '
         . '  public mixed $oxorder__oxorderdate = null; '
         // Sprint 10 (2026-09-23) — OrderShippingAddressCopier writes these

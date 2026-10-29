@@ -130,11 +130,23 @@ services:
     alias: OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface
     public: true
 
+  # OPC-175 / S4: the order of a contract that ended at the provider ends with it.
+  OxidEsales\PaymentBase\Adapter\LinkedOrderEndingInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidLinkedOrderEnding
+    public: true
+
+  # OPC-175 / S4 (G9): core restock of an ended order.
+  OxidEsales\PaymentBase\Adapter\OrderRestockInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidOrderRestock
+    public: true
+
   OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidShopOrderService
     arguments:
       $orderRepository: '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
+      # OPC-175 / S4 (G9): an ended unfinished order gives its stock back.
+      $restock: '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
       $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
       # Sprint 15 / S3: one order per headless checkout attempt (core's
       # sess_challenge covers the session checkout).
@@ -562,6 +574,7 @@ services:
     arguments:
       $orderRepository:    '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $restock:            '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
 
