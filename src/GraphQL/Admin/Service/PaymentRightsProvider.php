@@ -20,8 +20,8 @@ use OxidEsales\GraphQL\Admin\Authorization\DataType\RightDefinition;
  * at module activation (see NamespaceMapper). The catalogue only iterates the tagged services and calls
  * rights(). `RightDefinition` is referenced inside the method, so it loads only when the catalogue asks.
  *
- * CONFIG is defined here for the provider settings screens of the admin (the provider plugins use it);
- * no operation of payment-base itself demands it.
+ * CONFIG is defined here for the read-only provider configuration queries of the admin (the provider plugins use it);
+ * no operation of payment-base itself demands it. Settings change in the classic admin only (CFG-1).
  *
  * @since 1.5.0
  */
@@ -43,7 +43,7 @@ final class PaymentRightsProvider
             RightDefinition::of(self::VIEW, self::DOMAIN, 'View the payment contract and transactions of an order'),
             RightDefinition::of(self::CAPTURE, self::DOMAIN, 'Capture or void an authorised payment'),
             RightDefinition::of(self::REFUND, self::DOMAIN, 'Refund a captured payment'),
-            RightDefinition::of(self::CONFIG, self::DOMAIN, 'Change the settings of a payment provider'),
+            RightDefinition::of(self::CONFIG, self::DOMAIN, 'See the configuration of a payment provider (read-only)'),
         ];
     }
 }
