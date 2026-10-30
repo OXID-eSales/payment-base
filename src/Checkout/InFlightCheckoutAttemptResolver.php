@@ -16,6 +16,7 @@ use Psr\Log\NullLogger;
  * rejoin the first. The state machine already says what "in flight" means:
  *
  *  - this session remembers an open attempt ({@see OpenCheckoutAttemptRegistry}),
+ *  - the provider that starts now is the provider of that attempt,
  *  - its contract is neither terminal nor committed (no money has moved),
  *  - the PSP already handed us a checkout URL for it,
  *  - the order it created still sits at NOT_FINISHED,
@@ -23,6 +24,10 @@ use Psr\Log\NullLogger;
  *
  * Anything else means "not in flight": the caller proceeds as today, which
  * retires the old attempt and creates a new one.
+ *
+ * PSP-SWITCH: a cancel at the PSP keeps the attempt open (OPC-175: one order,
+ * one contract). Without the provider rule, a Mollie start after a PayPal
+ * cancel replayed the PayPal approval URL, and the order kept PayPal.
  *
  * No time window: a Mollie checkout URL that expired meanwhile shows Mollie's
  * own "expired" page, and the return leg then retires the attempt as usual.
@@ -48,7 +53,7 @@ class InFlightCheckoutAttemptResolver implements InFlightCheckoutAttemptResolver
         $this->logger = $logger ?? new NullLogger();
     }
 
-    public function resolve(float $liveBasketTotal): ?string
+    public function resolve(string $provider, float $liveBasketTotal): ?string
     {
         $contractId = $this->openAttempts->peek();
         if ($contractId === null) {
@@ -56,7 +61,7 @@ class InFlightCheckoutAttemptResolver implements InFlightCheckoutAttemptResolver
         }
 
         $contract = $this->contracts->findById($contractId);
-        $reason = $contract === null ? 'contract not found' : $this->whyNotInFlight($contract, $liveBasketTotal);
+        $reason = $contract === null ? 'contract not found' : $this->whyNotInFlight($contract, $provider, $liveBasketTotal);
         if ($contract === null || $reason !== null) {
             $this->logNotInFlight($contractId, (string) $reason);
 
@@ -74,8 +79,15 @@ class InFlightCheckoutAttemptResolver implements InFlightCheckoutAttemptResolver
     /**
      * @return string|null the reason this attempt cannot be rejoined, or null when it can
      */
-    private function whyNotInFlight(PaymentContractInterface $contract, float $liveBasketTotal): ?string
-    {
+    private function whyNotInFlight(
+        PaymentContractInterface $contract,
+        string $provider,
+        float $liveBasketTotal
+    ): ?string {
+        if ($contract->getProvider() !== $provider) {
+            return 'provider changed';
+        }
+
         $state = $contract->getState();
         if ($state->isTerminal() || $state->isCommitted()) {
             return 'contract is ' . $state->getValue();

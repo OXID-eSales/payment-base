@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (PSP-SWITCH) - the in-flight replay rejoins only an attempt of the same provider
+- `Checkout\InFlightCheckoutAttemptResolverInterface::resolve(string $provider, float $liveBasketTotal)` (was
+  `resolve(float)`): an open attempt of another provider is not in flight. Before, a Mollie start after a PayPal cancel
+  replayed the PayPal approval URL, and the order kept `OXPAYMENTTYPE = oe_payments_paypal`. Callers send their provider
+  name (Mollie: `mollie`). Composer branch alias of `b-7.4.x` is now `1.6.x-dev`.
+
 ### Superadmin check for secrets (PAY-10 S2) - minor, additive
 - New `GraphQL\Admin\Service\AdminSuperadminCheckInterface` (`isSuperadmin(): bool`, public service) and
   `OxidAdminSuperadminCheck`, backed by oxid-admin-graphql's roles (the built-in `superadmin` role) when installed; fails
