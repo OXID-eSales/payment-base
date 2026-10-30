@@ -118,27 +118,3 @@ if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\Right::class, false))
 if (!class_exists(\TheCodingMachine\GraphQLite\Annotations\ExtendType::class, false)) {
     eval('namespace TheCodingMachine\\GraphQLite\\Annotations; #[\\Attribute(\\Attribute::TARGET_CLASS)] class ExtendType { public function __construct(mixed ...$args) {} }');
 }
-
-// What the superadmin check reads: the session of the request, the user's roles, and the role's own verdict.
-if (!class_exists(\OxidEsales\GraphQL\Admin\AdminSession\Service\CurrentAdminSession::class, false)) {
-    eval(
-        'namespace OxidEsales\\GraphQL\\Admin\\AdminSession\\DataType; '
-        . 'class AdminSession { public function __construct(public readonly string $id, public readonly string $userId, public readonly int $shopId) {} } '
-        . 'namespace OxidEsales\\GraphQL\\Admin\\AdminSession\\Service; '
-        . 'class CurrentAdminSession { public function current(): \\OxidEsales\\GraphQL\\Admin\\AdminSession\\DataType\\AdminSession { throw new \\RuntimeException("stand-in"); } }'
-    );
-}
-if (!class_exists(\OxidEsales\GraphQL\Admin\Authorization\DataType\Role::class, false)) {
-    eval(
-        'namespace OxidEsales\\GraphQL\\Admin\\Authorization\\DataType; '
-        . 'final class Role { '
-        . '  public const SUPERADMIN = "superadmin"; '
-        . '  public function __construct(public readonly string $id, public readonly int $shopId, public readonly string $code, public readonly string $title, '
-        . '    public readonly bool $builtin, public readonly array $rights, public readonly string $timestamp) {} '
-        . '  public function holdsEverything(): bool { return $this->builtin && $this->code === self::SUPERADMIN; } '
-        . '} '
-        . 'namespace OxidEsales\\GraphQL\\Admin\\Authorization\\Infrastructure; '
-        . 'interface UserRoleRepositoryInterface { public function roleIdsOf(string $userId): array; } '
-        . 'interface RoleRepositoryInterface { public function findVisibleByIds(array $ids): array; }'
-    );
-}

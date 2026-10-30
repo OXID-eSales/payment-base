@@ -11,12 +11,11 @@ All notable changes to this module are documented here. Format follows
   replayed the PayPal approval URL, and the order kept `OXPAYMENTTYPE = oe_payments_paypal`. Callers send their provider
   name (Mollie: `mollie`). Composer branch alias of `b-7.4.x` is now `1.6.x-dev`.
 
-### Superadmin check for secrets (PAY-10 S2) - minor, additive
-- New `GraphQL\Admin\Service\AdminSuperadminCheckInterface` (`isSuperadmin(): bool`, public service) and
-  `OxidAdminSuperadminCheck`, backed by oxid-admin-graphql's roles (the built-in `superadmin` role) when installed; fails
-  closed (`false`) without the admin module, without a session or on any error. Provider modules use it to restrict API-key,
-  secret and connection changes to the superadmin (see `docs/admin-payment-api.md`).
-- After upgrading: delete `var/cache/container/container_cache_shop_*.php` and run `bin/oe-console oe:graphql:cache-clear`.
+### Removed (CFG-1) - settings change in the classic admin only
+- `GraphQL\Admin\Service\AdminSuperadminCheckInterface` and `OxidAdminSuperadminCheck` (never released): the provider
+  modules no longer have a GraphQL operation that writes a key, a secret or a connection, so nothing asks for a superadmin.
+  `ADMIN_PAYMENT_CONFIG` is described as read-only; it still guards the providers' configuration queries. Capture, refund,
+  void and the contract / transaction reads are unchanged. After upgrading: `bin/oe-console oe:graphql:cache-clear`.
 
 ### Admin payment API parity (PAY-1) - minor, additive
 - `AdminPaymentContract.contractId`, `AdminPaymentTransaction.currency`.

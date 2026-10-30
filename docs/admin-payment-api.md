@@ -20,7 +20,7 @@ every service class loads in a PHP process where none of the optional packages e
 | `ADMIN_PAYMENT_VIEW` | `AdminOrder.paymentContract` (state, amounts, transactions, action options), `adminPaymentContractStateHelp` |
 | `ADMIN_PAYMENT_CAPTURE` | `adminPaymentCapture`, `adminPaymentVoid` (releasing an authorisation is the reverse of a capture) |
 | `ADMIN_PAYMENT_REFUND` | `adminPaymentRefund` |
-| `ADMIN_PAYMENT_CONFIG` | defined for the providers' settings screens; no operation of payment-base uses it |
+| `ADMIN_PAYMENT_CONFIG` | the providers' configuration queries (read-only); no operation of payment-base uses it |
 
 `bin/oe-console oe:graphql-admin:rights-export --path=/tmp/all.json` (without `--core-only`) lists them; the superadmin
 holds them, other roles get them through `adminRoleCreate` / `adminRoleModify`.
@@ -69,23 +69,12 @@ The free texts reach the provider as the classic tab's form fields: `capture_rea
   in the log, never in the answer), `not_confirmed`. A missing right, session or step-up is a GraphQL error with
   `extensions.errorCode`, as everywhere in the admin API.
 
-## Who may change secrets: the superadmin check (PAY-10)
+## Settings are not changed through GraphQL (CFG-1)
 
-`ADMIN_PAYMENT_CONFIG` opens a provider's settings, but API keys, client secrets, webhook signing secrets and the
-connection itself belong to the built-in **superadmin** role only. The admin API of a provider module asks
-`GraphQL\Admin\Service\AdminSuperadminCheckInterface::isSuperadmin(): bool` (public service, beside
-`AdminStepUpInterface`; no GraphQL type in the signature, so a provider module loads it without the admin package).
-
-- `OxidAdminSuperadminCheck` reads the admin module through its roles: the user of the request's admin session, their
-  role ids (`UserRoleRepositoryInterface`), the visible roles of the shop (`RoleRepositoryInterface`), and
-  `Role::holdsEverything()` (built-in role with code `superadmin`). A custom role with every payment right is not a
-  superadmin.
-- The admin module is optional (services wired with `@?`). Without it, without a valid session, or on any error the answer
-  is `false`: the secret does not change.
-- **Order of the checks in a provider's mutation:** right (`ADMIN_PAYMENT_CONFIG`), then superadmin, then step-up. A
-  non-superadmin is refused with `superadmin_required` and is never asked for a second factor for something they may not do.
-- Providers answer `superadmin_required` as a validation-style entry of the payload `errors`
-  (`{ field, code: superadmin_required }`) and expose `secretsEditable: Boolean!` on their config type.
+`ADMIN_PAYMENT_CONFIG` opens a provider's configuration for **reading** (settings, connection and webhook checks). No
+provider module has a GraphQL operation that changes its settings, API keys, secrets, webhook registration or connection:
+that is the classic admin's module configuration only, and payment-base carries no support for it (the superadmin check
+for secret writes was removed). The money operations (capture, void, refund) and their step-up are unchanged.
 
 ## What a provider module adds (all optional)
 
