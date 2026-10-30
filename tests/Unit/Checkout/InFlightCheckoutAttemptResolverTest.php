@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 final class InFlightCheckoutAttemptResolverTest extends TestCase
 {
     private const CHECKOUT_URL = 'https://www.mollie.com/checkout/select-method/tr_1';
+    private const PROVIDER = 'mollie';
 
     private RecordingSessionAdapter $session;
     private ContractRepositoryInterface&MockObject $contracts;
@@ -46,7 +47,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
     {
         $this->contracts->expects($this->never())->method('findById');
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_WhenContractMissing_ReturnsNull(): void
@@ -54,7 +55,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->sessionHasOpenAttempt('contract-1');
         $this->contracts->method('findById')->with('contract-1')->willReturn(null);
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     /**
@@ -76,7 +77,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract($state, self::CHECKOUT_URL, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->willReturn(true);
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_WhenContractHasNoRedirectUrl_ReturnsNull(): void
@@ -86,7 +87,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), null, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->willReturn(true);
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_WhenOrderIsNotNotFinished_ReturnsNull(): void
@@ -95,7 +96,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->with('order-1')->willReturn(false);
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_WhenContractHasNoOrder_ReturnsNull(): void
@@ -104,7 +105,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, null, 116.5));
         $this->orders->expects($this->never())->method('isNotFinished');
 
-        $this->assertNull($this->resolver->resolve(116.5));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_WhenBasketTotalDiffers_ReturnsNull(): void
@@ -115,7 +116,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->willReturn(true);
 
-        $this->assertNull($this->resolver->resolve(146.4));
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 146.4));
     }
 
     public function testResolve_WhenAttemptIsOpenAndBasketMatches_ReturnsRedirectUrl(): void
@@ -124,7 +125,30 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->with('order-1')->willReturn(true);
 
-        $this->assertSame(self::CHECKOUT_URL, $this->resolver->resolve(116.5));
+        $this->assertSame(self::CHECKOUT_URL, $this->resolver->resolve(self::PROVIDER, 116.5));
+    }
+
+    public function testResolve_WhenOpenAttemptHasOtherProvider_ReturnsNull(): void
+    {
+        // PayPal cancelled, the attempt stays open (OPC-175) with the PayPal
+        // approval URL. A Mollie start must not replay that URL.
+        $this->sessionHasOpenAttempt('contract-1');
+        $paypalUrl = 'https://www.sandbox.paypal.com/checkoutnow?token=5O1';
+        $this->contracts->method('findById')
+            ->willReturn($this->contract(ContractState::notFinished(), $paypalUrl, 'order-1', 116.5, 'paypal'));
+        $this->orders->method('isNotFinished')->willReturn(true);
+
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
+    }
+
+    public function testResolve_WhenOpenAttemptHasNoProvider_ReturnsNull(): void
+    {
+        $this->sessionHasOpenAttempt('contract-1');
+        $this->contracts->method('findById')
+            ->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, 'order-1', 116.5, null));
+        $this->orders->method('isNotFinished')->willReturn(true);
+
+        $this->assertNull($this->resolver->resolve(self::PROVIDER, 116.5));
     }
 
     public function testResolve_ToleratesFloatNoiseInTheBasketTotal(): void
@@ -133,7 +157,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->contracts->method('findById')->willReturn($this->contract(ContractState::pending(), self::CHECKOUT_URL, 'order-1', 116.5));
         $this->orders->method('isNotFinished')->willReturn(true);
 
-        $this->assertSame(self::CHECKOUT_URL, $this->resolver->resolve(116.5000001));
+        $this->assertSame(self::CHECKOUT_URL, $this->resolver->resolve(self::PROVIDER, 116.5000001));
     }
 
     public function testResolve_DoesNotForgetTheOpenAttempt(): void
@@ -143,7 +167,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $this->sessionHasOpenAttempt('contract-1');
         $this->contracts->method('findById')->willReturn(null);
 
-        $this->resolver->resolve(116.5);
+        $this->resolver->resolve(self::PROVIDER, 116.5);
 
         $this->assertSame('contract-1', $this->session->getVariable(OpenCheckoutAttemptRegistry::SESSION_KEY));
     }
@@ -157,7 +181,8 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         ContractState $state,
         ?string $redirectUrl,
         ?string $orderId,
-        float $snapshotTotal
+        float $snapshotTotal,
+        ?string $provider = self::PROVIDER
     ): PaymentContractInterface&MockObject {
         $snapshot = $this->createMock(BasketSnapshot::class);
         $snapshot->method('getTotalGross')->willReturn($snapshotTotal);
@@ -165,6 +190,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
         $contract = $this->createMock(PaymentContractInterface::class);
         $contract->method('getState')->willReturn($state);
         $contract->method('getStateValue')->willReturn($state->getValue());
+        $contract->method('getProvider')->willReturn($provider);
         $contract->method('getProviderRedirectUrl')->willReturn($redirectUrl);
         $contract->method('getOrderId')->willReturn($orderId);
         $contract->method('getBasketSnapshot')->willReturn($snapshot);
