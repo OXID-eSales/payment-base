@@ -5,6 +5,17 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
+- `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
+  AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was
+  inside the sealer, so payment-base keeps working alone; `SealedChannelSealPrimitives` delegates to the crypto core of the optional
+  module `oxid-esales/sealed-channel` (`P256`, `GcmBox`). `SealPrimitivesFactory` picks by what the autoloader finds: no module
+  setting, no activation order. **The envelope (version 1, `docs/payments-keys.md` of oxid-fe-user) and the query
+  `paymentClientConfig` are unchanged**; both primitive sets reproduce the shared vector byte for byte.
+- R5 proof: `SealedConfigWithAndWithoutTest` seals the vector in four fresh PHP processes (as installed, without GraphQL,
+  without the sealed-channel module, without either; the named namespaces are not found at all). payment-base does not
+  require the sealed-channel module; the PHPStan bootstrap stubs its two classes for the analysis of payment-base alone.
+
 ### Changed (PSP-SWITCH) - the in-flight replay rejoins only an attempt of the same provider
 - `Checkout\InFlightCheckoutAttemptResolverInterface::resolve(string $provider, float $liveBasketTotal)` (was
   `resolve(float)`): an open attempt of another provider is not in flight. Before, a Mollie start after a PayPal cancel

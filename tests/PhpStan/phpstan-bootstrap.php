@@ -678,3 +678,25 @@ if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {
 
 // A10 - the optional oxid-admin-graphql classes the admin payment API relies on (shared with the unit suite).
 require_once __DIR__ . '/../Support/admin-api-stubs.php';
+
+// SEAL-1 - the optional sealed-channel module (oxid-esales/sealed-channel). payment-base does not require it: its
+// primitives are used when the module is installed (SealedChannelSealPrimitives), and the analysis of payment-base alone
+// has to know their signatures.
+if (!class_exists(\OxidEsales\SealedChannel\Crypto\P256::class, false)) {
+    eval(
+        'namespace OxidEsales\\SealedChannel\\Crypto; '
+        . 'final class P256 { '
+        . '  public static function publicKeyFromRaw(string $point): \\OpenSSLAsymmetricKey { throw new \\LogicException(); } '
+        . '  public static function sharedSecret(\\OpenSSLAsymmetricKey $private, \\OpenSSLAsymmetricKey $peerPublic): string { return ""; } '
+        . '  public static function rawPublicKey(\\OpenSSLAsymmetricKey $key): string { return ""; } '
+        . '}'
+    );
+}
+if (!class_exists(\OxidEsales\SealedChannel\Crypto\GcmBox::class, false)) {
+    eval(
+        'namespace OxidEsales\\SealedChannel\\Crypto; '
+        . 'final class GcmBox { '
+        . '  public static function encrypt(string $key, string $iv, string $aad, string $plaintext): string { return ""; } '
+        . '}'
+    );
+}
