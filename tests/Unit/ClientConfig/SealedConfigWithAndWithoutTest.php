@@ -11,7 +11,6 @@ namespace OxidEsales\PaymentBase\Tests\Unit\ClientConfig;
 
 use OxidEsales\PaymentBase\ClientConfig\BuiltInSealPrimitives;
 use OxidEsales\PaymentBase\ClientConfig\SealedChannelSealPrimitives;
-use OxidEsales\PaymentBase\ClientConfig\SealPrimitivesFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -51,8 +50,10 @@ final class SealedConfigWithAndWithoutTest extends TestCase
         $exit = proc_close($process);
 
         $this->assertSame(0, $exit, $output);
-        $installed = SealPrimitivesFactory::sealedChannelAvailable();
-        $expected = $moduleExpected && $installed ? SealedChannelSealPrimitives::class : BuiltInSealPrimitives::class;
-        $this->assertSame('OK ' . $expected, $output);
+        // the process (not this test) knows whether the shop's autoloader, which carries the module, was visible to it
+        $this->assertMatchesRegularExpression('/^OK (\S+) installed=([01])$/', $output);
+        preg_match('/^OK (\S+) installed=([01])$/', $output, $found);
+        $expected = $moduleExpected && $found[2] === '1' ? SealedChannelSealPrimitives::class : BuiltInSealPrimitives::class;
+        $this->assertSame($expected, $found[1]);
     }
 }

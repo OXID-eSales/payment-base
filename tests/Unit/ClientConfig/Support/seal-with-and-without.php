@@ -12,7 +12,7 @@
  *   php seal-with-and-without.php "OxidEsales\\GraphQL\\,TheCodingMachine\\GraphQLite\\"   (no GraphQL)
  *   php seal-with-and-without.php "OxidEsales\\SealedChannel\\"                             (no sealed channel)
  *
- * Prints "OK <primitives class>" on success, or the first failure and exit code 1. SHOP_AUTOLOAD names the autoloader
+ * Prints "OK <primitives class> installed=<0|1>" on success (installed: the module is visible to the process), or the first failure and exit code 1. SHOP_AUTOLOAD names the autoloader
  * of a shop (default /var/www/vendor/autoload.php, where the sealed-channel module is installed when it is); without
  * one the module's own vendor directory is used.
  */
@@ -80,7 +80,7 @@ try {
     if (get_object_vars($envelope) !== $vector['envelope']) {
         throw new RuntimeException('The envelope differs from the shared vector');
     }
-    echo 'OK ', $primitives::class, "\n";
+    echo 'OK ', $primitives::class, ' installed=', SealPrimitivesFactory::sealedChannelAvailable() ? '1' : '0', "\n";
 } catch (Throwable $failure) {
     echo 'FAILED ', $failure->getMessage(), "\n";
     exit(1);
