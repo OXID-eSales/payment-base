@@ -19,7 +19,7 @@ use Doctrine\Migrations\AbstractMigration;
  * migration were restocked by the provider modules' own service and keep NULL; nothing re-runs for them, because
  * restoration is asked only when a refund is booked.
  */
-final class Version20261103110000 extends AbstractMigration
+final class Version20261103120000 extends AbstractMigration
 {
     private const CONTRACTS = 'oe_payments_contract';
     private const COLUMN = 'OXSTOCKRESTOREDAT';

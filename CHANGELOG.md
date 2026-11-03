@@ -16,7 +16,7 @@ All notable changes to this module are documented here. Format follows
   by the provider's redelivery), so admin, webhook and intent behave the same.
 - `Stock\OxidStockRestorationService`: the shared implementation of `StockRestorationServiceInterface`, bound in
   payment-base's `services.yaml`. Respects `blUseStock` and `blAllowNegativeStock`; restores once per order (claim
-  `OXSTOCKRESTOREDAT` on the contract, migration `Version20261103110000`; given back when the restoration fails).
+  `OXSTOCKRESTOREDAT` on the contract, migration `Version20261103120000`; given back when the restoration fails).
 
 ### Changed (VR-21 F3)
 - `ProviderRefundLedgerInterface::book()` takes a trailing `bool $succeeded` (false while the refund is pending);

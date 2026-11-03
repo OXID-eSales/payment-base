@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Integration\Migrations;
 
 use Doctrine\Migrations\Query\Query;
-use OxidEsales\PaymentBase\Migrations\Version20261103110000;
+use OxidEsales\PaymentBase\Migrations\Version20261103120000;
 use Psr\Log\NullLogger;
 
 /**
@@ -26,7 +26,7 @@ final class StockRestoredMigrationTest extends MigrationTestBase
 
     public function testUp_OnAMigratedShop_PlansNothing(): void
     {
-        $migration = new Version20261103110000($this->connection, new NullLogger());
+        $migration = new Version20261103120000($this->connection, new NullLogger());
 
         $migration->up(clone $this->schema);
 
@@ -35,7 +35,7 @@ final class StockRestoredMigrationTest extends MigrationTestBase
 
     public function testDown_DropsTheColumn(): void
     {
-        $migration = new Version20261103110000($this->connection, new NullLogger());
+        $migration = new Version20261103120000($this->connection, new NullLogger());
 
         $migration->down(clone $this->schema);
 
@@ -45,7 +45,7 @@ final class StockRestoredMigrationTest extends MigrationTestBase
     /**
      * @return list<string>
      */
-    private function plannedSql(Version20261103110000 $migration): array
+    private function plannedSql(Version20261103120000 $migration): array
     {
         return array_map(static fn (Query $query): string => $query->getStatement(), $migration->getSql());
     }
