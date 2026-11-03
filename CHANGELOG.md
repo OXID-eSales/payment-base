@@ -5,6 +5,14 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (VR-20) - both commit legs check the confirmed amount; a contract never guesses its money
+- `CheckoutReturnResponder` (the browser return) refuses a provider amount or currency that differs from the contract,
+  like `ContractCommitService` (the webhook) always did: nothing is dispatched, the contract stays open, the refusal is
+  logged with both figures. One rule for both legs: `Service\Commit\ConfirmedAmount::matches()` (half a cent of float
+  noise tolerated). An already-processed return carries no amount and is not checked.
+- `ContractService` builds the contract amount from the basket price strictly and the currency through
+  `ShopCurrency::nameOf()`: no price or no currency refuses the contract instead of defaulting to 0.00 / EUR.
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was
