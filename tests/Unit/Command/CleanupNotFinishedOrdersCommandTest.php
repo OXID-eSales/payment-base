@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Command;
 
 use OxidEsales\PaymentBase\Command\CleanupNotFinishedOrdersCommand;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface;
 use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface;
 use OxidEsales\PaymentBase\Service\Result\NotFinishedOrderCleanupResult;
@@ -42,7 +43,7 @@ final class CleanupNotFinishedOrdersCommandTest extends TestCase
         $this->settings = $this->createMock(NotFinishedOrderCleanupSettingsInterface::class);
         $this->settings->method('getCleanupPeriodDays')->willReturn(7);
 
-        $command = new CleanupNotFinishedOrdersCommand($this->service, $this->settings);
+        $command = new CleanupNotFinishedOrdersCommand($this->service, $this->settings, new ThrowableSummary([]));
         (new Application())->add($command);
         $this->tester = new CommandTester($command);
     }
@@ -51,13 +52,13 @@ final class CleanupNotFinishedOrdersCommandTest extends TestCase
     {
         $this->assertSame(
             'oe:payments:not_finished:cleanup',
-            (new CleanupNotFinishedOrdersCommand($this->service, $this->settings))->getName()
+            (new CleanupNotFinishedOrdersCommand($this->service, $this->settings, new ThrowableSummary([])))->getName()
         );
     }
 
     public function testHelpTellsTheOperatorHowToRunIt(): void
     {
-        $help = (new CleanupNotFinishedOrdersCommand($this->service, $this->settings))->getHelp();
+        $help = (new CleanupNotFinishedOrdersCommand($this->service, $this->settings, new ThrowableSummary([])))->getHelp();
 
         $this->assertStringContainsString(
             'bin/oe-console oe:payments:not_finished:cleanup',
@@ -143,12 +144,13 @@ final class CleanupNotFinishedOrdersCommandTest extends TestCase
      */
     public function testReportsFailureWhenTheServiceThrows(): void
     {
-        $this->service->method('cleanup')->willThrowException(new RuntimeException('table missing'));
+        $this->service->method('cleanup')->willThrowException(new RuntimeException('table missing, params ["jane@example.test"]'));
 
         $exitCode = $this->tester->execute([]);
 
         $this->assertSame(Command::FAILURE, $exitCode);
-        $this->assertStringContainsString('table missing', $this->tester->getDisplay());
+        $this->assertStringContainsString('Cleanup failed: ' . RuntimeException::class, $this->tester->getDisplay());
+        $this->assertStringNotContainsString('jane@example.test', $this->tester->getDisplay());
     }
 
     public function testWarnsWhenSomeOrdersCouldNotBeCleaned(): void

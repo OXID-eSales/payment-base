@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Service;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -31,7 +32,8 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
 {
     public function __construct(
         private readonly Connection $connection,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -59,7 +61,7 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         } catch (\Exception $e) {
             $this->logger->error('Failed to update OXPAID', [
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return false;
         }
@@ -89,7 +91,7 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         } catch (\Exception $e) {
             $this->logger->error('Failed to update OXPAID by transaction ID', [
                 'transaction_id' => $transactionId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return false;
         }
@@ -115,7 +117,7 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         } catch (\Exception $e) {
             $this->logger->error('Failed to update OXTRANSSTATUS', [
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return false;
         }
@@ -141,7 +143,7 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         } catch (\Exception $e) {
             $this->logger->error('Failed to update OXTRANSID', [
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return false;
         }
@@ -195,7 +197,7 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         } catch (\Exception $e) {
             $this->logger->error('Failed to mark order as paid', [
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return false;
         }

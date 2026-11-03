@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Repository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use RuntimeException;
 
 /**
@@ -30,7 +31,8 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
     private const STALE_CLAIM_SECONDS = 600;
 
     public function __construct(
-        private readonly Connection $connection
+        private readonly Connection $connection,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -104,7 +106,7 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
 
             $this->connection->update(self::TABLE_NAME, $data, ['OXEVENTID' => $eventId]);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update webhook log status: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to update webhook log status: ' . $this->throwableSummary->toLine($e), 0, $e);
         }
     }
 }

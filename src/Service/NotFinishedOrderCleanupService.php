@@ -23,7 +23,6 @@ use OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface;
 use OxidEsales\PaymentBase\Service\Commit\PaymentConfirmation;
 use OxidEsales\PaymentBase\Service\Result\NotFinishedOrderCleanupResult;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use RuntimeException;
 use Throwable;
 
@@ -38,8 +37,6 @@ class NotFinishedOrderCleanupService implements NotFinishedOrderCleanupServiceIn
 
     private const MINIMUM_PERIOD_DAYS = 1;
 
-    private readonly LoggerInterface $logger;
-
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly ContractRepositoryInterface $contractRepository,
@@ -48,9 +45,8 @@ class NotFinishedOrderCleanupService implements NotFinishedOrderCleanupServiceIn
         private readonly ProviderPaymentGatewaysInterface $gateways,
         private readonly ContractCommitServiceInterface $commits,
         private readonly ThrowableSummaryInterface $throwableSummary,
-        ?LoggerInterface $logger = null
+        private readonly LoggerInterface $logger
     ) {
-        $this->logger = $logger ?? new NullLogger();
     }
 
     public function cleanup(

@@ -16,11 +16,13 @@ use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * Sprint 8: Contract Capture/Refund Tracking Tests
@@ -57,7 +59,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->connection = $connectionProvider->get();
 
         // Direct instantiation to work in CI without module activation
-        $this->contractRepository = new DoctrineContractRepository($this->connection);
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
     }
 
     public function tearDown(): void

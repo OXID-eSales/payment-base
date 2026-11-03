@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use Doctrine\DBAL\Connection;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository;
 use PHPUnit\Framework\TestCase;
@@ -53,6 +54,6 @@ final class DoctrineNotFinishedOrderRepositoryMailTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->method('executeStatement')->willReturn($affectedRows);
 
-        return new DoctrineNotFinishedOrderRepository($connection, $mails);
+        return new DoctrineNotFinishedOrderRepository($connection, $mails, new ThrowableSummary([]));
     }
 }

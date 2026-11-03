@@ -17,6 +17,8 @@ use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\ContractFactory;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\InMemoryContracts;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 final class OrderCancelledSubscriberTest extends TestCase
 {
@@ -73,7 +75,7 @@ final class OrderCancelledSubscriberTest extends TestCase
 
     private function reader(InMemoryContracts $contracts): PaymentContractDetailsReader
     {
-        return new PaymentContractDetailsReader($contracts, $this->createStub(TransactionRepositoryInterface::class));
+        return new PaymentContractDetailsReader($contracts, $this->createStub(TransactionRepositoryInterface::class), new FreeTextActionOptions(), new NoActionBounds());
     }
 
     private function event(string $orderId): AdminOrderCancelled

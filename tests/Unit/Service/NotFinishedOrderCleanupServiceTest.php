@@ -30,6 +30,7 @@ use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Psr\Log\NullLogger;
 
 /**
  * Garbage collection for orders the shop created just before handing the
@@ -385,6 +386,7 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
             $gateways,
             $this->commits,
             $this->createStub(ThrowableSummaryInterface::class),
+            new NullLogger(),
         );
     }
 

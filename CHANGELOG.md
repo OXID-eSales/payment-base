@@ -30,6 +30,51 @@ All notable changes to this module are documented here. Format follows
   implemented it. `ConfigurableRateLimitConfig` takes the global default only (constructor argument `$overrides` gone).
 - `Validation\RateLimit\InMemoryRateLimitStore` moved out of `src/` to `OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore`
   (`tests/Support/Validation/`, autoload-dev). It was never registered; a consumer's tests that used it need a double of their own.
+### Changed (VR-25 D3) - required collaborators: no `= null` / `?? new X()` fallbacks in `src/`
+Constructor arguments that used to default (`?X $x = null` with a `?? new …` or a `?->` no-op behind it, or
+`LoggerInterface $logger = new NullLogger()`) are required now. A service wired short of one fails when the container
+builds it, not in the first request that needs it. Argument order changes where a defaulted flag followed a logger.
+- Now required: `OxidShopOrderService` (`$basketProvider`, `$attemptGuard`, `$orderMails`), `ContractCommitService`,
+  `DoctrineContractRepository`, `ProviderRefundLedger`, `ProviderChargebackLedger`, `NotFinishedOrderCleanupService`,
+  `HeadlessCheckoutService`, `OrderConfirmationMailHandler`, `UserBasketRemovalHandler`, `InFlightCheckoutAttemptResolver`
+  (`$logger`); `PreviousCheckoutAttemptCleaner` (`$logger`, `$context`); `PaymentStepSkipGuard` (`$context`);
+  `CheckoutReturnResponder` (`$logger`, `$contracts`, `$scope`); `ContractMetadataService` (`$addressHmacService`);
+  `PaymentAdminActionDispatcher` (`$refusalFeedback`); `ClientConfigSealer` (`$primitives`, chosen once by
+  `SealPrimitivesFactory` in `services.yaml`); `PaymentContractDetailsReader` (`$actionOptions`, `$bounds`);
+  `AbstractAcpCheckoutService` (`$contractOpening`, `$userBaskets`, `$buyers`, `$contractCommit`: `create_checkout` no
+  longer answers "not wired", `commitPaid()` no longer throws `LogicException`); `AbstractHandler` / `EarlyOrderCreationHandler`
+  (`$eventDispatcher`: the handlers no longer skip the follow-up event); `EventDispatcher` (`$listenerProvider`);
+  `EventBroker` (`$translators`, `$logger`, `$resolver`); `RefundIntentHandler` (all four: it no longer no-ops without a
+  repository or broker). `FraudCheckHandler` takes `$logger` before the `$enabled` / `$failOpenOnCheckError` flags.
+- `WebhookLogService` takes `$logger` and `ThrowableSummaryInterface $throwableSummary` (see L1 below); `$shouldLogPayload`
+  stays an optional policy switch.
+- `services.yaml` registers `EventBroker`, `EventBrokerInterface`, `ProviderEventResolverInterface` and a default
+  `PaymentCaptureStatusQueryInterface` (`UnknownPaymentCaptureStatusQuery`; a provider that binds its own under the same id
+  overrides it). The providers' identical `EventBroker` definitions are redundant now. `RefundIntentHandler` is wired
+  without `@?` references.
+- Optional by design, listed with the reason in `tests/Unit/Smoke/RequiredCollaboratorsTest.php`: value objects and
+  requests, clock / enable-switch closures, the three Stripe-only diagnostic `$eventLogger` sinks, and the four
+  container-lookup seams of `PaymentAdminController` (OXID admin controllers get no constructor DI; the lookup throws when
+  the service is missing).
+
+### Changed (VR-25 / sprint 18 L1 follow-up) - throwable messages stay out of logs and stored strings
+A database or provider exception can carry the statement's bound parameters (the customer's e-mail, address). Log
+contexts now carry `'throwable' => ThrowableSummaryInterface::fromThrowable()` (class, code, SQLSTATE, vouched provider
+fields) where they carried `'error' => $e->getMessage()`, and the strings that are stored or rethrown use `toLine()`.
+`ThrowableSummaryInterface` is a required constructor argument of: `OrderPaymentStateService` (5 sites),
+`DoctrineContractRepository` (4 log sites + the `findByStateAndProvider` refusal), `WebhookLogService` (3),
+`ContractCommitService`, `CheckoutReturnResponder` (3), `DoctrineWebhookLogRepository` and `DoctrineNotFinishedOrderRepository`
+(the `RuntimeException` messages), `UserBasketRemovalHandler`, `EarlyOrderCreationHandler` (its file-log line carried the
+message), `PreviousCheckoutAttemptCleaner`, `PanelActionBoundsResolver`, `CleanupNotFinishedOrdersCommand` (console
+output). The `Order` model extension reads it from the container. `services.yaml` wires it for every definition it
+owns; providers that define these classes themselves and pass positional arguments must add it (see the VR-25 report).
+Left as they are because the message is payment-base's own text (refusals, `HeadlessCheckoutException`,
+`UnsupportedPaymentActionException`, `StaleContractException`).
+
+### Added (VR-25 D3)
+- `tests/Unit/Smoke/RequiredCollaboratorsTest`: fails on a constructor parameter defaulting to `null` / `new X()` or a
+  `?? new X()` in `src/` unless it is on the explicit allow-list. `tests/Integration/Container/ContainerBootTest`: every
+  public service id of `services.yaml` resolves from the shop container.
 
 ### Added (VR-23 T1) - late money and "payment at risk"
 - `LateMoney\LateMoneyResolverInterface` (public service): one rule for money on a contract that can no longer take it

@@ -15,12 +15,14 @@ use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Refund\ProviderChargebackLedger;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Psr\Log\NullLogger;
 
 /**
  * VR-21 F3 (S-M6) — a provider reports the chargeback total of a payment, not each chargeback: one audit
@@ -41,12 +43,13 @@ final class ProviderChargebackLedgerTest extends TestCase
             ->get(ConnectionProviderInterface::class)->get();
         $this->ledger = new ProviderChargebackLedger(
             $this->connection,
-            new DoctrineContractRepository($this->connection),
+            new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([])),
             new DoctrineTransactionRepository($this->connection),
+            new NullLogger(),
         );
 
         $this->contractId = 'it_vr21cb_' . bin2hex(random_bytes(8));
-        (new DoctrineContractRepository($this->connection))->save(new PaymentContract(1, 'it_vr21_user', BasketSnapshot::fromArray([
+        (new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([])))->save(new PaymentContract(1, 'it_vr21_user', BasketSnapshot::fromArray([
             'items' => [], 'discounts' => [],
             'totalGross' => 100.0, 'totalNet' => 84.03, 'totalVat' => 15.97, 'currency' => 'EUR',
         ]), $this->contractId));

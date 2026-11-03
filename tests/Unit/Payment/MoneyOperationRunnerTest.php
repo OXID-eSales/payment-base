@@ -48,6 +48,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 /**
  * VR-22 A3 - the one money path: rights, step-up, audit, the order lock, the atomic idempotency claim, the policies,
@@ -605,7 +606,7 @@ final class MoneyOperationRunnerTest extends TestCase
 
         return new MoneyOperationRunner(
             $this->contracts,
-            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), $this->optionsResolver()),
+            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), $this->optionsResolver(), new NoActionBounds()),
             $shop,
             $this->lock,
             new OperationIdempotency($this->idempotencyRows, static fn (): DateTimeImmutable => $now),

@@ -24,6 +24,7 @@ use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminAudit;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\GraphQlAdminChannel;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Payment\CaptureOperation;
 use OxidEsales\PaymentBase\Payment\CapturePolicy;
 use OxidEsales\PaymentBase\Payment\MoneyOperationRunner;
@@ -43,6 +44,8 @@ use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryCaptureLedger;
 use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryRefundLedger;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\NullLogger;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 /**
  * Capture, refund and void against the real database (contracts, transactions, the idempotency table, the order
@@ -166,7 +169,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $logger = new NullLogger();
         $runner = new MoneyOperationRunner(
             $this->contracts(),
-            new PaymentContractDetailsReader($this->contracts(), $this->transactions()),
+            new PaymentContractDetailsReader($this->contracts(), $this->transactions(), new FreeTextActionOptions(), new NoActionBounds()),
             new DbalRequestShopOrders($connection),
             new ControllableOrderLock(),
             new OperationIdempotency(new DoctrineIdempotencyRepository($connection)),
@@ -220,7 +223,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
      */
     private function contracts(): ContractRepositoryInterface
     {
-        return $this->contractRepository ??= new DoctrineContractRepository($this->connection());
+        return $this->contractRepository ??= new DoctrineContractRepository($this->connection(), new NullLogger(), new ThrowableSummary([]));
     }
 
     private function transactions(): TransactionRepositoryInterface

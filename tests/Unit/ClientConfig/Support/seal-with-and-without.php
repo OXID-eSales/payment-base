@@ -69,7 +69,8 @@ try {
             EcKeys::privateKeyFromJwk($vector['serverPrivateKeyJwk']),
             [32 => EcKeys::b64urlDecode($vector['salt']), 12 => EcKeys::b64urlDecode($vector['iv'])],
             $vector['issuedAt']
-        )
+        ),
+        $primitives
     );
     $envelope = $sealer->seal(
         $vector['provider'],

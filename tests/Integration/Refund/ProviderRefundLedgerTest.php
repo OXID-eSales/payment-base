@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Refund\ProviderRefundLedger;
 use OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
@@ -25,6 +26,7 @@ use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Psr\Log\NullLogger;
 
 /**
  * VR-21 F3 — the admin action and the provider's webhook both report one refund;
@@ -50,12 +52,13 @@ final class ProviderRefundLedgerTest extends TestCase
         $this->connection = $container->get(ConnectionProviderInterface::class)->get();
         // The ledger locks the contract row on its connection; the repositories must write on the same one,
         // as services.yaml wires all three (doctrine.dbal.connection).
-        $this->contracts = new DoctrineContractRepository($this->connection);
+        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
         $this->ledger = new ProviderRefundLedger(
             $this->connection,
             $this->contracts,
             new DoctrineTransactionRepository($this->connection),
             $this->recordingPolicy(),
+            new NullLogger(),
         );
 
         $this->contractId = 'it_vr21_' . bin2hex(random_bytes(8));

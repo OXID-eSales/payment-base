@@ -16,7 +16,6 @@ use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Throwable;
 
 /**
@@ -40,7 +39,7 @@ class OrderConfirmationMailHandler implements HandlerInterface
         private readonly ContractOrderMailStoreInterface $mails,
         private readonly ShopMailSenderInterface $sender,
         private readonly ThrowableSummaryInterface $throwableSummary,
-        private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly LoggerInterface $logger,
     ) {
     }
 

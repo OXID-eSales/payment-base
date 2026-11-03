@@ -11,6 +11,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 
 class EventDispatcherTest extends TestCase
 {
@@ -18,7 +19,7 @@ class EventDispatcherTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->dispatcher = new EventDispatcher();
+        $this->dispatcher = new EventDispatcher(new EventListenerProvider([]));
     }
 
     private function createTestContract(): PaymentContract

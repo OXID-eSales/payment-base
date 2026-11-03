@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\ClientConfig\Exception\UnknownClientConfigProvider;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnsafeClientConfig;
 use OxidEsales\PaymentBase\ClientConfig\SystemSealInputs;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\ClientConfig\SealPrimitivesFactory;
 
 /**
  * provider id -> allow-listed values -> guard -> sealed for the asking browser.
@@ -29,7 +30,7 @@ final class ClientConfigPublisherTest extends TestCase
         return new ClientConfigPublisher(
             new ClientConfigProviderRegistry($providers),
             new ClientConfigGuard([]),
-            new ClientConfigSealer(new SystemSealInputs())
+            new ClientConfigSealer(new SystemSealInputs(), SealPrimitivesFactory::create())
         );
     }
 

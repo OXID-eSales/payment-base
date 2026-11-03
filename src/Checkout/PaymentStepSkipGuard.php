@@ -9,9 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Checkout;
 
-use OxidEsales\PaymentBase\Adapter\OxidSessionAdapter;
 use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
-use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\Contract\PaymentStepSkipGuardInterface;
 use Throwable;
 
@@ -37,16 +35,12 @@ class PaymentStepSkipGuard implements PaymentStepSkipGuardInterface
 {
     private const SESSION_KEY = 'oepbPaymentStepSkipped';
 
-    private readonly CheckoutContextInterface $context;
-
     /**
      * Sprint 15 / S2: the flag lives in the checkout context (the session for
-     * Twig, the entered scope for headless). Optional so a services.yaml that
-     * predates this keeps the session behaviour.
+     * Twig, the entered scope for headless).
      */
-    public function __construct(?CheckoutContextInterface $context = null)
+    public function __construct(private readonly CheckoutContextInterface $context)
     {
-        $this->context = $context ?? new SessionCheckoutContext(new OxidSessionAdapter());
     }
 
     public function maySkip(): bool

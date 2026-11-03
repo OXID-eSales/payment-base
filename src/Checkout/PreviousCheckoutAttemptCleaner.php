@@ -7,9 +7,9 @@ namespace OxidEsales\PaymentBase\Checkout;
 use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Throwable;
 
 /**
@@ -32,21 +32,17 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
      */
     public const SESSION_CHALLENGE = 'sess_challenge';
 
-    private readonly LoggerInterface $logger;
-
     /**
-     * The context is optional so a consumer whose services.yaml predates
-     * MOL-18 keeps working - it simply does not get the challenge rotation.
-     * Sprint 15 / S2: it is a CheckoutContextInterface (session for Twig,
+     * The context rotates the session challenge (MOL-18). Sprint 15 / S2: it is a CheckoutContextInterface (session for Twig,
      * persisted scope for headless) instead of the session adapter.
      */
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly ShopOrderServiceInterface $orderService,
-        ?LoggerInterface $logger = null,
-        private readonly ?CheckoutContextInterface $context = null
+        private readonly LoggerInterface $logger,
+        private readonly CheckoutContextInterface $context,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
-        $this->logger = $logger ?? new NullLogger();
     }
 
     public function clean(?string $contractId): bool
@@ -93,10 +89,6 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
      */
     private function forgetSessionChallenge(PaymentContractInterface $contract): void
     {
-        if ($this->context === null) {
-            return;
-        }
-
         $orderId = $contract->getOrderId();
         if ($orderId === null || $orderId === '') {
             return;
@@ -144,7 +136,7 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
             $this->logger->error('Could not remove the order of a retried checkout attempt', [
                 'contract_id' => $contractId,
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
         }
     }

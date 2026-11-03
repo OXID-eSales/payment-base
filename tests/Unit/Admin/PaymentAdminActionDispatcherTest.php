@@ -57,7 +57,7 @@ final class PaymentAdminActionDispatcherTest extends TestCase
         };
 
         $registry = $this->registryReturning($provider);
-        $dispatcher = new PaymentAdminActionDispatcher($registry);
+        $dispatcher = new PaymentAdminActionDispatcher($registry, $this->createStub(AdminRefusalFeedbackInterface::class));
 
         $context = new PaymentPanelContext(orderId: 'o1', paymentType: 'oe_payments_stripe_wallet', contract: null);
         $dispatcher->dispatch('refund', ['amount' => 12.0], $context);
@@ -85,18 +85,9 @@ final class PaymentAdminActionDispatcherTest extends TestCase
         self::assertSame([['too_small', 'Too small.']], $shown);
     }
 
-    public function testARefusalWithoutAFeedbackSink_IsStillSwallowed(): void
-    {
-        $dispatcher = new PaymentAdminActionDispatcher($this->registryReturning($this->throwing(new AdminActionRefusedException('too_small', 'Too small.'))));
-
-        $dispatcher->dispatch('refund', [], new PaymentPanelContext('o1', 'oe_payments_stripe_wallet', null));
-
-        $this->addToAssertionCount(1);
-    }
-
     public function testAnyOtherProviderException_StillPropagates(): void
     {
-        $dispatcher = new PaymentAdminActionDispatcher($this->registryReturning($this->throwing(new \RuntimeException('boom'))));
+        $dispatcher = new PaymentAdminActionDispatcher($this->registryReturning($this->throwing(new \RuntimeException('boom'))), $this->createStub(AdminRefusalFeedbackInterface::class));
 
         $this->expectException(\RuntimeException::class);
         $dispatcher->dispatch('refund', [], new PaymentPanelContext('o1', 'oe_payments_stripe_wallet', null));
@@ -105,7 +96,7 @@ final class PaymentAdminActionDispatcherTest extends TestCase
     public function testThrowsWhenNoProviderMatches(): void
     {
         $registry = $this->registryReturning(null);
-        $dispatcher = new PaymentAdminActionDispatcher($registry);
+        $dispatcher = new PaymentAdminActionDispatcher($registry, $this->createStub(AdminRefusalFeedbackInterface::class));
 
         $this->expectException(UnsupportedPaymentActionException::class);
         $dispatcher->dispatch(

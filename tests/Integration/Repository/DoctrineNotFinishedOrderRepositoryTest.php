@@ -41,7 +41,8 @@ class DoctrineNotFinishedOrderRepositoryTest extends IntegrationTestCase
         $this->connection = $container->get(ConnectionProviderInterface::class)->get();
         $this->repository = new DoctrineNotFinishedOrderRepository(
             $this->connection,
-            new DoctrineContractOrderMailStore($this->connection, new ThrowableSummary([]))
+            new DoctrineContractOrderMailStore($this->connection, new ThrowableSummary([])),
+            new ThrowableSummary([])
         );
 
         $this->cleanupTestData();

@@ -11,6 +11,8 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Eshop\Application\Model;
 
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\VoucherReleaseInterface;
 use OxidEsales\PaymentBase\Service\VoucherReleaseSettingsInterface;
 use PHPUnit\Framework\TestCase;
@@ -77,6 +79,11 @@ final class TestableOrder extends Order
     protected function getVoucherReleaseSettings(): VoucherReleaseSettingsInterface
     {
         return $this->settings;
+    }
+
+    protected function getThrowableSummary(): ThrowableSummaryInterface
+    {
+        return new ThrowableSummary([]);
     }
 }
 

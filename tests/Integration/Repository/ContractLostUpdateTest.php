@@ -16,9 +16,11 @@ use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * MOL-17 — the shopper's return leg and the PSP's `paid` webhook both load the contract, mutate their
@@ -37,7 +39,7 @@ final class ContractLostUpdateTest extends IntegrationTestCase
     {
         parent::setUp();
         $this->connection = ContainerFactory::getInstance()->getContainer()->get(ConnectionProviderInterface::class)->get();
-        $this->repository = new DoctrineContractRepository($this->connection);
+        $this->repository = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
         $this->connection->executeStatement('DELETE FROM oe_payments_contract WHERE OXID = ?', [self::ID]);
     }
 

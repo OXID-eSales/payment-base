@@ -15,6 +15,7 @@ use OxidEsales\Eshop\Core\Email as ShopEmail;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\PaymentBase\Adapter\RewritableOrderInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Mail\OrderMailCaptureInterface;
@@ -249,7 +250,7 @@ class Order extends Order_parent implements DefersConfirmationMailInterface, Rew
         } catch (Throwable $e) {
             $this->getOrderMailLogger()->error('[STRP-176] waiting order mails of an ended order not dropped', [
                 'orderId' => $id,
-                'error' => $e->getMessage(),
+                'throwable' => $this->getThrowableSummary()->fromThrowable($e),
             ]);
         }
     }
@@ -273,6 +274,16 @@ class Order extends Order_parent implements DefersConfirmationMailInterface, Rew
             ->get(ContractOrderMailStoreInterface::class);
 
         return $mails;
+    }
+
+    protected function getThrowableSummary(): ThrowableSummaryInterface
+    {
+        /** @var ThrowableSummaryInterface $summary */
+        $summary = ContainerFactory::getInstance()
+            ->getContainer()
+            ->get(ThrowableSummaryInterface::class);
+
+        return $summary;
     }
 
     protected function getOrderMailLogger(): LoggerInterface

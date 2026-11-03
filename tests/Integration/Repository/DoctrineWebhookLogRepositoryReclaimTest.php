@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
@@ -35,7 +36,7 @@ final class DoctrineWebhookLogRepositoryReclaimTest extends TestCase
         $this->connection = ContainerFactory::getInstance()->getContainer()
             ->get(ConnectionProviderInterface::class)
             ->get();
-        $this->repository = new DoctrineWebhookLogRepository($this->connection);
+        $this->repository = new DoctrineWebhookLogRepository($this->connection, new ThrowableSummary([]));
         $this->eventId = 'it_vr19_' . bin2hex(random_bytes(6));
     }
 

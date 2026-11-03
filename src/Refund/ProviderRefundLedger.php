@@ -17,7 +17,6 @@ use OxidEsales\PaymentBase\Contract\Transaction;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use RuntimeException;
 use Throwable;
 
@@ -45,7 +44,7 @@ class ProviderRefundLedger implements ProviderRefundLedgerInterface
         private readonly ContractRepositoryInterface $contracts,
         private readonly TransactionRepositoryInterface $transactions,
         private readonly RefundSettledPolicyInterface $settledPolicy,
-        private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly LoggerInterface $logger,
     ) {
     }
 

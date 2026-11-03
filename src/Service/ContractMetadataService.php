@@ -31,11 +31,8 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
  */
 class ContractMetadataService implements ContractMetadataServiceInterface
 {
-    private ?AddressHmacServiceInterface $addressHmacService;
-
-    public function __construct(?AddressHmacServiceInterface $addressHmacService = null)
+    public function __construct(private readonly AddressHmacServiceInterface $addressHmacService)
     {
-        $this->addressHmacService = $addressHmacService;
     }
 
     /**
@@ -56,9 +53,7 @@ class ContractMetadataService implements ContractMetadataServiceInterface
             $contract->setMetadata('delivery_address_hash', $addressHash);
 
             // Sprint 68b (M9): HMAC-sign the hash to prevent forgery
-            if ($this->addressHmacService !== null) {
-                $contract->setMetadata('delivery_address_hmac', $this->addressHmacService->sign($addressHash));
-            }
+            $contract->setMetadata('delivery_address_hmac', $this->addressHmacService->sign($addressHash));
         }
 
         // Also store delivery address ID if present
@@ -121,10 +116,6 @@ class ContractMetadataService implements ContractMetadataServiceInterface
         $hmac = $contract->getMetadata('delivery_address_hmac');
         if (!is_string($hmac) || $hmac === '') {
             return $hash; // backwards compat: contracts created before HMAC
-        }
-
-        if ($this->addressHmacService === null) {
-            return $hash; // no HMAC service configured
         }
 
         if (!$this->addressHmacService->verify($hash, $hmac)) {

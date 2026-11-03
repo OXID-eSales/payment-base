@@ -13,8 +13,10 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * The two operations the webhook processing uses (VR-17 / VR-24 DC-PB7b): claim a delivery, record its outcome.
@@ -31,7 +33,7 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
 
         $container = ContainerFactory::getInstance()->getContainer();
         $this->connection = $container->get(ConnectionProviderInterface::class)->get();
-        $this->repository = new DoctrineWebhookLogRepository($this->connection);
+        $this->repository = new DoctrineWebhookLogRepository($this->connection, new ThrowableSummary([]));
         $this->cleanupTestData();
     }
 

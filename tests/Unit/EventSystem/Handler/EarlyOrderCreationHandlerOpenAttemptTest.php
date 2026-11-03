@@ -25,6 +25,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Unit\Checkout\RecordingSessionAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -112,6 +113,7 @@ final class EarlyOrderCreationHandlerOpenAttemptTest extends TestCase
             new EarlyOrderWriter($this->orderService, $this->orderRewriter),
             $this->openAttempts,
             $this->createMock(EventDispatcherInterface::class),
+            new ThrowableSummary([]),
         );
         $handler->handle(new ContractDraftCompletedEvent($contract, new EventContext($context)));
 

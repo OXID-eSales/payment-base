@@ -53,6 +53,7 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineContractRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # Sprint 15 / S3 (split out in S8) — the headless previous-attempt lookup,
@@ -87,6 +88,7 @@ services:
     arguments:
       $connection: '@doctrine.dbal.connection'
       $deferredMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # STRP-176 — order mails rendered at early order creation wait on their
@@ -196,6 +198,7 @@ services:
     arguments:
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # --------------------------------------------------------------
@@ -235,6 +238,7 @@ services:
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       # S3: no sess_challenge write under a headless scope
       $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface:
@@ -447,6 +451,14 @@ services:
     autoconfigure: false
     arguments:
       - '@OxidEsales\PaymentBase\ClientConfig\Contract\SealInputsInterface'
+      - '@OxidEsales\PaymentBase\ClientConfig\Contract\SealPrimitivesInterface'
+
+  # VR-25 D3: the sealed-channel module's primitives when it is installed (SEAL-1), payment-base's own otherwise -
+  # the autoloader decides, in the factory, once; the sealer receives what was chosen.
+  OxidEsales\PaymentBase\ClientConfig\Contract\SealPrimitivesInterface:
+    factory: ['OxidEsales\PaymentBase\ClientConfig\SealPrimitivesFactory', 'create']
+    autowire: false
+    autoconfigure: false
 
   OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigPublisherInterface:
     class: OxidEsales\PaymentBase\ClientConfig\ClientConfigPublisher
@@ -634,6 +646,7 @@ services:
       # names its (kept, storno'd) order row, or core refuses every retry.
       # Sprint 15 / S2: through the checkout context (session or headless scope).
       $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
 
   # MOL-18 — "is a checkout attempt already in flight for this session?" A
   # provider's order controller asks this before starting a new attempt and
@@ -682,6 +695,7 @@ services:
     arguments:
       $cleanupService: '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface'
       $settings:       '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     tags:
       - { name: 'console.command', command: 'oe:payments:not_finished:cleanup' }
     public: true
@@ -735,11 +749,32 @@ services:
 
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
     arguments:
-      $contractRepository: '@?OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
-      $broker:             '@?OxidEsales\PaymentBase\EventSystem\Broker\EventBrokerInterface'
-      $captureStatusQuery: '@?OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface'
-      $logger:             '@?Psr\Log\LoggerInterface'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $broker:             '@OxidEsales\PaymentBase\EventSystem\Broker\EventBrokerInterface'
+      $captureStatusQuery: '@OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface'
+      $logger:             '@Psr\Log\LoggerInterface'
     public: true
+
+  # VR-25 D3: the broker routes provider-agnostic request events to the provider's translator (tag
+  # `oe.payment.event_translator`). Every provider used to carry this same definition; it lives here once.
+  OxidEsales\PaymentBase\EventSystem\Broker\EventBroker:
+    arguments:
+      $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $translators: !tagged_iterator oe.payment.event_translator
+      $logger: '@Psr\Log\LoggerInterface'
+      $resolver: '@OxidEsales\PaymentBase\EventSystem\Broker\ProviderEventResolverInterface'
+    public: true
+
+  OxidEsales\PaymentBase\EventSystem\Broker\EventBrokerInterface:
+    alias: OxidEsales\PaymentBase\EventSystem\Broker\EventBroker
+    public: true
+
+  OxidEsales\PaymentBase\EventSystem\Broker\ProviderEventResolverInterface:
+    class: OxidEsales\PaymentBase\EventSystem\Broker\ConventionProviderEventResolver
+
+  # What the PSP says about a capture: unknown unless the provider binds its own query under this id (Stripe does).
+  OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface:
+    class: OxidEsales\PaymentBase\Service\UnknownPaymentCaptureStatusQuery
 
   # ---------------------------------------------------------------
   # Sprint 119 (STRP-129) Phase A2 — central frontend validation
@@ -1024,6 +1059,7 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
       - '@oxid_esales.monolog.logger'
+      - '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
 
   OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader

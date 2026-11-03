@@ -46,7 +46,11 @@ class AbstractAcpCheckoutServiceTest extends TestCase
             $this->contractService,
             $this->contractRepository,
             $this->eventDispatcher,
-            $this->formatter
+            $this->formatter,
+            $this->createMock(ContractOpeningServiceInterface::class),
+            $this->createMock(UserBasketFactoryInterface::class),
+            $this->createMock(GuestUserResolverInterface::class),
+            $this->createMock(ContractCommitServiceInterface::class)
         ) extends AbstractAcpCheckoutService {
             public function createCheckout(array $arguments, AgentContextInterface $agentContext): array
             {
@@ -83,6 +87,11 @@ class AbstractAcpCheckoutServiceTest extends TestCase
         ?GuestUserResolverInterface $buyers = null,
         ?ContractCommitServiceInterface $commit = null,
     ): AbstractAcpCheckoutService {
+        $opening ??= $this->createMock(ContractOpeningServiceInterface::class);
+        $baskets ??= $this->createMock(UserBasketFactoryInterface::class);
+        $buyers ??= $this->createMock(GuestUserResolverInterface::class);
+        $commit ??= $this->createMock(ContractCommitServiceInterface::class);
+
         return new class (
             $this->contractService,
             $this->contractRepository,
@@ -431,20 +440,6 @@ class AbstractAcpCheckoutServiceTest extends TestCase
         ], $this->agentContext);
 
         $this->assertSame('Basket ub-1 not found', $result['error']['message']);
-    }
-
-    public function testDefaultCreateCheckoutWithoutTheHeadlessCollaboratorsSaysSo(): void
-    {
-        $this->formatter->method('validationError')->willReturnCallback(
-            static fn(string $message, ?string $param = null): array => ['error' => ['message' => $message]]
-        );
-
-        $result = $this->createDefaultService()->createCheckout([
-            'items' => [['id' => 'art-1', 'quantity' => 1]],
-            'buyer' => ['email' => 'a@example.com'],
-        ], $this->agentContext);
-
-        $this->assertStringContainsString('not wired', $result['error']['message']);
     }
 
     public function testCommitPaidHandsTheConfirmationToTheCommitService(): void

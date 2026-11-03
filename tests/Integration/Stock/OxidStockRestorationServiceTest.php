@@ -16,6 +16,7 @@ use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInte
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Stock\OxidStockRestorationService;
 use OxidEsales\PaymentBase\Tests\Unit\Stock\RecordingOrderArticle;
@@ -52,7 +53,7 @@ final class OxidStockRestorationServiceTest extends TestCase
         $contract->transitionToPending();
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
         $contract->commitToOrder($this->orderId);
-        (new DoctrineContractRepository($this->connection))->save($contract);
+        (new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([])))->save($contract);
     }
 
     protected function tearDown(): void

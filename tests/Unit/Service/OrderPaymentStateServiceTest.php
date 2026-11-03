@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Service\OrderPaymentStateService;
 use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -38,7 +39,8 @@ class OrderPaymentStateServiceTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->service = new OrderPaymentStateService(
             $this->connection,
-            $this->logger
+            $this->logger,
+            new ThrowableSummary([])
         );
     }
 
@@ -280,7 +282,8 @@ class OrderPaymentStateServiceTest extends TestCase
                 $this->stringContains('Failed to update OXPAID'),
                 $this->callback(function ($context) use ($orderId) {
                     return $context['order_id'] === $orderId
-                        && $context['error'] === 'Database error';
+                        && $context['throwable']['class'] === \Exception::class
+                        && !isset($context['error']);
                 })
             );
 

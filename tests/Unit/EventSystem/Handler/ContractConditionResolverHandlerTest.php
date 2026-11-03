@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 
 /**
  * Tests for ContractConditionResolverHandler.
@@ -32,7 +33,7 @@ class ContractConditionResolverHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(ContractRepositoryInterface::class);
-        $this->dispatcher = new EventDispatcher();
+        $this->dispatcher = new EventDispatcher(new EventListenerProvider([]));
         $this->handler = new ContractConditionResolverHandler(
             $this->repository,
             $this->dispatcher

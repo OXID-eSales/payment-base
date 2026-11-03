@@ -12,11 +12,13 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 use Doctrine\DBAL\Connection;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * MOL-17 — optimistic concurrency on the contract row: the UPDATE matches the loaded version and moves
@@ -31,7 +33,7 @@ final class DoctrineContractRepositoryVersioningTest extends TestCase
     protected function setUp(): void
     {
         $this->connection = $this->createMock(Connection::class);
-        $this->repository = new DoctrineContractRepository($this->connection);
+        $this->repository = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
     }
 
     public function testUpdateMatchesTheLoadedVersionAndMovesItOneUp(): void

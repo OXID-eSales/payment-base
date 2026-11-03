@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * VR-21 F3 — what the ledger refuses before it touches the database. The booking
@@ -49,6 +50,7 @@ final class ProviderRefundLedgerTest extends TestCase
             $this->createMock(ContractRepositoryInterface::class),
             $this->createMock(TransactionRepositoryInterface::class),
             $this->createMock(RefundSettledPolicyInterface::class),
+            new NullLogger(),
         );
     }
 }

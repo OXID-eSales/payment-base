@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Repository;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use RuntimeException;
 
 /**
@@ -31,12 +32,13 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
     private const STATUS_CANCELLED = 'CANCELLED';
 
     /**
-     * VR-18: the mail store is injected, no longer defaulted to a Doctrine one built here - that
-     * default would need the ThrowableSummary the container owns.
+     * VR-18: the mail store is injected, no longer defaulted to a Doctrine one built here. VR-25: a failure's
+     * message may carry statement parameters, so the refusals name the throwable by its summary line.
      */
     public function __construct(
         private readonly Connection $connection,
-        private readonly ContractOrderMailStoreInterface $deferredMails
+        private readonly ContractOrderMailStoreInterface $deferredMails,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -74,7 +76,7 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
             // An empty array here is indistinguishable from "nothing to clean",
             // which would let a broken query masquerade as a healthy shop for
             // as long as the cron keeps running.
-            throw new RuntimeException('Failed to query unfinished orders: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to query unfinished orders: ' . $this->throwableSummary->toLine($e), 0, $e);
         }
     }
 
@@ -92,7 +94,7 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
             ]);
         } catch (Exception $e) {
             throw new RuntimeException(
-                'Failed to cancel order ' . $orderId . ': ' . $e->getMessage(),
+                'Failed to cancel order ' . $orderId . ': ' . $this->throwableSummary->toLine($e),
                 0,
                 $e
             );
@@ -131,7 +133,7 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
             $status = $this->connection->fetchOne($sql, ['id' => $orderId]);
         } catch (Exception $e) {
             throw new RuntimeException(
-                'Failed to read the state of order ' . $orderId . ': ' . $e->getMessage(),
+                'Failed to read the state of order ' . $orderId . ': ' . $this->throwableSummary->toLine($e),
                 0,
                 $e
             );
@@ -153,7 +155,7 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
             return (int) $this->connection->executeStatement($sql, ['orderId' => $orderId]);
         } catch (Exception $e) {
             throw new RuntimeException(
-                'Failed to release vouchers of order ' . $orderId . ': ' . $e->getMessage(),
+                'Failed to release vouchers of order ' . $orderId . ': ' . $this->throwableSummary->toLine($e),
                 0,
                 $e
             );

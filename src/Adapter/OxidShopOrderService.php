@@ -21,7 +21,6 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
-use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
 use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
@@ -56,8 +55,6 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
      */
     public const ERROR_ORDER_EXISTS = 'order_exists';
 
-    private readonly CheckoutBasketProviderInterface $basketProvider;
-
     /**
      * Cancelling an order needs the repository for the same storno + voucher
      * release the cleanup command performs, written once. Sprint 10
@@ -67,30 +64,26 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
      *
      * Sprint 15 / S1 (2026-10-06): the basket is asked from a provider, so a
      * headless checkout (GraphQL Storefront, MCP: basket persisted by id, no
-     * session) and the Twig checkout share this one service. Optional, with
-     * the session provider as default, so a consumer whose services.yaml
-     * predates this keeps its byte-identical behaviour.
+     * session) and the Twig checkout share this one service.
      *
      * Sprint 15 / S3: the attempt guard gives the headless path the
      * one-order-per-attempt rule core enforces for sessions through
-     * `sess_challenge`. Optional for the same reason; without it the service
-     * behaves exactly as before.
+     * `sess_challenge`.
      *
      * STRP-176 (1.6.0): the order mails rendered at creation wait on the
-     * contract the request names. Optional for the same reason; without the
-     * store they are sent at once, as before STRP-176, and without the sender
-     * too they are lost - logged at ERROR.
+     * contract the request names, in the mail store. VR-25 D3: all three are
+     * required - no session-basket default, no unguarded attempt, no mails
+     * sent or lost for want of a store.
      */
     public function __construct(
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
         private readonly OrderRestockInterface $restock,
         private readonly ThrowableSummaryInterface $throwableSummary,
-        ?CheckoutBasketProviderInterface $basketProvider = null,
-        private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
-        private readonly ?ContractOrderMailStoreInterface $orderMails = null
+        private readonly CheckoutBasketProviderInterface $basketProvider,
+        private readonly CheckoutAttemptGuardInterface $attemptGuard,
+        private readonly ContractOrderMailStoreInterface $orderMails
     ) {
-        $this->basketProvider = $basketProvider ?? new SessionBasketProvider();
     }
 
     /**
@@ -100,7 +93,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
     {
         // Claimed before the basket is even loaded: the window between two
         // concurrent submissions is the whole point.
-        $this->attemptGuard?->claim($request);
+        $this->attemptGuard->claim($request);
 
         try {
             [$basket, $user] = $this->validateBasketAndUser($request);
@@ -108,14 +101,14 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
             $this->setOrderFieldsAfterCreation($order, $request);
             $response = $this->buildOrderResponse($order, $basket, $user, $orderState, $request);
         } catch (ShopOrderException $e) {
-            $this->attemptGuard?->release($request);
+            $this->attemptGuard->release($request);
             throw $e;
         } catch (Throwable $e) {
-            $this->attemptGuard?->release($request);
+            $this->attemptGuard->release($request);
             throw $this->wrapOrderCreationError($e, $request);
         }
 
-        $this->attemptGuard?->complete($request, $response->orderId);
+        $this->attemptGuard->complete($request, $response->orderId);
 
         return $response;
     }
@@ -319,7 +312,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
     private function stashOrderMails(Order $order, CreateOrderRequest $request, array $mails): void
     {
         $contractId = $this->contractIdOf($request);
-        if ($this->orderMails === null || $contractId === null) {
+        if ($contractId === null) {
             throw $this->orderMailsNotKept($order, $request, null);
         }
 

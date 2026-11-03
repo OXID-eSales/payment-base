@@ -13,10 +13,10 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * The one way to turn "paid" into COMMITTED outside the return leg.
@@ -39,7 +39,8 @@ class ContractCommitService implements ContractCommitServiceInterface
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,
         private readonly EventDispatcherInterface $dispatcher,
-        private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary,
     ) {
     }
 
@@ -64,7 +65,7 @@ class ContractCommitService implements ContractCommitServiceInterface
         try {
             return $this->runChain($contract, $confirmation);
         } catch (StaleContractException $e) {
-            return $this->settleOnFreshCopy($confirmation, $e->getMessage());
+            return $this->settleOnFreshCopy($confirmation, $this->throwableSummary->toLine($e));
         }
     }
 
@@ -154,7 +155,7 @@ class ContractCommitService implements ContractCommitServiceInterface
         } catch (StaleContractException $again) {
             $this->logger->warning('[ContractCommitService] contract changed twice; leaving it to the other leg', [
                 'contractId' => $fresh->getId(),
-                'error' => $again->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($again),
             ]);
 
             return CommitOutcome::refused('stale_contract');

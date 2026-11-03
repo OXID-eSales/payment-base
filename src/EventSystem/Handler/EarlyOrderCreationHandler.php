@@ -12,6 +12,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
@@ -45,7 +46,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
         private readonly EarlyOrderWriterInterface $earlyOrders,
         // The session's open attempt: the next start continues it.
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
-        ?EventDispatcherInterface $eventDispatcher = null,
+        EventDispatcherInterface $eventDispatcher,
+        private readonly ThrowableSummaryInterface $throwableSummary,
         private readonly ?FileLoggerInterface $eventLogger = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
@@ -90,8 +92,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         } catch (\Throwable $e) {
             $this->logEvent('EarlyOrderCreationHandler: Order creation failed', [
                 'contract_id' => $contract->getId(),
-                'error' => $e->getMessage(),
-                'class' => get_class($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }
@@ -184,11 +185,6 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $contract->transitionToPending();
         $this->contractRepository->save($contract);
 
-        $dispatcher = $this->eventDispatcher;
-        if ($dispatcher === null) {
-            return;
-        }
-
         $pendingEvent = new ContractTransitionedToPendingEvent(
             $contract,
             $event->getContext(),
@@ -199,16 +195,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $contract->getId(),
         ]);
 
-        $dispatcher->dispatch($pendingEvent);
+        $this->eventDispatcher->dispatch($pendingEvent);
     }
 
     private function dispatchOrderCreatedEvent(ContractDraftCompletedEvent $event, string $orderId): void
     {
-        $dispatcher = $this->eventDispatcher;
-        if ($dispatcher === null) {
-            return;
-        }
-
         $orderCreatedEvent = new OrderCreatedEvent(
             $event->getContext(),
             $orderId,
@@ -220,7 +211,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $event->getContractId(),
         ]);
 
-        $dispatcher->dispatch($orderCreatedEvent);
+        $this->eventDispatcher->dispatch($orderCreatedEvent);
     }
 
     /**

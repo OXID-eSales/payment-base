@@ -39,10 +39,6 @@ class ContractConditionResolverHandler extends AbstractHandler
             throw new \DomainException('Cannot transition to PENDING without conditions');
         }
 
-        if ($this->eventDispatcher === null) {
-            return;
-        }
-
         // Dispatch event to trigger EarlyOrderCreationHandler
         // which will create order and transition DRAFT -> NOT_FINISHED -> PENDING
         $draftCompletedEvent = new ContractDraftCompletedEvent(

@@ -15,6 +15,8 @@ use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\ContractFactory;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\InMemoryContracts;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 final class PaymentContractDetailsReaderTest extends TestCase
 {
@@ -85,6 +87,6 @@ final class PaymentContractDetailsReaderTest extends TestCase
         $repository = $this->createStub(TransactionRepositoryInterface::class);
         $repository->method('findByContractId')->willReturn($transactions);
 
-        return new PaymentContractDetailsReader($this->contracts, $repository);
+        return new PaymentContractDetailsReader($this->contracts, $repository, new FreeTextActionOptions(), new NoActionBounds());
     }
 }

@@ -312,8 +312,8 @@ class TestableOrderService extends OxidShopOrderService
         private readonly Order $order,
         ?Basket $basket = new FixtureBasket(),
         ?StaticBasketProvider $basketProvider = null,
-        ?CheckoutAttemptGuardInterface $attemptGuard = null,
-        ?ContractOrderMailStoreInterface $orderMails = null,
+        CheckoutAttemptGuardInterface $attemptGuard = new SpyAttemptGuard(),
+        ContractOrderMailStoreInterface $orderMails = new SpyContractOrderMails(),
     ) {
         $this->basketProvider = $basketProvider ?? new StaticBasketProvider($basket);
         $repository = new SpyOrderRepository();
@@ -370,7 +370,10 @@ final class OxidShopOrderServiceTest extends TestCase
                 new SpyOrderRepository(),
                 new OrderShippingAddressCopier(),
                 new SpyOrderRepository(),
-                new ThrowableSummary([])
+                new ThrowableSummary([]),
+                new StaticBasketProvider(new FixtureBasket()),
+                new SpyAttemptGuard(),
+                new SpyContractOrderMails()
             )
         );
     }
@@ -384,7 +387,15 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository();
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository, new ThrowableSummary([]));
+        $service = new OxidShopOrderService(
+            $repository,
+            new OrderShippingAddressCopier(),
+            $repository,
+            new ThrowableSummary([]),
+            new StaticBasketProvider(new FixtureBasket()),
+            new SpyAttemptGuard(),
+            new SpyContractOrderMails()
+        );
         $this->assertTrue($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1', 'vouchers:order-1', 'restock:order-1'], $repository->calls);
     }
@@ -398,7 +409,15 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository(cancelSucceeds: false);
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository, new ThrowableSummary([]));
+        $service = new OxidShopOrderService(
+            $repository,
+            new OrderShippingAddressCopier(),
+            $repository,
+            new ThrowableSummary([]),
+            new StaticBasketProvider(new FixtureBasket()),
+            new SpyAttemptGuard(),
+            new SpyContractOrderMails()
+        );
         $this->assertFalse($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1'], $repository->calls, 'vouchers and stock must not be released');
     }
@@ -529,14 +548,6 @@ final class OxidShopOrderServiceTest extends TestCase
         self::assertSame('completed', $response->status);
         self::assertSame(['finalize'], $order->events, 'neither deferred nor taken');
         self::assertSame([], $mails->stashed);
-    }
-
-    public function testCreateOrder_WithoutAStore_RefusesTheOrder(): void
-    {
-        $this->expectException(ShopOrderException::class);
-        $this->expectExceptionMessage('could not be kept');
-
-        (new TestableOrderService($this->orderThatRendered()))->createOrder($this->requestFor('contract-1'));
     }
 
     /**
@@ -713,15 +724,6 @@ final class OxidShopOrderServiceTest extends TestCase
         }
 
         self::assertSame(['claim:ub-1', 'release:ub-1'], $guard->calls);
-    }
-
-    public function testCreateOrder_WithoutAGuard_BehavesAsBefore(): void
-    {
-        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK));
-
-        $response = $service->createOrder($this->request());
-
-        self::assertSame('order-1', $response->orderId);
     }
 
     private function requestFor(string $contractId): CreateOrderRequest

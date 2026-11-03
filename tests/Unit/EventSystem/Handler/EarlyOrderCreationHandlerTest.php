@@ -45,7 +45,8 @@ class EarlyOrderCreationHandlerTest extends TestCase
                 $this->createMock(\OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface::class)
             ),
             $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            new \OxidEsales\PaymentBase\Logging\ThrowableSummary([])
         );
     }
 

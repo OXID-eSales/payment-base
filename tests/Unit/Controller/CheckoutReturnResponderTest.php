@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
@@ -28,6 +29,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Psr\Log\NullLogger;
 
 /**
  * Sprint E: the `CheckoutReturnResponder` is the one place the
@@ -92,6 +94,9 @@ final class CheckoutReturnResponderTest extends TestCase
             $this->dispatcher,
             $this->createMock(SessionWriterInterface::class),
             $logger,
+            $this->createMock(ContractRepositoryInterface::class),
+            new HeadlessCheckoutScope(),
+            new ThrowableSummary([]),
         );
 
         self::assertNull($responder->respond('stripe', $this->contract, $this->resolver, []));
@@ -376,6 +381,13 @@ final class CheckoutReturnResponderTest extends TestCase
                 $this->written[] = $orderId;
             }
         };
-        return new CheckoutReturnResponder($this->dispatcher, $writer, contracts: $contracts, scope: $scope);
+        return new CheckoutReturnResponder(
+            $this->dispatcher,
+            $writer,
+            new NullLogger(),
+            $contracts ?? $this->createMock(ContractRepositoryInterface::class),
+            $scope ?? new HeadlessCheckoutScope(),
+            new ThrowableSummary([])
+        );
     }
 }

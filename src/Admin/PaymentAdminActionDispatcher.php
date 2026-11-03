@@ -25,7 +25,7 @@ class PaymentAdminActionDispatcher
 {
     public function __construct(
         private readonly PaymentPanelRegistryInterface $registry,
-        private readonly ?AdminRefusalFeedbackInterface $refusalFeedback = null,
+        private readonly AdminRefusalFeedbackInterface $refusalFeedback,
     ) {
     }
 
@@ -48,7 +48,7 @@ class PaymentAdminActionDispatcher
             $provider->handleAction($action, $request, $context);
         } catch (AdminActionRefusedException $refusal) {
             // The provider refused with a sentence for the admin: the classic tab shows it, it is no failure.
-            $this->refusalFeedback?->show($refusal);
+            $this->refusalFeedback->show($refusal);
         }
     }
 }
