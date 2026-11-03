@@ -29,6 +29,10 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   `ContractCreationHandler` stays (the providers extend it). Kept although never dispatched: `PaymentCapturedEvent`,
   `PaymentFailedEvent`, `ContractCancelledEvent`, `ContractExpiredEvent` - opalsubscription listens for them (open
   decision, sprint 17).
+- The capture/refund templates no provider extends: `Service\AbstractPaymentRefundService`,
+  `AbstractPaymentCaptureService`, `PaymentCaptureService`, `Service\Exception\{Capture,Refund}FailedException`, and
+  `Adapter\Response\VoidResponse` (replaced by `CancellationResponse` long ago). `Adapter\PaymentAdapterInterface` stays:
+  Stripe implements it.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
