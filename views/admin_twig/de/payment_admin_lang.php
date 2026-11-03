@@ -23,6 +23,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_checkout_flow'          => 'Checkout-Ablauf',
     'SHOP_MODULE_GROUP_cleanup'                => 'Bereinigung',
     'SHOP_MODULE_GROUP_headless'               => 'Headless-Checkout (GraphQL, Apps)',
+    'SHOP_MODULE_GROUP_webhooks'               => 'Webhooks',
 
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
@@ -37,6 +38,10 @@ $aLang = [
         => 'Bereinigungszeitraum (Tage) — Alter, ab dem eine unfertige Bestellung bereinigt wird',
     'SHOP_MODULE_iPaymentBaseStaleCheckoutMinutes'
         => 'Timeout für laufende Zahlvorgänge (Minuten) — Alter, ab dem ein Zahlvorgang freigegeben wird',
+    'SHOP_MODULE_sPaymentBaseTrustedProxies'
+        => 'Vertrauenswürdige Reverse-Proxys — Adressen oder CIDR-Bereiche, durch Komma oder Zeilenumbruch getrennt (z. B. die Bereiche von Cloudflare); leer = keine, die verbindende Adresse ist der Aufrufer',
+    'SHOP_MODULE_sPaymentBaseClientIpHeader'
+        => 'Header, in dem diese Proxys die Adresse des Aufrufers übergeben (z. B. CF-Connecting-IP; Standard X-Forwarded-For)',
     'SHOP_MODULE_sPaymentBaseHeadlessReturnOrigins'
         => 'Erlaubte Rücksprung-Origins für Headless-Clients — durch Komma oder Zeilenumbruch getrennt, z. B. https://app.example.com; die Shop-URL ist immer erlaubt; leer = nur der Shop',
 

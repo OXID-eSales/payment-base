@@ -671,6 +671,14 @@ services:
   OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettingsInterface:
     class: OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlSettings
 
+  # VR-19: the webhook caller's address behind the shop's reverse proxies (settings group
+  # "Webhooks"). Public: every provider's webhook controller resolves its rate-limit key with it.
+  OxidEsales\PaymentBase\Webhook\Guard\TrustedProxySettings: ~
+
+  OxidEsales\PaymentBase\Webhook\Guard\TrustedProxyClientIp:
+    factory: ['@OxidEsales\PaymentBase\Webhook\Guard\TrustedProxySettings', 'clientIp']
+    public: true
+
   OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface:
     class: OxidEsales\PaymentBase\Checkout\ReturnUrl\AllowListReturnUrlPolicy
     public: true

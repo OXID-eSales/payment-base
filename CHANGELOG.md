@@ -5,6 +5,13 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-19) - shop-wide trusted proxies for the webhook caller's address
+- Module settings `sPaymentBaseTrustedProxies` (addresses / CIDR ranges of the reverse proxies in front of the shop;
+  empty = none) and `sPaymentBaseClientIpHeader` (default `X-Forwarded-For`), group "Webhooks".
+- `Webhook\Guard\TrustedProxyClientIp` is a public service built from them (`TrustedProxySettings`): the address
+  every provider's webhook rate limit keys on. A proxy's header is believed only when the request comes from a
+  configured proxy; an unreadable setting store trusts none (REMOTE_ADDR).
+
 ### Added (VR-16) - `oe-payment-base-schema-check`, the deploy gate for the database schema
 - `vendor/bin/oe-payment-base-schema-check` asks the shop's migration wrapper `migrations:up-to-date oe_payment_base`:
   exit 0 up to date, 1 migrations pending, 2 cannot check (no wrapper, shop not set up). It never skips. Run it after
