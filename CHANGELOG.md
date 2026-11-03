@@ -80,6 +80,25 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   noise tolerated). An already-processed return carries no amount and is not checked.
 - `ContractService` builds the contract amount from the basket price strictly and the currency through
   `ShopCurrency::nameOf()`: no price or no currency refuses the contract instead of defaulting to 0.00 / EUR.
+### Added (VR-21 F3) - `Refund\ProviderRefundLedgerInterface`: every provider refund booked once
+- `book(contractId, providerRefundId, amount, currency, source)` books a refund the provider made on its contract
+  exactly once, keyed by the provider's refund id, whichever path reports it first (admin action, webhook, refund
+  intent): one DB transaction locks the contract row, writes the `refund` transaction row, then adds to the
+  contract's refunded total - both or neither. A second report of the same id answers `RefundBooking::duplicate()`
+  and changes nothing. Refused: empty refund id, non-positive amount, a currency other than the contract's, an
+  unknown contract. Public service; the providers move their refund bookings onto it (sprint 21 F4-F6).
+- Migration `Version20261103100000`: unique `(OXCONTRACTID, OXTYPE, OXTRANSACTIONID)` on `oe_payments_transaction`.
+  Rows without a provider id (NULL) are not affected. A shop that already holds duplicates is stopped and they are
+  named (none on pay1 or the dev shop, 2026-11-03).
+
+### Fixed (VR-21) - a refund intent cannot be retargeted, overshoot, or lose decimals
+- `RefundIntentHandler`: the intent's correlation keys (e.g. opalreturns' `returnId`) still travel in the provider's
+  context, but no longer replace `providerName`, `contractId`, `orderId` or `amount` - before, a colliding key
+  retargeted the provider action while the logs showed the base values.
+- A refund of captured money above the contract's remaining refundable amount is refused (logged, nothing
+  dispatched). When no capture amount was recorded the provider stays the bound, as before.
+- The kept amount of a partial capture is rounded to the currency's own decimals (`MinorUnitConverter`), not to two:
+  KWD 10.000 - 3.333 keeps 6.667.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,

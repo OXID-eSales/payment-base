@@ -260,6 +260,84 @@ class RefundIntentHandlerTest extends TestCase
         $this->assertSame($contract->getId(), $ctx->get('contractId'));
     }
 
+    /**
+     * VR-21 F7 — the intent's correlation keys travel along, but they never
+     * replace what payment-base decided: provider, contract, order, amount.
+     */
+    public function testCorrelationKeysCannotReplaceTheBaseKeys(): void
+    {
+        $contract = $this->fulfilledContract(provider: 'stripe');
+        $contract->setCapturedAmount(100.0);
+        $captured = $this->captureDispatched($broker);
+
+        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+            ->__invoke($this->stubIntent('order-1', 25.0, correlation: [
+                'returnId' => 'ret-42',
+                'providerName' => 'paypal',
+                'contractId' => 'someone-elses-contract',
+                'orderId' => 'order-2',
+                'amount' => 999.0,
+            ]));
+
+        $context = $captured->event->getContext();
+        $this->assertSame('ret-42', $context->get('returnId'));
+        $this->assertSame('stripe', $context->get('providerName'));
+        $this->assertSame($contract->getId(), $context->get('contractId'));
+        $this->assertSame('order-1', $context->get('orderId'));
+        $this->assertSame(25.0, $context->get('amount'));
+    }
+
+    public function testACapturedRefundAboveTheRemainingRefundableIsRefused(): void
+    {
+        $contract = $this->fulfilledContract();
+        $contract->setCapturedAmount(100.0);
+        $contract->addRefundedAmount(60.0);
+        $broker = $this->createMock(EventBrokerInterface::class);
+        $broker->expects($this->never())->method('dispatch');
+
+        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+            ->__invoke($this->stubIntent('order-1', 50.0));
+    }
+
+    public function testACapturedRefundWithinTheRemainingRefundableIsDispatched(): void
+    {
+        $contract = $this->fulfilledContract();
+        $contract->setCapturedAmount(100.0);
+        $contract->addRefundedAmount(60.0);
+        $broker = $this->expectDispatchInstanceOf(RefundRequestedEvent::class);
+
+        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+            ->__invoke($this->stubIntent('order-1', 40.0));
+    }
+
+    public function testThePartialCaptureKeepsTheCurrencysOwnDecimals(): void
+    {
+        // KWD has three decimals: 10.000 - 3.333 keeps 6.667, not 6.67.
+        $contract = $this->authorizedContract(authorizedAmount: 10.0, currency: 'KWD');
+        $captured = $this->captureDispatched($broker);
+
+        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker))
+            ->__invoke($this->stubIntent('order-1', 3.333));
+
+        $this->assertInstanceOf(CaptureRequestedEvent::class, $captured->event);
+        $this->assertSame(6.667, $captured->event->getAmount());
+    }
+
+    private function captureDispatched(?EventBrokerInterface &$broker): object
+    {
+        $captured = new \stdClass();
+        $broker = $this->createMock(EventBrokerInterface::class);
+        $broker->expects($this->once())->method('dispatch')->willReturnCallback(
+            static function (AbstractProviderRequestEvent $event) use ($captured): AbstractProviderRequestEvent {
+                $captured->event = $event;
+
+                return $event;
+            }
+        );
+
+        return $captured;
+    }
+
     public function testHandlerIgnoresNonIntentEventsGracefully(): void
     {
         // LSP guard: PSR-14 listeners can be registered against an
@@ -319,9 +397,9 @@ class RefundIntentHandlerTest extends TestCase
         return $q;
     }
 
-    private function authorizedContract(float $authorizedAmount): PaymentContract
+    private function authorizedContract(float $authorizedAmount, string $currency = 'EUR'): PaymentContract
     {
-        $contract = $this->makeContract(totalGross: $authorizedAmount);
+        $contract = $this->makeContract(totalGross: $authorizedAmount, currency: $currency);
         $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
         $contract->transitionToNotFinished('order-1');
         $contract->transitionToPending();
@@ -353,7 +431,7 @@ class RefundIntentHandlerTest extends TestCase
         return $contract;
     }
 
-    private function makeContract(float $totalGross = 100.0): PaymentContract
+    private function makeContract(float $totalGross = 100.0, string $currency = 'EUR'): PaymentContract
     {
         $basket = BasketSnapshot::fromArray([
             'items'      => [],
@@ -361,7 +439,7 @@ class RefundIntentHandlerTest extends TestCase
             'totalGross' => $totalGross,
             'totalNet'   => $totalGross,
             'totalVat'   => 0.0,
-            'currency'   => 'EUR',
+            'currency'   => $currency,
             'capturedAt' => date('Y-m-d H:i:s'),
         ]);
         return new PaymentContract(1, 'user-1', $basket);
