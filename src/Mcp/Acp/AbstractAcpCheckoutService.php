@@ -19,6 +19,15 @@ use OxidEsales\PaymentBase\Service\ContractServiceInterface;
 
 abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
 {
+    private const ACP_CHANNEL = 'acp';
+
+    /**
+     * What update_checkout may write (as `acp_<field>` metadata): the buyer's
+     * fulfilment choice. Ownership (`acp_agent_id`) and state fields are not
+     * on the list.
+     */
+    private const UPDATABLE_FIELDS = ['shipping', 'selected_fulfillment_option_id', 'fulfillment_address'];
+
     /**
      * Sprint 15 / S7 (GRAPH-QL): the four headless collaborators are optional
      * so a provider service wired before this sprint keeps working; the
@@ -83,7 +92,7 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         try {
             $userId = $this->buyers->resolve($buyer, $address);
             $basketId = $this->userBaskets->create($userId, $lines, $this->paymentId());
-            $contract = $this->contractOpening->open($userId, $basketId, $this->paymentId(), 'acp');
+            $contract = $this->contractOpening->open($userId, $basketId, $this->paymentId(), self::ACP_CHANNEL);
         } catch (HeadlessCheckoutException $e) {
             return $this->formatter->validationError($e->getMessage(), 'items');
         } catch (\InvalidArgumentException $e) {
@@ -125,9 +134,9 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         ));
     }
 
-    public function getCheckout(string $checkoutId): array
+    public function getCheckout(string $checkoutId, AgentContextInterface $agentContext): array
     {
-        $contract = $this->contractRepository->findById($checkoutId);
+        $contract = $this->ownedContract($checkoutId, $agentContext);
         if ($contract === null) {
             return $this->formatter->notFoundError($checkoutId);
         }
@@ -137,9 +146,18 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
 
     public function updateCheckout(string $checkoutId, array $data, AgentContextInterface $agentContext): array
     {
-        $contract = $this->contractRepository->findById($checkoutId);
+        $contract = $this->ownedContract($checkoutId, $agentContext);
         if ($contract === null) {
             return $this->formatter->notFoundError($checkoutId);
+        }
+        if ($contract->getState()->isTerminal()) {
+            return $this->formatter->validationError('Checkout is already in a terminal state', 'checkout_id');
+        }
+
+        foreach (array_keys($data) as $key) {
+            if (!in_array($key, self::UPDATABLE_FIELDS, true)) {
+                return $this->formatter->validationError(sprintf('Field "%s" cannot be updated', $key), (string) $key);
+            }
         }
 
         foreach ($data as $key => $value) {
@@ -158,9 +176,9 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         return $this->formatter->formatCheckout($contract);
     }
 
-    public function cancelCheckout(string $checkoutId): array
+    public function cancelCheckout(string $checkoutId, AgentContextInterface $agentContext): array
     {
-        $contract = $this->contractRepository->findById($checkoutId);
+        $contract = $this->ownedContract($checkoutId, $agentContext);
         if ($contract === null) {
             return $this->formatter->notFoundError($checkoutId);
         }
@@ -176,6 +194,27 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         $this->contractRepository->save($contract);
 
         return $this->formatter->formatCheckout($contract);
+    }
+
+    /**
+     * The contract only when this agent opened it over ACP (channel `acp` and
+     * its own `acp_agent_id`, both written by createCheckout()). Everything
+     * else - another agent's checkout, a storefront contract, an unknown id -
+     * is null, so callers answer "not found" and never confirm an id exists.
+     */
+    private function ownedContract(string $checkoutId, AgentContextInterface $agentContext): ?PaymentContractInterface
+    {
+        $contract = $this->contractRepository->findById($checkoutId);
+        if ($contract === null) {
+            return null;
+        }
+        if ($contract->getMetadata('channel') !== self::ACP_CHANNEL) {
+            return null;
+        }
+
+        $owner = $contract->getMetadata('acp_agent_id');
+
+        return is_string($owner) && $owner !== '' && hash_equals($owner, $agentContext->getAgentId()) ? $contract : null;
     }
 
     /**
@@ -201,7 +240,7 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         array $paymentData,
         AgentContextInterface $agentContext
     ): array {
-        $contract = $this->contractRepository->findById($checkoutId);
+        $contract = $this->ownedContract($checkoutId, $agentContext);
         if ($contract === null) {
             return $this->formatter->notFoundError($checkoutId);
         }
@@ -221,7 +260,6 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
             );
         }
 
-        $contract->setMetadata('acp_agent_id', $agentContext->getAgentId());
         $contract->setMetadata('acp_completed_at', time());
         $this->contractRepository->save($contract);
 

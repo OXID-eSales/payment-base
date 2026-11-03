@@ -115,9 +115,124 @@ class AbstractAcpCheckoutServiceTest extends TestCase
         };
     }
 
+    /**
+     * A contract the agent opened over ACP: channel `acp`, `acp_agent_id` its own.
+     */
+    private function contractOf(string $agentId, string $channel = 'acp', bool $terminal = false): PaymentContractInterface&MockObject
+    {
+        $state = $this->createMock(ContractState::class);
+        $state->method('isTerminal')->willReturn($terminal);
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getState')->willReturn($state);
+        $contract->method('getMetadata')->willReturnMap([
+            ['channel', $channel],
+            ['acp_agent_id', $agentId],
+        ]);
+
+        return $contract;
+    }
+
+    /**
+     * VR-24 H8 / S7: a contract the agent did not open over ACP is
+     * indistinguishable from a missing one - nothing is read, changed,
+     * cancelled or charged, and nothing tells the agent the id exists.
+     *
+     * @return iterable<string, array{string, string}>
+     */
+    public static function foreignContracts(): iterable
+    {
+        yield 'another agent\'s checkout' => ['agent_other', 'acp'];
+        yield 'a storefront contract' => ['agent_test', 'storefront'];
+        yield 'a contract with no agent' => ['', 'acp'];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('foreignContracts')]
+    public function testForeignAgentCannotReadContract(string $agentId, string $channel): void
+    {
+        $this->contractRepository->method('findById')->willReturn($this->contractOf($agentId, $channel));
+        $this->formatter->expects($this->never())->method('formatCheckout');
+        $this->formatter->expects($this->once())->method('notFoundError')->with('c_1')->willReturn(['error' => 'not_found']);
+
+        $this->assertSame(['error' => 'not_found'], $this->createService()->getCheckout('c_1', $this->agentContext));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('foreignContracts')]
+    public function testForeignAgentCannotUpdateContract(string $agentId, string $channel): void
+    {
+        $contract = $this->contractOf($agentId, $channel);
+        $contract->expects($this->never())->method('setMetadata');
+        $this->contractRepository->method('findById')->willReturn($contract);
+        $this->contractRepository->expects($this->never())->method('save');
+        $this->formatter->method('notFoundError')->willReturn(['error' => 'not_found']);
+
+        $this->assertSame(
+            ['error' => 'not_found'],
+            $this->createService()->updateCheckout('c_1', ['shipping' => 'express'], $this->agentContext)
+        );
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('foreignContracts')]
+    public function testForeignAgentCannotCancelContract(string $agentId, string $channel): void
+    {
+        $contract = $this->contractOf($agentId, $channel);
+        $contract->expects($this->never())->method('cancel');
+        $this->contractRepository->method('findById')->willReturn($contract);
+        $this->contractRepository->expects($this->never())->method('save');
+        $this->formatter->method('notFoundError')->willReturn(['error' => 'not_found']);
+
+        $this->assertSame(['error' => 'not_found'], $this->createService()->cancelCheckout('c_1', $this->agentContext));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('foreignContracts')]
+    public function testForeignAgentCannotCompleteContractAndDoesNotBecomeItsOwner(string $agentId, string $channel): void
+    {
+        $contract = $this->contractOf($agentId, $channel);
+        $contract->expects($this->never())->method('setMetadata');
+        $this->contractRepository->method('findById')->willReturn($contract);
+        $this->contractRepository->expects($this->never())->method('save');
+        $this->formatter->method('notFoundError')->willReturn(['error' => 'not_found']);
+
+        $this->assertSame(
+            ['error' => 'not_found'],
+            $this->createService()->completeCheckout('c_1', ['token' => 'spt_1'], $this->agentContext)
+        );
+    }
+
+    public function testUpdateCheckoutRefusesKeysOutsideTheAllowList(): void
+    {
+        $contract = $this->contractOf('agent_test');
+        $contract->expects($this->never())->method('setMetadata');
+        $this->contractRepository->method('findById')->willReturn($contract);
+        $this->contractRepository->expects($this->never())->method('save');
+        $this->formatter->expects($this->once())->method('validationError')
+            ->with('Field "agent_id" cannot be updated', 'agent_id')
+            ->willReturn(['error' => 'refused']);
+
+        $result = $this->createService()->updateCheckout(
+            'c_1',
+            ['shipping' => 'express', 'agent_id' => 'agent_other'],
+            $this->agentContext
+        );
+
+        $this->assertSame(['error' => 'refused'], $result);
+    }
+
+    public function testUpdateCheckoutRefusesATerminalContract(): void
+    {
+        $contract = $this->contractOf('agent_test', terminal: true);
+        $contract->expects($this->never())->method('setMetadata');
+        $this->contractRepository->method('findById')->willReturn($contract);
+        $this->formatter->expects($this->once())->method('validationError')->willReturn(['error' => 'terminal']);
+
+        $this->assertSame(
+            ['error' => 'terminal'],
+            $this->createService()->updateCheckout('c_1', ['shipping' => 'express'], $this->agentContext)
+        );
+    }
+
     public function testGetCheckoutReturnsFormattedContract(): void
     {
-        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract = $this->contractOf('agent_test');
         $this->contractRepository->method('findById')
             ->with('c_1')
             ->willReturn($contract);
@@ -126,7 +241,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
             ->with($contract)
             ->willReturn(['id' => 'c_1', 'status' => 'not_ready_for_payment']);
 
-        $result = $this->createService()->getCheckout('c_1');
+        $result = $this->createService()->getCheckout('c_1', $this->agentContext);
 
         $this->assertSame('c_1', $result['id']);
     }
@@ -139,14 +254,14 @@ class AbstractAcpCheckoutServiceTest extends TestCase
             ->with('missing_id')
             ->willReturn(['error' => ['type' => 'invalid_request']]);
 
-        $result = $this->createService()->getCheckout('missing_id');
+        $result = $this->createService()->getCheckout('missing_id', $this->agentContext);
 
         $this->assertArrayHasKey('error', $result);
     }
 
     public function testUpdateCheckoutSetsMetadata(): void
     {
-        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract = $this->contractOf('agent_test');
         $contract->expects($this->atLeastOnce())->method('setMetadata');
 
         $this->contractRepository->method('findById')->willReturn($contract);
@@ -158,7 +273,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
 
     public function testUpdateCheckoutSetsFulfillmentOption(): void
     {
-        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract = $this->contractOf('agent_test');
         $contract->expects($this->exactly(2))
             ->method('setMetadata');
 
@@ -175,47 +290,35 @@ class AbstractAcpCheckoutServiceTest extends TestCase
 
     public function testCancelCheckoutCancelsNonTerminalContract(): void
     {
-        $state = $this->createMock(ContractState::class);
-        $state->method('isTerminal')->willReturn(false);
-
-        $contract = $this->createMock(PaymentContractInterface::class);
-        $contract->method('getState')->willReturn($state);
+        $contract = $this->contractOf('agent_test');
         $contract->expects($this->once())->method('cancel');
 
         $this->contractRepository->method('findById')->willReturn($contract);
         $this->contractRepository->expects($this->once())->method('save');
         $this->formatter->method('formatCheckout')->willReturn(['status' => 'canceled']);
 
-        $result = $this->createService()->cancelCheckout('c_1');
+        $result = $this->createService()->cancelCheckout('c_1', $this->agentContext);
 
         $this->assertSame('canceled', $result['status']);
     }
 
     public function testCancelCheckoutRejectsTerminalContract(): void
     {
-        $state = $this->createMock(ContractState::class);
-        $state->method('isTerminal')->willReturn(true);
-
-        $contract = $this->createMock(PaymentContractInterface::class);
-        $contract->method('getState')->willReturn($state);
+        $contract = $this->contractOf('agent_test', terminal: true);
         $contract->expects($this->never())->method('cancel');
 
         $this->contractRepository->method('findById')->willReturn($contract);
         $this->formatter->method('validationError')
             ->willReturn(['error' => ['message' => 'terminal']]);
 
-        $result = $this->createService()->cancelCheckout('c_1');
+        $result = $this->createService()->cancelCheckout('c_1', $this->agentContext);
 
         $this->assertArrayHasKey('error', $result);
     }
 
     public function testCompleteCheckoutValidatesToken(): void
     {
-        $state = $this->createMock(ContractState::class);
-        $state->method('isTerminal')->willReturn(false);
-
-        $contract = $this->createMock(PaymentContractInterface::class);
-        $contract->method('getState')->willReturn($state);
+        $contract = $this->contractOf('agent_test');
 
         $this->contractRepository->method('findById')->willReturn($contract);
         $this->formatter->expects($this->once())
@@ -230,11 +333,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
 
     public function testCompleteCheckoutDelegatesToCompletePayment(): void
     {
-        $state = $this->createMock(ContractState::class);
-        $state->method('isTerminal')->willReturn(false);
-
-        $contract = $this->createMock(PaymentContractInterface::class);
-        $contract->method('getState')->willReturn($state);
+        $contract = $this->contractOf('agent_test');
         $contract->expects($this->atLeastOnce())->method('setMetadata');
 
         $this->contractRepository->method('findById')->willReturn($contract);
@@ -251,11 +350,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
 
     public function testCompleteCheckoutRejectsTerminalContract(): void
     {
-        $state = $this->createMock(ContractState::class);
-        $state->method('isTerminal')->willReturn(true);
-
-        $contract = $this->createMock(PaymentContractInterface::class);
-        $contract->method('getState')->willReturn($state);
+        $contract = $this->contractOf('agent_test', terminal: true);
 
         $this->contractRepository->method('findById')->willReturn($contract);
         $this->formatter->method('validationError')
@@ -357,6 +452,7 @@ class AbstractAcpCheckoutServiceTest extends TestCase
         $contract = $this->createMock(PaymentContractInterface::class);
         $contract->method('getId')->willReturn('c_1');
         $contract->method('getState')->willReturn(ContractState::pending());
+        $contract->method('getMetadata')->willReturnMap([['channel', 'acp'], ['acp_agent_id', 'agent_test']]);
         $this->contractRepository->method('findById')->willReturn($contract);
         $commit = $this->createMock(ContractCommitServiceInterface::class);
         $commit->expects($this->once())->method('commit')
