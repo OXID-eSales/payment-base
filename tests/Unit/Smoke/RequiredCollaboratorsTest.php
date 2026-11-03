@@ -44,7 +44,6 @@ final class RequiredCollaboratorsTest extends TestCase
         'GraphQL\\Admin\\Service\\OperationIdempotency::$now' => 'clock seam for tests; the real clock is the only production value',
         'Webhook\\Guard\\RateLimitGuard::$clock' => 'clock seam for tests; the real clock is the only production value',
         'Service\\Factory\\AbstractFileLoggerFactory::$isEnabled' => 'enable switch; null means always on',
-        'Service\\WebhookLogService::$shouldLogPayload' => 'provider policy switch; null means log the payload',
         'Checkout\\Return\\ReturnAccessRequest::$legacyTokens' => 'request value object',
         'EventSystem\\Handler\\EarlyOrderCreationHandler::$eventLogger' => 'optional diagnostic file log only Stripe binds; nothing to default to',
         'EventSystem\\Handler\\PaymentAuthorizedEventHandler::$eventLogger' => 'optional diagnostic file log only Stripe binds; nothing to default to',
