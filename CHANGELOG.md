@@ -99,6 +99,13 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   dispatched). When no capture amount was recorded the provider stays the bound, as before.
 - The kept amount of a partial capture is rounded to the currency's own decimals (`MinorUnitConverter`), not to two:
   KWD 10.000 - 3.333 keeps 6.667.
+### Fixed (VR-22 A2) - two admin capture / refund calls can no longer both get a fresh claim
+- `IdempotencyRepositoryInterface::claim(IdempotencyRecord, DateTimeImmutable $now): bool` (new; implementers add it):
+  insert, or take over a record whose expiry is before `$now` (ran out, or released) in one guarded UPDATE. Two
+  concurrent claims of one key cannot both win. `OperationIdempotency::claim()` uses it instead of
+  look-up-then-save, where two re-claims after a release both received FRESH and both called the PSP.
+- `DoctrineIdempotencyRepository::findByKey()` no longer answers `null` on a database error (that read as "fresh, go
+  ahead"); the error surfaces. Stripe's `IdempotentExecutor` then fails the operation instead of calling Stripe.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,

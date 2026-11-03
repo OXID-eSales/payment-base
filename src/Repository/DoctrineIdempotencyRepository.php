@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Exception;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 
@@ -32,37 +33,46 @@ class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
     {
         $data = $this->prepareData($record);
 
-        try {
-            $exists = $this->connection->fetchOne(
-                'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE OXID = :id',
-                ['id' => $record->getId()]
-            );
+        $exists = $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE OXID = :id',
+            ['id' => $record->getId()]
+        );
 
-            if ($exists > 0) {
-                $this->connection->update(self::TABLE, $data, ['OXID' => $record->getId()]);
-                return;
-            }
-
-            $this->connection->insert(self::TABLE, $data);
-        } catch (Exception $e) {
-            throw $e;
+        if ($exists > 0) {
+            $this->connection->update(self::TABLE, $data, ['OXID' => $record->getId()]);
+            return;
         }
+
+        $this->connection->insert(self::TABLE, $data);
     }
 
     public function findByKey(string $key): ?IdempotencyRecord
     {
         $sql = 'SELECT * FROM ' . self::TABLE . ' WHERE OXKEY = :key';
 
+        // VR-22: a database error is not "no record" - that read as a fresh claim.
+        $data = $this->connection->fetchAssociative($sql, ['key' => $key]);
+
+        return $data === false ? null : $this->hydrateRecord($data);
+    }
+
+    public function claim(IdempotencyRecord $record, DateTimeImmutable $now): bool
+    {
+        $data = $this->prepareData($record);
         try {
-            $data = $this->connection->fetchAssociative($sql, ['key' => $key]);
+            $this->connection->insert(self::TABLE, $data);
 
-            if ($data === false) {
-                return null;
-            }
+            return true;
+        } catch (UniqueConstraintViolationException) {
+            $columns = array_keys(array_diff_key($data, ['OXID' => true]));
 
-            return $this->hydrateRecord($data);
-        } catch (Exception $e) {
-            return null;
+            return (int) $this->connection->executeStatement(
+                'UPDATE ' . self::TABLE . ' SET '
+                . implode(', ', array_map(static fn (string $column): string => $column . ' = :' . $column, $columns))
+                . ' WHERE OXID = :id AND OXEXPIRES < :now',
+                array_diff_key($data, ['OXID' => true])
+                    + ['id' => $record->getId(), 'now' => $now->format('Y-m-d H:i:s')]
+            ) > 0;
         }
     }
 

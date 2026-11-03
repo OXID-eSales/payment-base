@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Checkout\Guard;
 
+use DateTimeImmutable;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 use OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface;
 
@@ -33,6 +34,17 @@ final class InMemoryIdempotencyRepository implements IdempotencyRepositoryInterf
         }
 
         return null;
+    }
+
+    public function claim(IdempotencyRecord $record, DateTimeImmutable $now): bool
+    {
+        $held = $this->records[$record->getId()] ?? null;
+        if ($held !== null && $held->getExpiresAt() >= $now) {
+            return false;
+        }
+        $this->save($record);
+
+        return true;
     }
 
     public function deleteExpired(): int
