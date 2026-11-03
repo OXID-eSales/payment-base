@@ -77,6 +77,8 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             );
         }
 
+        $this->assertOwnedByLoggedInUser($row, $request);
+
         $paymentId = $this->paymentIdFor($row, $request);
         $handler = $paymentId !== '' ? $this->handlers->forPaymentMethod($paymentId) : null;
         if ($handler === null) {
@@ -201,6 +203,26 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
             cancelled: $cancelled,
             contractId: (string) $contract->getId(),
             contractState: $contract->getStateValue(),
+        );
+    }
+
+    /**
+     * A logged-in user may only start their own basket, and is told nothing
+     * else about a foreign one. An anonymous token has no user yet: the guest
+     * account claims the basket later (GuestBasketClaim refuses a foreign one).
+     */
+    private function assertOwnedByLoggedInUser(UserBasket $row, HeadlessStartRequest $request): void
+    {
+        if ($this->loadUser($request->userId) === null) {
+            return;
+        }
+        if ((string) $row->getFieldData('oxuserid') === $request->userId) {
+            return;
+        }
+
+        throw new HeadlessCheckoutException(
+            HeadlessCheckoutException::BASKET_FORBIDDEN,
+            sprintf('Basket %s belongs to another user', $request->basketId)
         );
     }
 

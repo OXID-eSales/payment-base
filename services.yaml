@@ -1269,3 +1269,17 @@ services:
     autoconfigure: false
     public: true
     tags: [ 'kernel.event_subscriber' ]
+
+  # VR-24 H8: the MCP/ACP bearer-token plumbing. JwksKeyProvider and JwtTokenValidator need the
+  # issuer, audience and JWKS URI of a deployment, so whoever wires an MCP transport defines them.
+  OxidEsales\PaymentBase\Mcp\Http\HttpClientInterface:
+    class: OxidEsales\PaymentBase\Mcp\Http\CurlHttpClient
+    public: true
+
+  OxidEsales\PaymentBase\Mcp\Auth\ClockInterface:
+    class: OxidEsales\PaymentBase\Mcp\Auth\SystemClock
+    public: true
+
+  OxidEsales\PaymentBase\Mcp\Auth\JwksCacheInterface:
+    class: OxidEsales\PaymentBase\Mcp\Auth\ApcuJwksCache
+    public: true

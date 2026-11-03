@@ -77,6 +77,41 @@ All notable changes to this module are documented here. Format follows
   API no longer drives the provider's classic panel), and the amount arithmetic of `PaymentOperationRules` (only
   `textRefusal()` remains).
 - `AdminPaymentOperation::providerAction()` and `reasonField()`.
+### Changed (VR-24 H8) - MCP/ACP is kept and hardened (S7, S8)
+- **Ownership guard (S7).** `AbstractAcpCheckoutService` serves `get/update/cancel/completeCheckout` only for a
+  contract the calling agent opened over ACP (`channel` = `acp` and `acp_agent_id` = the agent's id, both written by
+  `createCheckout()`). Anything else - another agent's checkout, a storefront contract, an unknown id - answers
+  `notFoundError`, so ids cannot be probed. `completeCheckout()` no longer stamps `acp_agent_id` on whatever contract
+  it is handed (that made any agent the owner). `updateCheckout()` accepts only `shipping`,
+  `selected_fulfillment_option_id` and `fulfillment_address` (a refusal names the field) and refuses a terminal
+  contract.
+- **BC:** `AcpCheckoutServiceInterface::getCheckout()` and `cancelCheckout()` take the `AgentContextInterface` as a
+  second argument. Stripe, Mollie and PayPal inherit both from the abstract class and override neither; nothing in
+  the repositories calls them yet (no MCP transport is wired).
+
+### Added (VR-24 H8) - JWT verification against the issuer's JWKS (S8)
+- `Mcp\Auth\JwtTokenValidator::authenticate(string $jwt): AgentContextInterface` - RS256 only (the algorithm is
+  pinned and checked before any key is fetched: `none`, HMAC and others are refused), signature verified with the
+  JWKS key of the token's `kid` (unknown or missing `kid` refused), `exp` required and not passed, `nbf`, `iss`,
+  `aud` (string or list) and `sub` checked. Failures are `InvalidAgentTokenException` naming the check, never a value.
+- `Mcp\Auth\JwksKeyProvider`: fetches the JWKS through the injectable `Mcp\Http\HttpClientInterface`
+  (`CurlHttpClient`: https only, no redirects, 5 s, 256 KiB cap), caches it through `Mcp\Auth\JwksCacheInterface`
+  (`ApcuJwksCache`) for a bounded TTL (default 300 s, at most 3600 s); only RSA `sig` keys valid for RS256 are usable;
+  a failed or malformed fetch is an error and not cached.
+- `HttpClientInterface`, `ClockInterface`, `JwksCacheInterface` are registered in `services.yaml`; the key provider and
+  the validator need an issuer, an audience and a JWKS URI, so the deployment that wires an MCP transport defines them.
+
+### Fixed (VR-24 H7) - small hardening
+- `ValidationApiController::init()` no longer swallows a container failure: it is fatal now (before, the endpoint kept
+  running with no guards loaded). New protected seam `container()`.
+- `HeadlessCheckoutService::start()` checks that a logged-in user owns the basket before it looks the payment up, and
+  the refusal is the new `HeadlessCheckoutException::BASKET_FORBIDDEN` (`basket_forbidden`, same value as
+  `UserBasketProvider::ERROR_BASKET_FORBIDDEN`). Before, a foreign basket answered `payment_not_supported` naming the
+  basket's payment.
+- `OxidGuestUserService`: a passwordless account whose rights are not `user` is refused (`account_exists`) like core's
+  `User::checkIfEmailExists()` does; before, it was overwritten and demoted to `user`. Guest e-mail parity with core
+  (owner decision 2026-11-03) is pinned in tests: an existing guest record is replaced by the new details.
+  `OxidGuestUserService::findAccount()` (protected seam) returns an extra `rights` key.
 
 ### Changed (VR-22 D4) - interface over concrete, shop id from the shop context
 - `EarlyOrderCreationHandler` and `ContractConditionResolverHandler` work on `PaymentContractInterface`. Before, any

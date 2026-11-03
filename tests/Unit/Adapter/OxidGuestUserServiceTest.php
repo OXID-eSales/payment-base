@@ -53,7 +53,7 @@ final class OxidGuestUserServiceTest extends TestCase
     public function testUserFor_ExistingEmailWithoutPassword_ReusesGuestUser(): void
     {
         $service = new TestableGuestUserService();
-        $service->accounts['guest@example.com'] = ['id' => 'guest-9', 'passwordHash' => ''];
+        $service->accounts['guest@example.com'] = ['id' => 'guest-9', 'passwordHash' => '', 'rights' => 'user'];
 
         $guest = $service->userFor($this->details('guest@example.com'));
 
@@ -61,10 +61,53 @@ final class OxidGuestUserServiceTest extends TestCase
         self::assertSame('guest-9', $service->savedUsers[0]['id'], 'the same account is brought up to date');
     }
 
+    /**
+     * VR-24 / H7, owner decision 2026-11-03: core parity. Core's
+     * User::createUser() (Application/Model/User.php, "check if user exists
+     * AND there is no password - in this case we update") lets a guest
+     * checkout with an e-mail that already has a guest record take that record
+     * over: the new name and address replace the old ones, nothing is refused.
+     * The same account row is updated here (core deletes and re-creates it with
+     * a new id; keeping the id keeps the guest's baskets and orders attached).
+     */
+    public function testUserFor_ExistingGuestEmail_IsOverwrittenWithTheNewDetailsLikeCoreDoes(): void
+    {
+        $service = new TestableGuestUserService();
+        $service->accounts['guest@example.com'] = ['id' => 'guest-9', 'passwordHash' => '', 'rights' => 'user'];
+
+        $service->userFor($this->details('GUEST@example.com'));
+
+        $fields = $service->savedUsers[0]['fields'];
+        self::assertSame('guest-9', $service->savedUsers[0]['id']);
+        self::assertSame('Ada', $fields['oxfname'], 'the earlier guest data is replaced by this checkout\'s');
+        self::assertSame('', $fields['oxpassword'], 'the account stays a guest');
+    }
+
+    /**
+     * Core's User::checkIfEmailExists() treats a row whose rights are not
+     * `user` as existing whatever its password; the guest path must not
+     * overwrite (and demote to `user`) a privileged row.
+     */
+    public function testUserFor_PasswordlessAccountWithPrivilegedRights_IsRefusedAndNeverRewritten(): void
+    {
+        $service = new TestableGuestUserService();
+        $service->accounts['guest@example.com'] = ['id' => 'admin-1', 'passwordHash' => '', 'rights' => 'malladmin'];
+
+        try {
+            $service->userFor($this->details('guest@example.com'));
+            self::fail('a privileged account is never a guest');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::ACCOUNT_EXISTS, $e->errorCode);
+        }
+
+        self::assertSame([], $service->savedUsers);
+        self::assertSame([], $service->addressReplacements);
+    }
+
     public function testUserFor_ExistingRegisteredEmail_RefusesWithAccountExistsAndTouchesNothing(): void
     {
         $service = new TestableGuestUserService();
-        $service->accounts['guest@example.com'] = ['id' => 'user-7', 'passwordHash' => '$2y$10$abcdefghijklmnopqrstuv'];
+        $service->accounts['guest@example.com'] = ['id' => 'user-7', 'passwordHash' => '$2y$10$abcdefghijklmnopqrstuv', 'rights' => 'user'];
 
         try {
             $service->userFor($this->details('guest@example.com'));
@@ -118,7 +161,7 @@ final class OxidGuestUserServiceTest extends TestCase
     public function testUserFor_NoDeliveryAddress_ReplacesThePreviousOneWithNothing(): void
     {
         $service = new TestableGuestUserService();
-        $service->accounts['guest@example.com'] = ['id' => 'guest-9', 'passwordHash' => ''];
+        $service->accounts['guest@example.com'] = ['id' => 'guest-9', 'passwordHash' => '', 'rights' => 'user'];
 
         $guest = $service->userFor($this->details('guest@example.com'));
 
@@ -144,7 +187,7 @@ final class TestableGuestUserService extends OxidGuestUserService
 {
     public const KNOWN_COUNTRY = 'a7c40f631fc920687.20179984';
 
-    /** @var array<string, array{id: string, passwordHash: string}> */
+    /** @var array<string, array{id: string, passwordHash: string, rights: string}> */
     public array $accounts = [];
 
     /** @var list<array{id: string|null, fields: array<string, string>}> */
