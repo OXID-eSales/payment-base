@@ -5,6 +5,15 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-19 W2) - one webhook guard chain for the providers
+- `Webhook\Guard\`: `WebhookGuardInterface`, `WebhookGuardResult`, `WebhookHttpRequest`, `WebhookGuardChain`,
+  `HttpsGuard`, `PayloadSizeGuard`, `RateLimitGuard` (provider + client key in the shared `RateLimitStoreInterface`),
+  `IpAllowlistGuard` (IPv4 and IPv6, nothing allowed implicitly), `IpRange`, and `TrustedProxyClientIp` (a proxy's
+  client-IP header is believed only from a configured proxy range; none configured = `REMOTE_ADDR`). Replaces the three
+  diverged provider copies - PayPal's rate limiter counted in the guard object and never limited, Mollie keyed on
+  `REMOTE_ADDR` behind Cloudflare, PayPal allowed every private address. The providers move onto it in sprint 19 W3-W5;
+  nothing is wired in `services.yaml` yet.
+
 ### Fixed (VR-19) - a webhook delivery that crashed stays retryable
 - `AbstractWebhookProcessor::process()` catches any `Throwable`, not only `Exception`: a `TypeError` in a handler (a
   stale DI container on pay1, 2026-10-30) ends the delivery as `failed` like an exception does. Before, the row stayed
