@@ -25,6 +25,37 @@ All notable changes to this module are documented here. Format follows
 - The `$mailSender` argument of `Adapter\OxidShopOrderService` (only the send-at-once fallback used it). A
   `services.yaml` override that passes it must drop it. `ShopMailSenderInterface` itself stays: the commit leg sends
   the kept mails with it.
+### Removed (VR-17) - code that never ran
+Found by the dead-code check of 2026-11-03 (`docs/dev_log/20261030/reports/deadcode-check-payment-base.md`): no
+production caller in payment-base or in any of the seven in-house consumers (stripe, mollie-payment, paypal,
+one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally a break of the library API.
+- MCP/UCP transport, 42 files under `Mcp/` (server, request and notification handlers, OAuth/JWT validators - the JWT
+  one never verified a signature -, agent callbacks, UCP, the six ACP tools, catalog interfaces) and `Mcp/docs`. Kept:
+  the ACP checkout chain (`AgentContext`, `AcpCheckoutServiceInterface`, `AbstractAcpCheckoutService`,
+  `AcpResponseFormatter`) that the providers register, and `Http/ApcuRateLimiter` + `RateLimiterInterface` (Stripe).
+- The pre-claim webhook pipeline: `Webhook\WebhookProcessor`(+I), `WebhookIdempotencyChecker`(+I),
+  `WebhookEventDispatcher`(+I), `WebhookEventHandlerInterface`, `WebhookRequestParser`(+I),
+  `EventSystem\Event\Payment\WebhookReceivedEvent`(+I), `WebhookPayloadSanitizer`, and
+  `AbstractWebhookProcessor::isAlreadyProcessed()` / `logWebhookReceived()` with the constructor's third argument
+  `$sanitizer`. Webhooks run through `AbstractWebhookProcessor::process()` and `claimEvent()`; Stripe and Mollie never
+  passed the sanitizer.
+- The condition-type registry: `Contract\ConditionTypeRegistry`(+I), `ConditionTypeRegistryBootService`,
+  `ConditionTypeProviderInterface`, `Contract\Provider\{Core,Agent}ConditionTypeProvider`, and
+  `ContractCondition::setConditionTypeRegistry()`, `agentIdentityVerified()`, `agentConsentConfirmed()`. Nothing
+  booted the registry, so the two agent factories threw "Invalid condition type" whenever called.
+- Events nothing dispatched - `ContractConditionFulfilledEvent`, `OrderCompletedEvent`, `ContractFailedEvent`,
+  `PaymentInitiatedEvent` (each with its interface) - and handlers no `services.yaml` registers -
+  `GenericContractCreationHandler`, `ContractCleanupHandler`, `PaymentAuthorizationHandler`. The abstract
+  `ContractCreationHandler` stays (the providers extend it). Kept although never dispatched: `PaymentCapturedEvent`,
+  `PaymentFailedEvent`, `ContractCancelledEvent`, `ContractExpiredEvent` - opalsubscription listens for them (open
+  decision, sprint 17).
+- The capture/refund templates no provider extends: `Service\AbstractPaymentRefundService`,
+  `AbstractPaymentCaptureService`, `PaymentCaptureService`, `Service\Exception\{Capture,Refund}FailedException`, and
+  `Adapter\Response\VoidResponse` (replaced by `CancellationResponse` long ago). `Adapter\PaymentAdapterInterface` stays:
+  Stripe implements it.
+- `OxidShopOrderService::storeOrderMetadata()` (private; commented-out "Option 1/2" and a debug log) and seven admin
+  language keys no template uses (`PAYMENT_ADMIN_ACTION_FAILED`, `_ACTION_OK`, `_AMOUNT`, `_CAPTURED`, `_CONTRACT_ID`,
+  `_PROVIDER_ORDER`, `_REFUNDED`).
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,

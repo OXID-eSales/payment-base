@@ -34,8 +34,7 @@ abstract class AbstractWebhookProcessor
 {
     public function __construct(
         protected readonly WebhookLogRepositoryInterface $logRepository,
-        protected readonly LoggerInterface $logger,
-        protected readonly WebhookPayloadSanitizer $sanitizer = new WebhookPayloadSanitizer()
+        protected readonly LoggerInterface $logger
     ) {
     }
 
@@ -95,31 +94,6 @@ abstract class AbstractWebhookProcessor
         $this->logWebhookResult($event, $status, $contractId, $result->isSuccess() ? null : $result->error);
 
         return $result;
-    }
-
-    /**
-     * Check if event was already processed (idempotency).
-     */
-    protected function isAlreadyProcessed(string $eventId): bool
-    {
-        return $this->logRepository->existsByEventId($eventId);
-    }
-
-    /**
-     * Log webhook received.
-     */
-    protected function logWebhookReceived(WebhookEvent $event, WebhookRequest $request): void
-    {
-        $log = new WebhookLog(
-            $event->id,
-            $request->receivedAt,
-            'received'
-        );
-        $log->setEventType($event->type);
-        $log->setProvider($this->getProviderName());
-        $log->setPayload($this->sanitizer->sanitize($event->data));
-
-        $this->logRepository->save($log);
     }
 
     /**

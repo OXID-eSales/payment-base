@@ -581,10 +581,6 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         // Order extensions add, so order creation only worked where one of
         // those modules was active — CI's bare CE shop proved it.
         $order->save();
-
-        if (!empty($request->metadata)) {
-            $this->storeOrderMetadata($order, $request->metadata);
-        }
     }
 
     /**
@@ -686,31 +682,6 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
 
             return null;
         }
-    }
-
-    /**
-     * Store additional metadata with the order.
-     *
-     * This can be extended to store custom data in oxorder table
-     * or in a separate metadata table.
-     *
-     * @param Order $order
-     * @param array<string, mixed> $metadata
-     */
-    private function storeOrderMetadata(Order $order, array $metadata): void
-    {
-        // Option 1: Store in oxorder.oxremark field
-        // $order->oxorder__oxremark = new Field(json_encode($metadata));
-        // $order->save();
-
-        // Option 2: Store in custom table (implement if needed)
-        // $this->metadataRepository->store($order->getId(), $metadata);
-
-        // For now, just log the metadata
-        Registry::getLogger()->debug('Order metadata', [
-            'order_id' => $order->getId(),
-            'metadata' => $metadata,
-        ]);
     }
 
     /**

@@ -8,7 +8,7 @@ use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 use OxidEsales\PaymentBase\EventSystem\EventListenerProviderInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
-use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentBase\Tests\Unit\EventSystem\Fixture\ContextOnlyEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
@@ -27,7 +27,7 @@ class EventListenerProviderTest extends TestCase
     {
         $provider = new EventListenerProvider([]);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
 
         $this->assertIsArray($listeners);
         $this->assertCount(0, $listeners);
@@ -39,7 +39,7 @@ class EventListenerProviderTest extends TestCase
 
         $provider = new EventListenerProvider([$handler]);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
 
         $this->assertCount(1, $listeners);
         $this->assertIsCallable($listeners[0]);
@@ -50,9 +50,9 @@ class EventListenerProviderTest extends TestCase
         $provider = new EventListenerProvider([]);
         $listener = fn($event) => null;
 
-        $provider->addListener(PaymentInitiatedEvent::class, $listener);
+        $provider->addListener(ContextOnlyEvent::class, $listener);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
         $this->assertContains($listener, $listeners);
     }
 
@@ -64,11 +64,11 @@ class EventListenerProviderTest extends TestCase
         $highPriority = fn($e) => 'high';
         $mediumPriority = fn($e) => 'medium';
 
-        $provider->addListener(PaymentInitiatedEvent::class, $lowPriority, 0);
-        $provider->addListener(PaymentInitiatedEvent::class, $highPriority, 100);
-        $provider->addListener(PaymentInitiatedEvent::class, $mediumPriority, 50);
+        $provider->addListener(ContextOnlyEvent::class, $lowPriority, 0);
+        $provider->addListener(ContextOnlyEvent::class, $highPriority, 100);
+        $provider->addListener(ContextOnlyEvent::class, $mediumPriority, 50);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
 
         $this->assertSame($highPriority, $listeners[0]);
         $this->assertSame($mediumPriority, $listeners[1]);
@@ -82,19 +82,19 @@ class EventListenerProviderTest extends TestCase
 
         $provider = new EventListenerProvider([$handler1, $handler2]);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
         $this->assertCount(2, $listeners);
     }
 
     public function testRegisterHandler_RegistersToCorrectEventClass(): void
     {
-        // Handler that handles PaymentInitiatedEvent
+        // Handler that handles ContextOnlyEvent
         $handler = $this->createPaymentInitiatedHandler();
 
         $provider = new EventListenerProvider([$handler]);
 
-        // Should be registered for PaymentInitiatedEvent
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        // Should be registered for ContextOnlyEvent
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
         $this->assertCount(1, $listeners);
 
         // Should NOT be registered for ContractCreatedEvent
@@ -109,7 +109,7 @@ class EventListenerProviderTest extends TestCase
 
         $provider = new EventListenerProvider([$paymentHandler, $contractHandler]);
 
-        $paymentListeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $paymentListeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
         $contractListeners = $provider->getListenersForEvent(ContractCreatedEvent::class);
 
         $this->assertCount(1, $paymentListeners);
@@ -124,11 +124,11 @@ class EventListenerProviderTest extends TestCase
         $second = fn($e) => 'second';
         $third = fn($e) => 'third';
 
-        $provider->addListener(PaymentInitiatedEvent::class, $first, 0);
-        $provider->addListener(PaymentInitiatedEvent::class, $second, 0);
-        $provider->addListener(PaymentInitiatedEvent::class, $third, 0);
+        $provider->addListener(ContextOnlyEvent::class, $first, 0);
+        $provider->addListener(ContextOnlyEvent::class, $second, 0);
+        $provider->addListener(ContextOnlyEvent::class, $third, 0);
 
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
 
         // With same priority, order should be preserved (first added = first executed)
         $this->assertCount(3, $listeners);
@@ -154,22 +154,22 @@ class EventListenerProviderTest extends TestCase
 
             public function handle(object $event): void
             {
-                if ($event instanceof PaymentInitiatedEvent) {
+                if ($event instanceof ContextOnlyEvent) {
                     $this->called = true;
                 }
             }
 
             public static function getHandledEventClass(): string
             {
-                return PaymentInitiatedEvent::class;
+                return ContextOnlyEvent::class;
             }
         };
 
         $provider = new EventListenerProvider([$handler]);
-        $listeners = $provider->getListenersForEvent(PaymentInitiatedEvent::class);
+        $listeners = $provider->getListenersForEvent(ContextOnlyEvent::class);
 
         $this->assertNotEmpty($listeners);
-        $event = $this->createPaymentInitiatedEvent();
+        $event = $this->createContextOnlyEvent();
         $listeners[0]($event);
         $this->assertTrue($handlerCalled);
     }
@@ -180,14 +180,14 @@ class EventListenerProviderTest extends TestCase
             public function handle(object $event): void
             {
                 // Type check for the specific event
-                if (!$event instanceof PaymentInitiatedEvent) {
-                    throw new \InvalidArgumentException('Expected PaymentInitiatedEvent');
+                if (!$event instanceof ContextOnlyEvent) {
+                    throw new \InvalidArgumentException('Expected ContextOnlyEvent');
                 }
             }
 
             public static function getHandledEventClass(): string
             {
-                return PaymentInitiatedEvent::class;
+                return ContextOnlyEvent::class;
             }
         };
     }
@@ -210,17 +210,10 @@ class EventListenerProviderTest extends TestCase
         };
     }
 
-    private function createPaymentInitiatedEvent(): PaymentInitiatedEvent
+    private function createContextOnlyEvent(): ContextOnlyEvent
     {
         $context = new EventContext([]);
-        return new PaymentInitiatedEvent(
-            $context,
-            'stripe_card',
-            100.0,
-            'EUR',
-            'https://example.com/return',
-            'https://example.com/cancel'
-        );
+        return new ContextOnlyEvent($context);
     }
 
     private function createTestContract(): PaymentContract

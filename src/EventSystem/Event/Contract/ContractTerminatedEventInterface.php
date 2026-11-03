@@ -21,7 +21,7 @@ namespace OxidEsales\PaymentBase\EventSystem\Event\Contract;
  *
  * Example:
  * <code>
- * class ContractCleanupHandler extends AbstractHandler
+ * class TerminationCleanupHandler extends AbstractHandler
  * {
  *     public function handle(object $event): void
  *     {
