@@ -19,6 +19,10 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   `AbstractWebhookProcessor::isAlreadyProcessed()` / `logWebhookReceived()` with the constructor's third argument
   `$sanitizer`. Webhooks run through `AbstractWebhookProcessor::process()` and `claimEvent()`; Stripe and Mollie never
   passed the sanitizer.
+- The condition-type registry: `Contract\ConditionTypeRegistry`(+I), `ConditionTypeRegistryBootService`,
+  `ConditionTypeProviderInterface`, `Contract\Provider\{Core,Agent}ConditionTypeProvider`, and
+  `ContractCondition::setConditionTypeRegistry()`, `agentIdentityVerified()`, `agentConsentConfirmed()`. Nothing
+  booted the registry, so the two agent factories threw "Invalid condition type" whenever called.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
