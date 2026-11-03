@@ -13,10 +13,10 @@ All notable changes to this module are documented here. Format follows
 
 ### Changed (VR-16) - an order whose mails cannot wait on its contract is refused, not mailed at once
 - `OxidShopOrderService::createOrder()` throws `ShopOrderException` (`order_mails_not_kept`) when the rendered order mails
-  cannot be kept on the contract: no contract id, no contract row, the store fails, or no store. Before, the mails went
-  out at once - "thank you for your order" before the payment, logged as a warning nobody saw. The rewrite path already
-  worked this way; both now share one refusal. The exception carries the order id, the contract id and the cause's class,
-  never its message.
+  cannot be kept on the contract: no contract row, the store fails, or no store. Before, the mails went out at once -
+  "thank you for your order" before the payment, logged as a warning nobody saw. The rewrite path already worked this
+  way; both now share one refusal. The exception carries the order id, the contract id and the cause's class, never its
+  message. An order without a contract id does not defer its mails at all: no payment to wait for, core mails it.
 - `DoctrineContractOrderMailStore`: a database error says what failed and its SQLSTATE; the driver message stays on the
   previous exception. Older DBAL versions put the bound parameters into that message - the whole rendered mail, which
   reached `oxideshop.log` (~105k lines on pay1).

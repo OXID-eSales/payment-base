@@ -441,7 +441,8 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $order = new DeferringScriptedOrder(Order::ORDER_STATE_OK);
 
-        (new TestableOrderService($order))->createOrder($this->request());
+        (new TestableOrderService($order, orderMails: new SpyContractOrderMails()))
+            ->createOrder($this->requestFor('contract-1'));
 
         self::assertSame(['defer', 'finalize', 'take'], $order->events);
     }
@@ -473,8 +474,6 @@ final class OxidShopOrderServiceTest extends TestCase
      */
     public static function mailsThatCannotWait(): iterable
     {
-        yield 'no contract id in the request' => [null, static function (SpyContractOrderMails $mails): void {
-        }];
         yield 'the contract row is missing' => ['contract-1', static function (SpyContractOrderMails $mails): void {
             $mails->rowExists = false;
         }];
@@ -503,6 +502,23 @@ final class OxidShopOrderServiceTest extends TestCase
             self::assertSame($contractId, $e->getContext()['contract_id']);
             self::assertArrayHasKey('order_id', $e->getContext());
         }
+    }
+
+    /**
+     * Without a contract there is no payment for the mails to wait on: the
+     * order does not defer them, and core's finalizeOrder() mails as usual.
+     * Not a fallback - deferral exists only for contract-backed orders.
+     */
+    public function testCreateOrder_WithoutAContractId_DoesNotDeferTheMails(): void
+    {
+        $order = $this->orderThatRendered();
+        $mails = new SpyContractOrderMails();
+
+        $response = (new TestableOrderService($order, orderMails: $mails))->createOrder($this->request());
+
+        self::assertSame('completed', $response->status);
+        self::assertSame(['finalize'], $order->events, 'neither deferred nor taken');
+        self::assertSame([], $mails->stashed);
     }
 
     public function testCreateOrder_WithoutAStore_RefusesTheOrder(): void

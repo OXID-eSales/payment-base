@@ -253,10 +253,9 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         $order = $this->newOrder();
         // STRP-176: this order exists before the customer pays at the PSP, and
         // core's finalizeOrder() ends by mailing "thank you for your order". The
-        // mails are kept on the contract instead and sent when it commits. Not
-        // deferrable only when the Order extension is missing from the chain:
-        // then the mail goes out now, as before.
-        if ($order instanceof DefersConfirmationMailInterface) {
+        // mails are kept on the contract instead and sent when it commits. An
+        // order without a contract has no payment to wait for: core mails it.
+        if ($order instanceof DefersConfirmationMailInterface && $this->contractIdOf($request) !== null) {
             $order->deferConfirmationMail();
         }
         // OXID 7.6: Order::getDelAddressInfo() resolves a selected delivery
@@ -291,13 +290,14 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
     /**
      * STRP-176 — the order knows its mails, the request knows the contract.
      *
-     * VR-16: one path. Mails that cannot wait on the contract refuse the order,
-     * as for a rewritten one - sending them at once instead mailed "thank you"
-     * before the payment for two days on pay1 without anyone noticing.
+     * VR-16: one path. Mails of a contract-backed order that cannot wait on the
+     * contract refuse the order, as for a rewritten one - sending them at once
+     * instead mailed "thank you" before the payment for two days on pay1
+     * without anyone noticing. (Without a contract nothing was deferred.)
      */
     private function keepOrderMailsOnContract(Order $order, CreateOrderRequest $request): void
     {
-        if (!$order instanceof DefersConfirmationMailInterface) {
+        if (!$order instanceof DefersConfirmationMailInterface || $this->contractIdOf($request) === null) {
             return;
         }
         $mails = $order->takeDeferredMails();
@@ -313,8 +313,8 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
      */
     private function stashOrderMails(Order $order, CreateOrderRequest $request, array $mails): void
     {
-        $contractId = $request->metadata['contract_id'] ?? null;
-        if ($this->orderMails === null || !is_string($contractId) || $contractId === '') {
+        $contractId = $this->contractIdOf($request);
+        if ($this->orderMails === null || $contractId === null) {
             throw $this->orderMailsNotKept($order, $request, null);
         }
 
@@ -326,6 +326,13 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         if (!$kept) {
             throw $this->orderMailsNotKept($order, $request, null);
         }
+    }
+
+    private function contractIdOf(CreateOrderRequest $request): ?string
+    {
+        $contractId = $request->metadata['contract_id'] ?? null;
+
+        return is_string($contractId) && $contractId !== '' ? $contractId : null;
     }
 
     /**
