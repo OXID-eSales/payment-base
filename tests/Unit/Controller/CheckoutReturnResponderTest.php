@@ -24,6 +24,8 @@ use OxidEsales\PaymentBase\Return\ReturnResolution;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -58,6 +60,49 @@ final class CheckoutReturnResponderTest extends TestCase
         $this->contract = $this->createMock(PaymentContractInterface::class);
         $this->contract->method('getId')->willReturn('contr_1');
         $this->contract->method('getOrderId')->willReturn('order_fallback');
+        $this->contract->method('getAmount')->willReturn(42.0);
+        $this->contract->method('getCurrency')->willReturn('EUR');
+    }
+
+    /**
+     * VR-20 R4 (S2) — the webhook commit (ContractCommitService) refused an amount
+     * or currency that differs from the contract; the return leg dispatched the
+     * PSP's figures unchecked. Both legs now pass one check.
+     *
+     * @return iterable<string, array{0: float, 1: string}>
+     */
+    public static function confirmationsThatDoNotMatchTheContract(): iterable
+    {
+        yield 'one cent short' => [41.99, 'EUR'];
+        yield 'another currency' => [42.0, 'CHF'];
+    }
+
+    #[DataProvider('confirmationsThatDoNotMatchTheContract')]
+    public function testAConfirmationThatDoesNotMatchTheContractCommitsNothing(float $amount, string $currency): void
+    {
+        $this->resolver->method('resolve')->willReturn(
+            ReturnResolution::readyToCommit('auth_1', 'ord_1', $amount, $currency),
+        );
+        $this->dispatcher->expects(self::never())->method('dispatch');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error')
+            ->with(self::stringContains('does not match the contract'), self::arrayHasKey('contractAmount'));
+
+        $responder = new CheckoutReturnResponder(
+            $this->dispatcher,
+            $this->createMock(SessionWriterInterface::class),
+            $logger,
+        );
+
+        self::assertNull($responder->respond('stripe', $this->contract, $this->resolver, []));
+    }
+
+    public function testAnAlreadyProcessedReturnCarriesNoAmountAndIsNotChecked(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::alreadyProcessed('ord_1'));
+        $this->dispatcher->expects(self::atLeastOnce())->method('dispatch')->willReturnArgument(0);
+
+        self::assertSame('order_fallback', $this->buildResponder()->respond('stripe', $this->contract, $this->resolver, []));
     }
 
     public function testSuccessDispatchesCheckoutReturnCompletedAndPaymentAuthorized(): void
@@ -91,7 +136,7 @@ final class CheckoutReturnResponderTest extends TestCase
                 self::assertSame('sess_abc', $context->get('checkoutSessionId'));
                 self::assertSame('contr_1', $context->get('contract_id'));
                 self::assertSame($this->contract, $context->getContract());
-                return ReturnResolution::readyToCommit('a', 'p', 1.0, 'EUR');
+                return ReturnResolution::readyToCommit('a', 'p', 42.0, 'EUR');
             }
         );
 
@@ -122,7 +167,7 @@ final class CheckoutReturnResponderTest extends TestCase
         // ContractCommitmentHandler writes the orderId into the context
         // when it commits. The responder must prefer that.
         $this->resolver->method('resolve')->willReturn(
-            ReturnResolution::readyToCommit('auth_1', 'ord_1', 1.0, 'EUR'),
+            ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'),
         );
         $this->dispatcher->method('dispatch')->willReturnCallback(
             function (object $e) {
@@ -143,7 +188,7 @@ final class CheckoutReturnResponderTest extends TestCase
     public function testFallsBackToContractOrderIdWhenContextHasNone(): void
     {
         $this->resolver->method('resolve')->willReturn(
-            ReturnResolution::readyToCommit('a', 'p', 1.0, 'EUR'),
+            ReturnResolution::readyToCommit('a', 'p', 42.0, 'EUR'),
         );
 
         $orderId = $this->buildResponder()->respond(
@@ -168,7 +213,7 @@ final class CheckoutReturnResponderTest extends TestCase
     public function testRequiresCaptureFromResolutionPropagatesIntoContext(): void
     {
         $this->resolver->method('resolve')->willReturn(
-            ReturnResolution::authorized('auth_1', 'ord_1', 1.0, 'EUR'),
+            ReturnResolution::authorized('auth_1', 'ord_1', 42.0, 'EUR'),
         );
 
         $captured = null;

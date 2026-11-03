@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Service;
 
+use RuntimeException;
+use OxidEsales\PaymentBase\Adapter\ShopCurrency;
 use OxidEsales\PaymentBase\Checkout\Attempt\CheckoutAttemptAlreadyPaidException;
 use OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
@@ -337,43 +339,32 @@ class ContractService implements ContractServiceInterface
     }
 
     /**
+     * The amount and currency every provider charges. Nothing is guessed (VR-20): no
+     * price is no contract, and the currency comes from ShopCurrency, which refuses
+     * to assume one - the former 'EUR' / 0.00 defaults were the "CHF 100 charged as
+     * EUR 100" defect ShopCurrency was written against.
+     *
      * @return array{totalGross: float, totalNet: float, totalVat: float, currency: string}
      */
     private function extractTotals(object $basket): array
     {
-        $totalGross = 0.0;
-        $totalNet = 0.0;
-        $totalVat = 0.0;
-        $currency = 'EUR';
-
-        if (method_exists($basket, 'getPrice')) {
-            $price = $basket->getPrice();
-            if (is_object($price)) {
-                if (method_exists($price, 'getBruttoPrice')) {
-                    $totalGross = (float) $price->getBruttoPrice();
-                }
-                if (method_exists($price, 'getNettoPrice')) {
-                    $totalNet = (float) $price->getNettoPrice();
-                }
-                if (method_exists($price, 'getVatValue')) {
-                    $totalVat = (float) $price->getVatValue();
-                }
-            }
+        $price = method_exists($basket, 'getPrice') ? $basket->getPrice() : null;
+        if (
+            !is_object($price)
+            || !method_exists($price, 'getBruttoPrice')
+            || !method_exists($price, 'getNettoPrice')
+            || !method_exists($price, 'getVatValue')
+        ) {
+            throw new RuntimeException('Cannot create a payment contract: the basket has no price.');
         }
 
-        if (method_exists($basket, 'getBasketCurrency')) {
-            $basketCurrency = $basket->getBasketCurrency();
-            if (is_object($basketCurrency) && property_exists($basketCurrency, 'name')) {
-                /** @var object{name: string} $basketCurrency */
-                $currency = (string) $basketCurrency->name;
-            }
-        }
+        $currency = method_exists($basket, 'getBasketCurrency') ? $basket->getBasketCurrency() : null;
 
         return [
-            'totalGross' => $totalGross,
-            'totalNet' => $totalNet,
-            'totalVat' => $totalVat,
-            'currency' => $currency,
+            'totalGross' => (float) $price->getBruttoPrice(),
+            'totalNet' => (float) $price->getNettoPrice(),
+            'totalVat' => (float) $price->getVatValue(),
+            'currency' => ShopCurrency::nameOf(is_object($currency) ? $currency : null, 'payment contract'),
         ];
     }
 }

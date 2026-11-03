@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\PricedBasket;
 
 class ContractCreationHandlerTest extends TestCase
 {
@@ -41,12 +42,7 @@ class ContractCreationHandlerTest extends TestCase
 
     private function createMockBasket(): object
     {
-        $basket = new \stdClass();
-        $basket->totalGross = 100.0;
-        $basket->totalNet = 84.03;
-        $basket->totalVat = 15.97;
-        $basket->currency = 'EUR';
-        return $basket;
+        return new PricedBasket();
     }
 
     public function testHandleCreatesContract(): void

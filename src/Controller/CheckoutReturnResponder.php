@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Controller;
 
+use OxidEsales\PaymentBase\Service\Commit\ConfirmedAmount;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
@@ -100,6 +101,10 @@ class CheckoutReturnResponder
             return null;
         }
 
+        if (!$this->confirmsTheContractAmount($providerName, $contract, $resolution)) {
+            return null;
+        }
+
         try {
             $this->dispatchReturn($context, $resolution);
         } catch (StaleContractException $e) {
@@ -107,6 +112,35 @@ class CheckoutReturnResponder
         }
 
         return $this->finish($context, $contract);
+    }
+
+    /**
+     * VR-20: the same check the webhook leg (ContractCommitService) applies - a
+     * provider amount or currency that differs from the contract commits nothing.
+     * An already-processed return confirms no money and carries none.
+     */
+    private function confirmsTheContractAmount(
+        string $providerName,
+        PaymentContractInterface $contract,
+        ReturnResolution $resolution,
+    ): bool {
+        if ($resolution->outcome === ReturnResolution::OUTCOME_ALREADY_PROCESSED) {
+            return true;
+        }
+        if (ConfirmedAmount::matches($contract, $resolution->amount, $resolution->currency)) {
+            return true;
+        }
+
+        $this->logger->error('[CheckoutReturnResponder] confirmed amount does not match the contract', [
+            'providerName' => $providerName,
+            'contractId' => $contract->getId(),
+            'contractAmount' => $contract->getAmount(),
+            'contractCurrency' => $contract->getCurrency(),
+            'confirmedAmount' => $resolution->amount,
+            'confirmedCurrency' => $resolution->currency,
+        ]);
+
+        return false;
     }
 
     private function dispatchReturn(EventContext $context, ReturnResolution $resolution): void

@@ -36,8 +36,6 @@ use Psr\Log\NullLogger;
  */
 class ContractCommitService implements ContractCommitServiceInterface
 {
-    private const AMOUNT_TOLERANCE = 0.005;
-
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,
         private readonly EventDispatcherInterface $dispatcher,
@@ -90,7 +88,7 @@ class ContractCommitService implements ContractCommitServiceInterface
             return CommitOutcome::refused('contract_' . $contract->getStateValue());
         }
 
-        if (!$this->amountMatches($contract, $confirmation)) {
+        if (!ConfirmedAmount::matches($contract, $confirmation->amount, $confirmation->currency)) {
             $this->logger->error('[ContractCommitService] confirmed amount does not match the contract', [
                 'contractId' => $contract->getId(),
                 'contractAmount' => $contract->getAmount(),
@@ -104,12 +102,6 @@ class ContractCommitService implements ContractCommitServiceInterface
         }
 
         return null;
-    }
-
-    private function amountMatches(PaymentContractInterface $contract, PaymentConfirmation $confirmation): bool
-    {
-        return abs($contract->getAmount() - $confirmation->amount) <= self::AMOUNT_TOLERANCE
-            && strtoupper($contract->getCurrency()) === strtoupper($confirmation->currency);
     }
 
     /**
