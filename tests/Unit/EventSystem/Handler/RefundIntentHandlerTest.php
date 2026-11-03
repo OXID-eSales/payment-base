@@ -20,6 +20,7 @@ use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OxidEsales\PaymentBase\Service\UnknownPaymentCaptureStatusQuery;
 
 /**
  * Sprint 03 (2026-05-19) — verifies that the routing decision
@@ -32,30 +33,12 @@ use Psr\Log\NullLogger;
  */
 class RefundIntentHandlerTest extends TestCase
 {
-    public function testNoOpWhenContractRepoIsNull(): void
-    {
-        $broker = $this->createMock(EventBrokerInterface::class);
-        $broker->expects($this->never())->method('dispatch');
-
-        $handler = new RefundIntentHandler(null, $broker);
-        $handler->__invoke($this->stubIntent('order-1', 10.0));
-    }
-
-    public function testNoOpWhenBrokerIsNull(): void
-    {
-        $contracts = $this->createMock(ContractRepositoryInterface::class);
-        $contracts->expects($this->never())->method('findByOrderId');
-
-        $handler = new RefundIntentHandler($contracts, null);
-        $handler->__invoke($this->stubIntent('order-1', 10.0));
-    }
-
     public function testNoOpWhenOrderIdIsEmpty(): void
     {
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->createMock(ContractRepositoryInterface::class),
             $broker,
         );
@@ -69,7 +52,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler($contracts, $broker);
+        $handler = $this->handlerFor($contracts, $broker);
         $handler->__invoke($this->stubIntent('order-1', 10.0));
     }
 
@@ -78,7 +61,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->authorizedContract(authorizedAmount: 50.0);
         $broker = $this->expectDispatchInstanceOf(CancelAuthorizationRequestedEvent::class);
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 50.0));
     }
 
@@ -94,7 +77,7 @@ class RefundIntentHandlerTest extends TestCase
                 return $event;
             });
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 30.0));
 
         $this->assertInstanceOf(CaptureRequestedEvent::class, $captured);
@@ -107,7 +90,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->authorizedContract(authorizedAmount: 100.0);
         $broker = $this->expectDispatchInstanceOf(CancelAuthorizationRequestedEvent::class);
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 99.999));
     }
 
@@ -117,7 +100,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 100.0));
     }
 
@@ -127,7 +110,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 0.0));
     }
 
@@ -136,7 +119,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->fulfilledContract();
         $broker = $this->expectDispatchInstanceOf(RefundRequestedEvent::class);
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(true),
@@ -151,7 +134,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->fulfilledContract();
         $broker = $this->expectDispatchInstanceOf(CancelAuthorizationRequestedEvent::class);
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(false),
@@ -168,7 +151,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->fulfilledContract();
         $broker = $this->expectDispatchInstanceOf(RefundRequestedEvent::class);
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(null),
@@ -182,7 +165,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker);
+        $handler = $this->handlerFor($this->contractsReturning('order-1', $contract), $broker);
         $handler->__invoke($this->stubIntent('order-1', 10.0));
     }
 
@@ -198,7 +181,7 @@ class RefundIntentHandlerTest extends TestCase
                 return $event;
             });
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(true),
@@ -226,7 +209,7 @@ class RefundIntentHandlerTest extends TestCase
                 return $event;
             });
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(true),
@@ -248,7 +231,7 @@ class RefundIntentHandlerTest extends TestCase
                 return $event;
             });
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->contractsReturning('order-1', $contract),
             $broker,
             $this->captureStatus(true),
@@ -270,7 +253,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract->setCapturedAmount(100.0);
         $captured = $this->captureDispatched($broker);
 
-        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+        ($this->handlerFor($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
             ->__invoke($this->stubIntent('order-1', 25.0, correlation: [
                 'returnId' => 'ret-42',
                 'providerName' => 'paypal',
@@ -295,7 +278,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+        ($this->handlerFor($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
             ->__invoke($this->stubIntent('order-1', 50.0));
     }
 
@@ -306,7 +289,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract->addRefundedAmount(60.0);
         $broker = $this->expectDispatchInstanceOf(RefundRequestedEvent::class);
 
-        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
+        ($this->handlerFor($this->contractsReturning('order-1', $contract), $broker, $this->captureStatus(true)))
             ->__invoke($this->stubIntent('order-1', 40.0));
     }
 
@@ -316,7 +299,7 @@ class RefundIntentHandlerTest extends TestCase
         $contract = $this->authorizedContract(authorizedAmount: 10.0, currency: 'KWD');
         $captured = $this->captureDispatched($broker);
 
-        (new RefundIntentHandler($this->contractsReturning('order-1', $contract), $broker))
+        ($this->handlerFor($this->contractsReturning('order-1', $contract), $broker))
             ->__invoke($this->stubIntent('order-1', 3.333));
 
         $this->assertInstanceOf(CaptureRequestedEvent::class, $captured->event);
@@ -347,7 +330,7 @@ class RefundIntentHandlerTest extends TestCase
         $broker = $this->createMock(EventBrokerInterface::class);
         $broker->expects($this->never())->method('dispatch');
 
-        $handler = new RefundIntentHandler(
+        $handler = $this->handlerFor(
             $this->createMock(ContractRepositoryInterface::class),
             $broker,
         );
@@ -388,6 +371,19 @@ class RefundIntentHandlerTest extends TestCase
                 return $event;
             });
         return $broker;
+    }
+
+    private function handlerFor(
+        ContractRepositoryInterface $contracts,
+        EventBrokerInterface $broker,
+        ?PaymentCaptureStatusQueryInterface $captureStatus = null,
+    ): RefundIntentHandler {
+        return new RefundIntentHandler(
+            $contracts,
+            $broker,
+            $captureStatus ?? new UnknownPaymentCaptureStatusQuery(),
+            new NullLogger(),
+        );
     }
 
     private function captureStatus(?bool $captured): PaymentCaptureStatusQueryInterface

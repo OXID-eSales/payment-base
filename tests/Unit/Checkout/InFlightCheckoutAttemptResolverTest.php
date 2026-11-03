@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * MOL-18 — a repeated "Order now" must rejoin the attempt this session already
@@ -40,6 +41,7 @@ final class InFlightCheckoutAttemptResolverTest extends TestCase
             new OpenCheckoutAttemptRegistry(new SessionCheckoutContext($this->session)),
             $this->contracts,
             $this->orders,
+            new NullLogger(),
         );
     }
 

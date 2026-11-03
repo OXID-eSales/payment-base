@@ -10,10 +10,10 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Service;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * Service for webhook log operations.
@@ -37,15 +37,15 @@ class WebhookLogService implements WebhookLogServiceInterface
     public const STATUS_PROCESSED = 'processed';
     public const STATUS_FAILED = 'failed';
 
-    private LoggerInterface $logger;
-
+    /**
+     * @param ?\Closure(): bool $shouldLogPayload a provider's policy switch, not a collaborator: null means "log"
+     */
     public function __construct(
         private readonly WebhookLogRepositoryInterface $repository,
-        ?LoggerInterface $logger = null,
-        /** @var ?\Closure(): bool $shouldLogPayload */
+        private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary,
         private readonly ?\Closure $shouldLogPayload = null
     ) {
-        $this->logger = $logger ?? new NullLogger();
     }
 
     private function isPayloadLoggingEnabled(): bool
@@ -90,7 +90,7 @@ class WebhookLogService implements WebhookLogServiceInterface
             $this->logger->error('Failed to log webhook event', [
                 'event_id' => $eventId,
                 'event_type' => $eventType,
-                'error' => $e->getMessage(),
+                'error' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }
@@ -117,7 +117,7 @@ class WebhookLogService implements WebhookLogServiceInterface
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as processed', [
                 'event_id' => $eventId,
-                'error' => $e->getMessage(),
+                'error' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }
@@ -141,7 +141,7 @@ class WebhookLogService implements WebhookLogServiceInterface
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as failed', [
                 'event_id' => $eventId,
-                'error' => $e->getMessage(),
+                'error' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }

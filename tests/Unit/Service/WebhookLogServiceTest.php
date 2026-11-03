@@ -16,6 +16,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 
 #[CoversClass(\OxidEsales\PaymentBase\Service\WebhookLogService::class)]
 final class WebhookLogServiceTest extends TestCase
@@ -29,7 +30,7 @@ final class WebhookLogServiceTest extends TestCase
         parent::setUp();
         $this->repository = $this->createMock(WebhookLogRepositoryInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->service = new WebhookLogService($this->repository, $this->logger);
+        $this->service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]));
     }
 
     public function testLogEventReceivedCreatesWebhookLog(): void

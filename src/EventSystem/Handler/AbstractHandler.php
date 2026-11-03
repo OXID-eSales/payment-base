@@ -44,11 +44,11 @@ abstract class AbstractHandler implements HandlerInterface
 {
     /**
      * @param ContractRepositoryInterface $contractRepository Repository for accessing payment contracts
-     * @param EventDispatcherInterface|null $eventDispatcher Optional dispatcher for emitting subsequent events
+     * @param EventDispatcherInterface $eventDispatcher Dispatcher for emitting subsequent events
      */
     public function __construct(
         protected ContractRepositoryInterface $contractRepository,
-        protected ?EventDispatcherInterface $eventDispatcher = null
+        protected EventDispatcherInterface $eventDispatcher
     ) {
     }
 

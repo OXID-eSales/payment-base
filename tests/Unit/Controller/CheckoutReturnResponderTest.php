@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Psr\Log\NullLogger;
 
 /**
  * Sprint E: the `CheckoutReturnResponder` is the one place the
@@ -92,6 +93,8 @@ final class CheckoutReturnResponderTest extends TestCase
             $this->dispatcher,
             $this->createMock(SessionWriterInterface::class),
             $logger,
+            $this->createMock(ContractRepositoryInterface::class),
+            new HeadlessCheckoutScope(),
         );
 
         self::assertNull($responder->respond('stripe', $this->contract, $this->resolver, []));
@@ -376,6 +379,12 @@ final class CheckoutReturnResponderTest extends TestCase
                 $this->written[] = $orderId;
             }
         };
-        return new CheckoutReturnResponder($this->dispatcher, $writer, contracts: $contracts, scope: $scope);
+        return new CheckoutReturnResponder(
+            $this->dispatcher,
+            $writer,
+            new NullLogger(),
+            $contracts ?? $this->createMock(ContractRepositoryInterface::class),
+            $scope ?? new HeadlessCheckoutScope()
+        );
     }
 }

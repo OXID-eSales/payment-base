@@ -29,19 +29,19 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
     private const UPDATABLE_FIELDS = ['shipping', 'selected_fulfillment_option_id', 'fulfillment_address'];
 
     /**
-     * Sprint 15 / S7 (GRAPH-QL): the four headless collaborators are optional
-     * so a provider service wired before this sprint keeps working; the
-     * default createCheckout() and commitPaid() need them.
+     * Sprint 15 / S7 (GRAPH-QL): the four headless collaborators the default
+     * createCheckout() and commitPaid() need. VR-25 D3: required - a provider
+     * that does not wire them does not boot, instead of failing a checkout.
      */
     public function __construct(
         protected readonly ContractServiceInterface $contractService,
         protected readonly ContractRepositoryInterface $contractRepository,
         protected readonly EventDispatcherInterface $eventDispatcher,
         protected readonly AcpResponseFormatterInterface $formatter,
-        protected readonly ?ContractOpeningServiceInterface $contractOpening = null,
-        protected readonly ?UserBasketFactoryInterface $userBaskets = null,
-        protected readonly ?GuestUserResolverInterface $buyers = null,
-        protected readonly ?ContractCommitServiceInterface $contractCommit = null
+        protected readonly ContractOpeningServiceInterface $contractOpening,
+        protected readonly UserBasketFactoryInterface $userBaskets,
+        protected readonly GuestUserResolverInterface $buyers,
+        protected readonly ContractCommitServiceInterface $contractCommit
     ) {
     }
 
@@ -78,12 +78,6 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
             return $this->formatter->validationError('A buyer e-mail is required', 'buyer.email');
         }
 
-        if ($this->contractOpening === null || $this->userBaskets === null || $this->buyers === null) {
-            return $this->formatter->validationError(
-                'Headless checkout is not wired for this provider (contract opening, user baskets, buyers)'
-            );
-        }
-
         /** @var array<string, mixed>|null $address */
         $address = is_array($arguments['fulfillment_address'] ?? null) ? $arguments['fulfillment_address'] : null;
         /** @var list<array{id?: string, quantity?: int|float}> $lines */
@@ -118,10 +112,6 @@ abstract class AbstractAcpCheckoutService implements AcpCheckoutServiceInterface
         string $currency,
         bool $requiresCapture = false
     ): CommitOutcome {
-        if ($this->contractCommit === null) {
-            throw new \LogicException('commitPaid() needs the ContractCommitServiceInterface collaborator');
-        }
-
         return $this->contractCommit->commit(new PaymentConfirmation(
             contractId: (string) $contract->getId(),
             providerName: $this->providerName(),

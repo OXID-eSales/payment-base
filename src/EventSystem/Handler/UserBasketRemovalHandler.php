@@ -12,7 +12,6 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 use OxidEsales\Eshop\Application\Model\UserBasket;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Throwable;
 
 /**
@@ -27,7 +26,7 @@ use Throwable;
  */
 class UserBasketRemovalHandler implements HandlerInterface
 {
-    public function __construct(private readonly LoggerInterface $logger = new NullLogger())
+    public function __construct(private readonly LoggerInterface $logger)
     {
     }
 

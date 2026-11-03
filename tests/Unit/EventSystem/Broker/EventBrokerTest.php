@@ -17,6 +17,8 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEven
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
+use OxidEsales\PaymentBase\EventSystem\Broker\ConventionProviderEventResolver;
 
 final class EventBrokerTest extends TestCase
 {
@@ -28,7 +30,7 @@ final class EventBrokerTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())->method('dispatch')->with($translated);
 
-        $broker = new EventBroker($dispatcher, [$translator]);
+        $broker = new EventBroker($dispatcher, [$translator], new NullLogger(), new ConventionProviderEventResolver());
         $context = new EventContext(['providerName' => 'stripe']);
         $broker->dispatch(new RefundRequestedEvent($context, 10.0, 'x'));
     }
@@ -41,7 +43,7 @@ final class EventBrokerTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::never())->method('dispatch');
 
-        $broker = new EventBroker($dispatcher, []);
+        $broker = new EventBroker($dispatcher, [], new NullLogger(), new ConventionProviderEventResolver());
         $context = new EventContext(['providerName' => 'nonexistent_provider_xyz']);
         $broker->dispatch(new RefundRequestedEvent($context, 1.0));
     }
@@ -73,7 +75,7 @@ final class EventBrokerTest extends TestCase
                 return $e;
             });
 
-        $broker = new EventBroker($dispatcher, []);
+        $broker = new EventBroker($dispatcher, [], new NullLogger(), new ConventionProviderEventResolver());
         $context = new EventContext(['providerName' => 'stripe']);
         $broker->dispatch(new RefundRequestedEvent($context, 1.0));
 
@@ -90,7 +92,7 @@ final class EventBrokerTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::never())->method('dispatch');
 
-        $broker = new EventBroker($dispatcher, [$translator]);
+        $broker = new EventBroker($dispatcher, [$translator], new NullLogger(), new ConventionProviderEventResolver());
         $broker->dispatch(new RefundRequestedEvent(new EventContext(['providerName' => 'stripe'])));
     }
 
@@ -100,7 +102,7 @@ final class EventBrokerTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())->method('dispatch');
 
-        $broker = new EventBroker($dispatcher, [$translator]);
+        $broker = new EventBroker($dispatcher, [$translator], new NullLogger(), new ConventionProviderEventResolver());
         $broker->dispatch(new RefundRequestedEvent(new EventContext(['providerName' => 'stripe'])));
     }
 
@@ -116,7 +118,7 @@ final class EventBrokerTest extends TestCase
             return $e;
         });
 
-        $broker = new EventBroker($dispatcher, [$payPalTranslator, $stripeTranslator]);
+        $broker = new EventBroker($dispatcher, [$payPalTranslator, $stripeTranslator], new NullLogger(), new ConventionProviderEventResolver());
         $broker->dispatch(new RefundRequestedEvent(new EventContext(['providerName' => 'stripe'])));
 
         self::assertCount(1, $dispatched);
@@ -125,7 +127,7 @@ final class EventBrokerTest extends TestCase
 
     public function testReturnsOriginalEventAsDispatchResult(): void
     {
-        $broker = new EventBroker($this->createMock(EventDispatcherInterface::class), []);
+        $broker = new EventBroker($this->createMock(EventDispatcherInterface::class), [], new NullLogger(), new ConventionProviderEventResolver());
         $original = new RefundRequestedEvent(new EventContext(['providerName' => 'x']));
         $result = $broker->dispatch($original);
         self::assertSame($original, $result);

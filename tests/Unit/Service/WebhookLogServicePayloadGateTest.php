@@ -16,6 +16,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 
 /**
  * Tests for the optional $shouldLogPayload closure seam on WebhookLogService.
@@ -43,7 +44,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testNullGatePreservesPayloadAndEmitsPsr3(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]));
 
         $payload = ['id' => 'pi_test', 'amount' => 1000];
 
@@ -64,7 +65,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testNullGateMarkProcessedEmitsPsr3(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]));
 
         $this->repository->method('updateStatus');
 
@@ -77,7 +78,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testNullGateMarkFailedEmitsPsr3(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]));
 
         $this->repository->method('updateStatus');
 
@@ -94,7 +95,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateTruePreservesPayloadAndEmitsPsr3(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => true);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => true);
 
         $payload = ['id' => 'pi_test'];
 
@@ -116,7 +117,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateFalseOmitsPayloadFromSavedLog(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $savedLog = null;
         $this->repository->expects($this->once())
@@ -134,7 +135,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateFalseRowStillHasEventIdAndType(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $savedLog = null;
         $this->repository->expects($this->once())
@@ -154,7 +155,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateFalseSupressesPsr3OnLogEventReceived(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $this->repository->method('save');
 
@@ -167,7 +168,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateFalseSupressesPsr3OnMarkEventProcessed(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $this->repository->method('updateStatus');
 
@@ -179,7 +180,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
 
     public function testGateFalseSupressesPsr3OnMarkEventFailed(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $this->repository->method('updateStatus');
 
@@ -208,7 +209,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
             ->with('evt_idempotency')
             ->willReturn(true);
 
-        $serviceWithGateOff = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $serviceWithGateOff = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $exists = $serviceWithGateOff->eventExists('evt_idempotency');
 
@@ -225,7 +226,7 @@ final class WebhookLogServicePayloadGateTest extends TestCase
      */
     public function testSaveIsCalledEvenWithGateFalse(): void
     {
-        $service = new WebhookLogService($this->repository, $this->logger, fn () => false);
+        $service = new WebhookLogService($this->repository, $this->logger, new ThrowableSummary([]), fn () => false);
 
         $this->repository->expects($this->once())
             ->method('save')

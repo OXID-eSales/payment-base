@@ -24,6 +24,7 @@ use OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface;
 use OxidEsales\PaymentBase\Service\Commit\PaymentConfirmation;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * A dispatcher that records events and plays the handler chain's part: on
@@ -100,7 +101,7 @@ final class ContractCommitServiceTest extends TestCase
     {
         self::assertInstanceOf(
             ContractCommitServiceInterface::class,
-            new ContractCommitService($this->contracts, new ScriptedChainDispatcher())
+            new ContractCommitService($this->contracts, new ScriptedChainDispatcher(), new NullLogger())
         );
     }
 
@@ -262,7 +263,7 @@ final class ContractCommitServiceTest extends TestCase
 
     private function service(EventDispatcherInterface $dispatcher): ContractCommitService
     {
-        return new ContractCommitService($this->contracts, $dispatcher);
+        return new ContractCommitService($this->contracts, $dispatcher, new NullLogger());
     }
 
     private function confirmation(float $amount = 116.5, string $currency = 'EUR', array $extra = []): PaymentConfirmation

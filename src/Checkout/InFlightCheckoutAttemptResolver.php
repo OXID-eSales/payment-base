@@ -8,7 +8,6 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * "Order now" clicked twice: the second submission must not start a second
@@ -42,15 +41,12 @@ class InFlightCheckoutAttemptResolver implements InFlightCheckoutAttemptResolver
      */
     private const AMOUNT_TOLERANCE = 0.005;
 
-    private readonly LoggerInterface $logger;
-
     public function __construct(
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
         private readonly ContractRepositoryInterface $contracts,
         private readonly NotFinishedOrderRepositoryInterface $orders,
-        ?LoggerInterface $logger = null
+        private readonly LoggerInterface $logger
     ) {
-        $this->logger = $logger ?? new NullLogger();
     }
 
     public function resolve(string $provider, float $liveBasketTotal): ?string

@@ -45,7 +45,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         private readonly EarlyOrderWriterInterface $earlyOrders,
         // The session's open attempt: the next start continues it.
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
-        ?EventDispatcherInterface $eventDispatcher = null,
+        EventDispatcherInterface $eventDispatcher,
         private readonly ?FileLoggerInterface $eventLogger = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
@@ -184,11 +184,6 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $contract->transitionToPending();
         $this->contractRepository->save($contract);
 
-        $dispatcher = $this->eventDispatcher;
-        if ($dispatcher === null) {
-            return;
-        }
-
         $pendingEvent = new ContractTransitionedToPendingEvent(
             $contract,
             $event->getContext(),
@@ -199,16 +194,11 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $contract->getId(),
         ]);
 
-        $dispatcher->dispatch($pendingEvent);
+        $this->eventDispatcher->dispatch($pendingEvent);
     }
 
     private function dispatchOrderCreatedEvent(ContractDraftCompletedEvent $event, string $orderId): void
     {
-        $dispatcher = $this->eventDispatcher;
-        if ($dispatcher === null) {
-            return;
-        }
-
         $orderCreatedEvent = new OrderCreatedEvent(
             $event->getContext(),
             $orderId,
@@ -220,7 +210,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'contractId' => $event->getContractId(),
         ]);
 
-        $dispatcher->dispatch($orderCreatedEvent);
+        $this->eventDispatcher->dispatch($orderCreatedEvent);
     }
 
     /**

@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 
 /**
  * Guards the agnostic contract of PaymentAuthorizedEventHandler: the provider
@@ -34,7 +35,7 @@ class PaymentAuthorizedEventHandlerTest extends TestCase
         $this->orderPaymentState = $this->createMock(OrderPaymentStateServiceInterface::class);
         $this->handler = new PaymentAuthorizedEventHandler(
             $this->repository,
-            new EventDispatcher(),
+            new EventDispatcher(new EventListenerProvider([])),
             $this->orderPaymentState
         );
     }

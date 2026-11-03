@@ -20,6 +20,7 @@ use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\CoversClass;
+use Psr\Log\NullLogger;
 
 #[CoversClass(\OxidEsales\PaymentBase\EventSystem\Handler\FraudCheckHandler::class)]
 class FraudCheckHandlerTest extends TestCase
@@ -38,6 +39,7 @@ class FraudCheckHandlerTest extends TestCase
         $this->handler = new FraudCheckHandler(
             $this->contractRepository,
             $this->fraudCheckService,
+            new NullLogger(),
             true // enabled by default
         );
     }
@@ -153,6 +155,7 @@ class FraudCheckHandlerTest extends TestCase
         $handler = new FraudCheckHandler(
             $this->contractRepository,
             $this->fraudCheckService,
+            new NullLogger(),
             false // disabled
         );
 
@@ -286,6 +289,7 @@ class FraudCheckHandlerTest extends TestCase
         $handler = new FraudCheckHandler(
             $this->contractRepository,
             $this->fraudCheckService,
+            new NullLogger(),
             true,
             false // fail closed
         );
@@ -370,9 +374,9 @@ class FraudCheckHandlerTest extends TestCase
         $handler = new FraudCheckHandler(
             $this->contractRepository,
             $this->fraudCheckService,
+            $logger,
             true,
-            true,
-            $logger
+            true
         );
 
         $handler->handle(new \stdClass());
@@ -388,9 +392,9 @@ class FraudCheckHandlerTest extends TestCase
         $handler = new FraudCheckHandler(
             $this->contractRepository,
             $this->fraudCheckService,
+            $logger,
             true,
-            true,
-            $logger
+            true
         );
 
         $handler->handle(new PaymentAuthorizedEvent(new EventContext(), 'pi_x', 'order_x', 1.0, 'EUR'));

@@ -52,7 +52,7 @@ final class OxidStockRestorationServiceTest extends TestCase
         $contract->transitionToPending();
         $contract->fulfillCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED);
         $contract->commitToOrder($this->orderId);
-        (new DoctrineContractRepository($this->connection))->save($contract);
+        (new DoctrineContractRepository($this->connection, new NullLogger()))->save($contract);
     }
 
     protected function tearDown(): void

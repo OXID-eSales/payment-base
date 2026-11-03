@@ -21,7 +21,6 @@ use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Throwable;
 
 /**
@@ -51,17 +50,16 @@ class CheckoutReturnResponder
 {
     /**
      * MOL-17: the repository is what lets the return leg yield to a newer state when its own copy
-     * turned out stale. Optional so a consumer that wires the responder without it keeps working - it
-     * then behaves as before (a stale save surfaces as an error).
+     * turned out stale.
      */
     public function __construct(
         private readonly EventDispatcherInterface $dispatcher,
         private readonly SessionWriterInterface $sessionWriter,
-        private readonly LoggerInterface $logger = new NullLogger(),
-        private readonly ?ContractRepositoryInterface $contracts = null,
+        private readonly LoggerInterface $logger,
+        private readonly ContractRepositoryInterface $contracts,
         // Sprint 15 / S3: a headless return (scope entered) has no session and
         // no thank-you page, so `sess_challenge` is not written for it.
-        private readonly ?HeadlessCheckoutScopeInterface $scope = null,
+        private readonly HeadlessCheckoutScopeInterface $scope,
     ) {
     }
 
@@ -159,7 +157,7 @@ class CheckoutReturnResponder
     private function finish(EventContext $context, PaymentContractInterface $contract): ?string
     {
         $orderId = $this->resolveOrderId($context, $contract);
-        if ($orderId !== null && !($this->scope?->isActive() ?? false)) {
+        if ($orderId !== null && !$this->scope->isActive()) {
             $this->sessionWriter->writeSessChallenge($orderId);
         }
 
@@ -182,7 +180,7 @@ class CheckoutReturnResponder
         array $extraContextKeys,
         string $cause,
     ): ?string {
-        $fresh = $this->contracts?->findById((string) $stale->getId());
+        $fresh = $this->contracts->findById((string) $stale->getId());
         if ($fresh === null) {
             $this->logger->warning('[CheckoutReturnResponder] stale contract and no fresh copy to fall back on', [
                 'contractId' => $stale->getId(),

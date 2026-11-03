@@ -21,6 +21,7 @@ use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * Sprint 8: Contract Capture/Refund Tracking Tests
@@ -57,7 +58,7 @@ final class ContractCaptureRefundTest extends IntegrationTestCase
         $this->connection = $connectionProvider->get();
 
         // Direct instantiation to work in CI without module activation
-        $this->contractRepository = new DoctrineContractRepository($this->connection);
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger());
     }
 
     public function tearDown(): void

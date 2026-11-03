@@ -38,6 +38,7 @@ use OxidEsales\PaymentBase\Controller\CheckoutReturnResponder;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Integration\Support\CheckoutFixture;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * Sprint 140a against the real shop: an anonymous token with guest details
@@ -165,6 +166,7 @@ final class GuestCheckoutStartTest extends IntegrationTestCase
             $this->createStub(PreviousCheckoutAttemptCleanerInterface::class),
             $container->get(GuestUserServiceInterface::class),
             $container->get(GuestBasketClaimInterface::class),
+            new NullLogger(),
         );
     }
 

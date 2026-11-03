@@ -16,7 +16,6 @@ use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Adapter\Response\FraudCheckResponse;
 use OxidEsales\PaymentBase\Service\FraudCheckServiceInterface;
-use Psr\Log\NullLogger;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -49,9 +48,9 @@ class FraudCheckHandler implements HandlerInterface
     public function __construct(
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly FraudCheckServiceInterface $fraudCheckService,
+        private readonly LoggerInterface $logger,
         private readonly bool $enabled = true,
-        private readonly bool $failOpenOnCheckError = true,
-        private readonly LoggerInterface $logger = new NullLogger()
+        private readonly bool $failOpenOnCheckError = true
     ) {
     }
 

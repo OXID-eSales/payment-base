@@ -43,6 +43,8 @@ use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryCaptureLedger;
 use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryRefundLedger;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\NullLogger;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 /**
  * Capture, refund and void against the real database (contracts, transactions, the idempotency table, the order
@@ -166,7 +168,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $logger = new NullLogger();
         $runner = new MoneyOperationRunner(
             $this->contracts(),
-            new PaymentContractDetailsReader($this->contracts(), $this->transactions()),
+            new PaymentContractDetailsReader($this->contracts(), $this->transactions(), new FreeTextActionOptions(), new NoActionBounds()),
             new DbalRequestShopOrders($connection),
             new ControllableOrderLock(),
             new OperationIdempotency(new DoctrineIdempotencyRepository($connection)),

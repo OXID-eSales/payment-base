@@ -21,9 +21,7 @@ use OxidEsales\PaymentBase\Math\Money\MinorUnitConverter;
 use OxidEsales\PaymentBase\Math\Money\Money;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface;
-use OxidEsales\PaymentBase\Service\UnknownPaymentCaptureStatusQuery;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * Routes {@see RefundIntentEventInterface} events to the right provider-request
@@ -50,23 +48,18 @@ use Psr\Log\NullLogger;
  *         will reject if it really hasn't captured, surfacing a visible error.
  *   - any other state → unsupported; log + skip.
  *
- * All payment-base service dependencies are optional (nullable) so the
- * handler can be registered even in slimmed-down installs; in that
- * case it no-ops and the manual-refund path remains available.
+ * VR-25 D3: every dependency is required. The container wires them all in
+ * payment-base itself (broker, capture-status query - a provider replaces the
+ * latter with its own), so the handler never silently no-ops.
  */
 class RefundIntentHandler
 {
-    private PaymentCaptureStatusQueryInterface $captureStatusQuery;
-    private LoggerInterface $logger;
-
     public function __construct(
-        private readonly ?ContractRepositoryInterface $contractRepository = null,
-        private readonly ?EventBrokerInterface $broker = null,
-        ?PaymentCaptureStatusQueryInterface $captureStatusQuery = null,
-        ?LoggerInterface $logger = null,
+        private readonly ContractRepositoryInterface $contractRepository,
+        private readonly EventBrokerInterface $broker,
+        private readonly PaymentCaptureStatusQueryInterface $captureStatusQuery,
+        private readonly LoggerInterface $logger,
     ) {
-        $this->captureStatusQuery = $captureStatusQuery ?? new UnknownPaymentCaptureStatusQuery();
-        $this->logger = $logger ?? new NullLogger();
     }
 
     public function __invoke(object $event): void
@@ -74,10 +67,6 @@ class RefundIntentHandler
         if (!$event instanceof RefundIntentEventInterface) {
             return;
         }
-        if ($this->contractRepository === null || $this->broker === null) {
-            return;
-        }
-
         $orderId = $event->getOrderId();
         if ($orderId === '') {
             $this->logger->warning('[RefundIntentHandler] intent without orderId', [

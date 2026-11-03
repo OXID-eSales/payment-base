@@ -19,6 +19,7 @@ use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 #[Group('database')]
 class DoctrineContractRepositoryTest extends IntegrationTestCase
@@ -33,7 +34,7 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
         $container = ContainerFactory::getInstance()->getContainer();
         $connectionProvider = $container->get(\OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
-        $this->repository = new DoctrineContractRepository($this->connection);
+        $this->repository = new DoctrineContractRepository($this->connection, new NullLogger());
 
         // Clean up test data
         $this->cleanupTestData();

@@ -11,6 +11,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Tests for metadata persistence in DoctrineContractRepository.
@@ -97,7 +98,7 @@ class MetadataPersistenceTest extends TestCase
         $connection->method('fetchAssociative')
             ->willReturn($databaseRow);
 
-        $repository = new DoctrineContractRepository($connection);
+        $repository = new DoctrineContractRepository($connection, new NullLogger());
 
         // Act: Load contract from database
         $contract = $repository->findById($contractId);
@@ -158,7 +159,7 @@ class MetadataPersistenceTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->method('fetchAssociative')->willReturn($databaseRow);
 
-        $repository = new DoctrineContractRepository($connection);
+        $repository = new DoctrineContractRepository($connection, new NullLogger());
         $contract = $repository->findById('contract_empty_meta');
 
         $this->assertNotNull($contract);
@@ -202,7 +203,7 @@ class MetadataPersistenceTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->method('fetchAssociative')->willReturn($databaseRow);
 
-        $repository = new DoctrineContractRepository($connection);
+        $repository = new DoctrineContractRepository($connection, new NullLogger());
         $contract = $repository->findById('contract_null_meta');
 
         $this->assertNotNull($contract);

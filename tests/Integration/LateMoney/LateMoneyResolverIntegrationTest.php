@@ -42,7 +42,7 @@ final class LateMoneyResolverIntegrationTest extends TestCase
     protected function setUp(): void
     {
         $this->connection = ContainerFactory::getInstance()->getContainer()->get(ConnectionProviderInterface::class)->get();
-        $this->contracts = new DoctrineContractRepository($this->connection);
+        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger());
         $this->contractId = 'it_vr23_' . bin2hex(random_bytes(8));
         $contract = new PaymentContract(1, 'it_vr23_user', BasketSnapshot::fromArray([
             'items' => [], 'discounts' => [], 'totalGross' => 49.9, 'totalNet' => 41.9, 'totalVat' => 8.0, 'currency' => 'EUR',

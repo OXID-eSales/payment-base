@@ -14,6 +14,7 @@ use OxidEsales\PaymentBase\ClientConfig\Exception\InvalidClientPublicKey;
 use OxidEsales\PaymentBase\ClientConfig\SystemSealInputs;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\ClientConfig\SealPrimitivesFactory;
 
 /**
  * Pins the envelope of docs/payments-keys.md (version 1) byte-for-byte to the
@@ -43,7 +44,7 @@ final class ClientConfigSealerTest extends TestCase
                 12 => EcKeys::b64urlDecode($this->vector['iv']),
             ],
             $this->vector['issuedAt']
-        ));
+        ), SealPrimitivesFactory::create());
     }
 
     /**
@@ -118,7 +119,7 @@ final class ClientConfigSealerTest extends TestCase
 
     public function testRandomSealsDiffer(): void
     {
-        $sealer = new ClientConfigSealer(new SystemSealInputs());
+        $sealer = new ClientConfigSealer(new SystemSealInputs(), SealPrimitivesFactory::create());
         $client = $this->vector['clientPublicKey'];
 
         $first = $sealer->seal('paypal', 't', $client, ['clientId' => 'x']);
@@ -136,7 +137,7 @@ final class ClientConfigSealerTest extends TestCase
     public function testRandomSealsOpenWithAFreshBrowserKey(): void
     {
         $browserKey = EcKeys::newPrivateKey();
-        $sealer = new ClientConfigSealer(new SystemSealInputs());
+        $sealer = new ClientConfigSealer(new SystemSealInputs(), SealPrimitivesFactory::create());
 
         $envelope = get_object_vars($sealer->seal(
             'mollie',

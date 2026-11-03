@@ -25,6 +25,8 @@ use ReflectionMethod;
 use TheCodingMachine\GraphQLite\Annotations\ExtendType;
 use TheCodingMachine\GraphQLite\Annotations\Field;
 use TheCodingMachine\GraphQLite\Annotations\Right;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 final class AdminOrderPaymentRelationTest extends TestCase
 {
@@ -97,7 +99,7 @@ final class AdminOrderPaymentRelationTest extends TestCase
     private function relation(InMemoryContracts $contracts, ?PaymentAtRiskQueryInterface $atRisk = null): AdminOrderPaymentRelation
     {
         return new AdminOrderPaymentRelation(
-            new PaymentContractDetailsReader($contracts, $this->createStub(TransactionRepositoryInterface::class)),
+            new PaymentContractDetailsReader($contracts, $this->createStub(TransactionRepositoryInterface::class), new FreeTextActionOptions(), new NoActionBounds()),
             $atRisk ?? $this->createStub(PaymentAtRiskQueryInterface::class),
         );
     }

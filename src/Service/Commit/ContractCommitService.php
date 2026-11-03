@@ -16,7 +16,6 @@ use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * The one way to turn "paid" into COMMITTED outside the return leg.
@@ -39,7 +38,7 @@ class ContractCommitService implements ContractCommitServiceInterface
     public function __construct(
         private readonly ContractRepositoryInterface $contracts,
         private readonly EventDispatcherInterface $dispatcher,
-        private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly LoggerInterface $logger,
     ) {
     }
 

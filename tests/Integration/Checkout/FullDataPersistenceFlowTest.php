@@ -20,6 +20,7 @@ use OxidEsales\PaymentBase\Contract\Transaction;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 /**
  * Full Data Persistence Flow Test
@@ -67,7 +68,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $connectionProvider = $container->get(ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
 
-        $this->contractRepository = new DoctrineContractRepository($this->connection);
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger());
         $this->transactionRepository = new DoctrineTransactionRepository($this->connection);
     }
 

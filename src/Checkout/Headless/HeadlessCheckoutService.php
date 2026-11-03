@@ -25,7 +25,6 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Controller\CheckoutReturnResponder;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 /**
  * Start: the return URLs pass the policy, an anonymous token becomes the guest
@@ -61,7 +60,7 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         private readonly PreviousCheckoutAttemptCleanerInterface $cleaner,
         private readonly GuestUserServiceInterface $guests,
         private readonly GuestBasketClaimInterface $basketClaim,
-        private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly LoggerInterface $logger,
     ) {
     }
 

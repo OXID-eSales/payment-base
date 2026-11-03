@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OxidEsales\PaymentBase\Tests\Unit\Fixture\PricedBasket;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
 
 class ContractCreationHandlerTest extends TestCase
 {
@@ -27,7 +28,7 @@ class ContractCreationHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(ContractRepositoryInterface::class);
-        $this->dispatcher = new EventDispatcher();
+        $this->dispatcher = new EventDispatcher(new EventListenerProvider([]));
         // OPC-175: no open attempt in this session - every start creates a contract.
         $this->service = new ContractService(
             $this->repository,

@@ -17,32 +17,25 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\CancelAuthorizationRequeste
 use OxidEsales\PaymentBase\EventSystem\Event\Request\CaptureRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 class EventBroker implements EventBrokerInterface
 {
     /** @var list<ProviderEventTranslatorInterface> */
     private array $translators;
 
-    private LoggerInterface $logger;
-
-    private ProviderEventResolverInterface $resolver;
-
     /**
      * @param iterable<ProviderEventTranslatorInterface> $translators
      */
     public function __construct(
         private readonly EventDispatcherInterface $dispatcher,
-        iterable $translators = [],
-        ?LoggerInterface $logger = null,
-        ?ProviderEventResolverInterface $resolver = null,
+        iterable $translators,
+        private readonly LoggerInterface $logger,
+        private readonly ProviderEventResolverInterface $resolver,
     ) {
         $this->translators = [];
         foreach ($translators as $translator) {
             $this->translators[] = $translator;
         }
-        $this->logger = $logger ?? new NullLogger();
-        $this->resolver = $resolver ?? new ConventionProviderEventResolver();
     }
 
     public function dispatch(AbstractProviderRequestEvent $event): AbstractProviderRequestEvent

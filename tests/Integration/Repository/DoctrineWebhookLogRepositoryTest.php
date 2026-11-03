@@ -19,6 +19,7 @@ use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\Attributes\Group;
+use Psr\Log\NullLogger;
 
 #[Group('database')]
 class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
@@ -35,7 +36,7 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
         $connectionProvider = $container->get(\OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
         $this->repository = new DoctrineWebhookLogRepository($this->connection);
-        $this->contractRepository = new DoctrineContractRepository($this->connection);
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger());
 
         // Clean up test data
         $this->cleanupTestData();

@@ -10,11 +10,9 @@ class EventDispatcher implements EventDispatcherInterface
 {
     /** @var array<string, array<array{listener: callable, priority: int}>> */
     private array $listeners = [];
-    private ?EventListenerProviderInterface $listenerProvider;
 
-    public function __construct(?EventListenerProviderInterface $listenerProvider = null)
+    public function __construct(private readonly EventListenerProviderInterface $listenerProvider)
     {
-        $this->listenerProvider = $listenerProvider;
     }
 
     public function addListener(string $eventClass, callable $listener, int $priority = 0): void
@@ -49,9 +47,7 @@ class EventDispatcher implements EventDispatcherInterface
 
         // Get listeners from provider first (DI-registered handlers)
         /** @var array<callable> $listeners */
-        $listeners = $this->listenerProvider
-            ? $this->listenerProvider->getListenersForEvent($eventClass)
-            : [];
+        $listeners = $this->listenerProvider->getListenersForEvent($eventClass);
 
         // Merge with locally added listeners
         if (isset($this->listeners[$eventClass])) {

@@ -26,6 +26,7 @@ use OxidEsales\PaymentBase\Tests\Unit\ClientConfig\EcKeys;
 use OxidEsales\PaymentBase\Tests\Unit\ClientConfig\FakeClientConfigProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OxidEsales\PaymentBase\ClientConfig\SealPrimitivesFactory;
 
 final class FixedTokenId implements TokenIdReaderInterface
 {
@@ -53,7 +54,7 @@ final class PaymentClientConfigTest extends TestCase
                     new FakeClientConfigProvider('stripe', ['publishableKey' => 'pk_test_FAKE']),
                 ]),
                 new ClientConfigGuard(),
-                new ClientConfigSealer(new SystemSealInputs())
+                new ClientConfigSealer(new SystemSealInputs(), SealPrimitivesFactory::create())
             ),
             new FixedTokenId($tokenId)
         );

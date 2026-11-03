@@ -22,6 +22,7 @@ use OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use PHPUnit\Framework\TestCase;
+use OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface;
 
 /**
  * Sprint I — controller logic under test, stubbing OXID's admin bootstrap.
@@ -131,7 +132,7 @@ final class PaymentAdminControllerLogicTest extends TestCase
         return new TestablePaymentAdminController(
             $registry,
             $repo,
-            new PaymentAdminActionDispatcher($registry),
+            new PaymentAdminActionDispatcher($registry, $this->createStub(AdminRefusalFeedbackInterface::class)),
             $orderId,
             $paymentType,
             $atRisk ?? $this->createStub(PaymentAtRiskQueryInterface::class),

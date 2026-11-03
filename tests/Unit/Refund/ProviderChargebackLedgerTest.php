@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Refund\ProviderChargebackLedger;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 /**
  * VR-21 F3 — what the chargeback ledger refuses before it touches the database; the booking itself:
@@ -30,6 +31,7 @@ final class ProviderChargebackLedgerTest extends TestCase
             $connection,
             $this->createMock(ContractRepositoryInterface::class),
             $this->createMock(TransactionRepositoryInterface::class),
+            new NullLogger(),
         );
 
         $this->expectException(InvalidArgumentException::class);

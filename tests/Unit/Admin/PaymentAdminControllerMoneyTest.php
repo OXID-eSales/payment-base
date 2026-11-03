@@ -44,6 +44,8 @@ use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryCaptureLedger;
 use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryRefundLedger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\FreeTextActionOptions;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
 
 /**
  * VR-22 A3 (S10) - the classic Payment tab's money actions go through the one money path, with the protection the
@@ -180,7 +182,7 @@ final class PaymentAdminControllerMoneyTest extends TestCase
         $registry = $this->createStub(PaymentPanelRegistryInterface::class);
         $registry->method('resolveFor')->willReturn($panel);
 
-        return new TestableMoneyController($this->contracts, new PaymentAdminActionDispatcher($registry), $adapter, $action, $form);
+        return new TestableMoneyController($this->contracts, new PaymentAdminActionDispatcher($registry, $this->createStub(AdminRefusalFeedbackInterface::class)), $adapter, $action, $form);
     }
 
     private function runner(): MoneyOperationRunner
@@ -198,7 +200,7 @@ final class PaymentAdminControllerMoneyTest extends TestCase
 
         return new MoneyOperationRunner(
             $this->contracts,
-            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class)),
+            new PaymentContractDetailsReader($this->contracts, $this->createStub(TransactionRepositoryInterface::class), new FreeTextActionOptions(), new NoActionBounds()),
             $shop,
             new ControllableOrderLock(),
             new OperationIdempotency($this->idempotencyRows, static fn (): DateTimeImmutable => $now),

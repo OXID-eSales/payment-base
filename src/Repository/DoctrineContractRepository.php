@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Repository;
 
-use Psr\Log\NullLogger;
 use Psr\Log\LoggerInterface;
 use DateTime;
 use DateTimeInterface;
@@ -36,7 +35,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly LoggerInterface $logger = new NullLogger()
+        private readonly LoggerInterface $logger
     ) {
     }
 

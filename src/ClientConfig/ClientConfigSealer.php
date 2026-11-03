@@ -31,14 +31,10 @@ final class ClientConfigSealer implements ClientConfigSealerInterface
     private const SALT_BYTES = 32;
     private const IV_BYTES = 12;
 
-    private readonly SealPrimitivesInterface $primitives;
-
     public function __construct(
         private readonly SealInputsInterface $inputs,
-        ?SealPrimitivesInterface $primitives = null
+        private readonly SealPrimitivesInterface $primitives
     ) {
-        // the sealed-channel module's primitives when it is installed (SEAL-1), payment-base's own otherwise
-        $this->primitives = $primitives ?? SealPrimitivesFactory::create();
     }
 
     public function seal(string $providerId, string $tokenId, string $clientPublicKey, array $values): SealedEnvelope
