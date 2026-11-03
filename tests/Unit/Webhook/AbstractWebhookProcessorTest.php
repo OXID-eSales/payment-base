@@ -282,6 +282,37 @@ class AbstractWebhookProcessorTest extends TestCase
         $this->assertStringContainsString('Database connection failed', $result->error ?? '');
     }
 
+    /**
+     * VR-19 W1 — a TypeError (a stale DI container on pay1, 2026-10-30) left the
+     * row `claimed`: every retry was then answered "Already processed" and the
+     * payment never committed. Any Throwable ends the delivery as `failed`.
+     */
+    public function testAnErrorInProcessEventMarksTheDeliveryFailedSoTheRetryCanReclaimIt(): void
+    {
+        $request = new WebhookRequest(
+            payload: '{"id":"evt_error"}',
+            signature: 'valid',
+            remoteIp: '127.0.0.1',
+            receivedAt: new DateTimeImmutable()
+        );
+        $event = new WebhookEvent(id: 'evt_error', type: 'payment_intent.succeeded', data: [], created: time());
+
+        $this->logRepository->expects($this->once())->method('claimEvent')->willReturn(true);
+        $this->logRepository->expects($this->once())
+            ->method('updateStatus')
+            ->with('evt_error', 'failed', $this->anything());
+
+        $processor = $this->createTestProcessorWithProcessingException(
+            $event,
+            new \TypeError('Argument #3 ($paidSessions) must be of type PaidSessionSettler, Monolog\\Logger given')
+        );
+
+        $result = $processor->process($request);
+
+        $this->assertTrue($result->isFailure());
+        $this->assertSame('processing_failed', $result->action);
+    }
+
     public function testProcessPassesContractIdToUpdateStatus(): void
     {
         // Arrange
@@ -403,7 +434,7 @@ class AbstractWebhookProcessorTest extends TestCase
      */
     private function createTestProcessorWithProcessingException(
         WebhookEvent $event,
-        \Exception $exception
+        \Throwable $exception
     ): AbstractWebhookProcessor {
         return new class (
             $this->logRepository,
@@ -415,7 +446,7 @@ class AbstractWebhookProcessorTest extends TestCase
                 WebhookLogRepositoryInterface $logRepository,
                 LoggerInterface $logger,
                 private readonly WebhookEvent $testEvent,
-                private readonly \Exception $testException
+                private readonly \Throwable $testException
             ) {
                 parent::__construct($logRepository, $logger);
             }

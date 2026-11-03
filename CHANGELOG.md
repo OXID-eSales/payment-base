@@ -56,6 +56,23 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
 - `OxidShopOrderService::storeOrderMetadata()` (private; commented-out "Option 1/2" and a debug log) and seven admin
   language keys no template uses (`PAYMENT_ADMIN_ACTION_FAILED`, `_ACTION_OK`, `_AMOUNT`, `_CAPTURED`, `_CONTRACT_ID`,
   `_PROVIDER_ORDER`, `_REFUNDED`).
+### Added (VR-19 W2) - one webhook guard chain for the providers
+- `Webhook\Guard\`: `WebhookGuardInterface`, `WebhookGuardResult`, `WebhookHttpRequest`, `WebhookGuardChain`,
+  `HttpsGuard`, `PayloadSizeGuard`, `RateLimitGuard` (provider + client key in the shared `RateLimitStoreInterface`),
+  `IpAllowlistGuard` (IPv4 and IPv6, nothing allowed implicitly), `IpRange`, and `TrustedProxyClientIp` (a proxy's
+  client-IP header is believed only from a configured proxy range; none configured = `REMOTE_ADDR`). Replaces the three
+  diverged provider copies - PayPal's rate limiter counted in the guard object and never limited, Mollie keyed on
+  `REMOTE_ADDR` behind Cloudflare, PayPal allowed every private address. The providers move onto it in sprint 19 W3-W5;
+  nothing is wired in `services.yaml` yet.
+
+### Fixed (VR-19) - a webhook delivery that crashed stays retryable
+- `AbstractWebhookProcessor::process()` catches any `Throwable`, not only `Exception`: a `TypeError` in a handler (a
+  stale DI container on pay1, 2026-10-30) ends the delivery as `failed` like an exception does. Before, the row stayed
+  `claimed`, every retry of the PSP was answered `200 skipped: Already processed`, and the payment never committed.
+- `DoctrineWebhookLogRepository::claimEvent()` also takes over a row still `claimed` after ten minutes - a fatal error
+  or a timeout never reaches the catch, and no request runs that long. One guarded `UPDATE` (status and age), so two
+  concurrent retries cannot both win; fresh claims and processed rows stay exclusive. Follows sprint 13's re-claim of
+  `failed` rows.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
