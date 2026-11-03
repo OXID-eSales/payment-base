@@ -5,6 +5,32 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
+- `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
+  `GraphQL\Admin\Contract\PaymentOwnershipProviderInterface` (`providerName()`, `paymentIds()`) and tags it
+  `oe.payment.ownership_provider`; a provider that does not tag leaves its rows unlocked for the admin API.
+  The constructor takes the tagged providers.
+- `ClientConfigGuard` no longer knows provider secret shapes (`sk_`, `rk_`, `whsec_`, `access_`, the 30-character
+  `live_`/`test_` key). Each provider implements the new `ClientConfig\Contract\ClientConfigSecretPatternProviderInterface`
+  (`secretValuePatterns()`: full regexes) and tags it `payment_base.client_config_secret_pattern_provider`. The guard
+  still refuses key names containing `secret` / `apiKey` and non-string/bool values. The constructor takes the tagged
+  providers.
+- New unit test `Architecture\CoreIsProviderAgnosticTest`: fails when code (identifiers, string literals; comments are
+  exempt) under `src/` names stripe, mollie or paypal.
+
+### Removed (VR-17 DC-PB7b-e) - dead public API, consumers first
+- `Service\WebhookLogService` and `WebhookLogServiceInterface`: nothing injected them (the Stripe module built one
+  through its `WebhookDbLogServiceFactory`, which goes with this change). Provider webhook handling uses
+  `WebhookLogRepositoryInterface::claimEvent()` / `updateStatus()`.
+- `WebhookLogRepositoryInterface` / `DoctrineWebhookLogRepository`: `save()`, `existsByEventId()`, `findByEventId()`
+  (no production caller; the atomic `claimEvent()` replaced them). The `Webhook\WebhookLog` value object stays.
+- `EventSystem\Event\Request\VoidAuthorizationRequestedEvent`: never dispatched. A test needing an "unmapped request
+  event" subclasses `AbstractProviderRequestEvent` itself.
+- `Validation\RateLimit\RateLimitOverrideInterface` and the tag `oe.payment_base.rate_limit_override`: no module
+  implemented it. `ConfigurableRateLimitConfig` takes the global default only (constructor argument `$overrides` gone).
+- `Validation\RateLimit\InMemoryRateLimitStore` moved out of `src/` to `OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore`
+  (`tests/Support/Validation/`, autoload-dev). It was never registered; a consumer's tests that used it need a double of their own.
+
 ### Added (VR-23 T1) - late money and "payment at risk"
 - `LateMoney\LateMoneyResolverInterface` (public service): one rule for money on a contract that can no longer take it
   (terminal state, or a replaced attempt): captured money is refunded, an authorization released, once, with the

@@ -10,13 +10,14 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\ClientConfig;
 
 use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigGuardInterface;
+use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigSecretPatternProviderInterface;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnsafeClientConfig;
 
 /**
  * Refuses anything that looks like a secret before it is sealed for a
  * browser: names the provider did not declare (when it declared any), values
- * with a provider secret shape (Stripe sk_/rk_/whsec_, Mollie live_/test_
- * API keys and access_ tokens), key names that contain "secret" or are an
+ * with a provider secret shape (the providers contribute their patterns,
+ * VR-24 H6), key names that contain "secret" or are an
  * API key, and every value that is not a string or a bool. The provider's
  * name allow-list is the first defence, the deny shapes the last.
  *
@@ -24,11 +25,15 @@ use OxidEsales\PaymentBase\ClientConfig\Exception\UnsafeClientConfig;
  */
 final class ClientConfigGuard implements ClientConfigGuardInterface
 {
-    private const SECRET_VALUE_PREFIXES = ['sk_', 'rk_', 'whsec_', 'access_'];
-    // Mollie API keys: live_/test_ plus exactly 30 characters. Anchored, so "test_mode_enabled" is not one.
-    private const MOLLIE_API_KEY_PATTERN = '/^(live|test)_[A-Za-z0-9]{30}$/';
     private const API_KEY_NAMES = ['apikey', 'api_key'];
     private const SECRET_KEY_FRAGMENT = 'secret';
+
+    /**
+     * @param iterable<ClientConfigSecretPatternProviderInterface> $secretPatternProviders
+     */
+    public function __construct(private readonly iterable $secretPatternProviders)
+    {
+    }
 
     /**
      * @param array<mixed> $values
@@ -83,12 +88,14 @@ final class ClientConfigGuard implements ClientConfigGuardInterface
 
     private function looksLikeSecret(string $value): bool
     {
-        foreach (self::SECRET_VALUE_PREFIXES as $prefix) {
-            if (str_starts_with($value, $prefix)) {
-                return true;
+        foreach ($this->secretPatternProviders as $provider) {
+            foreach ($provider->secretValuePatterns() as $pattern) {
+                if (preg_match($pattern, $value) === 1) {
+                    return true;
+                }
             }
         }
 
-        return preg_match(self::MOLLIE_API_KEY_PATTERN, $value) === 1;
+        return false;
     }
 }

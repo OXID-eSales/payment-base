@@ -427,10 +427,14 @@ services:
     arguments:
       - !tagged_iterator payment_base.client_config_provider
 
+  # VR-24 H6: the secret shapes come from the providers, each tags a ClientConfigSecretPatternProviderInterface
+  # `payment_base.client_config_secret_pattern_provider`.
   OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigGuardInterface:
     class: OxidEsales\PaymentBase\ClientConfig\ClientConfigGuard
     autowire: false
     autoconfigure: false
+    arguments:
+      - !tagged_iterator payment_base.client_config_secret_pattern_provider
 
   OxidEsales\PaymentBase\ClientConfig\Contract\SealInputsInterface:
     class: OxidEsales\PaymentBase\ClientConfig\SystemSealInputs
@@ -817,7 +821,6 @@ services:
     arguments:
       $connection: '@doctrine.dbal.connection'
 
-  # Per-PSP override tagged iterator (empty in this sprint; PSPs opt in via the tag).
   # The global default is 30 req/min, matching the admin setting `iValidationApiRatePerMinute`.
   # Note: wiring the live admin setting requires ModuleSettingBridgeInterface; deferred
   # to Phase E when an admin-UI integration sprint adds the bridge dep.
@@ -825,7 +828,6 @@ services:
     class: OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig
     arguments:
       $globalDefault: 30
-      $overrides: !tagged_iterator oe.payment_base.rate_limit_override
 
   OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard:
     arguments:
@@ -1264,10 +1266,14 @@ services:
       - '@oxid_esales.monolog.logger'
     tags: [ 'kernel.event_subscriber' ]
 
+  # VR-24 H6: the locked payment rows come from the providers, each tags a PaymentOwnershipProviderInterface
+  # `oe.payment.ownership_provider`.
   OxidEsales\PaymentBase\GraphQL\Admin\Subscriber\PaymentOwnershipSubscriber:
     autowire: false
     autoconfigure: false
     public: true
+    arguments:
+      - !tagged_iterator oe.payment.ownership_provider
     tags: [ 'kernel.event_subscriber' ]
 
   # VR-24 H8: the MCP/ACP bearer-token plumbing. JwksKeyProvider and JwtTokenValidator need the

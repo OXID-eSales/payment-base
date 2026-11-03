@@ -52,7 +52,7 @@ final class PaymentClientConfigTest extends TestCase
                 new ClientConfigProviderRegistry([
                     new FakeClientConfigProvider('stripe', ['publishableKey' => 'pk_test_FAKE']),
                 ]),
-                new ClientConfigGuard(),
+                new ClientConfigGuard([]),
                 new ClientConfigSealer(new SystemSealInputs())
             ),
             new FixedTokenId($tokenId)

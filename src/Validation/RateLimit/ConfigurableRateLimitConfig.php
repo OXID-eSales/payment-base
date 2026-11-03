@@ -10,38 +10,20 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Validation\RateLimit;
 
 /**
- * Rate-limit config that supports per-PSP overrides via tagged iterator.
+ * Rate-limit config: one global limit per plugin and minute.
  *
- * Resolution order:
- *  1. Iterate `$overrides` (tagged `oe.payment_base.rate_limit_override`).
- *     First match by `getPluginModuleId()` wins.
- *  2. Fall back to `$globalDefault`.
- *
- * Sprint 119 (STRP-129) — Phase A2.
+ * Sprint 119 (STRP-129) — Phase A2. VR-24 DC-PB7e: the per-PSP override extension point had no implementer in any
+ * module and is gone.
  */
 class ConfigurableRateLimitConfig implements RateLimitConfigInterface
 {
-    /** @var iterable<RateLimitOverrideInterface> */
-    private iterable $overrides;
-
-    /**
-     * @param iterable<RateLimitOverrideInterface> $overrides tagged iterator
-     */
     public function __construct(
         private readonly int $globalDefault,
-        iterable $overrides,
     ) {
-        $this->overrides = $overrides;
     }
 
     public function getLimitForPlugin(string $pluginModuleId): int
     {
-        foreach ($this->overrides as $override) {
-            if ($override->getPluginModuleId() === $pluginModuleId) {
-                return $override->getLimitPerMinute();
-            }
-        }
-
         return $this->globalDefault;
     }
 }

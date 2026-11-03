@@ -17,7 +17,7 @@ namespace OxidEsales\PaymentBase\Validation\RateLimit;
  * After `ttlSeconds` the counter is silently reset.
  *
  * Two implementations:
- *  - `InMemoryRateLimitStore` — in-process, for unit tests only
+ *  - `Tests\Support\Validation\InMemoryRateLimitStore` — in-process test double (tests/Support)
  *  - `DoctrineRateLimitStore`  — Doctrine DBAL, re-uses oe_payments_idempotency
  *
  * Sprint 119 (STRP-129) — Phase A2.

@@ -82,32 +82,6 @@ final class AtomicIdempotencyTest extends TestCase
     }
 
     #[Test]
-    public function processorNeverCallsDeprecatedExistsByEventId(): void
-    {
-        $this->logRepository->method('claimEvent')->willReturn(true);
-        $this->logRepository->expects($this->never())->method('existsByEventId');
-
-        $event = new WebhookEvent('evt_new', 'charge.captured', [], time());
-        $processor = $this->createTestProcessor($event, WebhookResult::success('captured'));
-
-        $request = new WebhookRequest('{}', 'sig', '1.2.3.4', new DateTimeImmutable());
-        $processor->process($request);
-    }
-
-    #[Test]
-    public function processorNeverCallsSaveForInitialLog(): void
-    {
-        $this->logRepository->method('claimEvent')->willReturn(true);
-        $this->logRepository->expects($this->never())->method('save');
-
-        $event = new WebhookEvent('evt_nosave', 'payment_intent.succeeded', [], time());
-        $processor = $this->createTestProcessor($event, WebhookResult::success('fulfilled'));
-
-        $request = new WebhookRequest('{}', 'sig', '1.2.3.4', new DateTimeImmutable());
-        $processor->process($request);
-    }
-
-    #[Test]
     public function claimEventReceivesProviderNameAndEventType(): void
     {
         $this->logRepository->expects($this->once())

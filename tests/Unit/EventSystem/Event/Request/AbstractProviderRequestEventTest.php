@@ -15,8 +15,12 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\AbstractProviderRequestEven
 use OxidEsales\PaymentBase\EventSystem\Event\Request\CancelAuthorizationRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\CaptureRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
-use OxidEsales\PaymentBase\EventSystem\Event\Request\VoidAuthorizationRequestedEvent;
 use PHPUnit\Framework\TestCase;
+
+/** What an external plugin (stock, returns, CRM) does: a thin subclass of its own. */
+final readonly class PluginRequestedEvent extends AbstractProviderRequestEvent
+{
+}
 
 final class AbstractProviderRequestEventTest extends TestCase
 {
@@ -45,9 +49,11 @@ final class AbstractProviderRequestEventTest extends TestCase
         self::assertInstanceOf(AbstractProviderRequestEvent::class, $event);
     }
 
-    public function testVoidAuthorizationIsConcreteSubclass(): void
+    public function testPluginsSubclassTheBaseWithoutForkingPaymentBase(): void
     {
-        $event = new VoidAuthorizationRequestedEvent(new EventContext());
+        $event = new PluginRequestedEvent(new EventContext());
+
         self::assertInstanceOf(AbstractProviderRequestEvent::class, $event);
+        self::assertNull($event->getAmount());
     }
 }

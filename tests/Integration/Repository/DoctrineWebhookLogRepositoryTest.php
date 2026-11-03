@@ -9,22 +9,20 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Integration\Repository;
 
-use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
+use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
-use OxidEsales\PaymentBase\Contract\BasketSnapshot;
-use OxidEsales\PaymentBase\Contract\PaymentContract;
-use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
-use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\Attributes\Group;
 
+/**
+ * The two operations the webhook processing uses (VR-17 / VR-24 DC-PB7b): claim a delivery, record its outcome.
+ */
 #[Group('database')]
 class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
 {
     private DoctrineWebhookLogRepository $repository;
-    private DoctrineContractRepository $contractRepository;
     private Connection $connection;
 
     public function setUp(): void
@@ -32,12 +30,8 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
         parent::setUp();
 
         $container = ContainerFactory::getInstance()->getContainer();
-        $connectionProvider = $container->get(\OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface::class);
-        $this->connection = $connectionProvider->get();
+        $this->connection = $container->get(ConnectionProviderInterface::class)->get();
         $this->repository = new DoctrineWebhookLogRepository($this->connection);
-        $this->contractRepository = new DoctrineContractRepository($this->connection);
-
-        // Clean up test data
         $this->cleanupTestData();
     }
 
@@ -49,208 +43,58 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
 
     private function cleanupTestData(): void
     {
-        // Clean webhook logs first (has FK to contracts)
         $this->connection->executeStatement('DELETE FROM oe_payments_webhooklogs WHERE OXEVENTID LIKE "test_%"');
-        // Clean test contracts
-        $this->connection->executeStatement('DELETE FROM oe_payments_contract WHERE OXID LIKE "contract_%"');
     }
 
-    private function createTestContract(string $contractId): PaymentContract
+    /**
+     * @return array<string, mixed>
+     */
+    private function row(string $eventId): array
     {
-        $basketSnapshot = BasketSnapshot::fromArray([
-            'items' => [
-                [
-                    'articleId' => 'test_article_1',
-                    'title' => 'Test Product',
-                    'amount' => 1,
-                    'price' => 10.00,
-                    'vat' => 19,
-                ],
-            ],
-            'totalGross' => 10.00,
-            'totalNet' => 8.40,
-            'totalVat' => 1.60,
-            'currency' => 'EUR',
-        ]);
-
-        $contract = new PaymentContract(
-            1, // shopId
-            'test_user_123',
-            $basketSnapshot,
-            $contractId
+        $row = $this->connection->fetchAssociative(
+            'SELECT * FROM oe_payments_webhooklogs WHERE OXEVENTID = :eventId',
+            ['eventId' => $eventId]
         );
+        self::assertIsArray($row);
 
-        $this->contractRepository->save($contract);
-        return $contract;
+        return $row;
     }
 
-    private function createTestWebhookLog(string $eventId = 'test_event_123', ?string $id = null): WebhookLog
+    public function testClaimEvent_FirstDelivery_ClaimsAndRecordsProviderAndType(): void
     {
-        // Use predictable IDs for tests to avoid uniqid() collisions
-        // Use only md5 hash (32 chars) to fit CHAR(32) column
-        $logId = $id ?? md5('webhook_log_' . $eventId);
+        self::assertTrue($this->repository->claimEvent('test_event_1', 'acme', 'payment.paid'));
 
-        return new WebhookLog(
-            $eventId,
-            new DateTimeImmutable(),
-            'received',
-            $logId
-        );
+        $row = $this->row('test_event_1');
+        self::assertSame('claimed', $row['OXSTATUS']);
+        self::assertSame('acme', $row['OXPROVIDER']);
+        self::assertSame('payment.paid', $row['OXEVENTTYPE']);
     }
 
-    public function testSaveAndFindByEventId(): void
+    public function testClaimEvent_SecondDeliveryWhileClaimed_IsRefused(): void
     {
-        // Given - Create contract first to satisfy FK constraint
-        $this->createTestContract('contract_123');
+        $this->repository->claimEvent('test_event_2', 'acme', 'payment.paid');
 
-        $log = $this->createTestWebhookLog('test_event_123');
-        $log->setEventType('payment_intent.succeeded');
-        $log->setContractId('contract_123');
-
-        // When
-        $this->repository->save($log);
-
-        // Then
-        $found = $this->repository->findByEventId('test_event_123');
-
-        $this->assertNotNull($found);
-        $this->assertInstanceOf(WebhookLog::class, $found);
-        $this->assertEquals('test_event_123', $found->getEventId());
-        $this->assertEquals('payment_intent.succeeded', $found->getEventType());
-        $this->assertEquals('contract_123', $found->getContractId());
-        $this->assertEquals('received', $found->getStatus());
+        self::assertFalse($this->repository->claimEvent('test_event_2', 'acme', 'payment.paid'));
     }
 
-    public function testFindByEventIdReturnsNullWhenNotFound(): void
+    public function testUpdateStatus_Failed_AllowsTheRetryToClaimAgain(): void
     {
-        // When
-        $found = $this->repository->findByEventId('non_existent_event_id');
+        $this->repository->claimEvent('test_event_3', 'acme', 'payment.paid');
+        $this->repository->updateStatus('test_event_3', 'failed', 'boom');
 
-        // Then
-        $this->assertNull($found);
+        $row = $this->row('test_event_3');
+        self::assertSame('failed', $row['OXSTATUS']);
+        self::assertSame('boom', $row['OXERROR']);
+        self::assertNotNull($row['OXPROCESSEDAT']);
+        self::assertTrue($this->repository->claimEvent('test_event_3', 'acme', 'payment.paid'));
     }
 
-    public function testExistsByEventId(): void
+    public function testUpdateStatus_Processed_StaysExclusive(): void
     {
-        // Given
-        $log = $this->createTestWebhookLog('test_event_exists');
-        $this->repository->save($log);
+        $this->repository->claimEvent('test_event_4', 'acme', 'payment.paid');
+        $this->repository->updateStatus('test_event_4', 'processed');
 
-        // When/Then
-        $this->assertTrue($this->repository->existsByEventId('test_event_exists'));
-        $this->assertFalse($this->repository->existsByEventId('non_existent_event'));
-    }
-
-    public function testSaveWithoutOptionalFields(): void
-    {
-        // Given
-        $log = $this->createTestWebhookLog('test_event_minimal');
-
-        // When
-        $this->repository->save($log);
-
-        // Then
-        $found = $this->repository->findByEventId('test_event_minimal');
-
-        $this->assertNotNull($found);
-        $this->assertNull($found->getEventType());
-        $this->assertNull($found->getContractId());
-        $this->assertNull($found->getError());
-    }
-
-    public function testSaveWithError(): void
-    {
-        // Given
-        $log = $this->createTestWebhookLog('test_event_with_error');
-        $log->setError('Failed to process webhook: Invalid signature');
-
-        // When
-        $this->repository->save($log);
-
-        // Then
-        $found = $this->repository->findByEventId('test_event_with_error');
-
-        $this->assertNotNull($found);
-        $this->assertEquals('Failed to process webhook: Invalid signature', $found->getError());
-    }
-
-    public function testUpdateWebhookLog(): void
-    {
-        // Given - Create contract first to satisfy FK constraint
-        $this->createTestContract('contract_456');
-
-        $log = $this->createTestWebhookLog('test_event_update');
-        $log->setEventType('payment_intent.created');
-        $this->repository->save($log);
-
-        // When - update the log
-        $log->setEventType('payment_intent.succeeded');
-        $log->setContractId('contract_456');
-        $this->repository->save($log);
-
-        // Then
-        $found = $this->repository->findByEventId('test_event_update');
-
-        $this->assertNotNull($found);
-        $this->assertEquals('payment_intent.succeeded', $found->getEventType());
-        $this->assertEquals('contract_456', $found->getContractId());
-    }
-
-    public function testSaveMultipleWebhookLogs(): void
-    {
-        // Given
-        $log1 = $this->createTestWebhookLog('test_event_1');
-        $log2 = $this->createTestWebhookLog('test_event_2');
-        $log3 = $this->createTestWebhookLog('test_event_3');
-
-        // When
-        $this->repository->save($log1);
-        $this->repository->save($log2);
-        $this->repository->save($log3);
-
-        // Then
-        $this->assertTrue($this->repository->existsByEventId('test_event_1'));
-        $this->assertTrue($this->repository->existsByEventId('test_event_2'));
-        $this->assertTrue($this->repository->existsByEventId('test_event_3'));
-    }
-
-    public function testIdempotencyCheck(): void
-    {
-        // Given
-        $log = $this->createTestWebhookLog('test_event_idempotent');
-
-        // When - save the same event twice
-        $this->repository->save($log);
-
-        // Then - second save should update, not create duplicate
-        $this->repository->save($log);
-
-        // Verify only one record exists
-        $this->assertTrue($this->repository->existsByEventId('test_event_idempotent'));
-    }
-
-    public function testSaveWithAllFields(): void
-    {
-        // Given - Create contract first to satisfy FK constraint
-        $this->createTestContract('contract_789');
-
-        $log = $this->createTestWebhookLog('test_event_complete');
-        $log->setEventType('charge.succeeded');
-        $log->setContractId('contract_789');
-        $log->setError(null);
-
-        // When
-        $this->repository->save($log);
-
-        // Then
-        $found = $this->repository->findByEventId('test_event_complete');
-
-        $this->assertNotNull($found);
-        $this->assertEquals('test_event_complete', $found->getEventId());
-        $this->assertEquals('charge.succeeded', $found->getEventType());
-        $this->assertEquals('contract_789', $found->getContractId());
-        $this->assertEquals('received', $found->getStatus());
-        $this->assertNull($found->getError());
-        $this->assertInstanceOf(DateTimeImmutable::class, $found->getReceivedAt());
+        self::assertSame('processed', $this->row('test_event_4')['OXSTATUS']);
+        self::assertFalse($this->repository->claimEvent('test_event_4', 'acme', 'payment.paid'));
     }
 }

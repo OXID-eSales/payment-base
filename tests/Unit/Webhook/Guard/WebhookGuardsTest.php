@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Webhook\Guard;
 
-use OxidEsales\PaymentBase\Validation\RateLimit\InMemoryRateLimitStore;
+use OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore;
 use OxidEsales\PaymentBase\Webhook\Guard\HttpsGuard;
 use OxidEsales\PaymentBase\Webhook\Guard\IpAllowlistGuard;
 use OxidEsales\PaymentBase\Webhook\Guard\PayloadSizeGuard;

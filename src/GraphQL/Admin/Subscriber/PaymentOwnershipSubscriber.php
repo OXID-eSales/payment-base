@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\GraphQL\Admin\Subscriber;
 
 use OxidEsales\GraphQL\Admin\Checkout\DataType\AdminPaymentOwnership;
+use OxidEsales\PaymentBase\GraphQL\Admin\Contract\PaymentOwnershipProviderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -18,24 +19,25 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * which the module's definitions set at activation). Everything else of the row - active, sort, surcharge,
  * basket range, the assignments - stays the admin's.
  *
- * There is ONE payment method per provider; PayPal's funding sources (Pay Later, card, ...) are never rows, so
- * a row id that is not listed here is not claimed.
+ * There is ONE payment method per provider; funding sources of a provider are never rows, so a row id that no
+ * provider lists is not claimed.
  *
- * The ids are written out here, not collected from the provider modules: payment-base is the module every
- * provider shares, and its admin API is what makes the lock real for all of them at once.
+ * The ids are contributed by the provider modules (tag `oe.payment.ownership_provider`, VR-24 H6): payment-base
+ * is the module every provider shares and names none of them. A provider that does not tag its rows leaves them
+ * unlocked.
  *
  * @since 1.5.0
  */
 final class PaymentOwnershipSubscriber implements EventSubscriberInterface
 {
-    /** payment id => the provider name the contracts record */
-    private const PROVIDER_ROWS = [
-        'oe_payments_stripe_wallet' => 'stripe',
-        'oe_payments_paypal' => 'paypal',
-        'oe_payments_mollie' => 'mollie',
-    ];
-
     private const CONTROLLED_FIELDS = ['title', 'description'];
+
+    /**
+     * @param iterable<PaymentOwnershipProviderInterface> $providers
+     */
+    public function __construct(private readonly iterable $providers)
+    {
+    }
 
     /**
      * @return array<string, string>
@@ -47,10 +49,12 @@ final class PaymentOwnershipSubscriber implements EventSubscriberInterface
 
     public function onOwnership(AdminPaymentOwnership $event): void
     {
-        $provider = self::PROVIDER_ROWS[$event->paymentId] ?? null;
-        if ($provider === null) {
-            return;
+        foreach ($this->providers as $provider) {
+            if (in_array($event->paymentId, $provider->paymentIds(), true)) {
+                $event->claim($provider->providerName(), self::CONTROLLED_FIELDS);
+
+                return;
+            }
         }
-        $event->claim($provider, self::CONTROLLED_FIELDS);
     }
 }
