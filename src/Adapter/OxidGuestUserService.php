@@ -24,8 +24,14 @@ use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutException;
  * The shop user behind an anonymous checkout. An e-mail nobody has used
  * becomes a guest account (no password: it cannot log in); a guest e-mail
  * is the same account again with this checkout's addresses; an e-mail of a
- * registered account (it has a password) is refused - a stranger must not
- * change an account's addresses, and the shopper should log in.
+ * registered account (it has a password, or rights other than `user`) is
+ * refused - a stranger must not change an account's addresses, and the
+ * shopper should log in.
+ *
+ * Guest e-mail parity with core (owner decision 2026-11-03): core's
+ * User::createUser() replaces an existing guest record of the same e-mail with
+ * the new entry; so does this service. The row is updated in place instead of
+ * deleted and re-created, which keeps the guest's baskets and orders attached.
  *
  * The shop's models are touched in the protected seams only.
  *
@@ -33,11 +39,13 @@ use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutException;
  */
 class OxidGuestUserService implements GuestUserServiceInterface
 {
+    private const GUEST_RIGHTS = 'user';
+
     public function userFor(GuestDetails $details): GuestUser
     {
         $email = strtolower(trim($details->email));
         $account = $this->findAccount($email);
-        if ($account !== null && $account['passwordHash'] !== '') {
+        if ($account !== null && !$this->isGuest($account)) {
             throw new HeadlessCheckoutException(
                 HeadlessCheckoutException::ACCOUNT_EXISTS,
                 'The e-mail belongs to a registered account; log in to check out'
@@ -57,6 +65,17 @@ class OxidGuestUserService implements GuestUserServiceInterface
         return new GuestUser($userId, $deliveryAddressId);
     }
 
+    /**
+     * The same test core's User::checkIfEmailExists() applies: only a plain
+     * `user` row without a password is a guest record that may be taken over.
+     *
+     * @param array{id: string, passwordHash: string, rights: string} $account
+     */
+    private function isGuest(array $account): bool
+    {
+        return $account['passwordHash'] === '' && $account['rights'] === self::GUEST_RIGHTS;
+    }
+
     private function assertCountryKnown(GuestAddress $address): void
     {
         if (!$this->countryExists($address->countryId)) {
@@ -73,7 +92,7 @@ class OxidGuestUserService implements GuestUserServiceInterface
         return [
             'oxusername' => $email,
             'oxactive' => '1',
-            'oxrights' => 'user',
+            'oxrights' => self::GUEST_RIGHTS,
             'oxpassword' => '',
         ] + $this->columnsOf($invoiceAddress);
     }
@@ -104,19 +123,23 @@ class OxidGuestUserService implements GuestUserServiceInterface
     /**
      * Seam: the account of an e-mail in this shop; an empty hash is a guest.
      *
-     * @return array{id: string, passwordHash: string}|null
+     * @return array{id: string, passwordHash: string, rights: string}|null
      */
     protected function findAccount(string $email): ?array
     {
         $row = DatabaseProvider::getDb()->getRow(
-            'SELECT OXID, OXPASSWORD FROM oxuser WHERE OXUSERNAME = ? AND OXSHOPID = ?',
+            'SELECT OXID, OXPASSWORD, OXRIGHTS FROM oxuser WHERE OXUSERNAME = ? AND OXSHOPID = ?',
             [$email, Registry::getConfig()->getShopId()]
         );
         if (!is_array($row) || !isset($row[0])) {
             return null;
         }
 
-        return ['id' => (string) $row[0], 'passwordHash' => (string) ($row[1] ?? '')];
+        return [
+            'id' => (string) $row[0],
+            'passwordHash' => (string) ($row[1] ?? ''),
+            'rights' => (string) ($row[2] ?? ''),
+        ];
     }
 
     /**

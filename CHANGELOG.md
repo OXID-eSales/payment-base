@@ -5,6 +5,18 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (VR-24 H7) - small hardening
+- `ValidationApiController::init()` no longer swallows a container failure: it is fatal now (before, the endpoint kept
+  running with no guards loaded). New protected seam `container()`.
+- `HeadlessCheckoutService::start()` checks that a logged-in user owns the basket before it looks the payment up, and
+  the refusal is the new `HeadlessCheckoutException::BASKET_FORBIDDEN` (`basket_forbidden`, same value as
+  `UserBasketProvider::ERROR_BASKET_FORBIDDEN`). Before, a foreign basket answered `payment_not_supported` naming the
+  basket's payment.
+- `OxidGuestUserService`: a passwordless account whose rights are not `user` is refused (`account_exists`) like core's
+  `User::checkIfEmailExists()` does; before, it was overwritten and demoted to `user`. Guest e-mail parity with core
+  (owner decision 2026-11-03) is pinned in tests: an existing guest record is replaced by the new details.
+  `OxidGuestUserService::findAccount()` (protected seam) returns an extra `rights` key.
+
 ### Changed (VR-22 D4) - interface over concrete, shop id from the shop context
 - `EarlyOrderCreationHandler` and `ContractConditionResolverHandler` work on `PaymentContractInterface`. Before, any
   implementation other than the `PaymentContract` class was skipped silently: no draft-completed event, no order.

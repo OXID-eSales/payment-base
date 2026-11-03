@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\Validation\Guard\ValidationRequestContext;
 use OxidEsales\PaymentBase\Validation\Message\MessageFormatterInterface;
 use OxidEsales\PaymentBase\Validation\ValidationBase;
 use OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Central frontend validation endpoint for all PSP modules.
@@ -47,39 +48,58 @@ class ValidationApiController extends FrontendController
 
     /**
      * Resolve services from the DI container once per request (R-4.2).
+     *
+     * A failure here is fatal on purpose: an endpoint that swallowed it would
+     * run with no guards (no CSRF, origin or rate checks) and answer as if
+     * they had passed.
      */
     public function init(): void
     {
         parent::init();
 
-        try {
-            $container = ContainerFactory::getInstance()->getContainer();
-            $taggedGuards = $container->get('oe.payment_base.validation_guard_iterator');
-            if ($taggedGuards instanceof \Traversable || is_array($taggedGuards)) {
-                /** @var iterable<ValidationGuardInterface> $taggedGuards */
-                $guardArray = $taggedGuards instanceof \Traversable
-                    ? iterator_to_array($taggedGuards)
-                    : (array) $taggedGuards;
-                $this->guards = $this->sortGuards($guardArray);
-            }
-            $loader = $container->get(ValidationRuleLoaderInterface::class);
-            if ($loader instanceof ValidationRuleLoaderInterface) {
-                $this->loader = $loader;
-            }
-            $taggedFormatters = $container->get('oe.payment_base.validation_message_formatter_iterator');
-            if ($taggedFormatters instanceof \Traversable || is_array($taggedFormatters)) {
-                /** @var iterable<MessageFormatterInterface> $taggedFormatters */
-                $rawFormatters = $taggedFormatters instanceof \Traversable
-                    ? iterator_to_array($taggedFormatters)
-                    : (array) $taggedFormatters;
-                /** @var list<MessageFormatterInterface> $listFormatters */
-                $listFormatters = array_values($rawFormatters);
-                $this->formatters = $listFormatters;
-            }
-        } catch (\Throwable $e) {
-            // @phpstan-ignore-next-line — OXID Registry seam
-            Registry::getLogger()->error('[ValidationApiController] init failed', ['error' => $e->getMessage()]);
+        $container = $this->container();
+        $loader = $container->get(ValidationRuleLoaderInterface::class);
+        if (!$loader instanceof ValidationRuleLoaderInterface) {
+            throw new \RuntimeException('The validation rule loader is not available from the container');
         }
+
+        $this->initWithDependencies(
+            $this->taggedServices($container, 'oe.payment_base.validation_guard_iterator', ValidationGuardInterface::class),
+            $loader,
+            $this->taggedServices($container, 'oe.payment_base.validation_message_formatter_iterator', MessageFormatterInterface::class),
+        );
+    }
+
+    /**
+     * Seam: the shop's DI container.
+     */
+    protected function container(): ContainerInterface
+    {
+        // @phpstan-ignore-next-line - OXID container seam
+        return ContainerFactory::getInstance()->getContainer();
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $type
+     * @return list<T>
+     */
+    private function taggedServices(ContainerInterface $container, string $iteratorId, string $type): array
+    {
+        $services = $container->get($iteratorId);
+        if (!is_iterable($services)) {
+            throw new \RuntimeException(sprintf('Service "%s" is not iterable', $iteratorId));
+        }
+
+        $typed = [];
+        foreach ($services as $service) {
+            if (!$service instanceof $type) {
+                throw new \RuntimeException(sprintf('Service "%s" yielded something that is not a %s', $iteratorId, $type));
+            }
+            $typed[] = $service;
+        }
+
+        return $typed;
     }
 
     /**

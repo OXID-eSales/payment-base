@@ -176,6 +176,33 @@ class ValidationApiControllerTest extends TestCase
 
     // --- Helpers ---
 
+    public function testInitFailureIsFatalAndNeverLeavesTheEndpointWithoutGuards(): void
+    {
+        $controller = new ContainerFailingValidationApiController(
+            new \RuntimeException('container is down')
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('container is down');
+
+        $controller->init();
+    }
+
+    public function testInitWiresGuardsLoaderAndFormattersFromTheContainer(): void
+    {
+        $services = [
+            'oe.payment_base.validation_guard_iterator' => [$this->failingGuard(403, 1)],
+            ValidationRuleLoaderInterface::class => $this->loader,
+            'oe.payment_base.validation_message_formatter_iterator' => [],
+        ];
+        $controller = new ContainerFailingValidationApiController(null, $services);
+
+        $controller->init();
+
+        self::assertSame('', $controller->validate());
+        self::assertSame(403, $controller->capturedStatus, 'the guard from the container ran');
+    }
+
     private function passingGuard(): ValidationGuardInterface&MockObject
     {
         $guard = $this->createMock(ValidationGuardInterface::class);
@@ -265,5 +292,58 @@ class TestableValidationApiController extends ValidationApiController
     protected function setHttpStatus(int $status): void
     {
         $this->capturedStatus = $status;
+    }
+}
+
+/**
+ * Drives init() through a stubbed container: either a service lookup throws
+ * or the given services are returned.
+ */
+class ContainerFailingValidationApiController extends ValidationApiController
+{
+    /** @param array<string, mixed> $services */
+    public function __construct(private readonly ?\Throwable $failure = null, private readonly array $services = [])
+    {
+    }
+
+    public int $capturedStatus = 200;
+
+    protected function buildRequestContext(): ValidationRequestContext
+    {
+        return new ValidationRequestContext('POST', 10, [], 'p', null, 'sess', null, null);
+    }
+
+    protected function sendFailureResponse(int $httpStatus): string
+    {
+        $this->capturedStatus = $httpStatus;
+
+        return '';
+    }
+
+    protected function container(): \Psr\Container\ContainerInterface
+    {
+        $failure = $this->failure;
+        $services = $this->services;
+
+        return new class ($failure, $services) implements \Psr\Container\ContainerInterface {
+            /** @param array<string, mixed> $services */
+            public function __construct(private readonly ?\Throwable $failure, private readonly array $services)
+            {
+            }
+
+            public function get(string $id): mixed
+            {
+                if ($this->failure !== null) {
+                    throw $this->failure;
+                }
+
+                return $this->services[$id];
+            }
+
+            public function has(string $id): bool
+            {
+                return isset($this->services[$id]);
+            }
+        };
     }
 }

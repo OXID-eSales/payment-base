@@ -22,6 +22,9 @@ final class HeadlessCheckoutException extends RuntimeException
 {
     public const BASKET_NOT_FOUND = 'basket_not_found';
 
+    /** The logged-in user does not own the basket. */
+    public const BASKET_FORBIDDEN = 'basket_forbidden';
+
     public const PAYMENT_NOT_SUPPORTED = 'payment_not_supported';
 
     public const TERMS_NOT_CONFIRMED = 'terms_not_confirmed';

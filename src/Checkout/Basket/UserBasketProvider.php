@@ -16,6 +16,7 @@ use OxidEsales\Eshop\Application\Model\UserBasket;
 use OxidEsales\Eshop\Core\Registry;
 use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
+use OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutException;
 use OxidEsales\PaymentBase\Service\DeliveryAddressHashServiceInterface;
 
 /**
@@ -38,7 +39,7 @@ use OxidEsales\PaymentBase\Service\DeliveryAddressHashServiceInterface;
  */
 class UserBasketProvider implements CheckoutBasketProviderInterface
 {
-    public const ERROR_BASKET_FORBIDDEN = 'basket_forbidden';
+    public const ERROR_BASKET_FORBIDDEN = HeadlessCheckoutException::BASKET_FORBIDDEN;
 
     private const STOREFRONT_DELIVERY_SET_FIELD = 'oegql_deliverymethodid';
 

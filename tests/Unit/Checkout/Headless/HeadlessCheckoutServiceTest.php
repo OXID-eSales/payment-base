@@ -381,6 +381,27 @@ final class HeadlessCheckoutServiceTest extends TestCase
         }
     }
 
+    /**
+     * VR-24 / H7: the basket's owner is checked before anything about the
+     * basket's payment is looked up or named - a stranger learns nothing
+     * (not even which payment the basket was set to) from the error.
+     */
+    public function testStartChecksTheBasketOwnershipBeforeThePaymentLookup(): void
+    {
+        $service = $this->service();
+        $service->rows['ub-1'] = new HeadlessUserBasketRow('user-9', 'oe_payments_mollie');
+
+        try {
+            $service->start($this->startRequest(paymentId: 'oe_payments_stripe_wallet'));
+            self::fail('a foreign basket must be refused');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::BASKET_FORBIDDEN, $e->errorCode);
+            self::assertStringNotContainsString('oe_payments_mollie', $e->getMessage());
+            self::assertStringNotContainsString('oe_payments_stripe_wallet', $e->getMessage());
+        }
+        self::assertNull($this->stripe->processedWith);
+    }
+
     public function testStartRefusesAnUnknownBasket(): void
     {
         $this->expectExceptionObject(new HeadlessCheckoutException(HeadlessCheckoutException::BASKET_NOT_FOUND, 'Basket ub-1 not found'));
