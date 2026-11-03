@@ -21,7 +21,8 @@ opalsubscription, oxid-admin-graphql — src, tests, yaml, twig): 0 live referen
 `stripe/services.yaml:442,454` (Stripe DC-S1 removes them).
 
 **Gates** (php container, branch checkout): Unit 1802 OK (9 skipped) · phpstan no errors · phpcs clean · phpmd clean.
-Integration: not run locally (shop autoloader points at the main checkout) — CI on push.
+Integration, full suite from the branch (namespace-only autoloader bootstrap: shop libraries, payment-base classes
+from the branch): 234 tests, failures = exactly the 7 local baseline failures of `b-7.4.x` (GraphQL admin, environment).
 
 ## Left for later (decision or consumer PR first)
 
