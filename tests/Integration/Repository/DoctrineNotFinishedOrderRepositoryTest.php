@@ -13,6 +13,8 @@ use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
+use OxidEsales\PaymentBase\Repository\DoctrineContractOrderMailStore;
 use OxidEsales\PaymentBase\Repository\DoctrineNotFinishedOrderRepository;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -37,7 +39,10 @@ class DoctrineNotFinishedOrderRepositoryTest extends IntegrationTestCase
 
         $container = ContainerFactory::getInstance()->getContainer();
         $this->connection = $container->get(ConnectionProviderInterface::class)->get();
-        $this->repository = new DoctrineNotFinishedOrderRepository($this->connection);
+        $this->repository = new DoctrineNotFinishedOrderRepository(
+            $this->connection,
+            new DoctrineContractOrderMailStore($this->connection, new ThrowableSummary([]))
+        );
 
         $this->cleanupTestData();
     }

@@ -5,6 +5,36 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-18 L1/L2/L6) - logs carry ids, never content
+- `Logging\ThrowableSummaryInterface` / `ThrowableSummary` (public service, id is the interface): what a log line may say about a Throwable - class, code, SQLSTATE (also of
+  the database error a repository wrapped) and the fields providers vouch for. `fromThrowable()` returns the array for a
+  log context, `toLine()` a one-line form for a single column. Providers register an extractor for their SDK exception
+  (`Logging\ThrowableSummaryExtractorInterface`, tag `payment_base.throwable_summary`): status, request id, the offending
+  field - never the message, which for a DBAL or SDK exception embeds bound parameters or the request body.
+- `Webhook\WebhookDeliveryLogRecord`: the one shape of a webhook file-log line (`provider, eventId, eventType, objectId,
+  contractId, action, reason, httpCode, durationMs`); `fromResult()` builds it from a `WebhookResult`, `toContext()`
+  is what the provider's file logger writes.
+- `Webhook\WebhookPayloadSanitizer` (public service, back after VR-17 removed the unused one) redacts a webhook payload:
+  keys containing `secret|token|password|email|iban|address|phone|name` generically, a provider's own PII keys
+  (`payer`, `consumerAccount`, `metadata`) through `Webhook\WebhookPiiKeyProvider` (tag
+  `payment_base.webhook_pii_key_provider`); nesting deeper than 10 levels is truncated. No provider key lives here.
+- Integration guard `NoPiiInLogsTest`: a checkout with fixture personal data plus a DBAL and a handler failure whose
+  messages embed it; the shop log and every file under `log/` must hold none of the e-mail, street, `tkn_`,
+  `contract_token=`, `client_secret`.
+
+### Changed (VR-18 L1) - exception messages leave the logs and the webhook response
+- `AbstractWebhookProcessor` takes a `ThrowableSummaryInterface` as its third constructor argument (**providers must pass it**).
+  Its log contexts carry `throwable` (the summary) instead of `error` (the message); the failed webhook row keeps
+  `toLine()` (`Class (code N)`); the response to the PSP says `Webhook processing failed` /
+  `Webhook signature verification failed` instead of the exception message.
+- `OxidShopOrderService` takes a `ThrowableSummaryInterface` (4th constructor argument, wired in `services.yaml`): an unexpected
+  order-creation failure is a `ShopOrderException` `Unexpected error during order creation` with the summary under
+  `context['throwable']` (the previous exception keeps the message for a debugger).
+- `OrderConfirmationMailHandler` takes a `ThrowableSummaryInterface` (3rd constructor argument, before the logger);
+  `DoctrineContractOrderMailStore` takes one as 2nd argument (its SQLSTATE comes from the summary).
+- `DoctrineNotFinishedOrderRepository`: the mail store is now a required constructor argument (it defaulted to a
+  Doctrine store built in the constructor; the container always passed it).
+
 ### Added (VR-19) - shop-wide trusted proxies for the webhook caller's address
 - Module settings `sPaymentBaseTrustedProxies` (addresses / CIDR ranges of the reverse proxies in front of the shop;
   empty = none) and `sPaymentBaseClientIpHeader` (default `X-Forwarded-For`), group "Webhooks".

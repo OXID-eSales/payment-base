@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor;
 use OxidEsales\PaymentBase\Webhook\Exception\WebhookSignatureException;
@@ -137,7 +138,7 @@ class AbstractWebhookProcessorTest extends TestCase
         // Assert
         $this->assertTrue($result->isFailure());
         $this->assertSame('signature_invalid', $result->action);
-        $this->assertStringContainsString('Invalid webhook signature', $result->error ?? '');
+        $this->assertSame('Webhook signature verification failed', $result->error);
     }
 
     public function testProcessClaimsEventAtomically(): void
@@ -265,7 +266,7 @@ class AbstractWebhookProcessorTest extends TestCase
             ->method('error')
             ->with(
                 $this->stringContains('processing failed'),
-                $this->arrayHasKey('error')
+                $this->arrayHasKey('throwable')
             );
 
         $processor = $this->createTestProcessorWithProcessingException(
@@ -279,7 +280,46 @@ class AbstractWebhookProcessorTest extends TestCase
         // Assert
         $this->assertTrue($result->isFailure());
         $this->assertSame('processing_failed', $result->action);
-        $this->assertStringContainsString('Database connection failed', $result->error ?? '');
+        $this->assertSame('Webhook processing failed', $result->error);
+    }
+
+    /**
+     * VR-18 L1 — a handler exception's message may embed SQL parameters or an SDK request body:
+     * it reaches neither the log, the webhook log row nor the PSP's response.
+     */
+    public function testAHandlerFailureLeaksNoMessageToTheLogTheRowOrTheResponse(): void
+    {
+        $request = new WebhookRequest(
+            payload: '{"id":"evt_pii"}',
+            signature: 'valid',
+            remoteIp: '127.0.0.1',
+            receivedAt: new DateTimeImmutable()
+        );
+        $event = new WebhookEvent(id: 'evt_pii', type: 'payment_intent.succeeded', data: [], created: time());
+        $leaky = new \RuntimeException('with params ["zoe@example.test", "Hauptstr. 1", "tkn_abc"]', 5);
+
+        $this->logRepository->method('claimEvent')->willReturn(true);
+        $storedError = null;
+        $this->logRepository->method('updateStatus')->willReturnCallback(
+            static function (string $eventId, string $status, ?string $error) use (&$storedError): void {
+                $storedError = $error;
+            }
+        );
+        $loggedContext = [];
+        $this->logger->method('error')->willReturnCallback(
+            static function (string $message, array $context) use (&$loggedContext): void {
+                $loggedContext = $context;
+            }
+        );
+
+        $result = $this->createTestProcessorWithProcessingException($event, $leaky)->process($request);
+
+        $everythingKept = json_encode([$result->toArray(), $storedError, $loggedContext], JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('zoe@example.test', $everythingKept);
+        $this->assertStringNotContainsString('tkn_', $everythingKept);
+        $this->assertSame(\RuntimeException::class, $loggedContext['throwable']['class']);
+        $this->assertSame(5, $loggedContext['throwable']['code']);
+        $this->assertSame(\RuntimeException::class . ' (code 5)', $storedError);
     }
 
     /**
@@ -364,7 +404,7 @@ class AbstractWebhookProcessorTest extends TestCase
                 private readonly WebhookEvent $testEvent,
                 private readonly WebhookResult $testResult
             ) {
-                parent::__construct($logRepository, $logger);
+                parent::__construct($logRepository, $logger, new ThrowableSummary([]));
             }
 
             protected function getProviderName(): string
@@ -404,7 +444,7 @@ class AbstractWebhookProcessorTest extends TestCase
                 LoggerInterface $logger,
                 private readonly string $errorMessage
             ) {
-                parent::__construct($logRepository, $logger);
+                parent::__construct($logRepository, $logger, new ThrowableSummary([]));
             }
 
             protected function getProviderName(): string
@@ -448,7 +488,7 @@ class AbstractWebhookProcessorTest extends TestCase
                 private readonly WebhookEvent $testEvent,
                 private readonly \Throwable $testException
             ) {
-                parent::__construct($logRepository, $logger);
+                parent::__construct($logRepository, $logger, new ThrowableSummary([]));
             }
 
             protected function getProviderName(): string
@@ -495,7 +535,7 @@ class AbstractWebhookProcessorTest extends TestCase
                 private readonly WebhookResult $testResult,
                 private readonly string $testContractId
             ) {
-                parent::__construct($logRepository, $logger);
+                parent::__construct($logRepository, $logger, new ThrowableSummary([]));
             }
 
             protected function getProviderName(): string

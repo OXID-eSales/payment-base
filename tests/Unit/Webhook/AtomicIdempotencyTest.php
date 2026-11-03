@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Webhook;
 
 use DateTimeImmutable;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentBase\Webhook\AbstractWebhookProcessor;
 use OxidEsales\PaymentBase\Webhook\WebhookEvent;
@@ -139,7 +140,7 @@ final class AtomicIdempotencyTest extends TestCase
                 private readonly WebhookEvent $testEvent,
                 private readonly WebhookResult $testResult
             ) {
-                parent::__construct($logRepository, $logger);
+                parent::__construct($logRepository, $logger, new ThrowableSummary([]));
             }
 
             protected function getProviderName(): string

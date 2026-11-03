@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Webhook;
 
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentBase\Webhook\Exception\WebhookSignatureException;
 use Psr\Log\LoggerInterface;
@@ -34,7 +35,8 @@ abstract class AbstractWebhookProcessor
 {
     public function __construct(
         protected readonly WebhookLogRepositoryInterface $logRepository,
-        protected readonly LoggerInterface $logger
+        protected readonly LoggerInterface $logger,
+        protected readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -58,10 +60,11 @@ abstract class AbstractWebhookProcessor
             $event = $this->parseAndValidateRequest($request);
         } catch (WebhookSignatureException $e) {
             $this->logger->warning('Webhook signature verification failed', [
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
                 'remoteIp' => $request->remoteIp,
             ]);
-            return WebhookResult::failure('signature_invalid', $e->getMessage());
+            // VR-18 L1: the PSP gets a fixed text - an exception message is not for the caller.
+            return WebhookResult::failure('signature_invalid', 'Webhook signature verification failed');
         }
 
         // Step 2+3: Atomic claim (replaces TOCTOU-vulnerable existsByEventId + save)
@@ -82,10 +85,10 @@ abstract class AbstractWebhookProcessor
             $this->logger->error('Webhook processing failed', [
                 'eventId' => $event->id,
                 'eventType' => $event->type,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
-            $this->logWebhookResult($event, 'failed', null, $e->getMessage());
-            return WebhookResult::failure('processing_failed', $e->getMessage());
+            $this->logWebhookResult($event, 'failed', null, $this->throwableSummary->toLine($e));
+            return WebhookResult::failure('processing_failed', 'Webhook processing failed');
         }
 
         // Step 5: Update log status

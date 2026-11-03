@@ -96,6 +96,7 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineContractOrderMailStore
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # STRP-168 — the narrow half, for consumers that only need to hand a
@@ -147,6 +148,8 @@ services:
       $shippingAddressCopier: '@OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier'
       # OPC-175 / S4 (G9): an ended unfinished order gives its stock back.
       $restock: '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
+      # VR-18 L1: what an unexpected failure may say in a log line - never its message.
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
       $basketProvider: '@OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface'
       # Sprint 15 / S3: one order per headless checkout attempt (core's
       # sess_challenge covers the session checkout).
@@ -299,6 +302,26 @@ services:
   # of which must not hold back anything else.
   OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidShopMailSender
+
+  # VR-18 L1 - what a log line may say about a Throwable: class, code, SQLSTATE and the fields the
+  # providers' extractors vouch for. Providers tag their SDK-exception extractor
+  # `payment_base.throwable_summary` (ThrowableSummaryExtractorInterface).
+  OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface:
+    class: OxidEsales\PaymentBase\Logging\ThrowableSummary
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      $extractors: !tagged_iterator payment_base.throwable_summary
+
+  # VR-18 L2 - redacts a webhook payload before it is stored or logged: generic key vocabulary here,
+  # each provider's own PII keys through a WebhookPiiKeyProvider tagged `payment_base.webhook_pii_key_provider`.
+  OxidEsales\PaymentBase\Webhook\WebhookPayloadSanitizer:
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      $keyProviders: !tagged_iterator payment_base.webhook_pii_key_provider
 
   OxidEsales\PaymentBase\EventSystem\Handler\OrderConfirmationMailHandler:
     tags:

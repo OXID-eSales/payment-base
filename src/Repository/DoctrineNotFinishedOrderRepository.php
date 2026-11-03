@@ -30,17 +30,14 @@ class DoctrineNotFinishedOrderRepository implements NotFinishedOrderRepositoryIn
 
     private const STATUS_CANCELLED = 'CANCELLED';
 
-    private readonly ContractOrderMailStoreInterface $deferredMails;
-
     /**
-     * $deferredMails defaults to the Doctrine one on the same connection, so
-     * code that builds this repository by hand keeps working (STRP-176).
+     * VR-18: the mail store is injected, no longer defaulted to a Doctrine one built here - that
+     * default would need the ThrowableSummary the container owns.
      */
     public function __construct(
         private readonly Connection $connection,
-        ?ContractOrderMailStoreInterface $deferredMails = null
+        private readonly ContractOrderMailStoreInterface $deferredMails
     ) {
-        $this->deferredMails = $deferredMails ?? new DoctrineContractOrderMailStore($connection);
     }
 
     /**

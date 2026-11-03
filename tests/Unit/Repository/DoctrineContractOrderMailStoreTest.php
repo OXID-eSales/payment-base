@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Repository\DoctrineContractOrderMailStore;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -29,7 +30,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
 
     public function testStash_WritesTheMailsAsPendingAndAnswersWhetherTheRowExists(): void
     {
-        $store = new DoctrineContractOrderMailStore($this->connection(affected: 1));
+        $store = new DoctrineContractOrderMailStore($this->connection(affected: 1), new ThrowableSummary([]));
 
         self::assertTrue($store->stash('contract-1', [$this->mail()]));
         [$sql, $params] = $this->statements[0];
@@ -37,12 +38,12 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         self::assertSame('pending', $params['pending']);
         self::assertSame('contract-1', $params['id']);
 
-        self::assertFalse((new DoctrineContractOrderMailStore($this->connection(affected: 0)))->stash('gone', []));
+        self::assertFalse((new DoctrineContractOrderMailStore($this->connection(affected: 0), new ThrowableSummary([])))->stash('gone', []));
     }
 
     public function testStash_WritesPlainAscii_SoTheLatin1ContractTableKeepsEveryCharacter(): void
     {
-        (new DoctrineContractOrderMailStore($this->connection(affected: 1)))->stash('contract-1', [$this->mail()]);
+        (new DoctrineContractOrderMailStore($this->connection(affected: 1), new ThrowableSummary([])))->stash('contract-1', [$this->mail()]);
 
         self::assertSame(1, preg_match('/^[\x20-\x7E]*$/', $this->statements[0][1]['mails']));
     }
@@ -50,14 +51,14 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
     public function testClaim_TakesOnlyAPendingMailOfANotStornoedOrder_AndReturnsItByteForByte(): void
     {
         $connection = $this->connection(affected: 1);
-        (new DoctrineContractOrderMailStore($connection))->stash('contract-1', [$this->mail()]);
+        (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->stash('contract-1', [$this->mail()]);
         $connection->method('fetchAssociative')->willReturn([
             'OXORDERID' => 'order-1',
             'OXSHOPID' => '3',
             'OXORDERMAILS' => $this->statements[0][1]['mails'],
         ]);
 
-        $claimed = (new DoctrineContractOrderMailStore($connection))->claim('contract-1');
+        $claimed = (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->claim('contract-1');
 
         [$sql, $params] = $this->statements[1];
         self::assertStringContainsString('c.OXORDERMAILSTATE = :pending AND o.OXSTORNO = 0', $sql);
@@ -74,7 +75,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         $connection = $this->connection(affected: 0);
         $connection->expects($this->never())->method('fetchAssociative');
 
-        self::assertNull((new DoctrineContractOrderMailStore($connection))->claim('contract-1'));
+        self::assertNull((new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->claim('contract-1'));
     }
 
     public function testClaim_WithGarbageInTheColumn_ReturnsNoMailsInsteadOfFailing(): void
@@ -82,12 +83,12 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         $connection = $this->connection(affected: 1);
         $connection->method('fetchAssociative')->willReturn(['OXORDERID' => 'o', 'OXSHOPID' => 1, 'OXORDERMAILS' => '{nope']);
 
-        self::assertSame([], (new DoctrineContractOrderMailStore($connection))->claim('contract-1')?->mails);
+        self::assertSame([], (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->claim('contract-1')?->mails);
     }
 
     public function testMarkSent_ClearsTheContentAndStampsTheTime_OnlyFromSending(): void
     {
-        (new DoctrineContractOrderMailStore($this->connection(affected: 1)))->markSent('contract-1');
+        (new DoctrineContractOrderMailStore($this->connection(affected: 1), new ThrowableSummary([])))->markSent('contract-1');
 
         [$sql, $params] = $this->statements[0];
         self::assertStringContainsString('OXORDERMAILS = NULL, OXORDERMAILSENTAT = NOW()', $sql);
@@ -96,7 +97,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
 
     public function testMarkFailed_KeepsOnlyTheUnsentMails(): void
     {
-        (new DoctrineContractOrderMailStore($this->connection(affected: 1)))->markFailed('contract-1', [$this->mail()]);
+        (new DoctrineContractOrderMailStore($this->connection(affected: 1), new ThrowableSummary([])))->markFailed('contract-1', [$this->mail()]);
 
         $params = $this->statements[0][1];
         self::assertSame('failed', $params['failed']);
@@ -105,7 +106,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
 
     public function testDropByOrderId_ClearsPendingAndFailed_LeavesSentAndSendingAlone(): void
     {
-        self::assertSame(1, (new DoctrineContractOrderMailStore($this->connection(affected: 1)))->dropByOrderId('order-1'));
+        self::assertSame(1, (new DoctrineContractOrderMailStore($this->connection(affected: 1), new ThrowableSummary([])))->dropByOrderId('order-1'));
 
         [$sql, $params] = $this->statements[0];
         self::assertStringContainsString('OXORDERMAILSTATE IN (:pending, :failed)', $sql);
@@ -122,7 +123,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('contract-1');
 
-        (new DoctrineContractOrderMailStore($connection))->markSent('contract-1');
+        (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->markSent('contract-1');
     }
 
     /**
@@ -145,7 +146,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         });
 
         try {
-            (new DoctrineContractOrderMailStore($connection))->stash('contract-1', [$this->mail()]);
+            (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->stash('contract-1', [$this->mail()]);
             self::fail('a database error must not pass silently');
         } catch (RuntimeException $e) {
             self::assertStringContainsString('contract-1', $e->getMessage());
@@ -164,7 +165,7 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         });
 
         try {
-            (new DoctrineContractOrderMailStore($connection))->claim('contract-1');
+            (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->claim('contract-1');
             self::fail('a database error must not pass silently');
         } catch (RuntimeException $e) {
             self::assertStringContainsString('contract-1', $e->getMessage());
