@@ -847,6 +847,17 @@ services:
       $connection: '@doctrine.dbal.connection'
     public: false
 
+  # VR-21 F3: every provider refund booked once by its refund id (admin, webhook, intent).
+  # Public: the provider modules book through it.
+  OxidEsales\PaymentBase\Refund\ProviderRefundLedgerInterface:
+    class: OxidEsales\PaymentBase\Refund\ProviderRefundLedger
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $transactions: '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      $logger: '@oxid_esales.monolog.logger'
+    public: true
+
   # PAY-1 S3: a panel provider may also implement Admin\Contract\AdminActionOptionsProviderInterface.
   OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionOptionsResolver

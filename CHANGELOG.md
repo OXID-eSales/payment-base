@@ -5,6 +5,17 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-21 F3) - `Refund\ProviderRefundLedgerInterface`: every provider refund booked once
+- `book(contractId, providerRefundId, amount, currency, source)` books a refund the provider made on its contract
+  exactly once, keyed by the provider's refund id, whichever path reports it first (admin action, webhook, refund
+  intent): one DB transaction locks the contract row, writes the `refund` transaction row, then adds to the
+  contract's refunded total - both or neither. A second report of the same id answers `RefundBooking::duplicate()`
+  and changes nothing. Refused: empty refund id, non-positive amount, a currency other than the contract's, an
+  unknown contract. Public service; the providers move their refund bookings onto it (sprint 21 F4-F6).
+- Migration `Version20261103100000`: unique `(OXCONTRACTID, OXTYPE, OXTRANSACTIONID)` on `oe_payments_transaction`.
+  Rows without a provider id (NULL) are not affected. A shop that already holds duplicates is stopped and they are
+  named (none on pay1 or the dev shop, 2026-11-03).
+
 ### Fixed (VR-21) - a refund intent cannot be retargeted, overshoot, or lose decimals
 - `RefundIntentHandler`: the intent's correlation keys (e.g. opalreturns' `returnId`) still travel in the provider's
   context, but no longer replace `providerName`, `contractId`, `orderId` or `amount` - before, a colliding key
