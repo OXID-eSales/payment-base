@@ -885,6 +885,32 @@ services:
       $connection: '@doctrine.dbal.connection'
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       $transactions: '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      $settledPolicy: '@OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface'
+      $logger: '@oxid_esales.monolog.logger'
+    public: true
+
+  # VR-21 F3: a provider's chargeback total booked as audit deltas (one row per change, reversal negative).
+  OxidEsales\PaymentBase\Refund\ProviderChargebackLedgerInterface:
+    class: OxidEsales\PaymentBase\Refund\ProviderChargebackLedger
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $transactions: '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      $logger: '@oxid_esales.monolog.logger'
+    public: true
+
+  # VR-21 F3: stock goes back on a succeeded refund of the last refundable amount, whoever books it.
+  OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface:
+    class: OxidEsales\PaymentBase\Refund\RefundSettledPolicy
+    arguments:
+      $stockRestoration: '@OxidEsales\PaymentBase\Service\StockRestorationServiceInterface'
+
+  # VR-21 F3: the one stock restoration (Stripe's and Mollie's own classes are gone). Public: a provider that
+  # restores stock outside a refund booking may still ask for it; it restores once per order.
+  OxidEsales\PaymentBase\Service\StockRestorationServiceInterface:
+    class: OxidEsales\PaymentBase\Stock\OxidStockRestorationService
+    arguments:
+      $connection: '@doctrine.dbal.connection'
       $logger: '@oxid_esales.monolog.logger'
     public: true
 

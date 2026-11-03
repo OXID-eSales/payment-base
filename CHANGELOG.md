@@ -33,6 +33,26 @@ All notable changes to this module are documented here. Format follows
   `blPaymentBaseAcceptLegacyReturnTokens` (default on for the release that introduces the shared token): a provider's
   pre-VR-20 token (no expiry, no shopper) opens its return leg only if the switch is on AND the provider passes its
   old `TokenServiceInterface` in `ReturnAccessRequest::$legacyTokens`. Both go away with the legacy validators.
+### Added (VR-21 F3) - chargeback deltas, one restock rule, one stock restoration
+- `Refund\ProviderChargebackLedger` (`ProviderChargebackLedgerInterface`, public service): books the chargeback
+  TOTAL a provider reports as audit deltas - 30 then 50 is +30, +20; a reversal to 0 is -50; a replay books nothing.
+  One `chargeback` transaction row per change (negative for a reversal), under the contract's row lock. Audit only,
+  no contract state changes.
+- `Refund\RefundSettledPolicy` (`RefundSettledPolicyInterface`): stock is restored when a refund SUCCEEDED and nothing
+  refundable is left; never for a partial or a pending refund. `ProviderRefundLedger` settles after every booking,
+  duplicates included (a refund booked pending and reported succeeded later restocks then; a failed restock is retried
+  by the provider's redelivery), so admin, webhook and intent behave the same.
+- `Stock\OxidStockRestorationService`: the shared implementation of `StockRestorationServiceInterface`, bound in
+  payment-base's `services.yaml`. Respects `blUseStock` and `blAllowNegativeStock`; restores once per order (claim
+  `OXSTOCKRESTOREDAT` on the contract, migration `Version20261103120000`; given back when the restoration fails).
+
+### Changed (VR-21 F3)
+- `ProviderRefundLedgerInterface::book()` takes a trailing `bool $succeeded` (false while the refund is pending);
+  `ProviderRefundLedger` takes a `RefundSettledPolicyInterface` (no default).
+
+### Removed (VR-21 F3)
+- `StockRestorationServiceInterface::restoreStockForOrder()`: now `restoreForFullRefund()`. The providers' own
+  `OxidStockRestorationService` classes and their `StockRestorationServiceInterface` bindings go (Stripe, Mollie).
 
 ### Added (VR-19) - shop-wide trusted proxies for the webhook caller's address
 - Module settings `sPaymentBaseTrustedProxies` (addresses / CIDR ranges of the reverse proxies in front of the shop;
