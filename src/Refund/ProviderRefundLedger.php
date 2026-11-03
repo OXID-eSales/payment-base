@@ -44,6 +44,7 @@ class ProviderRefundLedger implements ProviderRefundLedgerInterface
         private readonly Connection $connection,
         private readonly ContractRepositoryInterface $contracts,
         private readonly TransactionRepositoryInterface $transactions,
+        private readonly RefundSettledPolicyInterface $settledPolicy,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -53,7 +54,8 @@ class ProviderRefundLedger implements ProviderRefundLedgerInterface
         string $providerRefundId,
         float $amount,
         string $currency,
-        string $source
+        string $source,
+        bool $succeeded
     ): RefundBooking {
         if ($providerRefundId === '') {
             throw new InvalidArgumentException('A provider refund is booked by its refund id; none was given.');
@@ -66,15 +68,33 @@ class ProviderRefundLedger implements ProviderRefundLedgerInterface
         try {
             $booking = $this->bookLocked($contractId, $providerRefundId, $amount, $currency, $source);
             $this->connection->commit();
-
-            return $booking;
         } catch (Throwable $e) {
             $this->connection->rollBack();
-            if ($e instanceof UniqueConstraintViolationException) {
-                return RefundBooking::duplicate($this->refundedTotalOf($contractId));
+            if (!$e instanceof UniqueConstraintViolationException) {
+                throw $e;
             }
-            throw $e;
+            $booking = RefundBooking::duplicate($this->refundedTotalOf($contractId));
         }
+
+        $this->settle($contractId, $succeeded);
+
+        return $booking;
+    }
+
+    /**
+     * After the commit, not inside it: the stock write goes through the shop's own database layer and could not be
+     * rolled back with the booking. Asked again on a duplicate on purpose: a refund booked as pending and reported
+     * succeeded later settles then, and a settlement that failed after its booking is retried by the provider's
+     * redelivery. The policy restocks once.
+     */
+    private function settle(string $contractId, bool $succeeded): void
+    {
+        $contract = $this->contracts->findById($contractId);
+        if ($contract === null) {
+            throw new RuntimeException('Contract ' . $contractId . ' vanished after its refund was booked.');
+        }
+
+        $this->settledPolicy->settle($contract, $succeeded);
     }
 
     private function bookLocked(

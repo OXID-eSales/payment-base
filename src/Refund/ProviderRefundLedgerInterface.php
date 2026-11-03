@@ -25,6 +25,10 @@ interface ProviderRefundLedgerInterface
 {
     /**
      * @param string $source who reports it: 'admin', 'webhook', 'intent' (for the log)
+     * @param bool $succeeded the provider's final word on this refund; false while it is still pending. After
+     *                        every call (booked or duplicate) the {@see RefundSettledPolicyInterface} settles the
+     *                        contract with it: stock is restored once, on a succeeded refund of the last
+     *                        refundable amount
      *
      * @throws InvalidArgumentException empty refund id, non-positive amount, currency other than the contract's
      * @throws RuntimeException no such contract
@@ -34,6 +38,7 @@ interface ProviderRefundLedgerInterface
         string $providerRefundId,
         float $amount,
         string $currency,
-        string $source
+        string $source,
+        bool $succeeded
     ): RefundBooking;
 }

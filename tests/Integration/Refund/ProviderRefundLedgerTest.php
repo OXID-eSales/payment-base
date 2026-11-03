@@ -16,7 +16,9 @@ use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInte
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Refund\ProviderRefundLedger;
+use OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
@@ -39,6 +41,9 @@ final class ProviderRefundLedgerTest extends TestCase
 
     private string $contractId;
 
+    /** @var list<array{0: string, 1: bool, 2: bool}> contract id, refund succeeded, contract fully refunded */
+    private array $settled = [];
+
     protected function setUp(): void
     {
         $container = ContainerFactory::getInstance()->getContainer();
@@ -50,6 +55,7 @@ final class ProviderRefundLedgerTest extends TestCase
             $this->connection,
             $this->contracts,
             new DoctrineTransactionRepository($this->connection),
+            $this->recordingPolicy(),
         );
 
         $this->contractId = 'it_vr21_' . bin2hex(random_bytes(8));
@@ -79,8 +85,8 @@ final class ProviderRefundLedgerTest extends TestCase
 
     public function testTheAdminActionAndTheWebhookReportingOneRefundBookItOnce(): void
     {
-        $first = $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'admin');
-        $second = $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'webhook');
+        $first = $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'admin', true);
+        $second = $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'webhook', true);
 
         self::assertTrue($first->booked);
         self::assertFalse($second->booked);
@@ -91,8 +97,8 @@ final class ProviderRefundLedgerTest extends TestCase
 
     public function testTwoDifferentRefundsAreBothBooked(): void
     {
-        $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'admin');
-        $booking = $this->ledger->book($this->contractId, 'REFUND-2', 20.0, 'eur', 'webhook');
+        $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'EUR', 'admin', true);
+        $booking = $this->ledger->book($this->contractId, 'REFUND-2', 20.0, 'eur', 'webhook', true);
 
         self::assertTrue($booking->booked);
         self::assertSame(50.0, $booking->refundedTotal);
@@ -102,7 +108,7 @@ final class ProviderRefundLedgerTest extends TestCase
     public function testARefundInAnotherCurrencyIsRefusedAndBooksNothing(): void
     {
         try {
-            $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'CHF', 'webhook');
+            $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'CHF', 'webhook', true);
             self::fail('a refund in another currency must not be booked');
         } catch (InvalidArgumentException) {
         }
@@ -116,7 +122,55 @@ final class ProviderRefundLedgerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('no contract');
 
-        $this->ledger->book('it_vr21_missing', 'REFUND-1', 30.0, 'EUR', 'webhook');
+        $this->ledger->book('it_vr21_missing', 'REFUND-1', 30.0, 'EUR', 'webhook', true);
+    }
+
+    public function testEveryReportIsSettledWithWhetherTheRefundSucceeded_ThePolicyDecidesWhatThatMeans(): void
+    {
+        $this->ledger->book($this->contractId, 'REFUND-1', 40.0, 'EUR', 'admin', false);
+        $this->ledger->book($this->contractId, 'REFUND-2', 60.0, 'EUR', 'webhook', true);
+
+        self::assertSame([
+            [$this->contractId, false, false],
+            [$this->contractId, true, true],
+        ], $this->settled);
+    }
+
+    public function testAPendingRefundReportedAgainAsSucceededIsSettledThen_NotBookedTwice(): void
+    {
+        $this->ledger->book($this->contractId, 'REFUND-1', 100.0, 'EUR', 'admin', false);
+        $again = $this->ledger->book($this->contractId, 'REFUND-1', 100.0, 'EUR', 'webhook', true);
+
+        self::assertFalse($again->booked);
+        self::assertSame(100.0, $this->contracts->findById($this->contractId)?->getRefundedAmount());
+        self::assertSame([
+            [$this->contractId, false, true],
+            [$this->contractId, true, true],
+        ], $this->settled);
+    }
+
+    public function testARefusedRefundIsNotSettled(): void
+    {
+        try {
+            $this->ledger->book($this->contractId, 'REFUND-1', 30.0, 'CHF', 'webhook', true);
+        } catch (InvalidArgumentException) {
+        }
+
+        self::assertSame([], $this->settled);
+    }
+
+    private function recordingPolicy(): RefundSettledPolicyInterface
+    {
+        $policy = $this->createMock(RefundSettledPolicyInterface::class);
+        $policy->method('settle')->willReturnCallback(
+            function (PaymentContractInterface $contract, bool $succeeded): bool {
+                $this->settled[] = [(string) $contract->getId(), $succeeded, $contract->isFullyRefunded()];
+
+                return false;
+            }
+        );
+
+        return $policy;
     }
 
     private function refundRows(string $providerRefundId): int

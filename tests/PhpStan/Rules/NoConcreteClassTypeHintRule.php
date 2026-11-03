@@ -67,7 +67,7 @@ final class NoConcreteClassTypeHintRule implements Rule
         // means handling OXID's own Basket, User and Order models. OXID ships no
         // interfaces for them — same reason Price is listed above. The rule is
         // about not depending on *our* concretions.
-        '#\\\\Eshop\\\\Application\\\\Model\\\\(Basket|User|Order|UserBasket|UserBasketItem|Address)$#',  // Sprint 15 / S1 (2026-10-06): + the persisted basket of a headless checkout; 140a: + the delivery address of a guest
+        '#\\\\Eshop\\\\Application\\\\Model\\\\(Basket|User|Order|OrderArticle|UserBasket|UserBasketItem|Address)$#',  // VR-21 F3: + the order line the stock restoration walks;  // Sprint 15 / S1 (2026-10-06): + the persisted basket of a headless checkout; 140a: + the delivery address of a guest
         // Sprint 10 (2026-09-23): pure billing-to-shipping field mapping with
         // one implementation and one caller (OxidShopOrderService) — CLAUDE.md
         // "one impl before an interface", same reasoning as the RuleSet /

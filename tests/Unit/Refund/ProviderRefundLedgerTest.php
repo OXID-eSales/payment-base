@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Refund;
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use OxidEsales\PaymentBase\Refund\ProviderRefundLedger;
+use OxidEsales\PaymentBase\Refund\RefundSettledPolicyInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use PHPUnit\Framework\TestCase;
@@ -27,7 +28,7 @@ final class ProviderRefundLedgerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('refund id');
 
-        $this->ledgerThatMustNotTouchTheDatabase()->book('contract-1', '', 10.0, 'EUR', 'webhook');
+        $this->ledgerThatMustNotTouchTheDatabase()->book('contract-1', '', 10.0, 'EUR', 'webhook', true);
     }
 
     public function testANonPositiveAmountIsRefused(): void
@@ -35,7 +36,7 @@ final class ProviderRefundLedgerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('positive');
 
-        $this->ledgerThatMustNotTouchTheDatabase()->book('contract-1', 're_1', 0.0, 'EUR', 'admin');
+        $this->ledgerThatMustNotTouchTheDatabase()->book('contract-1', 're_1', 0.0, 'EUR', 'admin', true);
     }
 
     private function ledgerThatMustNotTouchTheDatabase(): ProviderRefundLedger
@@ -47,6 +48,7 @@ final class ProviderRefundLedgerTest extends TestCase
             $connection,
             $this->createMock(ContractRepositoryInterface::class),
             $this->createMock(TransactionRepositoryInterface::class),
+            $this->createMock(RefundSettledPolicyInterface::class),
         );
     }
 }

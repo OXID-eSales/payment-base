@@ -58,6 +58,20 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
         // the checkout user as the active user before finalizeOrder(), so
         // OXID 7.6's getDelAddressInfo() ownership check sees the owner.
         . '  public function setUser($user) {} '
+        // VR-21 F3: Stock\OxidStockRestorationService walks the order's articles.
+        . '  public function getOrderArticles($excludeCanceled = false) { return []; } '
+        . '}'
+    );
+}
+
+// VR-21 F3 - OrderArticle stub: the two columns and the stock write the stock restoration reads; tests subclass it.
+if (!class_exists(\OxidEsales\Eshop\Application\Model\OrderArticle::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Application\\Model; '
+        . '#[\\AllowDynamicProperties] '
+        . 'class OrderArticle { '
+        . '  public function getId() { return null; } '
+        . '  public function updateArticleStock($addAmount, $allowNegativeStock = false) {} '
         . '}'
     );
 }

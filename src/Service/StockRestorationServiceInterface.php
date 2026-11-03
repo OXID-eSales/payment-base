@@ -10,26 +10,23 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Service;
 
 /**
- * Interface for stock restoration on refund.
+ * Stock restoration of a fully refunded order.
  *
- * Sprint 24: Extracted from OXID's OrderArticle::storno() logic.
- * When a full refund is processed, this service restores stock for all
- * order articles and marks them as cancelled (storno).
+ * VR-21 F3: one method, one meaning. The caller decides when (see Refund\RefundSettledPolicy: a succeeded refund
+ * of the last refundable amount); the implementation restores once per order, so asking twice is harmless.
+ * Replaces `restoreStockForOrder()` of Sprint 24; the implementation is payment-base's
+ * Stock\OxidStockRestorationService, no provider module ships its own.
  *
  * @since 2.0.0
  */
 interface StockRestorationServiceInterface
 {
     /**
-     * Restore stock for all articles in an order.
-     *
-     * - Marks all order articles as storno (oxstorno = 1)
-     * - Restores stock for each article (if blUseStock is enabled)
-     * - Recalculates order totals
-     * - Skips articles that are already storno'd
+     * Restores the stock of every order article that is not storno'd yet (when the shop manages stock) and
+     * storno's it. Order totals stay as they are.
      *
      * @param string $orderId The order ID to process
-     * @return int Number of articles processed (not including already storno'd)
+     * @return int Number of articles processed (0: order unknown, restored before, or nothing left to restore)
      */
-    public function restoreStockForOrder(string $orderId): int;
+    public function restoreForFullRefund(string $orderId): int;
 }

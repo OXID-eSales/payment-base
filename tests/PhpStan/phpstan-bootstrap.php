@@ -36,7 +36,14 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\Admin\AdminDetailsCon
 if (!class_exists(\OxidEsales\Eshop\Application\Model\OrderArticle::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
-        . 'class OrderArticle { public function cancelOrderArticle(): mixed { return null; } }'
+        . 'class OrderArticle { '
+        . '  public function cancelOrderArticle(): mixed { return null; } '
+        // VR-21 F3 - what Stock\\OxidStockRestorationService reads and calls (core OrderArticle::storno() logic).
+        . '  public \\OxidEsales\\Eshop\\Core\\Field $oxorderarticles__oxstorno;  '
+        . '  public \\OxidEsales\\Eshop\\Core\\Field $oxorderarticles__oxamount;  '
+        . '  public function getId(): ?string { return null; } '
+        . '  public function updateArticleStock($addAmount, $allowNegativeStock = false): mixed { return null; } '
+        . '}'
     );
 }
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Order::class, false)) {
