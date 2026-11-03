@@ -33,6 +33,9 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   `AbstractPaymentCaptureService`, `PaymentCaptureService`, `Service\Exception\{Capture,Refund}FailedException`, and
   `Adapter\Response\VoidResponse` (replaced by `CancellationResponse` long ago). `Adapter\PaymentAdapterInterface` stays:
   Stripe implements it.
+- `OxidShopOrderService::storeOrderMetadata()` (private; commented-out "Option 1/2" and a debug log) and seven admin
+  language keys no template uses (`PAYMENT_ADMIN_ACTION_FAILED`, `_ACTION_OK`, `_AMOUNT`, `_CAPTURED`, `_CONTRACT_ID`,
+  `_PROVIDER_ORDER`, `_REFUNDED`).
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,

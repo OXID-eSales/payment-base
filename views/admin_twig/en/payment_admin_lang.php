@@ -13,15 +13,8 @@ $aLang = [
     'charset'                     => 'UTF-8',
     'PAYMENT_ADMIN_TAB'           => 'Payment',
     'PAYMENT_ADMIN_NO_PROVIDER'   => 'This order was not processed through a registered online payment provider. Manual payment handling applies.',
-    'PAYMENT_ADMIN_CONTRACT_ID'   => 'Contract ID',
     // Sprint 14 (MOL-10): the OXID contract state, named as such; the Help table explains the values.
     'PAYMENT_ADMIN_CONTRACT_STATE'=> 'OXID Contract Status',
-    'PAYMENT_ADMIN_AMOUNT'        => 'Amount',
-    'PAYMENT_ADMIN_CAPTURED'      => 'Captured',
-    'PAYMENT_ADMIN_REFUNDED'      => 'Refunded',
-    'PAYMENT_ADMIN_PROVIDER_ORDER'=> 'Provider order ID',
-    'PAYMENT_ADMIN_ACTION_OK'     => 'Action completed successfully.',
-    'PAYMENT_ADMIN_ACTION_FAILED' => 'Action failed. See the shop log for details.',
 
     // Module settings — group headers
     'SHOP_MODULE_GROUP_validation'             => 'Validation',
