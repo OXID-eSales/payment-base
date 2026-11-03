@@ -1,11 +1,13 @@
 # Sprint 16 — O3 + O5 (payment-base): schema gate, order mails fail loud
 
 **Branch:** `b-7.4.x-VR-16-deploy-hygiene` (from `b-7.4.x` @ `d062955`) · **Date:** 2026-11-03
-**Commits:** `deebae8` (O5), `df9e19f` (O3) · **Status:** done on the branch, not pushed, awaiting merge approval.
+**Commits:** `deebae8` + `de60136` (O5), `df9e19f` (O3) · **Status:** done on the branch, not pushed, awaiting merge approval.
 
 ## O5 — an order whose mails cannot wait on its contract is refused
 
-- `OxidShopOrderService::createOrder()`: no contract id / no store / contract row missing / store throws ⇒
+- Follow-up `de60136`: an order **without** a contract id no longer defers its mails (no payment to wait for, core
+  mails it) — the first version refused those too, which the integration fixtures (orders without a contract) exposed.
+- `OxidShopOrderService::createOrder()` (contract-backed order): no store / contract row missing / store throws ⇒
   `ShopOrderException('order_mails_not_kept')` with `order_id`, `contract_id`, `cause` (class only). Same refusal as
   the rewrite path (`stashOrderMails()` + `orderMailsNotKept()` shared). The send-at-once fallback
   (`sendOrderMailsNow()`) and the `$mailSender` constructor argument are removed (class + `services.yaml`).
@@ -31,8 +33,10 @@
 
 - Unit: 1983 tests, 0 failures, 9 skipped (baseline before the sprint: 1976).
 - `composer phpcs` clean · `composer phpstan` no errors · `composer phpmd` clean.
-- Integration suite: **not run locally** — the shop's autoloader and compiled container point at the main checkout.
-  CI (7.4 / 7.5 / 7.6) runs it on push; the branch is not pushed yet.
+- Integration suite: **not runnable locally for this branch** — the shop compiles its container from the main
+  checkout's `services.yaml`, which still passes `$mailSender` (removed here). CI (7.4 / 7.5 / 7.6) builds from the
+  branch; the branch is not pushed yet. (Other branches run locally with a namespace-only autoloader bootstrap, see
+  sprint 17/19 reports.)
 
 ## Open in sprint 16
 
