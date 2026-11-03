@@ -80,7 +80,7 @@ final class OxidShopOrderServiceDeferredMailTest extends IntegrationTestCase
 
     public function testCreateOrder_WithoutAContract_SendsTheMailAtOnce(): void
     {
-        // Nothing to keep the mail on: better before the payment than never.
+        // No contract, no payment to wait for: the order does not defer, core mails it (VR-16).
         $user = $this->checkoutUser('nocon');
 
         $this->createOrderFor($user);

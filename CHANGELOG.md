@@ -5,6 +5,27 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-16) - `oe-payment-base-schema-check`, the deploy gate for the database schema
+- `vendor/bin/oe-payment-base-schema-check` asks the shop's migration wrapper `migrations:up-to-date oe_payment_base`:
+  exit 0 up to date, 1 migrations pending, 2 cannot check (no wrapper, shop not set up). It never skips. Run it after
+  `oe-payment-base-migrate` and before the shop takes traffic. pay1 ran two days three migrations behind; the first
+  sign was an order mail sent before the payment.
+
+### Changed (VR-16) - an order whose mails cannot wait on its contract is refused, not mailed at once
+- `OxidShopOrderService::createOrder()` throws `ShopOrderException` (`order_mails_not_kept`) when the rendered order mails
+  cannot be kept on the contract: no contract row, the store fails, or no store. Before, the mails went out at once -
+  "thank you for your order" before the payment, logged as a warning nobody saw. The rewrite path already worked this
+  way; both now share one refusal. The exception carries the order id, the contract id and the cause's class, never its
+  message. An order without a contract id does not defer its mails at all: no payment to wait for, core mails it.
+- `DoctrineContractOrderMailStore`: a database error says what failed and its SQLSTATE; the driver message stays on the
+  previous exception. Older DBAL versions put the bound parameters into that message - the whole rendered mail, which
+  reached `oxideshop.log` (~105k lines on pay1).
+
+### Removed (VR-16)
+- The `$mailSender` argument of `Adapter\OxidShopOrderService` (only the send-at-once fallback used it). A
+  `services.yaml` override that passes it must drop it. `ShopMailSenderInterface` itself stays: the commit leg sends
+  the kept mails with it.
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was

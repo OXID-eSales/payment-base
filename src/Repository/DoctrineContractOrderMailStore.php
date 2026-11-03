@@ -127,7 +127,7 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
         try {
             return (int) $this->connection->executeStatement($sql, $params);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to ' . $what . ': ' . $e->getMessage(), 0, $e);
+            throw $this->failure('Failed to ' . $what, $e);
         }
     }
 
@@ -142,14 +142,27 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
                 ['id' => $contractId]
             );
         } catch (Exception $e) {
-            throw new RuntimeException(
-                'Failed to read the order mails of contract ' . $contractId . ': ' . $e->getMessage(),
-                0,
-                $e
-            );
+            throw $this->failure('Failed to read the order mails of contract ' . $contractId, $e);
         }
 
         return $row === false ? [] : $row;
+    }
+
+    /**
+     * VR-16 — the driver message stays out: older DBAL versions put the bound
+     * parameters into it, i.e. the whole rendered mail, and this message ends up
+     * in log lines. The SQLSTATE says what went wrong; the previous exception
+     * keeps the rest for a debugger.
+     */
+    private function failure(string $what, Exception $e): RuntimeException
+    {
+        $sqlState = method_exists($e, 'getSQLState') ? $e->getSQLState() : null;
+
+        return new RuntimeException(
+            $what . ' (SQLSTATE ' . (is_string($sqlState) && $sqlState !== '' ? $sqlState : 'unknown') . ')',
+            0,
+            $e
+        );
     }
 
     /**

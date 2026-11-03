@@ -20,12 +20,12 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
-use OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -201,19 +201,6 @@ class SpyContractOrderMails implements ContractOrderMailStoreInterface
     }
 }
 
-class SpyMailSender implements ShopMailSenderInterface
-{
-    /** @var list<array{0: string, 1: int}> kind, shop */
-    public array $sent = [];
-
-    public function send(DeferredOrderMail $mail, int $shopId): bool
-    {
-        $this->sent[] = [$mail->kind, $shopId];
-
-        return true;
-    }
-}
-
 class FixtureUser extends User
 {
     public function getId(): ?string
@@ -323,7 +310,6 @@ class TestableOrderService extends OxidShopOrderService
         ?StaticBasketProvider $basketProvider = null,
         ?CheckoutAttemptGuardInterface $attemptGuard = null,
         ?ContractOrderMailStoreInterface $orderMails = null,
-        ?ShopMailSenderInterface $mailSender = null,
     ) {
         $this->basketProvider = $basketProvider ?? new StaticBasketProvider($basket);
         $repository = new SpyOrderRepository();
@@ -333,8 +319,7 @@ class TestableOrderService extends OxidShopOrderService
             $repository,
             $this->basketProvider,
             $attemptGuard,
-            $orderMails,
-            $mailSender
+            $orderMails
         );
     }
 
@@ -456,7 +441,8 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $order = new DeferringScriptedOrder(Order::ORDER_STATE_OK);
 
-        (new TestableOrderService($order))->createOrder($this->request());
+        (new TestableOrderService($order, orderMails: new SpyContractOrderMails()))
+            ->createOrder($this->requestFor('contract-1'));
 
         self::assertSame(['defer', 'finalize', 'take'], $order->events);
     }
@@ -465,9 +451,8 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $order = $this->orderThatRendered();
         $mails = new SpyContractOrderMails();
-        $sender = new SpyMailSender();
 
-        (new TestableOrderService($order, orderMails: $mails, mailSender: $sender))
+        (new TestableOrderService($order, orderMails: $mails))
             ->createOrder($this->requestFor('contract-1'));
 
         self::assertSame(['defer', 'finalize', 'take'], $order->events);
@@ -477,56 +462,87 @@ final class OxidShopOrderServiceTest extends TestCase
             static fn (DeferredOrderMail $mail): string => $mail->kind,
             $mails->stashed[0][1]
         ));
-        self::assertSame([], $sender->sent, 'nothing goes out before the payment');
     }
 
-    public function testCreateOrder_WithoutAContractId_SendsTheMailsNow(): void
+    /**
+     * VR-16 O5 — one path: an order whose mails cannot wait on its contract is
+     * refused, the way a rewritten order already is. Before, the mails went out
+     * at once - on pay1 every order for two days mailed "thank you" before the
+     * payment, unnoticed.
+     *
+     * @return iterable<string, array{0: ?string, 1: callable(SpyContractOrderMails): void}>
+     */
+    public static function mailsThatCannotWait(): iterable
     {
-        $mails = new SpyContractOrderMails();
-        $sender = new SpyMailSender();
-
-        (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
-            ->createOrder($this->request());
-
-        self::assertSame([], $mails->stashed);
-        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+        yield 'the contract row is missing' => ['contract-1', static function (SpyContractOrderMails $mails): void {
+            $mails->rowExists = false;
+        }];
+        yield 'the store fails' => ['contract-1', static function (SpyContractOrderMails $mails): void {
+            $mails->failWith = new \RuntimeException('Failed to store the order mails of contract contract-1 (SQLSTATE 42S22)');
+        }];
     }
 
-    public function testCreateOrder_WhenTheContractRowIsMissing_SendsTheMailsNow(): void
-    {
+    /**
+     * @param callable(SpyContractOrderMails): void $arrange
+     */
+    #[DataProvider('mailsThatCannotWait')]
+    public function testCreateOrder_WhenTheMailsCannotWaitOnTheContract_RefusesTheOrder(
+        ?string $contractId,
+        callable $arrange
+    ): void {
         $mails = new SpyContractOrderMails();
-        $mails->rowExists = false;
-        $sender = new SpyMailSender();
+        $arrange($mails);
+        $service = new TestableOrderService($this->orderThatRendered(), orderMails: $mails);
 
-        (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
-            ->createOrder($this->requestFor('contract-1'));
-
-        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+        try {
+            $service->createOrder($contractId === null ? $this->request() : $this->requestFor($contractId));
+            self::fail('an order whose mails cannot wait must not go on');
+        } catch (ShopOrderException $e) {
+            self::assertSame('order_mails_not_kept', $e->getErrorCode());
+            self::assertSame($contractId, $e->getContext()['contract_id']);
+            self::assertArrayHasKey('order_id', $e->getContext());
+        }
     }
 
-    public function testCreateOrder_WhenKeepingTheMailsFails_SendsThemNowAndTheCheckoutGoesOn(): void
+    /**
+     * Without a contract there is no payment for the mails to wait on: the
+     * order does not defer them, and core's finalizeOrder() mails as usual.
+     * Not a fallback - deferral exists only for contract-backed orders.
+     */
+    public function testCreateOrder_WithoutAContractId_DoesNotDeferTheMails(): void
     {
+        $order = $this->orderThatRendered();
         $mails = new SpyContractOrderMails();
-        $mails->failWith = new \RuntimeException('db down');
-        $sender = new SpyMailSender();
 
-        $response = (new TestableOrderService($this->orderThatRendered(), orderMails: $mails, mailSender: $sender))
-            ->createOrder($this->requestFor('contract-1'));
+        $response = (new TestableOrderService($order, orderMails: $mails))->createOrder($this->request());
 
         self::assertSame('completed', $response->status);
-        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+        self::assertSame(['finalize'], $order->events, 'neither deferred nor taken');
+        self::assertSame([], $mails->stashed);
     }
 
-    public function testCreateOrder_WithoutAStore_SendsTheMailsNow(): void
+    public function testCreateOrder_WithoutAStore_RefusesTheOrder(): void
     {
-        // A services.yaml override from before 1.6.0 builds the service
-        // without the store: the mail goes out as before STRP-176.
-        $sender = new SpyMailSender();
+        $this->expectException(ShopOrderException::class);
+        $this->expectExceptionMessage('could not be kept');
 
-        (new TestableOrderService($this->orderThatRendered(), mailSender: $sender))
-            ->createOrder($this->requestFor('contract-1'));
+        (new TestableOrderService($this->orderThatRendered()))->createOrder($this->requestFor('contract-1'));
+    }
 
-        self::assertSame([['customer', 1], ['owner', 1]], $sender->sent);
+    public function testCreateOrder_WhenTheStoreFails_TheRefusalCarriesIdsAndTheCauseClassOnly(): void
+    {
+        $mails = new SpyContractOrderMails();
+        $mails->failWith = new \RuntimeException('<p>Dear Jane, jane@example.test</p>');
+
+        try {
+            (new TestableOrderService($this->orderThatRendered(), orderMails: $mails))
+                ->createOrder($this->requestFor('contract-1'));
+            self::fail('expected a refusal');
+        } catch (ShopOrderException $e) {
+            self::assertSame(\RuntimeException::class, $e->getContext()['cause']);
+            self::assertStringNotContainsString('jane@example.test', $e->getMessage());
+            self::assertStringNotContainsString('jane@example.test', json_encode($e->getContext(), JSON_THROW_ON_ERROR));
+        }
     }
 
     public function testCreateOrder_WithADeferredMail_StillReportsTheOrderCompleted(): void

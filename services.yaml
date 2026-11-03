@@ -151,9 +151,9 @@ services:
       # Sprint 15 / S3: one order per headless checkout attempt (core's
       # sess_challenge covers the session checkout).
       $attemptGuard: '@OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface'
-      # STRP-176: the order mails wait on the contract; sent at once without it.
+      # STRP-176: the order mails wait on the contract. VR-16: an order whose
+      # mails cannot wait there is refused - no send-at-once fallback.
       $orderMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
-      $mailSender: '@OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface'
     public: true
 
   # Sprint 15 / S3 (GRAPH-QL, 2026-10-06) — the attempt guard on
