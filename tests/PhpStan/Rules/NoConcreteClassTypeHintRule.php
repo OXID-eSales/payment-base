@@ -103,6 +103,12 @@ final class NoConcreteClassTypeHintRule implements Rule
         // VR-23 T1: the late-money and payment-at-risk values - final readonly VOs and enums, values not behaviour.
         '#\\\\AtRisk\\\\(AtRiskReason|PaymentAtRisk)$#',
         '#\\\\LateMoney\\\\(LateMoneyKind|LateMoneyOutcome|ProviderPaymentState|ProviderPaymentStatus)$#',
+        // VR-22 A3: the money path's readonly values (the requests and results of the provider gateways, a policy's
+        // decision, a capture booking) and the classic admin's money-action adapter (one implementation, like the
+        // PaymentAdminActionDispatcher above); and the admin API's final MFA setting (optional package, no interface).
+        '#\\\\Payment\\\\(CaptureRequest|RefundRequest|CancelRequest|CaptureResult|RefundResult|CaptureBooking|PolicyDecision)$#',
+        '#\\\\Admin\\\\ClassicMoneyActionAdapter$#',
+        '#^OxidEsales\\\\GraphQL\\\\AdminApi\\\\Mfa\\\\Service\\\\MfaSettings$#',
 
         // Test classes
         '#Test$#',

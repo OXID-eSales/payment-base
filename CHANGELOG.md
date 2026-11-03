@@ -36,6 +36,47 @@ All notable changes to this module are documented here. Format follows
   `NotFinishedOrderCleanupResult` gains `contractsCommitted`; the service takes the attempt closers, the provider
   payment gateways, the commit service and the throwable summary as constructor arguments (wired in `services.yaml`).
   Its error log now carries the throwable summary instead of the exception message.
+### Added (VR-22 A3) - the one admin money path: policies, provider gateways, ledgers, `MoneyOperationRunner`
+- `Payment\CapturePolicy` / `Payment\RefundPolicy` (public services, `...PolicyInterface`): the provider-agnostic
+  rules. Capturable = authorised or committed amount less what was captured (state `authorized`/`committed`);
+  refundable = captured less refunded (state `committed`/`fulfilled`); amount positive, finite, in the contract's
+  currency and minor unit, within the remainder (half-cent tolerance). `remaining()` gives the bound, `decide()` a
+  `PolicyDecision` (`code`, `field`, `message`).
+- Provider ports, registered by the provider under the tag `oe.payment.gateway` (one class may implement all three):
+  `Payment\CaptureGatewayInterface`, `RefundGatewayInterface`, `CancelGatewayInterface` (each `providerName()` plus one
+  call taking `CaptureRequest` / `RefundRequest` / `CancelRequest`; results `CaptureResult`, `RefundResult`). A gateway
+  throws `Admin\Panel\AdminActionRefusedException` for a refusal the admin should read. `ProviderGatewayRegistry` finds
+  them by the contract's provider; two gateways of one kind for one provider fail when the registry is built.
+- `Payment\ProviderCaptureLedger` (`ProviderCaptureLedgerInterface`, public): books a provider capture once by its
+  capture id (contract row locked, `capture` transaction row, captured total = sum), counterpart of the refund ledger.
+- `Payment\MoneyOperationRunner` (`MoneyOperationRunnerInterface`, public): rights, step-up (capture/refund), audit,
+  `Payment\DbalOrderLock` (`GET_LOCK('pb_order_<md5>')`: one money operation per order at a time, whatever the
+  idempotency keys), the atomic idempotency claim, the policy, the gateway, the ledger. Refusals release the claim; a
+  failure after the PSP may have moved money (the booking) leaves it in flight and the PSP gets the same idempotency
+  key on the retry. `Payment\AdminChannelInterface` is the door (right, step-up, audit): `GraphQlAdminChannel` (the admin
+  API's own step-up and audit, the right is the mutation's `#[Right]`) and `Admin\ClassicAdminChannel` (the OXID admin
+  session, the admin API's rights catalogue and MFA setting where installed, `Admin\LoggedClassicAudit` as the trail).
+
+### Changed (VR-22 A3) - the classic admin and the admin API both end in the runner
+- Classic `PaymentAdminController::dispatchAction()`: `capture`, `refund` and `cancel` go to
+  `Admin\ClassicMoneyActionAdapter` and never reach the provider's panel `handleAction()`. They now need the payment
+  right (`ADMIN_PAYMENT_CAPTURE` / `ADMIN_PAYMENT_REFUND`, where the admin API's rights catalogue is installed) and are
+  audited (log). **Where the shop requires a second factor (the admin API's MFA setting, on by default), the classic
+  admin refuses capture and refund** - it cannot ask for one - and says to use the admin API. Form fields as before:
+  `capture_amount`, `refund_amount`, `capture_reason`, `refund_reason`, `refund_description`, `cancel_reason`, plus the
+  optional `idempotency_key` (without it a double submit of the same state is one call).
+- `GraphQL\Admin\Service\AdminPaymentOperations` is a thin hand-over to the runner (constructor now
+  `MoneyOperationRunnerInterface`, `AdminChannelInterface`). The bounds are the policies', not the provider's declared
+  `AdminActionBounds` any more; a provider's reason list and length limit (`AdminActionOptions`) still apply.
+- A provider without a gateway for an operation is refused `provider_unavailable`: until Stripe, Mollie and PayPal
+  register their gateways (VR-22 A5-A7), the admin's capture, refund and void for them are refused.
+- `Admin\PaymentAdminController` takes `ClassicMoneyActionAdapter` as a fourth, optional constructor argument.
+
+### Removed (VR-22 A3)
+- `GraphQL\Admin\Service\PanelProviderActionRunner`, `ProviderActionRunnerInterface`, `ProviderActionOutcome` (the admin
+  API no longer drives the provider's classic panel), and the amount arithmetic of `PaymentOperationRules` (only
+  `textRefusal()` remains).
+- `AdminPaymentOperation::providerAction()` and `reasonField()`.
 
 ### Changed (VR-22 D4) - interface over concrete, shop id from the shop context
 - `EarlyOrderCreationHandler` and `ContractConditionResolverHandler` work on `PaymentContractInterface`. Before, any

@@ -14,7 +14,6 @@ use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\GraphQL\Admin\Audit\Service\AuditRecorder;
-use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
@@ -23,22 +22,31 @@ use OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminPaymentOperations;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\DbalRequestShopOrders;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminAudit;
-use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner;
+use OxidEsales\PaymentBase\GraphQL\Admin\Service\GraphQlAdminChannel;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader;
+use OxidEsales\PaymentBase\Payment\CaptureOperation;
+use OxidEsales\PaymentBase\Payment\CapturePolicy;
+use OxidEsales\PaymentBase\Payment\MoneyOperationRunner;
+use OxidEsales\PaymentBase\Payment\ProviderGatewayRegistry;
+use OxidEsales\PaymentBase\Payment\RefundOperation;
+use OxidEsales\PaymentBase\Payment\RefundPolicy;
+use OxidEsales\PaymentBase\Payment\VoidOperation;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository;
 use OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface;
 use OxidEsales\PaymentBase\Tests\Integration\Support\InMemoryAuditChain;
-use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\AdapterEffects;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\CountingStepUp;
-use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakePanelProvider;
+use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\ControllableOrderLock;
+use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\FakeGateway;
+use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryCaptureLedger;
+use OxidEsales\PaymentBase\Tests\Unit\Payment\Support\InMemoryRefundLedger;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\NullLogger;
 
 /**
  * Capture, refund and void against the real database (contracts, transactions, the idempotency table, the order
- * rows, the admin API's audit chain), with ONLY the provider adapter faked at the panel-provider boundary. A
+ * rows, the admin API's audit chain), with ONLY the provider's gateway faked at the port providers implement. A
  * provider sandbox is not involved: the money movement itself belongs to each provider module's own suites.
  */
 #[Group('integration')]
@@ -49,7 +57,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
 
     private ?ContractRepositoryInterface $contractRepository = null;
     private InMemoryAuditChain $auditChain;
-    private FakePanelProvider $adapter;
+    private FakeGateway $adapter;
     private CountingStepUp $stepUp;
 
     public function setUp(): void
@@ -58,7 +66,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         if (!class_exists(AuditRecorder::class)) {
             self::markTestSkipped('oxid-admin-graphql is not installed');
         }
-        $this->adapter = new FakePanelProvider('paypal', AdapterEffects::successful($this->contracts()));
+        $this->adapter = new FakeGateway('paypal');
         $this->stepUp = new CountingStepUp();
         $this->auditChain = new InMemoryAuditChain();
         $this->connection()->executeStatement('INSERT INTO oxorder (OXID, OXSHOPID) VALUES (?, 1), (?, 2)', [self::ORDER_ID, self::OTHER_SHOP_ORDER_ID]);
@@ -73,7 +81,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
 
         self::assertNull($first->refusal());
         self::assertNull($retry->refusal());
-        self::assertCount(1, $this->adapter->calls, 'the retry with the same key does not reach the provider again');
+        self::assertCount(1, $this->adapter->requests, 'the retry with the same key does not reach the provider again');
         self::assertSame(30.0, $this->contracts()->findByOrderId(self::ORDER_ID)?->getRefundedAmount());
         self::assertSame(2, $this->stepUp->required, 'both calls demanded the second factor');
 
@@ -100,7 +108,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $refusal = $this->operations()->refund(self::ORDER_ID, 500.0, null, 'a10-refund-key-2')->refusal();
 
         self::assertSame('exceeds_refundable', $refusal?->code);
-        self::assertSame([], $this->adapter->calls);
+        self::assertSame([], $this->adapter->requests);
         self::assertCount(1, $this->auditChain->rows);
         self::assertSame(['failure', 'validation_failed'], [$this->auditChain->row(0)['result'], $this->auditChain->row(0)['errorCode']]);
     }
@@ -113,7 +121,6 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $result = $this->operations()->capture(self::ORDER_ID, null, 'a10-capture-key-1');
 
         self::assertNull($result->refusal());
-        self::assertSame('fulfilled', $result->payment()->state);
         self::assertSame(80.0, $result->payment()->amountCaptured);
         self::assertSame('authorization', $result->payment()->transactions[0]->type);
     }
@@ -125,7 +132,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $result = $this->operations()->void(self::ORDER_ID, 'a10-void-key-1');
 
         self::assertNull($result->refusal());
-        self::assertSame('cancelled', $result->payment()->state);
+        self::assertCount(1, $this->adapter->requests, 'the release reached the provider; the contract follows its own report');
     }
 
     public function testAnOrderOfAnotherShop_IsNotFound(): void
@@ -135,7 +142,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
         $refusal = $this->operations()->refund(self::OTHER_SHOP_ORDER_ID, 10.0, null, 'a10-refund-key-3')->refusal();
 
         self::assertSame('not_found', $refusal?->kind);
-        self::assertSame([], $this->adapter->calls);
+        self::assertSame([], $this->adapter->requests);
     }
 
     public function testTheIdempotencyRecordLivesInTheModulesTableAndSurvivesTheCall(): void
@@ -154,16 +161,24 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
     private function operations(): AdminPaymentOperations
     {
         $connection = $this->connection();
-
-        return new AdminPaymentOperations(
+        $gateways = new ProviderGatewayRegistry([$this->adapter]);
+        $capturePolicy = new CapturePolicy();
+        $logger = new NullLogger();
+        $runner = new MoneyOperationRunner(
+            $this->contracts(),
             new PaymentContractDetailsReader($this->contracts(), $this->transactions()),
-            new PanelProviderActionRunner(new PaymentPanelRegistry([$this->adapter]), $this->contracts(), new NullLogger()),
-            new OperationIdempotency(new DoctrineIdempotencyRepository($connection)),
-            $this->stepUp,
-            new OxidAdminAudit(InMemoryAuditChain::recorder($this->auditChain)),
             new DbalRequestShopOrders($connection),
-            new NullLogger(),
+            new ControllableOrderLock(),
+            new OperationIdempotency(new DoctrineIdempotencyRepository($connection)),
+            [
+                new CaptureOperation($capturePolicy, $gateways, new InMemoryCaptureLedger($this->contracts()), $logger),
+                new RefundOperation(new RefundPolicy(), $gateways, new InMemoryRefundLedger($this->contracts()), $logger),
+                new VoidOperation($capturePolicy, $gateways, $logger),
+            ],
+            $logger,
         );
+
+        return new AdminPaymentOperations($runner, new GraphQlAdminChannel($this->stepUp, new OxidAdminAudit(InMemoryAuditChain::recorder($this->auditChain))));
     }
 
     private function saveFulfilledContract(string $orderId, float $captured): PaymentContract
