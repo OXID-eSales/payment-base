@@ -23,6 +23,12 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   `ConditionTypeProviderInterface`, `Contract\Provider\{Core,Agent}ConditionTypeProvider`, and
   `ContractCondition::setConditionTypeRegistry()`, `agentIdentityVerified()`, `agentConsentConfirmed()`. Nothing
   booted the registry, so the two agent factories threw "Invalid condition type" whenever called.
+- Events nothing dispatched - `ContractConditionFulfilledEvent`, `OrderCompletedEvent`, `ContractFailedEvent`,
+  `PaymentInitiatedEvent` (each with its interface) - and handlers no `services.yaml` registers -
+  `GenericContractCreationHandler`, `ContractCleanupHandler`, `PaymentAuthorizationHandler`. The abstract
+  `ContractCreationHandler` stays (the providers extend it). Kept although never dispatched: `PaymentCapturedEvent`,
+  `PaymentFailedEvent`, `ContractCancelledEvent`, `ContractExpiredEvent` - opalsubscription listens for them (open
+  decision, sprint 17).
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,

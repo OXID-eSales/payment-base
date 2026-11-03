@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\EventSystem\Handler;
 
-use OxidEsales\PaymentBase\EventSystem\Handler\GenericContractCreationHandler;
-use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentInitiatedEvent;
+use OxidEsales\PaymentBase\Tests\Unit\EventSystem\Fixture\ContextOnlyEvent;
+use OxidEsales\PaymentBase\Tests\Unit\EventSystem\Fixture\FixtureContractCreationHandler;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
@@ -21,7 +21,7 @@ class ContractCreationHandlerTest extends TestCase
     private ContractRepositoryInterface&MockObject $repository;
     private EventDispatcher $dispatcher;
     private ContractService $service;
-    private GenericContractCreationHandler $handler;
+    private FixtureContractCreationHandler $handler;
 
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ class ContractCreationHandlerTest extends TestCase
             $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
             new \OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers([])
         );
-        $this->handler = new GenericContractCreationHandler(
+        $this->handler = new FixtureContractCreationHandler(
             $this->service,
             $this->dispatcher
         );
@@ -61,14 +61,7 @@ class ContractCreationHandlerTest extends TestCase
             ->method('save')
             ->with($this->isInstanceOf(PaymentContract::class));
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->handler->handle($event);
 
@@ -90,14 +83,7 @@ class ContractCreationHandlerTest extends TestCase
         $this->repository->expects($this->once())
             ->method('save');
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->handler->handle($event);
 
@@ -125,14 +111,7 @@ class ContractCreationHandlerTest extends TestCase
         $this->repository->expects($this->once())
             ->method('save');
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->handler->handle($event);
 
@@ -160,14 +139,7 @@ class ContractCreationHandlerTest extends TestCase
                 $savedContract = $contract;
             });
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->handler->handle($event);
 
@@ -195,14 +167,7 @@ class ContractCreationHandlerTest extends TestCase
             'basket' => $basket,
         ]);
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->handler->handle($event);
 
@@ -217,14 +182,7 @@ class ContractCreationHandlerTest extends TestCase
             'userId' => 'user123',
         ]);
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Basket is required');
@@ -239,14 +197,7 @@ class ContractCreationHandlerTest extends TestCase
             'basket' => $basket,
         ]);
 
-        $event = new PaymentInitiatedEvent(
-            $context,
-            'stripe',
-            100.0,
-            'EUR',
-            'http://return',
-            'http://cancel'
-        );
+        $event = new ContextOnlyEvent($context);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('User ID is required');

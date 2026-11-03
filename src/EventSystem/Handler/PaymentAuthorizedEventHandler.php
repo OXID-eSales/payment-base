@@ -94,8 +94,7 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
             // caller and travels via the context; this agnostic handler must
             // never guess it. When it is absent we leave the contract's
             // existing provider untouched (a provider-specific handler set it
-            // earlier in the flow) and log for diagnosis — matching the
-            // sibling PaymentAuthorizationHandler.
+            // earlier in the flow) and log for diagnosis.
             $providerName = $context->get('providerName');
             if (is_string($providerName) && $providerName !== '') {
                 $contract->setProvider($providerName, $event->getProviderOrderId());

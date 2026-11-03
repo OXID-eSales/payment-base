@@ -22,14 +22,14 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
  * <code>
  * class ContractCreationHandler implements HandlerInterface
  * {
- *     public function handle(PaymentInitiatedEvent $event): void
+ *     public function handle(ContractCreatedEvent $event): void
  *     {
  *         // Handler logic here
  *     }
  *
  *     public static function getHandledEventClass(): string
  *     {
- *         return PaymentInitiatedEvent::class;
+ *         return ContractCreatedEvent::class;
  *     }
  * }
  * </code>
@@ -42,7 +42,7 @@ interface HandlerInterface
      * Handle an event.
      *
      * Each handler implementation should type-hint the specific event class
-     * it handles (e.g., PaymentInitiatedEvent, ContractCreatedEvent).
+     * it handles (e.g., ContractCreatedEvent, PaymentAuthorizedEvent).
      *
      * @param object $event The event to handle
      * @return void
