@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Service;
 
 use RuntimeException;
+use OxidEsales\PaymentBase\Adapter\ShopContextInterface;
 use OxidEsales\PaymentBase\Adapter\ShopCurrency;
 use OxidEsales\PaymentBase\Checkout\Attempt\CheckoutAttemptAlreadyPaidException;
 use OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface;
@@ -26,7 +27,8 @@ class ContractService implements ContractServiceInterface
         // OPC-175: the attempt the session has open is continued, not replaced
         // by a second contract (one order, one contract).
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
-        private readonly PaymentAttemptClosersInterface $closers
+        private readonly PaymentAttemptClosersInterface $closers,
+        private readonly ShopContextInterface $shop
     ) {
         $this->contractRepository = $contractRepository;
     }
@@ -50,7 +52,7 @@ class ContractService implements ContractServiceInterface
         }
 
         $contract = new PaymentContract(
-            shopId: 1,
+            shopId: $this->shop->getShopId(),
             userId: $userId,
             basketSnapshot: $basketSnapshot
         );

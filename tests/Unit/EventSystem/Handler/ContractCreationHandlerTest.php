@@ -32,7 +32,8 @@ class ContractCreationHandlerTest extends TestCase
         $this->service = new ContractService(
             $this->repository,
             $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
-            new \OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers([])
+            new \OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosers([]),
+            $this->createMock(\OxidEsales\PaymentBase\Adapter\ShopContextInterface::class)
         );
         $this->handler = new FixtureContractCreationHandler(
             $this->service,

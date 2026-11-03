@@ -7,7 +7,7 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
-use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
@@ -67,11 +67,6 @@ class EarlyOrderCreationHandler extends AbstractHandler
 
         $contract = $event->getContract();
 
-        if (!$contract instanceof PaymentContract) {
-            $this->logEvent('EarlyOrderCreationHandler: Contract is not PaymentContract, skipping');
-            return;
-        }
-
         if (!$contract->getState()->isDraft()) {
             $this->logEvent('EarlyOrderCreationHandler: Contract not in DRAFT state, skipping', [
                 'contractId' => $contract->getId(),
@@ -90,7 +85,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
             $this->transitionContractToPending($contract, $event);
             $this->dispatchOrderCreatedEvent($event, $orderData['orderId']);
-            $this->openAttempts->remember($contract->getId());
+            $this->openAttempts->remember($event->getContractId());
             $this->logEvent('EarlyOrderCreationHandler::handle() END - SUCCESS');
         } catch (\Throwable $e) {
             $this->logEvent('EarlyOrderCreationHandler: Order creation failed', [
@@ -116,7 +111,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
     /**
      * @return array{orderId: string, orderNumber: string}
      */
-    private function createOrder(PaymentContract $contract, ContractDraftCompletedEvent $event): array
+    private function createOrder(PaymentContractInterface $contract, ContractDraftCompletedEvent $event): array
     {
         $basket = $event->getBasketSnapshot();
         $context = $event->getContext();
@@ -146,7 +141,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
             paymentTransactionId: null,
             orderRemark: null,
             metadata: [
-                'contract_id' => $contract->getId(),
+                'contract_id' => $event->getContractId(),
             ],
             initialStatus: 'NOT_FINISHED',
             basketId: $basketId
@@ -169,7 +164,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ];
     }
 
-    private function transitionContractToNotFinished(PaymentContract $contract, string $orderId): void
+    private function transitionContractToNotFinished(PaymentContractInterface $contract, string $orderId): void
     {
         $this->logEvent('EarlyOrderCreationHandler: Transitioning to NOT_FINISHED', [
             'contractId' => $contract->getId(),
@@ -180,7 +175,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $this->contractRepository->save($contract);
     }
 
-    private function transitionContractToPending(PaymentContract $contract, ContractDraftCompletedEvent $event): void
+    private function transitionContractToPending(PaymentContractInterface $contract, ContractDraftCompletedEvent $event): void
     {
         $this->logEvent('EarlyOrderCreationHandler: Transitioning to PENDING', [
             'contractId' => $contract->getId(),

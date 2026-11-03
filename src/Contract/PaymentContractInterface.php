@@ -46,7 +46,7 @@ interface PaymentContractInterface extends ModelInterface
     /**
      * Get all conditions attached to this contract.
      *
-     * @return array<ContractCondition>
+     * @return array<int, ContractCondition>
      */
     public function getConditions(): array;
 

@@ -5,6 +5,14 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (VR-22 D4) - interface over concrete, shop id from the shop context
+- `EarlyOrderCreationHandler` and `ContractConditionResolverHandler` work on `PaymentContractInterface`. Before, any
+  implementation other than the `PaymentContract` class was skipped silently: no draft-completed event, no order.
+- New `Adapter\ShopContextInterface` (`getShopId(): int`) with `Adapter\OxidShopContext` (the shop's configuration),
+  registered in `services.yaml`. `ContractService` takes it as a required fourth constructor argument and stamps new
+  contracts with it; before, every contract got shop 1, so on an EE subshop the deferred order mail used shop 1's
+  sender and SMTP. Anyone constructing `ContractService` by hand must pass the context (none of the consumers does).
+
 ### Changed (VR-22 A1) - the capture/refund tracker enforces its money invariants
 - `CaptureRefundTracker::setCapturedAmount()` takes the authorized amount (`PaymentContract` passes its own) and throws
   the new `Contract\MoneyInvariantViolation` (a `DomainException`) when the captured amount exceeds it;

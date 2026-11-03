@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
+use OxidEsales\PaymentBase\Adapter\ShopContextInterface;
 use OxidEsales\PaymentBase\Service\ContractService;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
@@ -46,13 +47,36 @@ class ContractServiceTest extends TestCase
     private ContractService $service;
     private OpenCheckoutAttemptRegistryInterface&MockObject $registry;
     private RecordingAttemptCloser $closer;
+    private ShopContextInterface&MockObject $shop;
 
     protected function setUp(): void
     {
         $this->repository = $this->createMock(ContractRepositoryInterface::class);
         $this->registry = $this->createMock(OpenCheckoutAttemptRegistryInterface::class);
         $this->closer = new RecordingAttemptCloser();
-        $this->service = new ContractService($this->repository, $this->registry, new PaymentAttemptClosers([$this->closer]));
+        $this->shop = $this->createMock(ShopContextInterface::class);
+        $this->shop->method('getShopId')->willReturn(1);
+        $this->service = new ContractService(
+            $this->repository,
+            $this->registry,
+            new PaymentAttemptClosers([$this->closer]),
+            $this->shop
+        );
+    }
+
+    /**
+     * VR-22 D4 (C3) - every contract was stamped shop 1; on an EE subshop the deferred
+     * order mail then used shop 1's SMTP / sender.
+     */
+    public function testCreateContract_StampsTheShopOfTheContext(): void
+    {
+        $shop = $this->createMock(ShopContextInterface::class);
+        $shop->method('getShopId')->willReturn(7);
+        $service = new ContractService($this->repository, $this->registry, new PaymentAttemptClosers([]), $shop);
+
+        $contract = $service->createContract('user123', $this->createMockBasket());
+
+        self::assertSame(7, $contract->getShopId());
     }
 
     private function createMockBasket(?string $currency = 'CHF', bool $withPrice = true): object
