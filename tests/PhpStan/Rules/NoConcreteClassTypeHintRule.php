@@ -100,6 +100,10 @@ final class NoConcreteClassTypeHintRule implements Rule
         // its audit recorder, its step-up guard, the current admin session (PAY-10) and the payment-ownership event.
         '#^OxidEsales\\\\GraphQL\\\\Admin\\\\(Audit\\\\Service\\\\AuditRecorder|Mfa\\\\Service\\\\StepUp|Checkout\\\\DataType\\\\AdminPaymentOwnership)$#',
 
+        // VR-23 T1: the late-money and payment-at-risk values - final readonly VOs and enums, values not behaviour.
+        '#\\\\AtRisk\\\\(AtRiskReason|PaymentAtRisk)$#',
+        '#\\\\LateMoney\\\\(LateMoneyKind|LateMoneyOutcome|ProviderPaymentState|ProviderPaymentStatus)$#',
+
         // Test classes
         '#Test$#',
         '#Mock#',

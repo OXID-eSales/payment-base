@@ -18,6 +18,8 @@ use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
 use OxidEsales\PaymentBase\Admin\Panel\UnsupportedPaymentActionException;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRisk;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
@@ -63,6 +65,7 @@ class PaymentAdminController extends AdminDetailsController
     protected ?ContractRepositoryInterface $contractRepository = null;
 
     protected ?PaymentAdminActionDispatcher $actionDispatcher = null;
+    protected ?PaymentAtRiskQueryInterface $atRiskQuery = null;
 
     /**
      * Constructor accepts all three dependencies for test injection, but
@@ -112,6 +115,18 @@ class PaymentAdminController extends AdminDetailsController
             ->get(PaymentAdminActionDispatcher::class);
     }
 
+    protected function atRiskQuery(): PaymentAtRiskQueryInterface
+    {
+        if ($this->atRiskQuery !== null) {
+            return $this->atRiskQuery;
+        }
+
+        /** @var PaymentAtRiskQueryInterface $query */
+        $query = ContainerFactory::getInstance()->getContainer()->get(PaymentAtRiskQueryInterface::class);
+
+        return $this->atRiskQuery = $query;
+    }
+
     public function render(): string
     {
         parent::render();
@@ -148,6 +163,19 @@ class PaymentAdminController extends AdminDetailsController
             return null;
         }
         return $this->loadedOrder = $order;
+    }
+
+    /**
+     * VR-23 T1: the open "payment at risk" flags of this order, for the badge above the provider panel. Shown
+     * whether or not a provider panel resolves: a flag is the shop's, not the provider's.
+     *
+     * @return list<PaymentAtRisk>
+     */
+    public function getAtRiskFlags(): array
+    {
+        $context = $this->buildPanelContext();
+
+        return $context === null ? [] : $this->atRiskQuery()->openForOrder($context->orderId);
     }
 
     public function hasProvider(): bool

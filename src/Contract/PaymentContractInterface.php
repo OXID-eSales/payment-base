@@ -25,6 +25,8 @@ interface PaymentContractInterface extends ModelInterface
 
     public function isInState(string $state): bool;
 
+    public function getShopId(): int;
+
     public function getOrderId(): ?string;
 
     public function getProvider(): ?string;

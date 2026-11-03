@@ -141,6 +141,22 @@
        on pagehide as a safety net. #}
     <div class="pc-spinner" role="status" tabindex="-1" aria-label="Processing"></div>
 
+    {# VR-23 T1 — "payment at risk": the merchant decides, nothing was cancelled or refunded automatically. #}
+    {% set atRiskFlags = oView.getAtRiskFlags() %}
+    {% if atRiskFlags|length > 0 %}
+        <div class="pc-alert pc-alert-danger" role="alert" data-testid="payment-at-risk">
+            <strong>{{ translate({ ident: "PAYMENT_ADMIN_AT_RISK" }) }}</strong>
+            <ul>
+                {% for flag in atRiskFlags %}
+                    <li data-reason="{{ flag.reason.value }}">
+                        {{ translate({ ident: "PAYMENT_ADMIN_AT_RISK_" ~ flag.reason.value|upper }) }}
+                        {% if flag.reference != '' %}({{ flag.reference }}){% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
     {% if oView.hasProvider() %}
         {% set panel = oView.getPanelViewData() %}
         {% include oView.getPanelTemplatePath() with panel %}

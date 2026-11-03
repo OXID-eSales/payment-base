@@ -10,6 +10,9 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\GraphQL\Admin\Relation;
 
 use OxidEsales\GraphQL\Admin\Order\DataType\AdminOrder;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRisk;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface;
+use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentAtRisk;
 use OxidEsales\PaymentBase\GraphQL\Admin\DataType\AdminPaymentContract;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentRightsProvider;
@@ -31,8 +34,10 @@ use TheCodingMachine\GraphQLite\Annotations\Right;
 #[ExtendType(class: AdminOrder::class)]
 final class AdminOrderPaymentRelation
 {
-    public function __construct(private readonly PaymentContractDetailsReaderInterface $details)
-    {
+    public function __construct(
+        private readonly PaymentContractDetailsReaderInterface $details,
+        private readonly PaymentAtRiskQueryInterface $atRisk,
+    ) {
     }
 
     #[Field]
@@ -42,5 +47,20 @@ final class AdminOrderPaymentRelation
         $payment = $this->details->findByOrderId($order->id);
 
         return $payment === null ? null : new AdminPaymentContract($payment);
+    }
+
+    /**
+     * VR-23 T1: the badge. Every open "payment at risk" flag of the order; empty when there is none.
+     *
+     * @return list<AdminPaymentAtRisk>
+     */
+    #[Field]
+    #[Right(PaymentRightsProvider::VIEW)]
+    public function paymentAtRisk(AdminOrder $order): array
+    {
+        return array_map(
+            static fn (PaymentAtRisk $flag): AdminPaymentAtRisk => new AdminPaymentAtRisk($flag),
+            $this->atRisk->openForOrder($order->id),
+        );
     }
 }

@@ -86,8 +86,12 @@ is not yet stornoed, and is older than that period. For each one the command:
   * marks the order OXSTORNO = 1 and OXTRANSSTATUS = 'CANCELLED' — the row is
     kept, so the order-number sequence stays free of gaps;
   * releases the vouchers the unfinished order was holding;
-  * cancels the linked payment contract, unless it is already committed or
-    already in a terminal state.
+  * asks the payment provider about the linked contract first. If the provider
+    says it is paid (or authorized), the contract is committed and the order is
+    left to finish; otherwise the provider's payment page is closed where the
+    provider can, and the contract is cancelled, unless it is already committed
+    or already in a terminal state. A provider that cannot be reached leaves
+    the order for the next run.
 
 Without <info>--shop-id</info> (Enterprise only) every subshop is processed.
 Stock is not restored — that stays the shop's own concern.
@@ -152,11 +156,12 @@ HELP
 
         $io->success(sprintf(
             'Cleaned up %d of %d unfinished order(s) older than %d day(s): '
-            . '%d contract(s) cancelled, %d voucher(s) released.',
+            . '%d contract(s) cancelled, %d contract(s) committed (paid at the provider), %d voucher(s) released.',
             $result->ordersCancelled,
             $result->scanned,
             $days,
             $result->contractsCancelled,
+            $result->contractsCommitted,
             $result->vouchersReleased
         ));
 

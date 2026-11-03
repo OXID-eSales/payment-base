@@ -11,8 +11,18 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OxidEsales\PaymentBase\Adapter\OrderRestockInterface;
+use OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface;
+use OxidEsales\PaymentBase\Contract\AttemptClosure;
 use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewayInterface;
+use OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewaysInterface;
+use OxidEsales\PaymentBase\LateMoney\ProviderPaymentState;
+use OxidEsales\PaymentBase\LateMoney\ProviderPaymentStatus;
+use OxidEsales\PaymentBase\Service\Commit\CommitOutcome;
+use OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface;
+use OxidEsales\PaymentBase\Service\Commit\PaymentConfirmation;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface;
 use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupService;
@@ -37,6 +47,12 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
     private ContractRepositoryInterface $contracts;
     /** @var OrderRestockInterface&MockObject */
     private OrderRestockInterface $restock;
+    /** @var PaymentAttemptClosersInterface&MockObject */
+    private PaymentAttemptClosersInterface $closers;
+    /** @var ProviderPaymentGatewayInterface&MockObject */
+    private ProviderPaymentGatewayInterface $gateway;
+    /** @var ContractCommitServiceInterface&MockObject */
+    private ContractCommitServiceInterface $commits;
 
     protected function setUp(): void
     {
@@ -45,6 +61,10 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->orders = $this->createMock(NotFinishedOrderRepositoryInterface::class);
         $this->contracts = $this->createMock(ContractRepositoryInterface::class);
         $this->restock = $this->createMock(OrderRestockInterface::class);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->method('close')->willReturn(AttemptClosure::Closed);
+        $this->gateway = $this->createMock(ProviderPaymentGatewayInterface::class);
+        $this->commits = $this->createMock(ContractCommitServiceInterface::class);
     }
 
     public function testImplementsInterface(): void
@@ -207,9 +227,165 @@ final class NotFinishedOrderCleanupServiceTest extends TestCase
         $this->assertSame(0, $result->failed);
     }
 
+    /**
+     * VR-23 T1: the nightly cleanup used to cancel the contract of an attempt the customer had in fact paid, and
+     * the provider's paid webhook then met a cancelled contract (money taken, no order). The provider is asked
+     * first; what is paid is committed, not cancelled.
+     */
+    public function testPaidAtPspIsCommittedNotCancelled(): void
+    {
+        $contract = $this->openContract('pending', 'tr_1');
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->contracts->method('findByOrderId')->willReturn($contract);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->expects($this->once())->method('close')->with($contract)->willReturn(AttemptClosure::Paid);
+        $this->gatewayAnswers(new ProviderPaymentStatus(ProviderPaymentState::Paid, 'pay_1', 49.9, 'EUR'));
+        $this->commits->expects($this->once())->method('commit')
+            ->with($this->equalTo(new PaymentConfirmation(
+                'contract-1',
+                'mollie',
+                'pay_1',
+                'tr_1',
+                49.9,
+                'EUR',
+                false,
+                'cleanup'
+            )))
+            ->willReturn(CommitOutcome::committed('order-a'));
+        $this->orders->expects($this->never())->method('cancelOrder');
+        $this->orders->expects($this->never())->method('releaseVouchers');
+        $this->restock->expects($this->never())->method('restock');
+        $contract->expects($this->never())->method('cancel');
+
+        $result = $this->service()->cleanup(7);
+
+        $this->assertSame(1, $result->contractsCommitted);
+        $this->assertSame(0, $result->ordersCancelled);
+        $this->assertSame(0, $result->contractsCancelled);
+        $this->assertSame(0, $result->failed);
+    }
+
+    public function testAnAuthorizationAtPspIsCommittedAsAwaitingCapture(): void
+    {
+        $contract = $this->openContract('pending', 'tr_1');
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->contracts->method('findByOrderId')->willReturn($contract);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->method('close')->willReturn(AttemptClosure::Paid);
+        $this->gatewayAnswers(new ProviderPaymentStatus(ProviderPaymentState::Authorized, 'pay_1', 49.9, 'EUR'));
+        $this->commits->expects($this->once())->method('commit')
+            ->with($this->callback(static fn (PaymentConfirmation $c): bool => $c->requiresCapture === true))
+            ->willReturn(CommitOutcome::committed('order-a'));
+
+        $this->assertSame(1, $this->service()->cleanup(7)->contractsCommitted);
+    }
+
+    public function testACommitTheContractRefusesLeavesOrderAndContractAndIsReportedAsFailed(): void
+    {
+        $contract = $this->openContract('pending', 'tr_1');
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->contracts->method('findByOrderId')->willReturn($contract);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->method('close')->willReturn(AttemptClosure::Paid);
+        $this->gatewayAnswers(new ProviderPaymentStatus(ProviderPaymentState::Paid, 'pay_1', 10.0, 'EUR'));
+        $this->commits->method('commit')->willReturn(CommitOutcome::refused('amount_mismatch'));
+        $this->orders->expects($this->never())->method('cancelOrder');
+        $contract->expects($this->never())->method('cancel');
+
+        $result = $this->service()->cleanup(7);
+
+        $this->assertSame(0, $result->contractsCommitted);
+        $this->assertSame(1, $result->failed, 'paid money without an order is for the operator to see');
+    }
+
+    public function testAPaymentPageThatIsClosedOrOpenIsCancelledLocallyAfterTheProviderWasAsked(): void
+    {
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a', 'order-b']);
+        $this->orders->method('cancelOrder')->willReturn(true);
+        $this->orders->method('releaseVouchers')->willReturn(0);
+        $first = $this->openContract('pending', 'tr_1');
+        $second = $this->openContract('not_finished', 'tr_2');
+        $first->expects($this->once())->method('cancel');
+        $second->expects($this->once())->method('cancel');
+        $this->contracts->method('findByOrderId')->willReturnOnConsecutiveCalls($first, $second);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->expects($this->exactly(2))->method('close')
+            ->willReturnOnConsecutiveCalls(AttemptClosure::Closed, AttemptClosure::Open);
+        $this->commits->expects($this->never())->method('commit');
+
+        $this->assertSame(2, $this->service()->cleanup(7)->contractsCancelled);
+    }
+
+    /**
+     * The provider could not be asked: nothing is cancelled on a guess, and the order is collected by a later run.
+     */
+    public function testAProviderThatCannotBeAskedLeavesOrderAndContractForTheNextRun(): void
+    {
+        $contract = $this->openContract('pending', 'tr_1');
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->contracts->method('findByOrderId')->willReturn($contract);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->method('close')->willThrowException(new RuntimeException('psp unreachable'));
+        $this->orders->expects($this->never())->method('cancelOrder');
+        $contract->expects($this->never())->method('cancel');
+
+        $this->assertSame(1, $this->service()->cleanup(7)->failed);
+    }
+
+    public function testASettledContractIsNotAskedAboutAtTheProvider(): void
+    {
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->orders->method('cancelOrder')->willReturn(true);
+        $this->orders->method('releaseVouchers')->willReturn(0);
+        $this->contracts->method('findByOrderId')->willReturn($this->contractInState(ContractState::committed()));
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->expects($this->never())->method('close');
+
+        $this->service()->cleanup(7);
+    }
+
+    public function testADryRunDoesNotAskTheProvider(): void
+    {
+        $this->orders->method('findStaleNotFinishedOrderIds')->willReturn(['order-a']);
+        $this->closers = $this->createMock(PaymentAttemptClosersInterface::class);
+        $this->closers->expects($this->never())->method('close');
+
+        $this->service()->cleanup(7, dryRun: true);
+    }
+
+    private function gatewayAnswers(ProviderPaymentStatus $status): void
+    {
+        $this->gateway->expects($this->once())->method('statusOf')->with('tr_1')->willReturn($status);
+    }
+
+    /**
+     * @return PaymentContractInterface&MockObject
+     */
+    private function openContract(string $state, string $providerOrderId): PaymentContractInterface
+    {
+        $contract = $this->contractInState(ContractState::fromValue($state));
+        $contract->method('getProvider')->willReturn('mollie');
+        $contract->method('getProviderOrderId')->willReturn($providerOrderId);
+        $contract->method('getAmount')->willReturn(49.9);
+        $contract->method('getCurrency')->willReturn('EUR');
+
+        return $contract;
+    }
+
     private function service(): NotFinishedOrderCleanupService
     {
-        return new NotFinishedOrderCleanupService($this->orders, $this->contracts, $this->restock);
+        $gateways = $this->createMock(ProviderPaymentGatewaysInterface::class);
+        $gateways->method('forContract')->willReturn($this->gateway);
+
+        return new NotFinishedOrderCleanupService(
+            $this->orders,
+            $this->contracts,
+            $this->restock,
+            $this->closers,
+            $gateways,
+            $this->commits,
+            $this->createStub(ThrowableSummaryInterface::class),
+        );
     }
 
     /**
