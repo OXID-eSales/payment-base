@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
@@ -38,6 +39,7 @@ class OrderConfirmationMailHandler implements HandlerInterface
     public function __construct(
         private readonly ContractOrderMailStoreInterface $mails,
         private readonly ShopMailSenderInterface $sender,
+        private readonly ThrowableSummaryInterface $throwableSummary,
         private readonly LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -66,7 +68,7 @@ class OrderConfirmationMailHandler implements HandlerInterface
         } catch (Throwable $e) {
             $this->logger->error(
                 '[OrderConfirmationMailHandler] order mails not sent',
-                $context + ['error' => $e->getMessage()]
+                $context + ['throwable' => $this->throwableSummary->fromThrowable($e)]
             );
         }
     }
@@ -106,7 +108,7 @@ class OrderConfirmationMailHandler implements HandlerInterface
                 + ['kind' => $mail->kind]);
         } catch (Throwable $e) {
             $this->logger->error('[OrderConfirmationMailHandler] order mail not sent', $context
-                + ['kind' => $mail->kind, 'error' => $e->getMessage()]);
+                + ['kind' => $mail->kind, 'throwable' => $this->throwableSummary->fromThrowable($e)]);
         }
 
         return false;

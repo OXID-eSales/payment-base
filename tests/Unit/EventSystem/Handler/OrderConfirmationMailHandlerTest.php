@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\OrderConfirmationMailHandler;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
@@ -133,7 +134,7 @@ final class OrderConfirmationMailHandlerTest extends TestCase
         $this->store = new FakeOrderMailStore();
         $this->sender = new FakeMailSender();
         $this->logger = new LevelLogger();
-        $this->handler = new OrderConfirmationMailHandler($this->store, $this->sender, $this->logger);
+        $this->handler = new OrderConfirmationMailHandler($this->store, $this->sender, new ThrowableSummary([]), $this->logger);
     }
 
     public function testHandlesContractCommitted(): void
@@ -187,6 +188,25 @@ final class OrderConfirmationMailHandlerTest extends TestCase
         self::assertSame(['customer mail'], $this->store->keptForResend);
         self::assertSame('error', $this->logger->records[0][0]);
         self::assertSame('contract-1', $this->logger->records[0][2]['contractId']);
+    }
+
+    /**
+     * VR-18 L1 - an SMTP or SQL exception message may hold the rendered mail: its recipient,
+     * address, the whole body. The log line names the class and code only.
+     */
+    public function testHandle_WhenTheSenderOrTheStoreThrows_TheLogHoldsNoExceptionMessage(): void
+    {
+        $this->store->pending = [$this->mail('customer mail')];
+        $this->sender->outcome = ['customer mail' => new RuntimeException('550 zoe@example.test rejected', 550)];
+        $this->handler->handle($this->committed());
+
+        $this->store->failClaim = new RuntimeException('with params ["Hauptstr. 1"]');
+        $this->handler->handle($this->committed());
+
+        $logged = json_encode($this->logger->records, JSON_THROW_ON_ERROR);
+        self::assertStringNotContainsString('zoe@example.test', $logged);
+        self::assertStringNotContainsString('Hauptstr', $logged);
+        self::assertSame(['class' => RuntimeException::class, 'code' => 550], $this->logger->records[0][2]['throwable']);
     }
 
     public function testHandle_WhenTheStoreFails_LogsErrorAndDoesNotThrow(): void

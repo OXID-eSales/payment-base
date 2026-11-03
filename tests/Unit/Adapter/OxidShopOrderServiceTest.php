@@ -20,6 +20,7 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
@@ -84,7 +85,7 @@ class ScriptedOrder extends Order
 
     private bool $finalized = false;
 
-    public function __construct(private readonly int $finalizeState)
+    public function __construct(private readonly int $finalizeState, private readonly ?\Throwable $finalizeFailure = null)
     {
     }
 
@@ -99,6 +100,9 @@ class ScriptedOrder extends Order
     public function finalizeOrder($basket, $user, $recalculating = false): int
     {
         $this->finalized = true;
+        if ($this->finalizeFailure !== null) {
+            throw $this->finalizeFailure;
+        }
 
         return $this->finalizeState;
     }
@@ -317,6 +321,7 @@ class TestableOrderService extends OxidShopOrderService
             $repository,
             new OrderShippingAddressCopier(),
             $repository,
+            new ThrowableSummary([]),
             $this->basketProvider,
             $attemptGuard,
             $orderMails
@@ -361,7 +366,12 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $this->assertInstanceOf(
             ShopOrderServiceInterface::class,
-            new OxidShopOrderService(new SpyOrderRepository(), new OrderShippingAddressCopier(), new SpyOrderRepository())
+            new OxidShopOrderService(
+                new SpyOrderRepository(),
+                new OrderShippingAddressCopier(),
+                new SpyOrderRepository(),
+                new ThrowableSummary([])
+            )
         );
     }
 
@@ -374,7 +384,7 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository();
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository);
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository, new ThrowableSummary([]));
         $this->assertTrue($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1', 'vouchers:order-1', 'restock:order-1'], $repository->calls);
     }
@@ -388,7 +398,7 @@ final class OxidShopOrderServiceTest extends TestCase
     {
         $repository = new SpyOrderRepository(cancelSucceeds: false);
 
-        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository);
+        $service = new OxidShopOrderService($repository, new OrderShippingAddressCopier(), $repository, new ThrowableSummary([]));
         $this->assertFalse($service->deleteNotFinishedOrder('order-1'));
         $this->assertSame(['cancel:order-1'], $repository->calls, 'vouchers and stock must not be released');
     }
@@ -527,6 +537,27 @@ final class OxidShopOrderServiceTest extends TestCase
         $this->expectExceptionMessage('could not be kept');
 
         (new TestableOrderService($this->orderThatRendered()))->createOrder($this->requestFor('contract-1'));
+    }
+
+    /**
+     * VR-18 L1 - the message of whatever core threw may carry SQL parameters (the customer's
+     * address, e-mail); the refusal that callers log carries the summary instead.
+     */
+    public function testCreateOrder_WhenCoreThrowsSomethingUnexpected_TheRefusalCarriesTheSummaryNotTheMessage(): void
+    {
+        $leaky = new \RuntimeException('with params ["jane@example.test", "Hauptstr. 1"]', 9);
+        $service = new TestableOrderService(new ScriptedOrder(Order::ORDER_STATE_OK, $leaky));
+
+        try {
+            $service->createOrder($this->request());
+            self::fail('expected a refusal');
+        } catch (ShopOrderException $e) {
+            self::assertSame('unexpected_error', $e->getErrorCode());
+            self::assertSame(['class' => \RuntimeException::class, 'code' => 9], $e->getContext()['throwable']);
+            $everythingLogged = $e->getMessage() . json_encode($e->getContext(), JSON_THROW_ON_ERROR);
+            self::assertStringNotContainsString('jane@example.test', $everythingLogged);
+            self::assertSame($leaky, $e->getPrevious());
+        }
     }
 
     public function testCreateOrder_WhenTheStoreFails_TheRefusalCarriesIdsAndTheCauseClassOnly(): void

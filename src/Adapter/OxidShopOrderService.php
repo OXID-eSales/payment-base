@@ -23,6 +23,7 @@ use OxidEsales\PaymentBase\Adapter\Exception\ShopOrderException;
 use OxidEsales\PaymentBase\Checkout\Basket\CheckoutBasketProviderInterface;
 use OxidEsales\PaymentBase\Checkout\Basket\SessionBasketProvider;
 use OxidEsales\PaymentBase\Checkout\Guard\CheckoutAttemptGuardInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\DefersConfirmationMailInterface;
 use OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface;
@@ -84,6 +85,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         private readonly NotFinishedOrderRepositoryInterface $orderRepository,
         private readonly OrderShippingAddressCopier $shippingAddressCopier,
         private readonly OrderRestockInterface $restock,
+        private readonly ThrowableSummaryInterface $throwableSummary,
         ?CheckoutBasketProviderInterface $basketProvider = null,
         private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
         private readonly ?ContractOrderMailStoreInterface $orderMails = null
@@ -222,10 +224,13 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         }
 
         return new ShopOrderException(
-            message: 'Unexpected error during order creation: ' . $e->getMessage(),
+            // VR-18 L1: core's message may carry bound SQL parameters (the customer's data) and
+            // callers log this exception - the summary says what failed, the previous keeps the rest.
+            message: 'Unexpected error during order creation',
             errorCode: 'unexpected_error',
             context: [
                 'exception_class' => get_class($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
                 'session_id' => $request->sessionId,
             ],
             previous: $e
@@ -677,7 +682,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
             Registry::getLogger()->warning('Order has an unparseable oxorderdate; reporting it as unknown', [
                 'order_id' => $order->getId(),
                 'oxorderdate' => $dateStr,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
 
             return null;

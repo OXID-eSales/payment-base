@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Repository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use JsonException;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use RuntimeException;
@@ -31,7 +32,8 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
     private const TABLE = 'oe_payments_contract';
 
     public function __construct(
-        private readonly Connection $connection
+        private readonly Connection $connection,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -156,10 +158,10 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
      */
     private function failure(string $what, Exception $e): RuntimeException
     {
-        $sqlState = method_exists($e, 'getSQLState') ? $e->getSQLState() : null;
+        $sqlState = $this->throwableSummary->fromThrowable($e)['sqlState'] ?? 'unknown';
 
         return new RuntimeException(
-            $what . ' (SQLSTATE ' . (is_string($sqlState) && $sqlState !== '' ? $sqlState : 'unknown') . ')',
+            $what . ' (SQLSTATE ' . $sqlState . ')',
             0,
             $e
         );
