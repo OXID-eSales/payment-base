@@ -125,6 +125,54 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         (new DoctrineContractOrderMailStore($connection))->markSent('contract-1');
     }
 
+    /**
+     * VR-16 O5 — older DBAL versions (the one the shop runs on pay1) put the
+     * bound parameters into the message: the whole rendered mail. It must never
+     * reach a log line through this exception.
+     */
+    public function testADatabaseErrorKeepsTheSqlStateButNotTheDriverMessage(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->method('executeStatement')->willThrowException(new class (
+            "An exception occurred while executing 'UPDATE oe_payments_contract SET OXORDERMAILS = ?'"
+            . " with params [\"<p>Dear Zoë, zoe@example.test, Hauptstr. 1</p>\"]:"
+            . " SQLSTATE[42S22]: Column not found: 1054 Unknown column 'OXORDERMAILSTATE'"
+        ) extends DbalException {
+            public function getSQLState(): string
+            {
+                return '42S22';
+            }
+        });
+
+        try {
+            (new DoctrineContractOrderMailStore($connection))->stash('contract-1', [$this->mail()]);
+            self::fail('a database error must not pass silently');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('contract-1', $e->getMessage());
+            self::assertStringContainsString('SQLSTATE 42S22', $e->getMessage());
+            self::assertStringNotContainsString('zoe@example.test', $e->getMessage());
+            self::assertStringNotContainsString('with params', $e->getMessage());
+        }
+    }
+
+    public function testAReadErrorKeepsTheSqlStateButNotTheDriverMessage(): void
+    {
+        $connection = $this->connection(affected: 1);
+        $connection->method('fetchAssociative')->willThrowException(new class (
+            "An exception occurred while executing 'SELECT …' with params [\"zoe@example.test\"]"
+        ) extends DbalException {
+        });
+
+        try {
+            (new DoctrineContractOrderMailStore($connection))->claim('contract-1');
+            self::fail('a database error must not pass silently');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('contract-1', $e->getMessage());
+            self::assertStringContainsString('SQLSTATE unknown', $e->getMessage());
+            self::assertStringNotContainsString('zoe@example.test', $e->getMessage());
+        }
+    }
+
     private function connection(int $affected): Connection&MockObject
     {
         $connection = $this->createMock(Connection::class);

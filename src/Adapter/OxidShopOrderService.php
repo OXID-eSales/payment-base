@@ -86,8 +86,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
         private readonly OrderRestockInterface $restock,
         ?CheckoutBasketProviderInterface $basketProvider = null,
         private readonly ?CheckoutAttemptGuardInterface $attemptGuard = null,
-        private readonly ?ContractOrderMailStoreInterface $orderMails = null,
-        private readonly ?ShopMailSenderInterface $mailSender = null
+        private readonly ?ContractOrderMailStoreInterface $orderMails = null
     ) {
         $this->basketProvider = $basketProvider ?? new SessionBasketProvider();
     }
@@ -189,18 +188,12 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
      */
     private function keepRewrittenOrderMailsOnContract(Order $order, CreateOrderRequest $request): void
     {
-        $contractId = $request->metadata['contract_id'] ?? null;
         $mails = $order instanceof DefersConfirmationMailInterface ? $order->takeDeferredMails() : [];
-
-        $kept = $this->orderMails !== null && is_string($contractId) && $mails !== []
-            && $this->orderMails->stash($contractId, $mails);
-        if (!$kept) {
-            throw new ShopOrderException(
-                message: 'The order mails of the rewritten order could not be kept on its contract',
-                errorCode: 'order_mails_not_kept',
-                context: ['order_id' => (string) $order->getId(), 'contract_id' => $contractId],
-            );
+        if ($mails === []) {
+            throw $this->orderMailsNotKept($order, $request, null);
         }
+
+        $this->stashOrderMails($order, $request, $mails);
     }
 
     /**
@@ -298,9 +291,9 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
     /**
      * STRP-176 — the order knows its mails, the request knows the contract.
      *
-     * Every failure ends in an immediate send: the order exists and the
-     * checkout goes on either way, and a mail sent before the payment (the
-     * behaviour before STRP-176) beats one that never comes.
+     * VR-16: one path. Mails that cannot wait on the contract refuse the order,
+     * as for a rewritten one - sending them at once instead mailed "thank you"
+     * before the payment for two days on pay1 without anyone noticing.
      */
     private function keepOrderMailsOnContract(Order $order, CreateOrderRequest $request): void
     {
@@ -312,49 +305,49 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
             return;
         }
 
-        $contractId = $request->metadata['contract_id'] ?? null;
-        $context = ['order_id' => (string) $order->getId(), 'contract_id' => $contractId];
-        if ($this->orderMails === null || !is_string($contractId) || $contractId === '') {
-            $this->sendOrderMailsNow($mails, $order, 'warning', 'no contract to keep the order mails on', $context);
-
-            return;
-        }
-
-        try {
-            if (!$this->orderMails->stash($contractId, $mails)) {
-                $this->sendOrderMailsNow($mails, $order, 'warning', 'contract row not found', $context);
-            }
-        } catch (Throwable $e) {
-            $context['error'] = $e->getMessage();
-            $this->sendOrderMailsNow($mails, $order, 'error', 'order mails could not be kept', $context);
-        }
+        $this->stashOrderMails($order, $request, $mails);
     }
 
     /**
      * @param list<DeferredOrderMail> $mails
-     * @param array<string, mixed> $context
      */
-    private function sendOrderMailsNow(array $mails, Order $order, string $level, string $why, array $context): void
+    private function stashOrderMails(Order $order, CreateOrderRequest $request, array $mails): void
     {
-        Registry::getLogger()->log($level, '[STRP-176] ' . $why . ', order mails sent before the payment', $context);
-        if ($this->mailSender === null) {
-            Registry::getLogger()->error('[STRP-176] no mail sender, the order mails are lost', $context);
-
-            return;
+        $contractId = $request->metadata['contract_id'] ?? null;
+        if ($this->orderMails === null || !is_string($contractId) || $contractId === '') {
+            throw $this->orderMailsNotKept($order, $request, null);
         }
 
-        foreach ($mails as $mail) {
-            try {
-                if (!$this->mailSender->send($mail, (int) $order->getFieldData('oxshopid'))) {
-                    Registry::getLogger()->error('[STRP-176] order mail not sent', $context + ['kind' => $mail->kind]);
-                }
-            } catch (Throwable $e) {
-                Registry::getLogger()->error(
-                    '[STRP-176] order mail not sent',
-                    $context + ['kind' => $mail->kind, 'error' => $e->getMessage()]
-                );
-            }
+        try {
+            $kept = $this->orderMails->stash($contractId, $mails);
+        } catch (Throwable $e) {
+            throw $this->orderMailsNotKept($order, $request, $e);
         }
+        if (!$kept) {
+            throw $this->orderMailsNotKept($order, $request, null);
+        }
+    }
+
+    /**
+     * Ids and the cause's class only: a mail-store message may carry the
+     * rendered mail, and this exception is logged by its callers.
+     */
+    private function orderMailsNotKept(Order $order, CreateOrderRequest $request, ?Throwable $cause): ShopOrderException
+    {
+        $context = [
+            'order_id' => (string) $order->getId(),
+            'contract_id' => $request->metadata['contract_id'] ?? null,
+        ];
+        if ($cause !== null) {
+            $context['cause'] = $cause::class;
+        }
+
+        return new ShopOrderException(
+            message: 'The order mails could not be kept on the contract',
+            errorCode: 'order_mails_not_kept',
+            context: $context,
+            previous: $cause,
+        );
     }
 
     /**
