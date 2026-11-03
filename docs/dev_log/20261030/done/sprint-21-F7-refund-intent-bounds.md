@@ -25,8 +25,10 @@ baseline failures · **opalreturns** unit suite (353 tests) green with this bran
 ## Not done (next)
 
 - **F3 `ProviderRefundLedger`** — needs a unique key `(OXCONTRACTID, OXTYPE, OXTRANSACTIONID)` on
-  `oe_payments_transactions`. Shops already hold duplicate refund rows from the double-booking bugs (PayPal SEC-3,
+  `oe_payments_transaction`. Shops may already hold duplicate refund rows from the double-booking bugs (PayPal SEC-3,
   Stripe S-4), so the migration must first find them; how to treat them (merge, flag, refuse to migrate) is an owner
-  decision. Read-only query to size it on pay1:
-  `SELECT OXCONTRACTID, OXTYPE, OXTRANSACTIONID, COUNT(*) FROM oe_payments_transactions GROUP BY 1,2,3 HAVING COUNT(*) > 1`.
+  decision. **Sized on pay1 (read-only, 2026-11-03): no duplicate `(contract, type, provider id)` groups** in
+  `oe_payments_transaction`; 280 Mollie rows and 1 Stripe row carry no provider id (NULL/empty - allowed repeatedly by
+  a MySQL unique key). The unique key migrates cleanly there; the migration still refuses and names duplicates if a
+  shop has them (like `OneOrderOneContractMigration`).
 - F1/F2 hotfixes (Mollie idempotency key, restock on partial refund) live in the provider repos.
