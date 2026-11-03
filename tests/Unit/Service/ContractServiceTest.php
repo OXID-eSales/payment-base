@@ -10,6 +10,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use PHPUnit\Framework\MockObject\MockObject;
+use OxidEsales\PaymentBase\Tests\Unit\Fixture\PricedBasket;
 use PHPUnit\Framework\TestCase;
 use OxidEsales\PaymentBase\Checkout\Attempt\CheckoutAttemptAlreadyPaidException;
 use OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptCloserInterface;
@@ -54,15 +55,41 @@ class ContractServiceTest extends TestCase
         $this->service = new ContractService($this->repository, $this->registry, new PaymentAttemptClosers([$this->closer]));
     }
 
-    private function createMockBasket(): object
+    private function createMockBasket(?string $currency = 'CHF', bool $withPrice = true): object
     {
-        $basket = new \stdClass();
-        $basket->totalGross = 100.0;
-        $basket->totalNet = 84.03;
-        $basket->totalVat = 15.97;
-        $basket->currency = 'EUR';
+        return new PricedBasket($currency, $withPrice);
+    }
 
-        return $basket;
+    /**
+     * VR-20 R4 (S3) — the contract amount is what every provider charges. It was
+     * built with silent fallbacks: EUR when the currency object was missing (the
+     * "CHF 100 charged as EUR 100" defect ShopCurrency was written against) and
+     * 0.00 when the basket had no price.
+     */
+    public function testCreateContract_TakesAmountAndCurrencyFromTheBasket(): void
+    {
+        $contract = $this->service->createContract('user123', $this->createMockBasket('CHF'));
+
+        self::assertSame('CHF', $contract->getCurrency());
+        self::assertSame(100.0, $contract->getAmount());
+    }
+
+    public function testCreateContract_WithoutABasketCurrency_RefusesToGuessOne(): void
+    {
+        $this->repository->expects(self::never())->method('save');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Refusing to assume a currency');
+
+        $this->service->createContract('user123', $this->createMockBasket(null));
+    }
+
+    public function testCreateContract_WithoutABasketPrice_RefusesAZeroContract(): void
+    {
+        $this->repository->expects(self::never())->method('save');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('basket has no price');
+
+        $this->service->createContract('user123', $this->createMockBasket('EUR', withPrice: false));
     }
 
     public function testCreateContract(): void
