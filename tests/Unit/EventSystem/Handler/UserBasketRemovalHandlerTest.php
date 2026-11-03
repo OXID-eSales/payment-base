@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\UserBasketRemovalHandler;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -29,7 +30,7 @@ final class RecordingBasketRemoval extends UserBasketRemovalHandler
 
     public function __construct()
     {
-        parent::__construct(new NullLogger());
+        parent::__construct(new NullLogger(), new ThrowableSummary([]));
     }
 
     protected function deleteUserBasket(string $basketId): bool

@@ -53,6 +53,7 @@ services:
     class: OxidEsales\PaymentBase\Repository\DoctrineContractRepository
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # Sprint 15 / S3 (split out in S8) — the headless previous-attempt lookup,
@@ -87,6 +88,7 @@ services:
     arguments:
       $connection: '@doctrine.dbal.connection'
       $deferredMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # STRP-176 — order mails rendered at early order creation wait on their
@@ -196,6 +198,7 @@ services:
     arguments:
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       $dispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   # --------------------------------------------------------------
@@ -235,6 +238,7 @@ services:
       $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       # S3: no sess_challenge write under a headless scope
       $scope: '@OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScopeInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     public: true
 
   OxidEsales\PaymentBase\Checkout\Headless\HeadlessCheckoutServiceInterface:
@@ -638,6 +642,7 @@ services:
       # names its (kept, storno'd) order row, or core refuses every retry.
       # Sprint 15 / S2: through the checkout context (session or headless scope).
       $context: '@OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
 
   # MOL-18 — "is a checkout attempt already in flight for this session?" A
   # provider's order controller asks this before starting a new attempt and
@@ -686,6 +691,7 @@ services:
     arguments:
       $cleanupService: '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface'
       $settings:       '@OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
     tags:
       - { name: 'console.command', command: 'oe:payments:not_finished:cleanup' }
     public: true
@@ -1051,6 +1057,7 @@ services:
     arguments:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
       - '@oxid_esales.monolog.logger'
+      - '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
 
   OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader

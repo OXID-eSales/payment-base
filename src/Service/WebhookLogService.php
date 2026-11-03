@@ -90,7 +90,7 @@ class WebhookLogService implements WebhookLogServiceInterface
             $this->logger->error('Failed to log webhook event', [
                 'event_id' => $eventId,
                 'event_type' => $eventType,
-                'error' => $this->throwableSummary->fromThrowable($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }
@@ -117,7 +117,7 @@ class WebhookLogService implements WebhookLogServiceInterface
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as processed', [
                 'event_id' => $eventId,
-                'error' => $this->throwableSummary->fromThrowable($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }
@@ -141,7 +141,7 @@ class WebhookLogService implements WebhookLogServiceInterface
         } catch (\Throwable $e) {
             $this->logger->error('Failed to mark webhook event as failed', [
                 'event_id' => $eventId,
-                'error' => $this->throwableSummary->fromThrowable($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }

@@ -32,6 +32,20 @@ builds it, not in the first request that needs it. Argument order changes where 
   container-lookup seams of `PaymentAdminController` (OXID admin controllers get no constructor DI; the lookup throws when
   the service is missing).
 
+### Changed (VR-25 / sprint 18 L1 follow-up) - throwable messages stay out of logs and stored strings
+A database or provider exception can carry the statement's bound parameters (the customer's e-mail, address). Log
+contexts now carry `'throwable' => ThrowableSummaryInterface::fromThrowable()` (class, code, SQLSTATE, vouched provider
+fields) where they carried `'error' => $e->getMessage()`, and the strings that are stored or rethrown use `toLine()`.
+`ThrowableSummaryInterface` is a required constructor argument of: `OrderPaymentStateService` (5 sites),
+`DoctrineContractRepository` (4 log sites + the `findByStateAndProvider` refusal), `WebhookLogService` (3),
+`ContractCommitService`, `CheckoutReturnResponder` (3), `DoctrineWebhookLogRepository` and `DoctrineNotFinishedOrderRepository`
+(the `RuntimeException` messages), `UserBasketRemovalHandler`, `EarlyOrderCreationHandler` (its file-log line carried the
+message), `PreviousCheckoutAttemptCleaner`, `PanelActionBoundsResolver`, `CleanupNotFinishedOrdersCommand` (console
+output). The `Order` model extension reads it from the container. `services.yaml` wires it for every definition it
+owns; providers that define these classes themselves and pass positional arguments must add it (see the VR-25 report).
+Left as they are because the message is payment-base's own text (refusals, `HeadlessCheckoutException`,
+`UnsupportedPaymentActionException`, `StaleContractException`).
+
 ### Added (VR-25 D3)
 - `tests/Unit/Smoke/RequiredCollaboratorsTest`: fails on a constructor parameter defaulting to `null` / `new X()` or a
   `?? new X()` in `src/` unless it is on the explicit allow-list. `tests/Integration/Container/ContainerBootTest`: every

@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,7 +33,7 @@ final class DoctrineWebhookLogRepositoryClaimTest extends TestCase
     protected function setUp(): void
     {
         $this->connection = $this->createMock(Connection::class);
-        $this->repository = new DoctrineWebhookLogRepository($this->connection);
+        $this->repository = new DoctrineWebhookLogRepository($this->connection, new ThrowableSummary([]));
     }
 
     public function testAFirstDeliveryClaimsByInserting(): void

@@ -7,6 +7,7 @@ namespace OxidEsales\PaymentBase\Checkout;
 use OxidEsales\PaymentBase\Checkout\Context\CheckoutContextInterface;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -39,7 +40,8 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
         private readonly ContractRepositoryInterface $contractRepository,
         private readonly ShopOrderServiceInterface $orderService,
         private readonly LoggerInterface $logger,
-        private readonly CheckoutContextInterface $context
+        private readonly CheckoutContextInterface $context,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -134,7 +136,7 @@ class PreviousCheckoutAttemptCleaner implements PreviousCheckoutAttemptCleanerIn
             $this->logger->error('Could not remove the order of a retried checkout attempt', [
                 'contract_id' => $contractId,
                 'order_id' => $orderId,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
         }
     }

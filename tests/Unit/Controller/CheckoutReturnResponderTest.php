@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
@@ -95,6 +96,7 @@ final class CheckoutReturnResponderTest extends TestCase
             $logger,
             $this->createMock(ContractRepositoryInterface::class),
             new HeadlessCheckoutScope(),
+            new ThrowableSummary([]),
         );
 
         self::assertNull($responder->respond('stripe', $this->contract, $this->resolver, []));
@@ -384,7 +386,8 @@ final class CheckoutReturnResponderTest extends TestCase
             $writer,
             new NullLogger(),
             $contracts ?? $this->createMock(ContractRepositoryInterface::class),
-            $scope ?? new HeadlessCheckoutScope()
+            $scope ?? new HeadlessCheckoutScope(),
+            new ThrowableSummary([])
         );
     }
 }

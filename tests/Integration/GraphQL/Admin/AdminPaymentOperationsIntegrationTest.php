@@ -24,6 +24,7 @@ use OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminAudit;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\GraphQlAdminChannel;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReader;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Payment\CaptureOperation;
 use OxidEsales\PaymentBase\Payment\CapturePolicy;
 use OxidEsales\PaymentBase\Payment\MoneyOperationRunner;
@@ -222,7 +223,7 @@ final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
      */
     private function contracts(): ContractRepositoryInterface
     {
-        return $this->contractRepository ??= new DoctrineContractRepository($this->connection());
+        return $this->contractRepository ??= new DoctrineContractRepository($this->connection(), new NullLogger(), new ThrowableSummary([]));
     }
 
     private function transactions(): TransactionRepositoryInterface

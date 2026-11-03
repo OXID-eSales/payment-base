@@ -11,6 +11,7 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\Eshop\Application\Model\UserBasket;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCommittedEvent;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -26,8 +27,10 @@ use Throwable;
  */
 class UserBasketRemovalHandler implements HandlerInterface
 {
-    public function __construct(private readonly LoggerInterface $logger)
-    {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary
+    ) {
     }
 
     public static function getHandledEventClass(): string
@@ -53,7 +56,7 @@ class UserBasketRemovalHandler implements HandlerInterface
             $this->logger->warning('[UserBasketRemovalHandler] could not delete the user basket', [
                 'basketId' => $basketId,
                 'contractId' => $event->getContractId(),
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
         }
 

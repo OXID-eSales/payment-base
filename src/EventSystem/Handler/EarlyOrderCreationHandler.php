@@ -12,6 +12,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEven
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
@@ -46,6 +47,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         // The session's open attempt: the next start continues it.
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
         EventDispatcherInterface $eventDispatcher,
+        private readonly ThrowableSummaryInterface $throwableSummary,
         private readonly ?FileLoggerInterface $eventLogger = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
@@ -90,8 +92,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         } catch (\Throwable $e) {
             $this->logEvent('EarlyOrderCreationHandler: Order creation failed', [
                 'contract_id' => $contract->getId(),
-                'error' => $e->getMessage(),
-                'class' => get_class($e),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             throw $e;
         }

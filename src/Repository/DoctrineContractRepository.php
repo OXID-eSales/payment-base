@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Repository;
 
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use Psr\Log\LoggerInterface;
 use DateTime;
 use DateTimeInterface;
@@ -35,7 +36,8 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -103,7 +105,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
             // stale-checkout sweep running after every webhook, permanently.
             $this->logger->error('Contract query failed; returning an empty result', [
                 'query' => __FUNCTION__,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
 
             return [];
@@ -172,7 +174,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
         } catch (Exception $e) {
             $this->logger->error('Contract query failed; returning no open attempt for the basket', [
                 'query' => __FUNCTION__,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
 
             return null;
@@ -245,7 +247,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
             // stale-checkout sweep running after every webhook, permanently.
             $this->logger->error('Contract query failed; returning an empty result', [
                 'query' => __FUNCTION__,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
 
             return [];
@@ -288,7 +290,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
             // stale-checkout sweep running after every webhook, permanently.
             $this->logger->error('Contract query failed; returning an empty result', [
                 'query' => __FUNCTION__,
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
 
             return [];
@@ -309,7 +311,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, OpenAtt
         try {
             $rows = $this->connection->fetchAllAssociative($sql, ['state' => $state, 'provider' => $provider]);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to query contracts by state and provider: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to query contracts by state and provider: ' . $this->throwableSummary->toLine($e), 0, $e);
         }
 
         return array_map(fn (array $row): PaymentContractInterface => $this->hydrateContract($row), $rows);

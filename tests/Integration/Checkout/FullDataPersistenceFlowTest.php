@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\Transaction;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineTransactionRepository;
 use PHPUnit\Framework\Attributes\Group;
@@ -68,7 +69,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $connectionProvider = $container->get(ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
 
-        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger());
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
         $this->transactionRepository = new DoctrineTransactionRepository($this->connection);
     }
 

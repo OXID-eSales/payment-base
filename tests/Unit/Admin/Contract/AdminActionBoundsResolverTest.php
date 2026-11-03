@@ -12,6 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Admin\Contract;
 use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
 use OxidEsales\PaymentBase\Admin\PaymentPanelRegistry;
 use OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelActionBoundsResolver;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\ContractFactory;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakeBoundsPanelProvider;
 use OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support\FakePanelProvider;
@@ -23,7 +24,7 @@ final class AdminActionBoundsResolverTest extends TestCase
 {
     public function testBoundsFor_ProviderWithoutTheInterface_DeclaresNothing(): void
     {
-        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([new FakePanelProvider('paypal')]), new NullLogger());
+        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([new FakePanelProvider('paypal')]), new NullLogger(), new ThrowableSummary([]));
 
         self::assertNull($resolver->boundsFor(ContractFactory::fulfilled('o-1', 'paypal')));
     }
@@ -31,7 +32,7 @@ final class AdminActionBoundsResolverTest extends TestCase
     public function testBoundsFor_IsLazy_AndAsksTheProviderOnlyOnce(): void
     {
         $provider = new FakeBoundsPanelProvider(new FakePanelProvider('mollie'), static fn (): AdminActionBounds => new AdminActionBounds(7.0, 3.0));
-        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger());
+        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger(), new ThrowableSummary([]));
 
         $lazy = $resolver->boundsFor(ContractFactory::fulfilled('o-1', 'mollie'));
 
@@ -44,7 +45,7 @@ final class AdminActionBoundsResolverTest extends TestCase
     public function testBoundsFor_ProviderNoOpinion_IsNull(): void
     {
         $provider = new FakeBoundsPanelProvider(new FakePanelProvider('mollie'), static fn (): ?AdminActionBounds => null);
-        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger());
+        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger(), new ThrowableSummary([]));
 
         self::assertNull($resolver->boundsFor(ContractFactory::fulfilled('o-1', 'mollie'))?->get());
     }
@@ -54,7 +55,7 @@ final class AdminActionBoundsResolverTest extends TestCase
         $provider = new FakeBoundsPanelProvider(new FakePanelProvider('mollie'), static function (): never {
             throw new RuntimeException('mollie api down');
         });
-        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger());
+        $resolver = new PanelActionBoundsResolver(new PaymentPanelRegistry([$provider]), new NullLogger(), new ThrowableSummary([]));
 
         $bounds = $resolver->boundsFor(ContractFactory::fulfilled('o-1', 'mollie'))?->get();
 

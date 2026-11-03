@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\MoneyInvariantViolation;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Payment\ProviderCaptureLedger;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
@@ -42,7 +43,7 @@ final class ProviderCaptureLedgerTest extends TestCase
     protected function setUp(): void
     {
         $this->connection = ContainerFactory::getInstance()->getContainer()->get(ConnectionProviderInterface::class)->get();
-        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger());
+        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
         $this->ledger = new ProviderCaptureLedger($this->connection, $this->contracts, new DoctrineTransactionRepository($this->connection), new NullLogger());
 
         $this->contractId = 'it_vr22_' . bin2hex(random_bytes(8));

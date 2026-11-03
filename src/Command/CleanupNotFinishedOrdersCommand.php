@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Command;
 
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupServiceInterface;
 use OxidEsales\PaymentBase\Service\NotFinishedOrderCleanupSettingsInterface;
 use OxidEsales\PaymentBase\Service\Result\NotFinishedOrderCleanupResult;
@@ -46,7 +47,8 @@ class CleanupNotFinishedOrdersCommand extends Command
 
     public function __construct(
         private readonly NotFinishedOrderCleanupServiceInterface $cleanupService,
-        private readonly NotFinishedOrderCleanupSettingsInterface $settings
+        private readonly NotFinishedOrderCleanupSettingsInterface $settings,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
         parent::__construct();
     }
@@ -132,7 +134,7 @@ HELP
         } catch (Throwable $e) {
             // A cron job that prints success for a sweep which never happened
             // is worse than one that prints nothing.
-            $io->error('Cleanup failed: ' . $e->getMessage());
+            $io->error('Cleanup failed: ' . $this->throwableSummary->toLine($e));
 
             return self::FAILURE;
         }

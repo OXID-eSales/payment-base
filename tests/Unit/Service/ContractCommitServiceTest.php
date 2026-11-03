@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Service\Commit\CommitOutcome;
@@ -101,7 +102,7 @@ final class ContractCommitServiceTest extends TestCase
     {
         self::assertInstanceOf(
             ContractCommitServiceInterface::class,
-            new ContractCommitService($this->contracts, new ScriptedChainDispatcher(), new NullLogger())
+            new ContractCommitService($this->contracts, new ScriptedChainDispatcher(), new NullLogger(), new ThrowableSummary([]))
         );
     }
 
@@ -263,7 +264,7 @@ final class ContractCommitServiceTest extends TestCase
 
     private function service(EventDispatcherInterface $dispatcher): ContractCommitService
     {
-        return new ContractCommitService($this->contracts, $dispatcher, new NullLogger());
+        return new ContractCommitService($this->contracts, $dispatcher, new NullLogger(), new ThrowableSummary([]));
     }
 
     private function confirmation(float $amount = 116.5, string $currency = 'EUR', array $extra = []): PaymentConfirmation

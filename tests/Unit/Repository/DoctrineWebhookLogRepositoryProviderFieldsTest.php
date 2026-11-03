@@ -6,6 +6,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use PHPUnit\Framework\TestCase;
@@ -44,7 +45,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 })
             );
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = new WebhookLog('evt_123', new DateTimeImmutable(), 'received');
         $log->setProvider('stripe');
@@ -78,7 +79,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 })
             );
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = new WebhookLog('evt_456', new DateTimeImmutable(), 'received');
         $log->setPayload($payload);
@@ -112,7 +113,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 })
             );
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = new WebhookLog('evt_789', new DateTimeImmutable(), 'received');
         $log->setProcessedAt($processedAt);
@@ -142,7 +143,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 'OXPROCESSEDAT' => '2025-12-02 15:01:00',
             ]);
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = $repository->findByEventId('evt_hydrate_1');
 
@@ -172,7 +173,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 'OXPROCESSEDAT' => null,
             ]);
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = $repository->findByEventId('evt_hydrate_2');
 
@@ -202,7 +203,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 'OXPROCESSEDAT' => '2025-12-02 17:05:00',
             ]);
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = $repository->findByEventId('evt_hydrate_3');
 
@@ -236,7 +237,7 @@ class DoctrineWebhookLogRepositoryProviderFieldsTest extends TestCase
                 })
             );
 
-        $repository = new DoctrineWebhookLogRepository($connection);
+        $repository = new DoctrineWebhookLogRepository($connection, new ThrowableSummary([]));
 
         $log = new WebhookLog('evt_null', new DateTimeImmutable(), 'received');
         // Don't set provider

@@ -13,6 +13,7 @@ use OxidEsales\PaymentBase\Admin\Contract\AdminActionBounds;
 use OxidEsales\PaymentBase\Admin\Contract\AdminActionBoundsProviderInterface;
 use OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -27,6 +28,7 @@ final class PanelActionBoundsResolver implements AdminActionBoundsResolverInterf
     public function __construct(
         private readonly PaymentPanelRegistryInterface $panels,
         private readonly LoggerInterface $logger,
+        private readonly ThrowableSummaryInterface $throwableSummary,
     ) {
     }
 
@@ -43,8 +45,7 @@ final class PanelActionBoundsResolver implements AdminActionBoundsResolverInterf
             } catch (Throwable $failure) {
                 $this->logger->warning('Provider bounds of an admin payment could not be read: failing closed', [
                     'provider' => $contract->getProvider(),
-                    'exception' => $failure::class,
-                    'reason' => $failure->getMessage(),
+                    'throwable' => $this->throwableSummary->fromThrowable($failure),
                 ]);
 
                 return AdminActionBounds::unavailable();

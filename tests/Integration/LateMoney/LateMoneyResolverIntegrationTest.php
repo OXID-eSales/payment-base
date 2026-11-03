@@ -22,6 +22,7 @@ use OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewayInterface;
 use OxidEsales\PaymentBase\LateMoney\ProviderPaymentGateways;
 use OxidEsales\PaymentBase\LateMoney\ProviderPaymentState;
 use OxidEsales\PaymentBase\LateMoney\ProviderPaymentStatus;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use PHPUnit\Framework\Attributes\Group;
@@ -42,7 +43,7 @@ final class LateMoneyResolverIntegrationTest extends TestCase
     protected function setUp(): void
     {
         $this->connection = ContainerFactory::getInstance()->getContainer()->get(ConnectionProviderInterface::class)->get();
-        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger());
+        $this->contracts = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
         $this->contractId = 'it_vr23_' . bin2hex(random_bytes(8));
         $contract = new PaymentContract(1, 'it_vr23_user', BasketSnapshot::fromArray([
             'items' => [], 'discounts' => [], 'totalGross' => 49.9, 'totalNet' => 41.9, 'totalVat' => 8.0, 'currency' => 'EUR',

@@ -13,6 +13,8 @@ use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order_parent;
 use OxidEsales\PaymentBase\Eshop\Core\Email;
 use OxidEsales\PaymentBase\Eshop\Core\Email_parent;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Mail\DeferredOrderMail;
 use OxidEsales\PaymentBase\Mail\OrderMailCaptureInterface;
 use OxidEsales\PaymentBase\Mail\ClaimedOrderMails;
@@ -160,10 +162,11 @@ final class OrderMailDeferralTest extends TestCase
 
     public function testDelete_WhenDroppingMailsFails_StillReportsTheDeleteAndLogs(): void
     {
-        $this->store->failWith = new RuntimeException('db down');
+        $this->store->failWith = new RuntimeException('db down, params ["jane@example.test"]');
 
         self::assertTrue($this->order()->delete());
         self::assertSame('error', $this->logger->records[0][0]);
+        self::assertStringNotContainsString('jane@example.test', json_encode($this->logger->records, JSON_THROW_ON_ERROR));
     }
 
     public function testCancelOrder_DropsTheWaitingMails(): void
@@ -283,6 +286,11 @@ final class TestableMailOrder extends Order
     protected function getOrderMailLogger(): LoggerInterface
     {
         return $this->logger;
+    }
+
+    protected function getThrowableSummary(): ThrowableSummaryInterface
+    {
+        return new ThrowableSummary([]);
     }
 
     protected function getVoucherRelease(): VoucherReleaseInterface

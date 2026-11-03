@@ -9,6 +9,7 @@ use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
 use OxidEsales\PaymentBase\Checkout\PreviousCheckoutAttemptCleaner;
 use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -32,7 +33,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
     {
         $this->contracts = $this->createMock(ContractRepositoryInterface::class);
         $this->orders = $this->createMock(ShopOrderServiceInterface::class);
-        $this->cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext(new RecordingSessionAdapter()));
+        $this->cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext(new RecordingSessionAdapter()), new ThrowableSummary([]));
     }
 
     private function contractInState(ContractState $state, ?string $orderId): PaymentContractInterface&MockObject
@@ -129,7 +130,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
     {
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session));
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session), new ThrowableSummary([]));
 
         $contract = $this->contractInState(ContractState::pending(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -143,7 +144,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
         // A newer challenge belongs to whatever attempt the shopper is on now.
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-2');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session));
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session), new ThrowableSummary([]));
 
         $contract = $this->contractInState(ContractState::pending(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -162,7 +163,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
     {
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session));
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session), new ThrowableSummary([]));
 
         $contract = $this->contractInState(ContractState::failed(), 'order-1');
         $this->contracts->method('findById')->willReturn($contract);
@@ -178,7 +179,7 @@ final class PreviousCheckoutAttemptCleanerTest extends TestCase
         // A paid attempt's order is real and stays; a new attempt must not be forced onto its id.
         $session = new RecordingSessionAdapter();
         $session->setVariable(PreviousCheckoutAttemptCleaner::SESSION_CHALLENGE, 'order-1');
-        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session));
+        $cleaner = new PreviousCheckoutAttemptCleaner($this->contracts, $this->orders, new NullLogger(), new SessionCheckoutContext($session), new ThrowableSummary([]));
         $this->contracts->method('findById')->willReturn($this->contractInState(ContractState::committed(), 'order-1'));
 
         $this->assertFalse($cleaner->clean('contract-1'));

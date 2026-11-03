@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Controller;
 
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Service\Commit\ConfirmedAmount;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
@@ -60,6 +61,7 @@ class CheckoutReturnResponder
         // Sprint 15 / S3: a headless return (scope entered) has no session and
         // no thank-you page, so `sess_challenge` is not written for it.
         private readonly HeadlessCheckoutScopeInterface $scope,
+        private readonly ThrowableSummaryInterface $throwableSummary,
     ) {
     }
 
@@ -85,7 +87,7 @@ class CheckoutReturnResponder
             $this->logger->warning('[CheckoutReturnResponder] resolver threw', [
                 'providerName' => $providerName,
                 'contractId' => $contract->getId(),
-                'error' => $e->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
             return null;
         }
@@ -106,7 +108,7 @@ class CheckoutReturnResponder
         try {
             $this->dispatchReturn($context, $resolution);
         } catch (StaleContractException $e) {
-            return $this->settleOnNewerContract($providerName, $contract, $resolution, $extraContextKeys, $e->getMessage());
+            return $this->settleOnNewerContract($providerName, $contract, $resolution, $extraContextKeys, $this->throwableSummary->toLine($e));
         }
 
         return $this->finish($context, $contract);
@@ -205,7 +207,7 @@ class CheckoutReturnResponder
         } catch (StaleContractException $again) {
             $this->logger->warning('[CheckoutReturnResponder] contract changed twice during the return leg; leaving it to the webhook', [
                 'contractId' => $fresh->getId(),
-                'error' => $again->getMessage(),
+                'throwable' => $this->throwableSummary->fromThrowable($again),
             ]);
 
             return null;

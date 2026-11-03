@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
 use RuntimeException;
 
@@ -32,7 +33,8 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
     private const STALE_CLAIM_SECONDS = 600;
 
     public function __construct(
-        private readonly Connection $connection
+        private readonly Connection $connection,
+        private readonly ThrowableSummaryInterface $throwableSummary
     ) {
     }
 
@@ -64,7 +66,7 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
 
             $this->connection->insert(self::TABLE_NAME, $data);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to save webhook log: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to save webhook log: ' . $this->throwableSummary->toLine($e), 0, $e);
         }
     }
 
@@ -237,7 +239,7 @@ class DoctrineWebhookLogRepository implements WebhookLogRepositoryInterface
 
             $this->connection->update(self::TABLE_NAME, $data, ['OXEVENTID' => $eventId]);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update webhook log status: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to update webhook log status: ' . $this->throwableSummary->toLine($e), 0, $e);
         }
     }
 }

@@ -15,6 +15,7 @@ use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Tests\Integration\IntegrationTestCase;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\DoctrineContractRepository;
 use OxidEsales\PaymentBase\Repository\DoctrineWebhookLogRepository;
 use OxidEsales\PaymentBase\Webhook\WebhookLog;
@@ -35,8 +36,8 @@ class DoctrineWebhookLogRepositoryTest extends IntegrationTestCase
         $container = ContainerFactory::getInstance()->getContainer();
         $connectionProvider = $container->get(\OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface::class);
         $this->connection = $connectionProvider->get();
-        $this->repository = new DoctrineWebhookLogRepository($this->connection);
-        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger());
+        $this->repository = new DoctrineWebhookLogRepository($this->connection, new ThrowableSummary([]));
+        $this->contractRepository = new DoctrineContractRepository($this->connection, new NullLogger(), new ThrowableSummary([]));
 
         // Clean up test data
         $this->cleanupTestData();
