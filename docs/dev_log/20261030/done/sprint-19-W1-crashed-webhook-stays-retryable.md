@@ -32,3 +32,17 @@
 
 - W2–W6 (shared guard chain, PayPal adoption, delete provider copies) — next in sprint 19.
 - Low: `AbstractWebhookProcessor` still returns `$e->getMessage()` to the PSP (`WebhookResult::failure`) — sprint 18 L1.
+
+## W2 — the shared guard chain (commit `78ffb0a`, pushed)
+
+- `src/Webhook/Guard/`: `WebhookGuardInterface`, `WebhookGuardResult`, `WebhookHttpRequest`, `WebhookGuardChain`,
+  `HttpsGuard`, `PayloadSizeGuard`, `RateLimitGuard` (key = provider + client + window, counted in the shared
+  `RateLimitStoreInterface` → `DoctrineRateLimitStore` in production), `IpAllowlistGuard` + `IpRange` (IPv4/IPv6, no
+  implicit private ranges), `TrustedProxyClientIp` (proxy header only from configured proxy ranges).
+- Red → green: `tests/Unit/Webhook/Guard/WebhookGuardsTest` (14 tests: chain stops at first rejection, dev HTTP,
+  lying Content-Length, rate limit survives new guard instances, per provider/client buckets, IPv4/IPv6 ranges, no
+  implicit private addresses, proxy header only from a trusted proxy, case-insensitive header, first X-Forwarded-For hop).
+- Gates: unit 1992 OK · phpstan / phpcs / phpmd clean (IpRange validates with `filter_var` before `inet_pton`, no `@`).
+- Not wired yet: each provider builds its chain (with its own rate-limit key and settings) when it adopts it — W3
+  (PayPal, also the claim fix SEC-2), W4 (Stripe), W5 (Mollie, proxy-aware key S-M2). The controller skeleton
+  (`AbstractWebhookController`) comes with the first adopter, not before (no unused abstraction).
