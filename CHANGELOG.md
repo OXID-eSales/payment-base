@@ -13,6 +13,12 @@ one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally 
   one never verified a signature -, agent callbacks, UCP, the six ACP tools, catalog interfaces) and `Mcp/docs`. Kept:
   the ACP checkout chain (`AgentContext`, `AcpCheckoutServiceInterface`, `AbstractAcpCheckoutService`,
   `AcpResponseFormatter`) that the providers register, and `Http/ApcuRateLimiter` + `RateLimiterInterface` (Stripe).
+- The pre-claim webhook pipeline: `Webhook\WebhookProcessor`(+I), `WebhookIdempotencyChecker`(+I),
+  `WebhookEventDispatcher`(+I), `WebhookEventHandlerInterface`, `WebhookRequestParser`(+I),
+  `EventSystem\Event\Payment\WebhookReceivedEvent`(+I), `WebhookPayloadSanitizer`, and
+  `AbstractWebhookProcessor::isAlreadyProcessed()` / `logWebhookReceived()` with the constructor's third argument
+  `$sanitizer`. Webhooks run through `AbstractWebhookProcessor::process()` and `claimEvent()`; Stripe and Mollie never
+  passed the sanitizer.
 
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
