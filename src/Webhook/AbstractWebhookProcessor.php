@@ -9,10 +9,10 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Webhook;
 
-use Exception;
 use OxidEsales\PaymentBase\Repository\WebhookLogRepositoryInterface;
 use OxidEsales\PaymentBase\Webhook\Exception\WebhookSignatureException;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Abstract webhook processor using Template Method pattern.
@@ -77,7 +77,9 @@ abstract class AbstractWebhookProcessor
         // Step 4: Process event
         try {
             $result = $this->processEvent($event);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            // VR-19: any Throwable - a TypeError from a stale container must end the
+            // delivery as `failed` too, or the PSP's retry finds it `claimed` forever.
             $this->logger->error('Webhook processing failed', [
                 'eventId' => $event->id,
                 'eventType' => $event->type,

@@ -5,6 +5,15 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (VR-19) - a webhook delivery that crashed stays retryable
+- `AbstractWebhookProcessor::process()` catches any `Throwable`, not only `Exception`: a `TypeError` in a handler (a
+  stale DI container on pay1, 2026-10-30) ends the delivery as `failed` like an exception does. Before, the row stayed
+  `claimed`, every retry of the PSP was answered `200 skipped: Already processed`, and the payment never committed.
+- `DoctrineWebhookLogRepository::claimEvent()` also takes over a row still `claimed` after ten minutes - a fatal error
+  or a timeout never reaches the catch, and no request runs that long. One guarded `UPDATE` (status and age), so two
+  concurrent retries cannot both win; fresh claims and processed rows stay exclusive. Follows sprint 13's re-claim of
+  `failed` rows.
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was

@@ -45,24 +45,52 @@ final class DoctrineWebhookLogRepositoryClaimTest extends TestCase
         self::assertTrue($this->repository->claimEvent('tr_1:paid', 'mollie', 'paid'));
     }
 
-    public function testARetryAfterAFailedDeliveryReclaims(): void
+    public function testARetryReclaimsAFailedOrAStaleClaimedRowInOneGuardedStatement(): void
     {
         $this->connection->method('insert')->willThrowException($this->uniqueViolation());
-        $this->connection->expects(self::once())->method('update')
+        $this->connection->expects(self::never())->method('update');
+        $this->connection->expects(self::once())->method('executeStatement')
             ->with(
-                'oe_payments_webhooklogs',
-                self::callback(static fn (array $data) => $data['OXSTATUS'] === 'claimed' && array_key_exists('OXERROR', $data) && $data['OXERROR'] === null),
-                ['OXEVENTID' => 'tr_1:paid', 'OXSTATUS' => 'failed'],
+                self::callback(static fn (string $sql): bool => str_contains($sql, 'UPDATE oe_payments_webhooklogs')
+                    && str_contains($sql, 'OXSTATUS = :failed OR (OXSTATUS = :claimed AND OXRECEIVEDAT < :staleBefore)')
+                    && str_contains($sql, 'OXERROR = NULL')),
+                self::callback(static fn (array $params): bool => $params['eventId'] === 'tr_1:paid'
+                    && $params['failed'] === 'failed' && $params['claimed'] === 'claimed'),
             )
             ->willReturn(1);
 
         self::assertTrue($this->repository->claimEvent('tr_1:paid', 'mollie', 'paid'));
     }
 
-    public function testAReplayOfAProcessedDeliveryIsRefused(): void
+    /**
+     * VR-19 W1 — a fatal error or a timeout never reaches the processor's catch:
+     * the row stays `claimed`. After ten minutes no PHP request is still working
+     * on it, so the PSP's next retry takes it over.
+     */
+    public function testAClaimOlderThanTenMinutesCountsAsStale(): void
     {
         $this->connection->method('insert')->willThrowException($this->uniqueViolation());
-        $this->connection->method('update')->willReturn(0);   // the row is not `failed`
+        $staleBefore = null;
+        $this->connection->method('executeStatement')->willReturnCallback(
+            static function (string $sql, array $params) use (&$staleBefore): int {
+                $staleBefore = $params['staleBefore'];
+
+                return 1;
+            }
+        );
+
+        $this->repository->claimEvent('tr_1:paid', 'mollie', 'paid');
+
+        self::assertIsString($staleBefore);
+        $age = time() - (new \DateTimeImmutable($staleBefore))->getTimestamp();
+        self::assertGreaterThanOrEqual(600, $age);
+        self::assertLessThan(660, $age);
+    }
+
+    public function testAReplayOfAProcessedOrInFlightDeliveryIsRefused(): void
+    {
+        $this->connection->method('insert')->willThrowException($this->uniqueViolation());
+        $this->connection->method('executeStatement')->willReturn(0);   // processed, or claimed < 10 min ago
 
         self::assertFalse($this->repository->claimEvent('tr_1:paid', 'mollie', 'paid'));
     }
