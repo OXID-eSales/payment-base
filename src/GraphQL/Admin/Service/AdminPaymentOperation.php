@@ -11,7 +11,7 @@ namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
 
 /**
  * One call of capture, refund or void as the client made it, with everything that follows from its kind:
- * the names it is audited and idempotency-keyed under, the provider action behind it, whether it moves money
+ * the names it is audited and idempotency-keyed under, whether it moves money
  * (and therefore needs a step-up), and the checks that need nothing but the request itself.
  *
  * @since 1.5.0
@@ -70,12 +70,6 @@ final readonly class AdminPaymentOperation
         return 'admin_payment_' . $this->kind;
     }
 
-    /** The action name of the classic Payment tab's provider boundary. */
-    public function providerAction(): string
-    {
-        return $this->kind === self::VOID ? 'cancel' : $this->kind;
-    }
-
     /** Capture and refund move money; releasing an authorisation does not. */
     public function movesMoney(): bool
     {
@@ -92,12 +86,6 @@ final readonly class AdminPaymentOperation
             $this->reason === null ? null : 'reason',
             $this->description === null ? null : 'description',
         ]));
-    }
-
-    /** The classic tab's form field that carries the reason of this operation (`capture_reason`, `refund_reason`, `cancel_reason`). */
-    public function reasonField(): string
-    {
-        return $this->providerAction() . '_reason';
     }
 
     public function inputRefusal(): ?PaymentRefusal

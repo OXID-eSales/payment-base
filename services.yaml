@@ -39,6 +39,7 @@ services:
       - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
       - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher'
+      - '@OxidEsales\PaymentBase\Admin\ClassicMoneyActionAdapter'
     public: true
 
   # Sprint 93 — register the contract repository here too (it's
@@ -965,15 +966,6 @@ services:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionOptionsResolverInterface'
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminActionBoundsResolverInterface'
 
-  OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface:
-    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\PanelProviderActionRunner
-    autowire: false
-    autoconfigure: false
-    arguments:
-      - '@OxidEsales\PaymentBase\Admin\Contract\PaymentPanelRegistryInterface'
-      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
-      - '@oxid_esales.monolog.logger'
-
   OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotencyInterface:
     class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotency
     autowire: false
@@ -1008,13 +1000,129 @@ services:
     autoconfigure: false
     public: true
     arguments:
+      - '@OxidEsales\PaymentBase\Payment\MoneyOperationRunnerInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\GraphQlAdminChannel'
+
+  # --------------------------------------------------------------
+  # VR-22 A3 - the one admin money path: policies, provider gateways, ledgers, the runner, and the two doors
+  # (the admin API and the classic admin) that both end in it.
+  #
+  # A provider module registers its gateways (Payment\CaptureGatewayInterface, RefundGatewayInterface,
+  # CancelGatewayInterface; one class may implement all three) under the tag `oe.payment.gateway`. A provider
+  # without a gateway of a kind is reported "no provider handles this payment" for that operation.
+  # --------------------------------------------------------------
+  OxidEsales\PaymentBase\Payment\CapturePolicyInterface:
+    class: OxidEsales\PaymentBase\Payment\CapturePolicy
+    public: true
+
+  OxidEsales\PaymentBase\Payment\RefundPolicyInterface:
+    class: OxidEsales\PaymentBase\Payment\RefundPolicy
+    public: true
+
+  OxidEsales\PaymentBase\Payment\ProviderGatewayRegistryInterface:
+    class: OxidEsales\PaymentBase\Payment\ProviderGatewayRegistry
+    arguments:
+      - !tagged_iterator oe.payment.gateway
+
+  OxidEsales\PaymentBase\Payment\OrderLockInterface:
+    class: OxidEsales\PaymentBase\Payment\DbalOrderLock
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@doctrine.dbal.connection'
+
+  # The capture counterpart of the refund ledger. Public: a provider's webhook books its captures through it.
+  OxidEsales\PaymentBase\Payment\ProviderCaptureLedgerInterface:
+    class: OxidEsales\PaymentBase\Payment\ProviderCaptureLedger
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $transactions: '@OxidEsales\PaymentBase\Repository\TransactionRepositoryInterface'
+      $logger: '@oxid_esales.monolog.logger'
+    public: true
+
+  OxidEsales\PaymentBase\Payment\CaptureOperation:
+    arguments:
+      $policy: '@OxidEsales\PaymentBase\Payment\CapturePolicyInterface'
+      $gateways: '@OxidEsales\PaymentBase\Payment\ProviderGatewayRegistryInterface'
+      $ledger: '@OxidEsales\PaymentBase\Payment\ProviderCaptureLedgerInterface'
+      $logger: '@oxid_esales.monolog.logger'
+
+  OxidEsales\PaymentBase\Payment\RefundOperation:
+    arguments:
+      $policy: '@OxidEsales\PaymentBase\Payment\RefundPolicyInterface'
+      $gateways: '@OxidEsales\PaymentBase\Payment\ProviderGatewayRegistryInterface'
+      $ledger: '@OxidEsales\PaymentBase\Refund\ProviderRefundLedgerInterface'
+      $logger: '@oxid_esales.monolog.logger'
+
+  OxidEsales\PaymentBase\Payment\VoidOperation:
+    arguments:
+      $policy: '@OxidEsales\PaymentBase\Payment\CapturePolicyInterface'
+      $gateways: '@OxidEsales\PaymentBase\Payment\ProviderGatewayRegistryInterface'
+      $logger: '@oxid_esales.monolog.logger'
+
+  OxidEsales\PaymentBase\Payment\MoneyOperationRunnerInterface:
+    class: OxidEsales\PaymentBase\Payment\MoneyOperationRunner
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      - '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
-      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\ProviderActionRunnerInterface'
+      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface'
+      - '@OxidEsales\PaymentBase\Payment\OrderLockInterface'
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\OperationIdempotencyInterface'
+      - - '@OxidEsales\PaymentBase\Payment\CaptureOperation'
+        - '@OxidEsales\PaymentBase\Payment\RefundOperation'
+        - '@OxidEsales\PaymentBase\Payment\VoidOperation'
+      - '@oxid_esales.monolog.logger'
+
+  # The admin API's door: its step-up and its audit chain (both through `@?`, fail closed without the module).
+  OxidEsales\PaymentBase\GraphQL\Admin\Service\GraphQlAdminChannel:
+    autowire: false
+    autoconfigure: false
+    arguments:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStepUpInterface'
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminAuditInterface'
-      - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\RequestShopOrdersInterface'
-      - '@oxid_esales.monolog.logger'
+
+  # The classic admin's door: the admin of the OXID session, the admin API's rights catalogue and MFA setting where
+  # the module is installed, a structured log as the audit trail.
+  OxidEsales\PaymentBase\Payment\ClassicAdminSessionInterface:
+    class: OxidEsales\PaymentBase\Admin\OxidClassicAdminSession
+
+  OxidEsales\PaymentBase\Payment\AdminRightCheckInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminRightCheck
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@?OxidEsales\GraphQL\Admin\Authorization\Service\AdminRightResolverInterface'
+
+  OxidEsales\PaymentBase\Payment\SecondFactorPolicyInterface:
+    class: OxidEsales\PaymentBase\GraphQL\Admin\Service\OxidAdminSecondFactorPolicy
+    autowire: false
+    autoconfigure: false
+    arguments:
+      - '@?OxidEsales\GraphQL\AdminApi\Mfa\Service\MfaSettings'
+
+  OxidEsales\PaymentBase\Admin\LoggedClassicAudit:
+    arguments:
+      $session: '@OxidEsales\PaymentBase\Payment\ClassicAdminSessionInterface'
+      $logger: '@oxid_esales.monolog.logger'
+
+  OxidEsales\PaymentBase\Admin\ClassicAdminChannel:
+    arguments:
+      $session: '@OxidEsales\PaymentBase\Payment\ClassicAdminSessionInterface'
+      $rights: '@OxidEsales\PaymentBase\Payment\AdminRightCheckInterface'
+      $secondFactor: '@OxidEsales\PaymentBase\Payment\SecondFactorPolicyInterface'
+      $audit: '@OxidEsales\PaymentBase\Admin\LoggedClassicAudit'
+
+  # Public: the classic admin controller (built by OXID, not by the container) fetches it by class.
+  OxidEsales\PaymentBase\Admin\ClassicMoneyActionAdapter:
+    arguments:
+      $runner: '@OxidEsales\PaymentBase\Payment\MoneyOperationRunnerInterface'
+      $channel: '@OxidEsales\PaymentBase\Admin\ClassicAdminChannel'
+      $feedback: '@OxidEsales\PaymentBase\Admin\AdminRefusalFeedbackInterface'
+    public: true
 
   # GraphQLite fetches controllers and ExtendType classes from the container by FQCN, hence public. Both name
   # classes of the admin API only in attributes and parameter types, which are resolved lazily.

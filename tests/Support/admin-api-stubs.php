@@ -91,6 +91,20 @@ if (!class_exists(\OxidEsales\GraphQL\Admin\Mfa\Service\StepUp::class, false)) {
         . '}'
     );
 }
+if (!interface_exists(\OxidEsales\GraphQL\Admin\Authorization\Service\AdminRightResolverInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\Admin\\Authorization\\DataType; '
+        . 'final class AdminIdentity { public function __construct(public readonly string $userId, public readonly int $shopId, public readonly ?string $sessionId = null) {} } '
+        . 'namespace OxidEsales\\GraphQL\\Admin\\Authorization\\Service; '
+        . 'interface AdminRightResolverInterface { public function allows(\\OxidEsales\\GraphQL\\Admin\\Authorization\\DataType\\AdminIdentity $admin, string $right): bool; }'
+    );
+}
+if (!class_exists(\OxidEsales\GraphQL\AdminApi\Mfa\Service\MfaSettings::class, false)) {
+    eval(
+        'namespace OxidEsales\\GraphQL\\AdminApi\\Mfa\\Service; '
+        . 'class MfaSettings { public function isRequired(): bool { return true; } }'
+    );
+}
 if (!class_exists(\OxidEsales\GraphQL\Admin\Audit\Service\AuditRecorder::class, false)) {
     eval(
         'namespace OxidEsales\\GraphQL\\Admin\\Audit\\DataType; '

@@ -100,6 +100,13 @@ final class NoConcreteClassTypeHintRule implements Rule
         // its audit recorder, its step-up guard, the current admin session (PAY-10) and the payment-ownership event.
         '#^OxidEsales\\\\GraphQL\\\\Admin\\\\(Audit\\\\Service\\\\AuditRecorder|Mfa\\\\Service\\\\StepUp|Checkout\\\\DataType\\\\AdminPaymentOwnership)$#',
 
+        // VR-22 A3: the money path's readonly values (the requests and results of the provider gateways, a policy's
+        // decision, a capture booking) and the classic admin's money-action adapter (one implementation, like the
+        // PaymentAdminActionDispatcher above); and the admin API's final MFA setting (optional package, no interface).
+        '#\\\\Payment\\\\(CaptureRequest|RefundRequest|CancelRequest|CaptureResult|RefundResult|CaptureBooking|PolicyDecision)$#',
+        '#\\\\Admin\\\\ClassicMoneyActionAdapter$#',
+        '#^OxidEsales\\\\GraphQL\\\\AdminApi\\\\Mfa\\\\Service\\\\MfaSettings$#',
+
         // Test classes
         '#Test$#',
         '#Mock#',

@@ -64,6 +64,8 @@ class PaymentAdminController extends AdminDetailsController
 
     protected ?PaymentAdminActionDispatcher $actionDispatcher = null;
 
+    protected ?ClassicMoneyActionAdapter $moneyActions = null;
+
     /**
      * Constructor accepts all three dependencies for test injection, but
      * OXID admin's ShopControl instantiates this class via oxNew (metadata.php
@@ -75,10 +77,12 @@ class PaymentAdminController extends AdminDetailsController
         ?PaymentPanelRegistryInterface $panelRegistry = null,
         ?ContractRepositoryInterface $contractRepository = null,
         ?PaymentAdminActionDispatcher $actionDispatcher = null,
+        ?ClassicMoneyActionAdapter $moneyActions = null,
     ) {
         $this->panelRegistry = $panelRegistry;
         $this->contractRepository = $contractRepository;
         $this->actionDispatcher = $actionDispatcher;
+        $this->moneyActions = $moneyActions;
         parent::__construct();
     }
 
@@ -110,6 +114,16 @@ class PaymentAdminController extends AdminDetailsController
         /** @phpstan-ignore-next-line container.notFound */
         return $this->actionDispatcher = ContainerFactory::getInstance()->getContainer()
             ->get(PaymentAdminActionDispatcher::class);
+    }
+
+    protected function moneyActions(): ClassicMoneyActionAdapter
+    {
+        if ($this->moneyActions !== null) {
+            return $this->moneyActions;
+        }
+        /** @phpstan-ignore-next-line container.notFound */
+        return $this->moneyActions = ContainerFactory::getInstance()->getContainer()
+            ->get(ClassicMoneyActionAdapter::class);
     }
 
     public function render(): string
@@ -188,6 +202,13 @@ class PaymentAdminController extends AdminDetailsController
 
         $context = $this->buildPanelContext();
         if ($context === null) {
+            return;
+        }
+
+        // VR-22 A3: capture, refund and cancel are the one money path's, whichever provider's order this is.
+        if ($this->moneyActions()->handles($action)) {
+            $this->moneyActions()->execute($action, $this->collectActionRequest(), $context->orderId);
+
             return;
         }
 
