@@ -11,6 +11,8 @@ namespace OxidEsales\PaymentBase\Tests\Integration\Container;
 
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Tag\TaggedValue;
 use Symfony\Component\Yaml\Yaml;
@@ -20,6 +22,10 @@ use Throwable;
  * VR-25 D3: with every collaborator required, a service that is wired short of one fails when the container
  * builds it - so build every public one. A missing argument shows up here, not in the first request that needs it.
  */
+// Resolving every public service builds shop state (session, admin mode, config) that later tests in this
+// process would inherit - order mails then rendered instead of deferred, the language views of another shop.
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState(false)]
 final class ContainerBootTest extends TestCase
 {
     #[DataProvider('publicServiceIds')]
