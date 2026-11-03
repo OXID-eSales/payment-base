@@ -167,5 +167,20 @@ $aModule = [
             'value' => '',
             'group' => 'headless',
         ],
+        // VR-19: the reverse proxies in front of the shop (Cloudflare, a load balancer, the docker
+        // gateway) and the header they put the caller's address in. Every provider's webhook rate
+        // limit keys on that address. Empty = REMOTE_ADDR, no header is believed.
+        [
+            'name' => 'sPaymentBaseTrustedProxies',
+            'type' => 'str',
+            'value' => '',
+            'group' => 'webhooks',
+        ],
+        [
+            'name' => 'sPaymentBaseClientIpHeader',
+            'type' => 'str',
+            'value' => 'X-Forwarded-For',
+            'group' => 'webhooks',
+        ],
     ],
 ];
