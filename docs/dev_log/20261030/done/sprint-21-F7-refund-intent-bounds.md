@@ -28,7 +28,7 @@ baseline failures · **opalreturns** unit suite (353 tests) green with this bran
   `oe_payments_transaction`. Shops may already hold duplicate refund rows from the double-booking bugs (PayPal SEC-3,
   Stripe S-4), so the migration must first find them; how to treat them (merge, flag, refuse to migrate) is an owner
   decision. **Sized on pay1 (read-only, 2026-11-03): no duplicate `(contract, type, provider id)` groups** in
-  `oe_payments_transaction`; 280 Mollie rows and 1 Stripe row carry no provider id (NULL/empty - allowed repeatedly by
+  `oe_payments_transaction`; 280 Mollie rows and 1 Stripe row carry no provider id (all NULL, none empty - NULLs are allowed repeatedly by
   a MySQL unique key). The unique key migrates cleanly there; the migration still refuses and names duplicates if a
   shop has them (like `OneOrderOneContractMigration`).
 - F1/F2 hotfixes (Mollie idempotency key, restock on partial refund) live in the provider repos.
