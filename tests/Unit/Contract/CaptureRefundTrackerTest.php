@@ -9,6 +9,7 @@ use DomainException;
 use InvalidArgumentException;
 use OxidEsales\PaymentBase\Contract\CaptureRefundTracker;
 use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\MoneyInvariantViolation;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -23,6 +24,8 @@ use PHPUnit\Framework\TestCase;
  */
 class CaptureRefundTrackerTest extends TestCase
 {
+    private const AUTHORIZED = 1000.0;
+
     public function testInitialStateIsAllNull(): void
     {
         $tracker = new CaptureRefundTracker();
@@ -37,7 +40,7 @@ class CaptureRefundTrackerTest extends TestCase
     {
         $tracker = new CaptureRefundTracker();
 
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getCapturedAmount());
     }
@@ -49,7 +52,7 @@ class CaptureRefundTrackerTest extends TestCase
         // transitioned out of PENDING.
         $tracker = new CaptureRefundTracker();
 
-        $tracker->setCapturedAmount(ContractState::pending(), 100.0);
+        $tracker->setCapturedAmount(ContractState::pending(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getCapturedAmount());
     }
@@ -58,7 +61,7 @@ class CaptureRefundTrackerTest extends TestCase
     {
         $tracker = new CaptureRefundTracker();
 
-        $tracker->setCapturedAmount(ContractState::authorized(), 100.0);
+        $tracker->setCapturedAmount(ContractState::authorized(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getCapturedAmount());
     }
@@ -67,7 +70,7 @@ class CaptureRefundTrackerTest extends TestCase
     {
         $tracker = new CaptureRefundTracker();
 
-        $tracker->setCapturedAmount(ContractState::readyToCommit(), 100.0);
+        $tracker->setCapturedAmount(ContractState::readyToCommit(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getCapturedAmount());
     }
@@ -76,7 +79,7 @@ class CaptureRefundTrackerTest extends TestCase
     {
         $tracker = new CaptureRefundTracker();
 
-        $tracker->setCapturedAmount(ContractState::committed(), 100.0);
+        $tracker->setCapturedAmount(ContractState::committed(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getCapturedAmount());
     }
@@ -88,7 +91,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Cannot set captured amount in state draft');
 
-        $tracker->setCapturedAmount(ContractState::draft(), 100.0);
+        $tracker->setCapturedAmount(ContractState::draft(), 100.0, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountThrowsInNotFinishedState(): void
@@ -98,7 +101,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Cannot set captured amount in state not_finished');
 
-        $tracker->setCapturedAmount(ContractState::notFinished(), 100.0);
+        $tracker->setCapturedAmount(ContractState::notFinished(), 100.0, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountThrowsInCancelledState(): void
@@ -108,7 +111,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Cannot set captured amount in state cancelled');
 
-        $tracker->setCapturedAmount(ContractState::cancelled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::cancelled(), 100.0, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountRejectsNegative(): void
@@ -118,7 +121,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('positive finite');
 
-        $tracker->setCapturedAmount(ContractState::fulfilled(), -1.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), -1.0, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountRejectsZero(): void
@@ -128,7 +131,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('positive finite');
 
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 0.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 0.0, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountRejectsInfinity(): void
@@ -138,7 +141,7 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('positive finite');
 
-        $tracker->setCapturedAmount(ContractState::fulfilled(), INF);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), INF, self::AUTHORIZED);
     }
 
     public function testSetCapturedAmountRejectsNan(): void
@@ -148,12 +151,12 @@ class CaptureRefundTrackerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('positive finite');
 
-        $tracker->setCapturedAmount(ContractState::fulfilled(), NAN);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), NAN, self::AUTHORIZED);
     }
 
     public function testAddRefundedAmountAllowedInFulfilledState(): void
     {
-        $tracker = new CaptureRefundTracker();
+        $tracker = $this->trackerWithCaptured(100.0);
 
         $tracker->addRefundedAmount(ContractState::fulfilled(), 25.0);
 
@@ -162,7 +165,7 @@ class CaptureRefundTrackerTest extends TestCase
 
     public function testAddRefundedAmountAccumulates(): void
     {
-        $tracker = new CaptureRefundTracker();
+        $tracker = $this->trackerWithCaptured(100.0);
 
         $tracker->addRefundedAmount(ContractState::fulfilled(), 30.0);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 20.0);
@@ -233,7 +236,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testToArrayRoundTripsThroughFromArray(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 25.0);
         $tracker->setCapturedAt(new DateTimeImmutable('2026-05-19 10:00:00'));
         $tracker->setRefundedAt(new DateTimeImmutable('2026-05-19 11:00:00'));
@@ -270,7 +273,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testGetRemainingRefundableAmountReturnsCapturedWhenNothingRefunded(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
 
         $this->assertSame(100.0, $tracker->getRemainingRefundableAmount());
     }
@@ -278,7 +281,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testGetRemainingRefundableAmountReturnsCapturedMinusRefunded(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 30.0);
 
         $this->assertSame(70.0, $tracker->getRemainingRefundableAmount());
@@ -287,7 +290,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testGetRemainingRefundableAmountIsZeroWhenFullyRefunded(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 100.0);
 
         $this->assertSame(0.0, $tracker->getRemainingRefundableAmount());
@@ -300,7 +303,7 @@ class CaptureRefundTrackerTest extends TestCase
         // 12 after migration / manual reconciliation. The query must
         // never return a negative remaining amount.
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 10.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 10.0, self::AUTHORIZED);
         $tracker = CaptureRefundTracker::fromArray([
             'capturedAmount' => 10.0,
             'refundedAmount' => 12.0,
@@ -331,7 +334,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testIsFullyRefundedFalseWhenPartiallyRefunded(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 30.0);
 
         $this->assertFalse($tracker->isFullyRefunded());
@@ -340,7 +343,7 @@ class CaptureRefundTrackerTest extends TestCase
     public function testIsFullyRefundedTrueWhenRefundedEqualsCaptured(): void
     {
         $tracker = new CaptureRefundTracker();
-        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0);
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, self::AUTHORIZED);
         $tracker->addRefundedAmount(ContractState::fulfilled(), 100.0);
 
         $this->assertTrue($tracker->isFullyRefunded());
@@ -366,5 +369,82 @@ class CaptureRefundTrackerTest extends TestCase
         ]);
 
         $this->assertFalse($tracker->isFullyRefunded());
+    }
+
+    public function testOverCaptureThrows(): void
+    {
+        $tracker = new CaptureRefundTracker();
+
+        $this->expectException(MoneyInvariantViolation::class);
+
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.01, 100.0);
+    }
+
+    public function testOverCaptureLeavesTrackerUntouched(): void
+    {
+        $tracker = new CaptureRefundTracker();
+
+        try {
+            $tracker->setCapturedAmount(ContractState::fulfilled(), 150.0, 100.0);
+        } catch (MoneyInvariantViolation) {
+            $this->assertNull($tracker->getCapturedAmount());
+            return;
+        }
+        $this->fail('Over-capture must throw');
+    }
+
+    public function testOverRefundThrows(): void
+    {
+        $tracker = $this->trackerWithCaptured(100.0);
+        $tracker->addRefundedAmount(ContractState::fulfilled(), 60.0);
+
+        $this->expectException(MoneyInvariantViolation::class);
+
+        $tracker->addRefundedAmount(ContractState::fulfilled(), 40.01);
+    }
+
+    public function testOverRefundLeavesTrackerUntouched(): void
+    {
+        $tracker = $this->trackerWithCaptured(100.0);
+        $tracker->addRefundedAmount(ContractState::fulfilled(), 60.0);
+
+        try {
+            $tracker->addRefundedAmount(ContractState::fulfilled(), 50.0);
+        } catch (MoneyInvariantViolation) {
+            $this->assertSame(60.0, $tracker->getRefundedAmount());
+            return;
+        }
+        $this->fail('Over-refund must throw');
+    }
+
+    public function testToleranceAllowsRounding(): void
+    {
+        $tracker = new CaptureRefundTracker();
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.004, 100.0);
+        $tracker->addRefundedAmount(ContractState::fulfilled(), 100.004);
+
+        $this->assertSame(100.004, $tracker->getRefundedAmount());
+    }
+
+    public function testExactFullCaptureAndFullRefundAreAllowed(): void
+    {
+        $tracker = new CaptureRefundTracker();
+        $tracker->setCapturedAmount(ContractState::fulfilled(), 100.0, 100.0);
+        $tracker->addRefundedAmount(ContractState::fulfilled(), 100.0);
+
+        $this->assertTrue($tracker->isFullyRefunded());
+    }
+
+    public function testMoneyInvariantViolationIsADomainException(): void
+    {
+        $this->assertInstanceOf(DomainException::class, new MoneyInvariantViolation('x'));
+    }
+
+    private function trackerWithCaptured(float $captured): CaptureRefundTracker
+    {
+        $tracker = new CaptureRefundTracker();
+        $tracker->setCapturedAmount(ContractState::fulfilled(), $captured, self::AUTHORIZED);
+
+        return $tracker;
     }
 }

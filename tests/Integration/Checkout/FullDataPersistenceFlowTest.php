@@ -578,7 +578,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
 
         // 9. Simulate capture (webhook) - add capture transaction and update contract
         // Sprint 8: Capture tracking now on oe_payments_contract, not oe_payments_order_state
-        $contract->setCapturedAmount(599.99);
+        $contract->setCapturedAmount($contract->getAmount());
         $contract->setCapturedAt(new \DateTimeImmutable());
         $this->contractRepository->save($contract);
 
@@ -641,7 +641,7 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
         $this->assertNotNull($dbContract['OXFULFILLEDAT']);
 
         // Sprint 8: Verify capture tracking on contract (replaces oe_payments_order_state)
-        $this->assertEquals(599.99, (float)$dbContract['OXCAPTUREDAMOUNT'], 'Contract should track captured amount');
+        $this->assertEquals(499.99, (float)$dbContract['OXCAPTUREDAMOUNT'], 'Contract should track captured amount');
         $this->assertNotNull($dbContract['OXCAPTUREDAT'], 'Contract should have capture timestamp');
 
         // Verify oxorder

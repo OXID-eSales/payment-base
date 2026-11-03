@@ -5,6 +5,13 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (VR-22 A1) - the capture/refund tracker enforces its money invariants
+- `CaptureRefundTracker::setCapturedAmount()` takes the authorized amount (`PaymentContract` passes its own) and throws
+  the new `Contract\MoneyInvariantViolation` (a `DomainException`) when the captured amount exceeds it;
+  `addRefundedAmount()` throws it when the refunded total would exceed the captured amount. Tolerance: one
+  `Money::HALF_CENT_EPSILON`. A refund while no capture is recorded yet is still accepted (nothing to compare against;
+  the capture webhook may be on its way). Providers that over-booked before now get the exception.
+
 ### Added (VR-19) - shop-wide trusted proxies for the webhook caller's address
 - Module settings `sPaymentBaseTrustedProxies` (addresses / CIDR ranges of the reverse proxies in front of the shop;
   empty = none) and `sPaymentBaseClientIpHeader` (default `X-Forwarded-For`), group "Webhooks".
