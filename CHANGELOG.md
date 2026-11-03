@@ -5,6 +5,15 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (VR-21) - a refund intent cannot be retargeted, overshoot, or lose decimals
+- `RefundIntentHandler`: the intent's correlation keys (e.g. opalreturns' `returnId`) still travel in the provider's
+  context, but no longer replace `providerName`, `contractId`, `orderId` or `amount` - before, a colliding key
+  retargeted the provider action while the logs showed the base values.
+- A refund of captured money above the contract's remaining refundable amount is refused (logged, nothing
+  dispatched). When no capture amount was recorded the provider stays the bound, as before.
+- The kept amount of a partial capture is rounded to the currency's own decimals (`MinorUnitConverter`), not to two:
+  KWD 10.000 - 3.333 keeps 6.667.
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was

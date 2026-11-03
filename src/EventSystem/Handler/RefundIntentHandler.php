@@ -17,6 +17,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\Request\CancelAuthorizationRequeste
 use OxidEsales\PaymentBase\EventSystem\Event\Request\CaptureRequestedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundIntentEventInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Request\RefundRequestedEvent;
+use OxidEsales\PaymentBase\Math\Money\MinorUnitConverter;
 use OxidEsales\PaymentBase\Math\Money\Money;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Service\PaymentCaptureStatusQueryInterface;
@@ -124,10 +125,37 @@ class RefundIntentHandler
             if ($captured === false) {
                 return $this->buildAuthorizedBranchEvent($contract, $intent, $context);
             }
+            if (!$this->withinRemainingRefundable($contract, $intent)) {
+                return null;
+            }
             return new RefundRequestedEvent($context, $intent->getAmount(), $intent->getReason());
         }
 
         return null;
+    }
+
+    /**
+     * VR-21: a refund of captured money is bounded by what is left to refund. Unknown when no capture amount was
+     * recorded - then the provider is the bound, as before.
+     */
+    private function withinRemainingRefundable(
+        PaymentContractInterface $contract,
+        RefundIntentEventInterface $intent,
+    ): bool {
+        $requested = $intent->getAmount();
+        $remaining = $contract->getRemainingRefundableAmount();
+        if ($requested === null || $remaining === null || ($requested > 0.0 && Money::atMost($requested, $remaining))) {
+            return true;
+        }
+
+        $this->logger->error('[RefundIntentHandler] refund amount outside the remaining refundable - refusing to act', [
+            'orderId'             => $intent->getOrderId(),
+            'contractId'          => $contract->getId(),
+            'remainingRefundable' => $remaining,
+            'requestedRefund'     => $requested,
+        ]);
+
+        return false;
     }
 
     private function buildAuthorizedBranchEvent(
@@ -156,7 +184,7 @@ class RefundIntentHandler
         }
 
         // Partial: capture only the kept portion; PSP voids the rest of the hold.
-        $keptAmount = self::roundCurrency($authorized - $refund);
+        $keptAmount = self::roundCurrency($authorized - $refund, $contract->getCurrency());
         $context->set('amount', $keptAmount);
         return new CaptureRequestedEvent($context, $keptAmount, 'return_partial_capture');
     }
@@ -172,9 +200,9 @@ class RefundIntentHandler
             'amount'       => $intent->getAmount(),
             'reason'       => $intent->getReason(),
         ];
-        // Correlation overlay: intent-supplied keys overlay the base, so
-        // callers can attach (e.g.) returnId without us caring what it is.
-        $context = new EventContext(array_merge($base, $intent->getCorrelationContext()));
+        // Correlation keys travel along (e.g. opalreturns' returnId), but never
+        // replace what payment-base decided: the base keys win (VR-21).
+        $context = new EventContext(array_merge($intent->getCorrelationContext(), $base));
         $context->setContract($contract);
         return $context;
     }
@@ -189,8 +217,8 @@ class RefundIntentHandler
         return $requested > 0.0 && Money::atMost($requested, $authorized);
     }
 
-    private static function roundCurrency(float $amount): float
+    private static function roundCurrency(float $amount, string $currency): float
     {
-        return round($amount, 2);
+        return round($amount, MinorUnitConverter::decimalsFor($currency));
     }
 }
