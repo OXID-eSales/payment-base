@@ -5,6 +5,15 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17) - code that never ran
+Found by the dead-code check of 2026-11-03 (`docs/dev_log/20261030/reports/deadcode-check-payment-base.md`): no
+production caller in payment-base or in any of the seven in-house consumers (stripe, mollie-payment, paypal,
+one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql). Formally a break of the library API.
+- MCP/UCP transport, 42 files under `Mcp/` (server, request and notification handlers, OAuth/JWT validators - the JWT
+  one never verified a signature -, agent callbacks, UCP, the six ACP tools, catalog interfaces) and `Mcp/docs`. Kept:
+  the ACP checkout chain (`AgentContext`, `AcpCheckoutServiceInterface`, `AbstractAcpCheckoutService`,
+  `AcpResponseFormatter`) that the providers register, and `Http/ApcuRateLimiter` + `RateLimiterInterface` (Stripe).
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was
