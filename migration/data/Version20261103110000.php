@@ -30,6 +30,9 @@ class Version20261103110000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        // Schema introspection of the shop's tables meets OXID's ENUM columns (DBAL has no enum type).
+        $this->platform->registerDoctrineTypeMapping('enum', 'string');
+
         if ($schema->hasTable(self::TABLE)) {
             return;
         }
@@ -52,6 +55,9 @@ class Version20261103110000 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        // Schema introspection of the shop's tables meets OXID's ENUM columns (DBAL has no enum type).
+        $this->platform->registerDoctrineTypeMapping('enum', 'string');
+
         if (!$schema->hasTable(self::TABLE)) {
             return;
         }
