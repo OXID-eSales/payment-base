@@ -182,5 +182,22 @@ $aModule = [
             'value' => 'X-Forwarded-For',
             'group' => 'webhooks',
         ],
+        // VR-20 R3: the one return token every provider puts into its return URL. TTL in hours
+        // (below 1 = 24). The legacy switch keeps the providers' pre-VR-20 tokens (no expiry, no
+        // shopper) opening the return leg for the release that introduces the shared token, so
+        // shoppers who are mid-checkout during the deploy are not stranded; switch it off after
+        // that window. It goes away with the legacy validators.
+        [
+            'name' => 'iPaymentBaseReturnTokenTtlHours',
+            'type' => 'num',
+            'value' => '24',
+            'group' => 'return_leg',
+        ],
+        [
+            'name' => 'blPaymentBaseAcceptLegacyReturnTokens',
+            'type' => 'bool',
+            'value' => true,
+            'group' => 'return_leg',
+        ],
     ],
 ];

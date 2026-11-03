@@ -683,6 +683,24 @@ services:
     factory: ['@OxidEsales\PaymentBase\Webhook\Guard\TrustedProxySettings', 'clientIp']
     public: true
 
+  # VR-20 R3: the one return-leg check and the one return token for every provider. Public: the
+  # providers' return controllers / resolvers call them. The secret lives in oe_payments_secrets.
+  OxidEsales\PaymentBase\Checkout\Return\ReturnAccessSettingsInterface:
+    class: OxidEsales\PaymentBase\Checkout\Return\ReturnAccessSettings
+
+  OxidEsales\PaymentBase\Checkout\Return\ReturnTokenSecretStoreInterface:
+    class: OxidEsales\PaymentBase\Checkout\Return\DoctrineReturnTokenSecretStore
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\Checkout\Return\ContractReturnTokenServiceInterface:
+    class: OxidEsales\PaymentBase\Checkout\Return\ContractReturnTokenService
+    public: true
+
+  OxidEsales\PaymentBase\Checkout\Return\ReturnAccessGuardInterface:
+    class: OxidEsales\PaymentBase\Checkout\Return\ReturnAccessGuard
+    public: true
+
   OxidEsales\PaymentBase\Checkout\ReturnUrl\ReturnUrlPolicyInterface:
     class: OxidEsales\PaymentBase\Checkout\ReturnUrl\AllowListReturnUrlPolicy
     public: true

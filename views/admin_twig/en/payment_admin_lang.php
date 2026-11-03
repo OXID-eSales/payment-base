@@ -24,6 +24,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_cleanup'                => 'Cleanup',
     'SHOP_MODULE_GROUP_headless'               => 'Headless checkout (GraphQL, apps)',
     'SHOP_MODULE_GROUP_webhooks'               => 'Webhooks',
+    'SHOP_MODULE_GROUP_return_leg'             => 'Return leg',
 
     // Module settings — field labels
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
@@ -42,6 +43,10 @@ $aLang = [
         => 'Trusted reverse proxies — addresses or CIDR ranges, comma- or newline-separated (e.g. Cloudflare\'s ranges); empty = none, the connecting address is the caller',
     'SHOP_MODULE_sPaymentBaseClientIpHeader'
         => 'Header in which those proxies pass the caller\'s address (e.g. CF-Connecting-IP; default X-Forwarded-For)',
+    'SHOP_MODULE_iPaymentBaseReturnTokenTtlHours'
+        => 'Return link lifetime (hours) — how long the link back from the payment provider keeps working; default 24',
+    'SHOP_MODULE_blPaymentBaseAcceptLegacyReturnTokens'
+        => 'Still accept return links issued before the shared return token (transition for shoppers mid-checkout during the update; switch off afterwards)',
     'SHOP_MODULE_sPaymentBaseHeadlessReturnOrigins'
         => 'Allowed return origins for headless clients — comma- or newline-separated, e.g. https://app.example.com; the shop URL is always allowed; empty = shop only',
 

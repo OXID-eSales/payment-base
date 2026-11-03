@@ -24,6 +24,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_cleanup'                => 'Bereinigung',
     'SHOP_MODULE_GROUP_headless'               => 'Headless-Checkout (GraphQL, Apps)',
     'SHOP_MODULE_GROUP_webhooks'               => 'Webhooks',
+    'SHOP_MODULE_GROUP_return_leg'             => 'Rücksprung',
 
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
@@ -42,6 +43,10 @@ $aLang = [
         => 'Vertrauenswürdige Reverse-Proxys — Adressen oder CIDR-Bereiche, durch Komma oder Zeilenumbruch getrennt (z. B. die Bereiche von Cloudflare); leer = keine, die verbindende Adresse ist der Aufrufer',
     'SHOP_MODULE_sPaymentBaseClientIpHeader'
         => 'Header, in dem diese Proxys die Adresse des Aufrufers übergeben (z. B. CF-Connecting-IP; Standard X-Forwarded-For)',
+    'SHOP_MODULE_iPaymentBaseReturnTokenTtlHours'
+        => 'Gültigkeit des Rücksprung-Links (Stunden) — wie lange der Link vom Zahlungsanbieter zurück in den Shop funktioniert; Standard 24',
+    'SHOP_MODULE_blPaymentBaseAcceptLegacyReturnTokens'
+        => 'Rücksprung-Links aus der Zeit vor dem gemeinsamen Token weiter akzeptieren (Übergang für Kunden, die während des Updates im Checkout sind; danach ausschalten)',
     'SHOP_MODULE_sPaymentBaseHeadlessReturnOrigins'
         => 'Erlaubte Rücksprung-Origins für Headless-Clients — durch Komma oder Zeilenumbruch getrennt, z. B. https://app.example.com; die Shop-URL ist immer erlaubt; leer = nur der Shop',
 
