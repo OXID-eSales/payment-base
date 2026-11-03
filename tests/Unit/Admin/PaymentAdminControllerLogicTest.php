@@ -15,6 +15,10 @@ use OxidEsales\PaymentBase\Admin\PaymentAdminActionDispatcher;
 use OxidEsales\PaymentBase\Admin\PaymentAdminController;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelContext;
 use OxidEsales\PaymentBase\Admin\Panel\PaymentPanelRenderable;
+use DateTimeImmutable;
+use OxidEsales\PaymentBase\AtRisk\AtRiskReason;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRisk;
+use OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use PHPUnit\Framework\TestCase;
@@ -92,11 +96,34 @@ final class PaymentAdminControllerLogicTest extends TestCase
         self::assertFalse($controller->hasProvider());
     }
 
+    /**
+     * VR-23 T1: the badge of the classic payment tab reads the order's open flags whatever the provider panel is.
+     */
+    public function testExposesTheOpenAtRiskFlagsOfTheOrder(): void
+    {
+        $flag = new PaymentAtRisk('f-1', 'c-1', 'order_x', AtRiskReason::CaptureDenied, 'cap_1', new DateTimeImmutable());
+        $atRisk = $this->createMock(PaymentAtRiskQueryInterface::class);
+        $atRisk->method('openForOrder')->with('order_x')->willReturn([$flag]);
+        $controller = $this->controller('order_x', 'oxidinvoice', null, $this->registryReturning(null), $atRisk);
+
+        self::assertSame([$flag], $controller->getAtRiskFlags());
+    }
+
+    public function testHasNoAtRiskFlagsWithoutAnOrder(): void
+    {
+        $atRisk = $this->createMock(PaymentAtRiskQueryInterface::class);
+        $atRisk->expects(self::never())->method('openForOrder');
+        $controller = $this->controller(null, '', null, $this->registryReturning(null), $atRisk);
+
+        self::assertSame([], $controller->getAtRiskFlags());
+    }
+
     private function controller(
         ?string $orderId,
         string $paymentType,
         ?PaymentContractInterface $contract,
         PaymentPanelRegistryInterface $registry,
+        ?PaymentAtRiskQueryInterface $atRisk = null,
     ): TestablePaymentAdminController {
         $repo = $this->createMock(ContractRepositoryInterface::class);
         $repo->method('findByOrderId')->willReturn($contract);
@@ -107,6 +134,7 @@ final class PaymentAdminControllerLogicTest extends TestCase
             new PaymentAdminActionDispatcher($registry),
             $orderId,
             $paymentType,
+            $atRisk ?? $this->createStub(PaymentAtRiskQueryInterface::class),
         );
     }
 
@@ -131,7 +159,9 @@ final class TestablePaymentAdminController extends PaymentAdminController
         PaymentAdminActionDispatcher $dispatcher,
         private readonly ?string $stubOrderId,
         private readonly string $stubPaymentType,
+        PaymentAtRiskQueryInterface $atRisk,
     ) {
+        $this->atRiskQuery = $atRisk;
         $this->panelRegistry = $registry;
         $this->contractRepository = $repo;
         $this->actionDispatcher = $dispatcher;

@@ -13,6 +13,13 @@ $aLang = [
     'charset'                     => 'UTF-8',
     'PAYMENT_ADMIN_TAB'           => 'Payment',
     'PAYMENT_ADMIN_NO_PROVIDER'   => 'This order was not processed through a registered online payment provider. Manual payment handling applies.',
+    // VR-23 T1: payment-at-risk badge
+    'PAYMENT_ADMIN_AT_RISK' => 'Payment at risk - your decision is needed. Nothing was cancelled or refunded automatically.',
+    'PAYMENT_ADMIN_AT_RISK_AUTHORIZATION_EXPIRED' => 'The authorization expired before the payment was captured.',
+    'PAYMENT_ADMIN_AT_RISK_CAPTURE_DENIED' => 'The provider denied the capture.',
+    'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'The provider reversed the capture.',
+    'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'The customer opened a dispute.',
+    'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Money arrived on a cancelled order and the provider would not return it.',
     // Sprint 14 (MOL-10): the OXID contract state, named as such; the Help table explains the values.
     'PAYMENT_ADMIN_CONTRACT_STATE'=> 'OXID Contract Status',
 

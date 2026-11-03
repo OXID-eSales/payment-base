@@ -5,6 +5,38 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-23 T1) - late money and "payment at risk"
+- `LateMoney\LateMoneyResolverInterface` (public service): one rule for money on a contract that can no longer take it
+  (terminal state, or a replaced attempt): captured money is refunded, an authorization released, once, with the
+  idempotency key `late:<providerPaymentId>`. The outcome is audited in the contract metadata (`late_money`, keyed by
+  payment id); a repeated delivery answers `LateMoneyKind::AlreadySettled`. A payment holding no money records nothing
+  (a later delivery is handled). A refund the provider refuses raises the at-risk flag `late_money_not_returned`,
+  records nothing (the next delivery retries) and returns `LateMoneyKind::Failed` instead of throwing, so the provider
+  answers its webhook 200. Nothing calls it yet: the providers adopt it in VR-23 T2-T5.
+- `LateMoney\ProviderPaymentGatewayInterface`: what payment-base asks a provider - `statusOf()`, `refund()`,
+  `release()` by the provider's own payment id. Each provider implements and tags it
+  `oe.payment.provider_payment_gateway`; `ProviderPaymentGatewaysInterface` picks the contract's provider (none tagged
+  = `LogicException`, a wiring error).
+- `AtRisk\PaymentAtRiskFlagInterface` (public service): `raise($contract, AtRiskReason, $reference)` marks a contract
+  and its order "payment at risk" (`authorization_expired`, `capture_denied`, `capture_reversed`, `dispute_opened`,
+  `late_money_not_returned`), idempotent per contract + reason + provider reference; `acknowledge()` is the merchant's
+  decision. It never cancels or refunds. The shop owner gets one mail through `ShopMailSenderInterface` (the order-mail
+  sender, the shop's SMTP) addressed by the new `Adapter\ShopOwnerAddressInterface`; a failed mail is retried by the
+  next raise. New table `oe_payments_at_risk` (migration `Version20261103130000`).
+- Admin: `AdminOrder.paymentAtRisk` (GraphQL, `payment:view`), query `adminPaymentsAtRisk(limit)` for the order-list
+  filter, and a badge above the provider panel in the classic Payment tab (`PaymentAdminController::getAtRiskFlags()`).
+- `PaymentContractInterface::getShopId()` (`PaymentContract` already had it).
+
+### Changed (VR-23 T1) - the stale-order cleanup asks the provider first
+- `oe:payments:not_finished:cleanup` (`NotFinishedOrderCleanupService`) closes the provider's payment page of an open
+  contract before cancelling anything. A payment the provider reports as paid or authorized is committed
+  (`ContractCommitService`, source `cleanup`) and the order is left to finish; before, the contract was cancelled
+  under the customer's payment and the provider's paid webhook then met a cancelled contract. A provider that cannot be
+  asked, or a commit that is refused, counts as `failed`: nothing is cancelled on a guess and the next run asks again.
+  `NotFinishedOrderCleanupResult` gains `contractsCommitted`; the service takes the attempt closers, the provider
+  payment gateways, the commit service and the throwable summary as constructor arguments (wired in `services.yaml`).
+  Its error log now carries the throwable summary instead of the exception message.
+
 ### Changed (VR-22 D4) - interface over concrete, shop id from the shop context
 - `EarlyOrderCreationHandler` and `ContractConditionResolverHandler` work on `PaymentContractInterface`. Before, any
   implementation other than the `PaymentContract` class was skipped silently: no draft-completed event, no order.

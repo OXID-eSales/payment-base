@@ -44,6 +44,16 @@ class PaymentAdminTabTemplateGuardTest extends TestCase
         );
     }
 
+    public function testTemplateShowsThePaymentAtRiskBadgeAboveTheProviderPanel(): void
+    {
+        self::assertStringContainsString('oView.getAtRiskFlags()', $this->source, 'VR-23 T1: the badge reads the order\'s flags.');
+        self::assertLessThan(
+            strpos($this->source, 'oView.hasProvider() %}'),
+            strpos($this->source, 'data-testid="payment-at-risk"'),
+            'The at-risk badge is the shop\'s, shown whether or not a provider panel resolves, above it.'
+        );
+    }
+
     public function testTemplateRendersAriaBusyAttribute(): void
     {
         self::assertMatchesRegularExpression(

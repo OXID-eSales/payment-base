@@ -489,7 +489,7 @@ if (!class_exists(\OxidEsales\Eshop\Core\Email::class, false)) {
 // STRP-176 (2026-10-26) — core's Shop, which OxidShopMailSender loads for the
 // SMTP settings of the order's shop.
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Shop::class, false)) {
-    eval('namespace OxidEsales\\Eshop\\Application\\Model; class Shop { public function load($oxid) { return true; } }');
+    eval('namespace OxidEsales\\Eshop\\Application\\Model; class Shop { public function load($oxid) { return true; } public function getFieldData(string $field): mixed { return null; } }');
 }
 
 // STRP-176 (2026-10-26) — Email_parent, the virtual class of the Email

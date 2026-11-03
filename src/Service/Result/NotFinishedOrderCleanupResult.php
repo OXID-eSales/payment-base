@@ -25,6 +25,8 @@ final class NotFinishedOrderCleanupResult
         public readonly int $ordersCancelled,
         /** Linked contracts this run cancelled alongside their order. */
         public readonly int $contractsCancelled,
+        /** Orders whose payment the provider reported as paid: committed instead of cancelled (VR-23 T1). */
+        public readonly int $contractsCommitted,
         /** Voucher reservations released back to customers. */
         public readonly int $vouchersReleased,
         /** Candidates that threw and were skipped. */

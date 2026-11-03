@@ -161,18 +161,33 @@ final class CleanupNotFinishedOrdersCommandTest extends TestCase
         $this->assertSame(Command::SUCCESS, $this->tester->getStatusCode());
     }
 
+    /**
+     * VR-23 T1: an unfinished order whose payment the provider reports as paid is committed, not cleaned up;
+     * the operator reading the cron output must see that number.
+     */
+    public function testReportsTheContractsCommittedBecauseTheProviderSaidPaid(): void
+    {
+        $this->service->method('cleanup')->willReturn($this->cleanupResult(scanned: 2, contractsCommitted: 2));
+
+        $this->tester->execute([]);
+
+        $this->assertStringContainsString('2 contract(s) committed', $this->tester->getDisplay());
+    }
+
     private function cleanupResult(
         int $scanned = 0,
         int $ordersCancelled = 0,
         int $contractsCancelled = 0,
         int $vouchersReleased = 0,
         int $failed = 0,
-        bool $dryRun = false
+        bool $dryRun = false,
+        int $contractsCommitted = 0
     ): NotFinishedOrderCleanupResult {
         return new NotFinishedOrderCleanupResult(
             scanned: $scanned,
             ordersCancelled: $ordersCancelled,
             contractsCancelled: $contractsCancelled,
+            contractsCommitted: $contractsCommitted,
             vouchersReleased: $vouchersReleased,
             failed: $failed,
             dryRun: $dryRun

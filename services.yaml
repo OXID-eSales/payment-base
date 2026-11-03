@@ -297,6 +297,69 @@ services:
     tags:
       - { name: payment.event_handler, priority: 10 }
 
+  # --------------------------------------------------------------
+  # VR-23 T1 - money that arrives late, and payments at risk.
+  # --------------------------------------------------------------
+
+  # Each provider implements ProviderPaymentGatewayInterface and tags it `oe.payment.provider_payment_gateway`.
+  # Used by the late-money resolver (refund/release) and the stale-order cleanup (what does the PSP say?).
+  OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewaysInterface:
+    class: OxidEsales\PaymentBase\LateMoney\ProviderPaymentGateways
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      $gateways: !tagged_iterator oe.payment.provider_payment_gateway
+
+  # Public: the provider modules' webhook handlers call it for a payment their contract can no longer take.
+  OxidEsales\PaymentBase\LateMoney\LateMoneyResolverInterface:
+    class: OxidEsales\PaymentBase\LateMoney\LateMoneyResolver
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      $gateways: '@OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewaysInterface'
+      $contracts: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $atRisk: '@OxidEsales\PaymentBase\AtRisk\PaymentAtRiskFlagInterface'
+      $logger: '@oxid_esales.monolog.logger'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
+
+  OxidEsales\PaymentBase\AtRisk\DoctrinePaymentAtRiskRepository:
+    autowire: false
+    autoconfigure: false
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+
+  OxidEsales\PaymentBase\AtRisk\PaymentAtRiskRepositoryInterface:
+    alias: OxidEsales\PaymentBase\AtRisk\DoctrinePaymentAtRiskRepository
+
+  # Public: the admin's classic payment tab and its GraphQL read the flags through it.
+  OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface:
+    alias: OxidEsales\PaymentBase\AtRisk\DoctrinePaymentAtRiskRepository
+    public: true
+
+  OxidEsales\PaymentBase\Adapter\ShopOwnerAddressInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidShopOwnerAddress
+
+  OxidEsales\PaymentBase\AtRisk\AtRiskOwnerMailerInterface:
+    class: OxidEsales\PaymentBase\AtRisk\AtRiskOwnerMailer
+    autowire: false
+    autoconfigure: false
+    arguments:
+      $sender: '@OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface'
+      $owners: '@OxidEsales\PaymentBase\Adapter\ShopOwnerAddressInterface'
+
+  # Public: the provider modules raise it (authorization expired, capture denied/reversed, dispute opened).
+  OxidEsales\PaymentBase\AtRisk\PaymentAtRiskFlagInterface:
+    class: OxidEsales\PaymentBase\AtRisk\PaymentAtRiskFlag
+    autowire: false
+    autoconfigure: false
+    public: true
+    arguments:
+      $flags: '@OxidEsales\PaymentBase\AtRisk\PaymentAtRiskRepositoryInterface'
+      $ownerMailer: '@OxidEsales\PaymentBase\AtRisk\AtRiskOwnerMailerInterface'
+      $logger: '@oxid_esales.monolog.logger'
+
   # STRP-176 — the order mails kept on the contract at early order creation go out once the
   # payment is confirmed. Last on commit: the mail is the one step a failure
   # of which must not hold back anything else.
@@ -602,6 +665,10 @@ services:
       $orderRepository:    '@OxidEsales\PaymentBase\Repository\NotFinishedOrderRepositoryInterface'
       $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
       $restock:            '@OxidEsales\PaymentBase\Adapter\OrderRestockInterface'
+      $attemptClosers:     '@OxidEsales\PaymentBase\Checkout\Attempt\PaymentAttemptClosersInterface'
+      $gateways:           '@OxidEsales\PaymentBase\LateMoney\ProviderPaymentGatewaysInterface'
+      $commits:            '@OxidEsales\PaymentBase\Service\Commit\ContractCommitServiceInterface'
+      $throwableSummary:   '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
 
@@ -1036,6 +1103,7 @@ services:
     autoconfigure: false
     arguments:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\PaymentContractDetailsReaderInterface'
+      - '@OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface'
 
   # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
   OxidEsales\PaymentBase\GraphQL\Admin\Relation\AdminOrderPaymentRelation:
@@ -1064,6 +1132,7 @@ services:
     autoconfigure: false
     arguments:
       - '@OxidEsales\PaymentBase\GraphQL\Admin\Service\AdminStateHelpReaderInterface'
+      - '@OxidEsales\PaymentBase\AtRisk\PaymentAtRiskQueryInterface'
 
   # Private definition + public alias: see the RoutePass note at PaymentClientConfig.
   OxidEsales\PaymentBase\GraphQL\Admin\Controller\PaymentQueries:

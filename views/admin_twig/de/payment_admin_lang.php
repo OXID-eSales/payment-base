@@ -13,6 +13,13 @@ $aLang = [
     'charset'                     => 'UTF-8',
     'PAYMENT_ADMIN_TAB'           => 'Zahlung',
     'PAYMENT_ADMIN_NO_PROVIDER'   => 'Diese Bestellung wurde nicht über einen registrierten Online-Zahlungsanbieter abgewickelt. Manuelle Zahlungsverarbeitung.',
+    // VR-23 T1: payment-at-risk badge
+    'PAYMENT_ADMIN_AT_RISK' => 'Zahlung gefährdet - Ihre Entscheidung ist erforderlich. Es wurde nichts automatisch storniert oder erstattet.',
+    'PAYMENT_ADMIN_AT_RISK_AUTHORIZATION_EXPIRED' => 'Die Autorisierung ist abgelaufen, bevor die Zahlung eingezogen wurde.',
+    'PAYMENT_ADMIN_AT_RISK_CAPTURE_DENIED' => 'Der Anbieter hat den Einzug abgelehnt.',
+    'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'Der Anbieter hat den Einzug rückgängig gemacht.',
+    'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'Der Kunde hat einen Streitfall eröffnet.',
+    'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Geld ist auf einer stornierten Bestellung eingegangen und der Anbieter hat es nicht zurückgegeben.',
     // Sprint 14 (MOL-10): der OXID-Vertragsstatus, so benannt; die Hilfe-Tabelle erklärt die Werte.
     'PAYMENT_ADMIN_CONTRACT_STATE'=> 'OXID-Vertragsstatus',
 
