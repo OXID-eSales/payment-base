@@ -34,7 +34,6 @@ A PSP module (e.g. `stripe`, `paypal`) contributes only:
 ```
 <plugin>/src/Resources/validation-rules.php            # the field rules (required)
 <plugin>/…/SomeMessageFormatter.php                    # tagged MessageFormatter (optional, for messages)
-<plugin>/…/SomeRateLimitOverride.php                   # tagged rate-limit override (optional)
 + frontend wiring that POSTs to the central endpoint, or a server-side call to ValidationBase
 ```
 
@@ -239,12 +238,12 @@ Zero new endpoints, zero new guards, no payment-base change:
      a thin façade over it), validate the stored user fields, and short-circuit on
      failure. No HTTP round-trip needed.
 
-### 6.3 Per-PSP rate-limit override (optional)
+### 6.3 Rate limit
 
-Default is 30 requests / minute per `(pluginId, session)`. To change it for your
-module, register a service tagged `oe.payment_base.rate_limit_override`
-implementing `RateLimitOverrideInterface`
-(`getPluginModuleId(): string`, `getLimitPerMinute(): int`).
+One global limit: 30 requests / minute per `(pluginId, session)`
+(`ConfigurableRateLimitConfig`). The per-PSP override extension point
+(`RateLimitOverrideInterface`, tag `oe.payment_base.rate_limit_override`) was
+removed in VR-24 (no module used it).
 
 ### 6.4 When you DO need to touch payment-base
 

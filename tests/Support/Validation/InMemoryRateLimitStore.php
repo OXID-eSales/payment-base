@@ -7,10 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OxidEsales\PaymentBase\Validation\RateLimit;
+namespace OxidEsales\PaymentBase\Tests\Support\Validation;
+
+use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface;
 
 /**
- * In-process rate-limit store — for unit tests only.
+ * In-process rate-limit store, a test double (VR-24 DC-PB7d: moved out of src/).
  *
  * Not process-safe; each request spawns a fresh PHP process so this is
  * only used in test isolation. The Doctrine-backed store is used in production.

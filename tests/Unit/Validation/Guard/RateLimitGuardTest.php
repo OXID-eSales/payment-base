@@ -12,7 +12,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Validation\Guard;
 use OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard;
 use OxidEsales\PaymentBase\Validation\Guard\ValidationRequestContext;
 use OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig;
-use OxidEsales\PaymentBase\Validation\RateLimit\InMemoryRateLimitStore;
+use OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore;
 use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;

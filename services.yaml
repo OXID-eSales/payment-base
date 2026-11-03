@@ -821,7 +821,6 @@ services:
     arguments:
       $connection: '@doctrine.dbal.connection'
 
-  # Per-PSP override tagged iterator (empty in this sprint; PSPs opt in via the tag).
   # The global default is 30 req/min, matching the admin setting `iValidationApiRatePerMinute`.
   # Note: wiring the live admin setting requires ModuleSettingBridgeInterface; deferred
   # to Phase E when an admin-UI integration sprint adds the bridge dep.
@@ -829,7 +828,6 @@ services:
     class: OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig
     arguments:
       $globalDefault: 30
-      $overrides: !tagged_iterator oe.payment_base.rate_limit_override
 
   OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard:
     arguments:
