@@ -48,11 +48,11 @@ final class RsaPublicKeyPem
     private static function length(int $length): string
     {
         if ($length <= self::SHORT_FORM_MAX_LENGTH) {
-            return chr($length);
+            return pack('C', $length);
         }
 
         $bytes = ltrim(pack('N', $length), "\x00");
 
-        return chr(self::LONG_FORM_FLAG | strlen($bytes)) . $bytes;
+        return pack('C', self::LONG_FORM_FLAG | strlen($bytes)) . $bytes;
     }
 }
