@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# Copyright © OXID eSales AG. All rights reserved.
+# See LICENSE file for license details.
+#
+# Deploy gate: fails while the payment-base database migrations (suite
+# oe_payment_base) are behind the installed module. Run it after
+# oe-payment-base-migrate and before the shop takes traffic:
+#
+#   vendor/bin/oe-payment-base-migrate
+#   vendor/bin/oe-payment-base-schema-check   # non-zero: stop the deploy
+#
+# Unlike oe-payment-base-migrate it never skips: a check that cannot look
+# (no migration wrapper, shop not set up) fails. pay1 ran two days three
+# migrations behind, and the first sign was a customer mail sent before the
+# payment.
+#
+# Exit codes: 0 up to date, 1 migrations pending, 2 cannot check.
+#
+# Run from the project root (or set OE_PROJECT_ROOT).
+
+set -uo pipefail
+
+PROJECT_ROOT="${OE_PROJECT_ROOT:-$(pwd)}"
+WRAPPER="$PROJECT_ROOT/vendor/bin/oe-eshop-db_migrate"
+SHOP_CONFIG="$PROJECT_ROOT/source/config.inc.php"
+
+if [ ! -x "$WRAPPER" ]; then
+    echo "[payment-base] cannot check the schema: $WRAPPER not found (run from the shop project root)" >&2
+    exit 2
+fi
+
+if [ ! -f "$SHOP_CONFIG" ] || grep -q "<dbHost>" "$SHOP_CONFIG"; then
+    echo "[payment-base] cannot check the schema: the shop is not set up ($SHOP_CONFIG)" >&2
+    exit 2
+fi
+
+cd "$PROJECT_ROOT" || exit 2
+"$WRAPPER" migrations:up-to-date oe_payment_base
+status=$?
+
+if [ "$status" -eq 0 ]; then
+    echo "[payment-base] schema is up to date"
+    exit 0
+fi
+
+echo "[payment-base] schema is behind the module: run vendor/bin/oe-payment-base-migrate" >&2
+exit 1

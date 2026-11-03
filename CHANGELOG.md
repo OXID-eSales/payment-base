@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-16) - `oe-payment-base-schema-check`, the deploy gate for the database schema
+- `vendor/bin/oe-payment-base-schema-check` asks the shop's migration wrapper `migrations:up-to-date oe_payment_base`:
+  exit 0 up to date, 1 migrations pending, 2 cannot check (no wrapper, shop not set up). It never skips. Run it after
+  `oe-payment-base-migrate` and before the shop takes traffic. pay1 ran two days three migrations behind; the first
+  sign was an order mail sent before the payment.
+
 ### Changed (VR-16) - an order whose mails cannot wait on its contract is refused, not mailed at once
 - `OxidShopOrderService::createOrder()` throws `ShopOrderException` (`order_mails_not_kept`) when the rendered order mails
   cannot be kept on the contract: no contract id, no contract row, the store fails, or no store. Before, the mails went
