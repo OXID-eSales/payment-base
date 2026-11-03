@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\ClientConfig;
 
 use OxidEsales\PaymentBase\ClientConfig\ClientConfigGuard;
+use OxidEsales\PaymentBase\ClientConfig\Contract\ClientConfigSecretPatternProviderInterface;
 use OxidEsales\PaymentBase\ClientConfig\Exception\UnsafeClientConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +25,7 @@ final class ClientConfigGuardTest extends TestCase
     {
         $values = ['publishableKey' => 'pk_test_123', 'testMode' => true, 'profileId' => 'pfl_abc'];
 
-        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values));
+        self::assertSame($values, $this->guard()->assertPublic($values));
     }
 
     /**
@@ -33,11 +34,8 @@ final class ClientConfigGuardTest extends TestCase
     public static function unsafeConfigs(): array
     {
         return [
-            'sk_ value' => [['publishableKey' => 'sk_live_abc']],
-            'rk_ value' => [['publishableKey' => 'rk_live_abc']],
-            'whsec_ value' => [['signing' => 'whsec_abc']],
             'secret key name' => [['clientSecret' => 'x']],
-            'secret key name, upper case' => [['PAYPAL_SECRET' => 'x']],
+            'secret key name, upper case' => [['ACME_SECRET' => 'x']],
             'apiKey name' => [['apiKey' => 'x']],
             'api_key name' => [['api_key' => 'x']],
             'api_key name, other case' => [['API_KEY' => 'x']],
@@ -46,9 +44,6 @@ final class ClientConfigGuardTest extends TestCase
             'array value' => [['nested' => ['a' => 'b']]],
             'float value' => [['ratio' => 1.5]],
             'integer key' => [['pk_test_123']],
-            'mollie live api key shape' => [['profileId' => 'live_' . str_repeat('aB3', 10)]],
-            'mollie test api key shape' => [['profileId' => 'test_' . str_repeat('x9', 15)]],
-            'oauth access token shape' => [['profileId' => 'access_abcdef123456']],
         ];
     }
 
@@ -60,13 +55,13 @@ final class ClientConfigGuardTest extends TestCase
     {
         $this->expectException(UnsafeClientConfig::class);
 
-        (new ClientConfigGuard())->assertPublic($values);
+        $this->guard()->assertPublic($values);
     }
 
     public function testTheRefusalNeverEchoesTheOffendingValue(): void
     {
         try {
-            (new ClientConfigGuard())->assertPublic(['publishableKey' => 'sk_live_TOPSECRET']);
+            $this->guard('/^acme_/')->assertPublic(['publishableKey' => 'acme_live_TOPSECRET']);
             self::fail('expected a refusal');
         } catch (UnsafeClientConfig $e) {
             self::assertStringNotContainsString('TOPSECRET', $e->getMessage());
@@ -74,11 +69,61 @@ final class ClientConfigGuardTest extends TestCase
         }
     }
 
-    public function testAssertPublic_MollieShapedValueOfAnotherLength_IsNotMistakenForAKey(): void
+    public function testAssertPublic_ValueOfAnotherLengthThanTheContributedPattern_IsNotMistakenForAKey(): void
     {
         $values = ['label' => 'test_mode_enabled'];
 
-        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values));
+        self::assertSame($values, $this->guard(self::KEY_PATTERN)->assertPublic($values));
+    }
+
+    public function testAssertPublic_NoPatternContributed_KnowsNoProviderSecretShape(): void
+    {
+        $values = ['publishableKey' => 'acme_live_abc'];
+
+        self::assertSame($values, $this->guard()->assertPublic($values));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function contributedSecretShapes(): array
+    {
+        return [
+            'prefix pattern of the first provider' => ['acme_live_abc'],
+            'key pattern of the second provider' => ['live_' . str_repeat('aB3', 10)],
+            'key pattern, test mode' => ['test_' . str_repeat('x9', 15)],
+        ];
+    }
+
+    #[DataProvider('contributedSecretShapes')]
+    public function testAssertPublic_ValueMatchingAPatternOfAnyProvider_IsRefused(string $value): void
+    {
+        $guard = $this->guard('/^acme_/', self::KEY_PATTERN);
+
+        $this->expectException(UnsafeClientConfig::class);
+
+        $guard->assertPublic(['profileId' => $value]);
+    }
+
+    private const KEY_PATTERN = '/^(live|test)_[A-Za-z0-9]{30}$/';
+
+    private function guard(string ...$secretPatterns): ClientConfigGuard
+    {
+        $providers = [];
+        foreach ($secretPatterns as $pattern) {
+            $providers[] = new class ($pattern) implements ClientConfigSecretPatternProviderInterface {
+                public function __construct(private readonly string $pattern)
+                {
+                }
+
+                public function secretValuePatterns(): array
+                {
+                    return [$this->pattern];
+                }
+            };
+        }
+
+        return new ClientConfigGuard($providers);
     }
 
     public function testAssertPublic_NameOutsideTheAllowList_IsRefusedEvenWithAHarmlessValue(): void
@@ -86,34 +131,34 @@ final class ClientConfigGuardTest extends TestCase
         $this->expectException(UnsafeClientConfig::class);
         $this->expectExceptionMessage('allow-list');
 
-        (new ClientConfigGuard())->assertPublic(['region' => 'eu'], ['publishableKey']);
+        $this->guard()->assertPublic(['region' => 'eu'], ['publishableKey']);
     }
 
     public function testAssertPublic_OnlyAllowListedNames_PassesThrough(): void
     {
         $values = ['profileId' => 'pfl_abc', 'testMode' => true];
 
-        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values, ['profileId', 'testMode']));
+        self::assertSame($values, $this->guard()->assertPublic($values, ['profileId', 'testMode']));
     }
 
     public function testAssertPublic_EmptyAllowList_RefusesEveryValue(): void
     {
         $this->expectException(UnsafeClientConfig::class);
 
-        (new ClientConfigGuard())->assertPublic(['profileId' => 'pfl_abc'], []);
+        $this->guard()->assertPublic(['profileId' => 'pfl_abc'], []);
     }
 
     public function testAssertPublic_AllowListedNameWithSecretShapedValue_IsStillRefused(): void
     {
         $this->expectException(UnsafeClientConfig::class);
 
-        (new ClientConfigGuard())->assertPublic(['publishableKey' => 'sk_live_abc'], ['publishableKey']);
+        $this->guard('/^acme_/')->assertPublic(['publishableKey' => 'acme_live_abc'], ['publishableKey']);
     }
 
     public function testAssertPublic_WithoutAllowList_KeepsTheDenyShapesOnly(): void
     {
         $values = ['anything' => 'harmless'];
 
-        self::assertSame($values, (new ClientConfigGuard())->assertPublic($values, null));
+        self::assertSame($values, $this->guard()->assertPublic($values, null));
     }
 }

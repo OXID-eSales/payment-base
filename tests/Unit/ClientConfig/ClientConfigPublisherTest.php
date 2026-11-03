@@ -28,7 +28,7 @@ final class ClientConfigPublisherTest extends TestCase
     {
         return new ClientConfigPublisher(
             new ClientConfigProviderRegistry($providers),
-            new ClientConfigGuard(),
+            new ClientConfigGuard([]),
             new ClientConfigSealer(new SystemSealInputs())
         );
     }
@@ -58,7 +58,7 @@ final class ClientConfigPublisherTest extends TestCase
 
     public function testASecretReturnedByAProviderIsNeverSealed(): void
     {
-        $publisher = $this->publisher(new FakeClientConfigProvider('stripe', ['publishableKey' => 'sk_live_oops']));
+        $publisher = $this->publisher(new FakeClientConfigProvider('stripe', ['clientSecret' => 'oops']));
 
         $this->expectException(UnsafeClientConfig::class);
 
