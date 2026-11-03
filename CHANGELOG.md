@@ -5,6 +5,21 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-20 R3) - one return-leg guard and one return token for every provider
+- `Checkout\Return\ReturnAccessGuardInterface` (public service): contract exists, `provider` is the caller's, and
+  the caller holds a valid return token **or** is the contract's shopper in the session that started the payment
+  (`initiating_session_id`). Unknown ownership (no contract user, no session user, no initiating session) is a
+  rejection; reasons are `ReturnAccessRejection` (`contract_not_found`, `provider_mismatch`, `token_expired`,
+  `access_denied`). Nothing calls it yet: Stripe, Mollie and PayPal adopt it in VR-20 R5/R6/R7.
+- `Checkout\Return\ContractReturnTokenServiceInterface` (public service): `base64url(json[1, contractId, expiresAt,
+  userId|null, keyId]).hmac`, signed with the shop's own secret from the new table `oe_payments_secrets` (purpose
+  `return_token`; migration `Version20261103110000` creates the table and the first secret), not derived from a
+  provider API key. Rotation: insert a newer row (it signs, older rows still verify); delete a row to revoke.
+- Settings, group "Return leg": `iPaymentBaseReturnTokenTtlHours` (default 24) and
+  `blPaymentBaseAcceptLegacyReturnTokens` (default on for the release that introduces the shared token): a provider's
+  pre-VR-20 token (no expiry, no shopper) opens its return leg only if the switch is on AND the provider passes its
+  old `TokenServiceInterface` in `ReturnAccessRequest::$legacyTokens`. Both go away with the legacy validators.
+
 ### Added (VR-19) - shop-wide trusted proxies for the webhook caller's address
 - Module settings `sPaymentBaseTrustedProxies` (addresses / CIDR ranges of the reverse proxies in front of the shop;
   empty = none) and `sPaymentBaseClientIpHeader` (default `X-Forwarded-For`), group "Webhooks".
