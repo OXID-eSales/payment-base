@@ -11,6 +11,7 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -80,6 +81,27 @@ class ContractConditionResolverHandlerTest extends TestCase
         $this->assertTrue($eventEmitted);
         $this->assertNotNull($emittedContract);
         $this->assertTrue($emittedContract->getState()->isDraft());
+    }
+
+    /**
+     * VR-22 D4 (D2) - an implementation of the interface other than PaymentContract was
+     * skipped silently: no draft-completed event, so no order.
+     */
+    public function testDispatchesDraftCompletedEventForAnyContractImplementation(): void
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getConditions')->willReturn([new ContractCondition(ContractCondition::TYPE_FRAUD_CHECK)]);
+        $emitted = [];
+        $this->dispatcher->addListener(
+            ContractDraftCompletedEvent::class,
+            function (ContractDraftCompletedEvent $event) use (&$emitted): void {
+                $emitted[] = $event->getContract();
+            }
+        );
+
+        $this->handler->handle(new ContractCreatedEvent($contract, new EventContext([])));
+
+        $this->assertSame([$contract], $emitted);
     }
 
     public function testContractRemainsInDraftAfterHandler(): void

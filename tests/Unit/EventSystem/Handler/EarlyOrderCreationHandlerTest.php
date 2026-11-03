@@ -9,7 +9,9 @@ use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\ContractState;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
@@ -117,6 +119,29 @@ class EarlyOrderCreationHandlerTest extends TestCase
         // Contract should be in PENDING state after handler completes
         $this->assertTrue($contract->getState()->isPending());
         $this->assertEquals('456', $contract->getOrderId());
+    }
+
+    /**
+     * VR-22 D4 (D2) - the handler skipped every PaymentContractInterface implementation
+     * that is not the PaymentContract class: no order, no error.
+     */
+    public function testHandlerCreatesTheOrderForAnyContractImplementation(): void
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn('contract_other');
+        $contract->method('getUserId')->willReturn('user123');
+        $contract->method('getState')->willReturn(ContractState::draft());
+        $contract->method('getStateValue')->willReturn('draft');
+        $contract->method('getConditions')->willReturn([]);
+        $contract->expects($this->once())->method('transitionToNotFinished')->with('456');
+        $contract->expects($this->once())->method('transitionToPending');
+        $event = new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay']));
+        $this->shopOrderService
+            ->expects($this->once())
+            ->method('createOrder')
+            ->willReturn($this->createOrderResponse('456'));
+
+        $this->handler->handle($event);
     }
 
     public function testHandlerDispatchesEvents(): void

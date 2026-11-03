@@ -458,7 +458,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
 
     public function setCapturedAmount(float $amount): void
     {
-        $this->refundTracking->setCapturedAmount($this->state, $amount);
+        $this->refundTracking->setCapturedAmount($this->state, $amount, $this->getAmount());
         $this->touch();
     }
 

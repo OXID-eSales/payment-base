@@ -297,6 +297,10 @@ services:
   # STRP-176 — the order mails kept on the contract at early order creation go out once the
   # payment is confirmed. Last on commit: the mail is the one step a failure
   # of which must not hold back anything else.
+  # VR-22 D4 — the shop (subshop) of the request; contracts are stamped with it.
+  OxidEsales\PaymentBase\Adapter\ShopContextInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidShopContext
+
   OxidEsales\PaymentBase\Adapter\ShopMailSenderInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidShopMailSender
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
-use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
 
@@ -35,10 +34,6 @@ class ContractConditionResolverHandler extends AbstractHandler
         }
 
         $contract = $event->getContract();
-
-        if (!$contract instanceof PaymentContract) {
-            return;
-        }
 
         if (empty($contract->getConditions())) {
             throw new \DomainException('Cannot transition to PENDING without conditions');

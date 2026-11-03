@@ -62,7 +62,7 @@ class CaptureRefundTracker
      * states (cancelled / expired / failed — money would never have
      * moved on those).
      */
-    public function setCapturedAmount(ContractState $state, float $amount): void
+    public function setCapturedAmount(ContractState $state, float $amount, float $authorizedAmount): void
     {
         if (!self::stateAllowsCapture($state)) {
             throw new DomainException(sprintf(
@@ -71,6 +71,13 @@ class CaptureRefundTracker
             ));
         }
         self::assertPositiveFinite($amount, 'Captured amount');
+        if (Money::greaterThan($amount, $authorizedAmount)) {
+            throw new MoneyInvariantViolation(sprintf(
+                'Captured amount %.2f exceeds the authorized amount %.2f',
+                $amount,
+                $authorizedAmount,
+            ));
+        }
         $this->capturedAmount = $amount;
     }
 
@@ -80,7 +87,17 @@ class CaptureRefundTracker
             throw new DomainException('Can only add refunded amount in FULFILLED state');
         }
         self::assertPositiveFinite($amount, 'Refund amount');
-        $this->refundedAmount = ($this->refundedAmount ?? 0.0) + $amount;
+        $refundedTotal = ($this->refundedAmount ?? 0.0) + $amount;
+        // Without a known capture there is nothing to compare against; the
+        // capture webhook may still be on its way (see setCapturedAmount()).
+        if ($this->capturedAmount !== null && Money::greaterThan($refundedTotal, $this->capturedAmount)) {
+            throw new MoneyInvariantViolation(sprintf(
+                'Refunded total %.2f exceeds the captured amount %.2f',
+                $refundedTotal,
+                $this->capturedAmount,
+            ));
+        }
+        $this->refundedAmount = $refundedTotal;
     }
 
     public function setCapturedAt(DateTimeInterface $date): void
