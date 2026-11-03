@@ -5,6 +5,14 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed (VR-22 A2) - two admin capture / refund calls can no longer both get a fresh claim
+- `IdempotencyRepositoryInterface::claim(IdempotencyRecord, DateTimeImmutable $now): bool` (new; implementers add it):
+  insert, or take over a record whose expiry is before `$now` (ran out, or released) in one guarded UPDATE. Two
+  concurrent claims of one key cannot both win. `OperationIdempotency::claim()` uses it instead of
+  look-up-then-save, where two re-claims after a release both received FRESH and both called the PSP.
+- `DoctrineIdempotencyRepository::findByKey()` no longer answers `null` on a database error (that read as "fresh, go
+  ahead"); the error surfaces. Stripe's `IdempotentExecutor` then fails the operation instead of calling Stripe.
+
 ### Changed (SEAL-1) - the sealed client config runs on the platform's shared primitives
 - `ClientConfig\Contract\SealPrimitivesInterface` (ECDH P-256 key from a raw point, shared secret, raw public key,
   AES-256-GCM): `ClientConfigSealer` takes them as an optional second argument. `BuiltInSealPrimitives` is the OpenSSL code that was

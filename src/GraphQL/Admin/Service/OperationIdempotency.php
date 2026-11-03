@@ -12,7 +12,6 @@ namespace OxidEsales\PaymentBase\GraphQL\Admin\Service;
 use Closure;
 use DateInterval;
 use DateTimeImmutable;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 use OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface;
 
@@ -48,17 +47,20 @@ final class OperationIdempotency implements OperationIdempotencyInterface
     public function claim(string $operation, string $orderId, string $discriminator): IdempotencyClaim
     {
         $key = $this->keyFor($operation, $orderId, $discriminator);
-        $existing = $this->records->findByKey($key);
-        if ($existing !== null && $existing->getExpiresAt() > ($this->now)()) {
-            return $this->claimOf($existing->getStatus() === self::STATUS_COMPLETED ? IdempotencyClaim::COMPLETED : IdempotencyClaim::IN_FLIGHT, $key, $operation, $orderId);
-        }
-        try {
-            $this->records->save($this->record($key, $operation, $orderId, self::STATUS_IN_FLIGHT, self::IN_FLIGHT_WINDOW));
-        } catch (UniqueConstraintViolationException) {
-            return $this->claimOf(IdempotencyClaim::IN_FLIGHT, $key, $operation, $orderId);
+        // VR-22: one atomic claim - insert, or take over a record that ran out or was released.
+        $fresh = $this->record($key, $operation, $orderId, self::STATUS_IN_FLIGHT, self::IN_FLIGHT_WINDOW);
+        if ($this->records->claim($fresh, ($this->now)())) {
+            return $this->claimOf(IdempotencyClaim::FRESH, $key, $operation, $orderId);
         }
 
-        return $this->claimOf(IdempotencyClaim::FRESH, $key, $operation, $orderId);
+        $held = $this->records->findByKey($key);
+
+        return $this->claimOf(
+            $held?->getStatus() === self::STATUS_COMPLETED ? IdempotencyClaim::COMPLETED : IdempotencyClaim::IN_FLIGHT,
+            $key,
+            $operation,
+            $orderId
+        );
     }
 
     public function complete(IdempotencyClaim $claim): void

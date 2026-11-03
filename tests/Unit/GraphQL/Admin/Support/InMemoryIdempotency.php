@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\GraphQL\Admin\Support;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
@@ -44,6 +45,25 @@ final class InMemoryIdempotency implements IdempotencyRepositoryInterface
     public function findByKey(string $key): ?IdempotencyRecord
     {
         return $this->records[$key] ?? null;
+    }
+
+    /**
+     * `racingInsertFor`: another process takes the key between our look-up and our claim.
+     */
+    public function claim(IdempotencyRecord $record, DateTimeImmutable $now): bool
+    {
+        if ($this->racingInsertFor === $record->getKey()) {
+            $this->racingInsertFor = null;
+
+            return false;
+        }
+        $held = $this->records[$record->getKey()] ?? null;
+        if ($held !== null && $held->getExpiresAt() >= $now) {
+            return false;
+        }
+        $this->records[$record->getKey()] = $record;
+
+        return true;
     }
 
     public function deleteExpired(): int

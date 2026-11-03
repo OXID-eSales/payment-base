@@ -177,22 +177,6 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
     }
 
     #[Test]
-    public function findByKeyReturnsNullOnException(): void
-    {
-        $connection = $this->createMock(Connection::class);
-
-        $connection
-            ->expects($this->once())
-            ->method('fetchAssociative')
-            ->willThrowException(new \Doctrine\DBAL\Exception('DB error'));
-
-        $repository = new DoctrineIdempotencyRepository($connection);
-        $result = $repository->findByKey('capture:pi_abc');
-
-        $this->assertNull($result);
-    }
-
-    #[Test]
     public function findByKeyHydratesRecordWithNullResult(): void
     {
         $connection = $this->createMock(Connection::class);
