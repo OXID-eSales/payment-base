@@ -5,6 +5,11 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17 DC-5) - dead language key
+- Language key `PAYMENT_ADMIN_CONTRACT_STATE` (admin, en + de): no template, controller or provider module reads it
+  (checked in stripe, mollie-payment, paypal, one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql);
+  the Help table uses `PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE`, which has the same text. Found by `bin/dead-assets`.
+
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
   `GraphQL\Admin\Contract\PaymentOwnershipProviderInterface` (`providerName()`, `paymentIds()`) and tags it

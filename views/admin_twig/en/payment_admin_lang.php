@@ -20,8 +20,6 @@ $aLang = [
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'The provider reversed the capture.',
     'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'The customer opened a dispute.',
     'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Money arrived on a cancelled order and the provider would not return it.',
-    // Sprint 14 (MOL-10): the OXID contract state, named as such; the Help table explains the values.
-    'PAYMENT_ADMIN_CONTRACT_STATE'=> 'OXID Contract Status',
 
     // Module settings — group headers
     'SHOP_MODULE_GROUP_validation'             => 'Validation',
