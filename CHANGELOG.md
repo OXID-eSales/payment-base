@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-22 A4) - the fat provider adapter (BREAKING for Stripe: drop the extends)
+- `Adapter\PaymentAdapterInterface`, `Service\Factory\PaymentAdapterFactoryInterface` and `PaymentAdapterFactory`:
+  Stripe was the only consumer (its `StripeAdapterInterface`, `StripeAdapterFactoryInterface` and `StripeAdapterFactory`
+  extended them; Mollie and PayPal never did). Nothing in payment-base called the interface. README sections updated.
+  `Adapter\Exception\PaymentAdapterException` stays (Stripe's services throw and catch it).
+
 ### Added (VR-25 D0) - one shop adapter, owned by payment-base
 - `Adapter\OxidShopAdapter` is the one `ShopAdapterInterface` implementation, bound in payment-base's `services.yaml`
   (like `SessionAdapterInterface` -> `OxidSessionAdapter`). Stripe, Mollie and PayPal each bound that id to a copy of
