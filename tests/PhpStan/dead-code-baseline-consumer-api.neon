@@ -1506,3 +1506,196 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Webhook/WebhookResult.php
+
+        # VR-25 D0/D1 (2026-11-04): shared pieces the providers adopt in wave 6 (stripe, mollie-payment, paypal).
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getAdapterName$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getCurrentLanguageAbbr$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getShopCurrency$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getShopId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getShopName$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:getShopUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:isTestMode$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Adapter\\OxidShopAdapter\:\:translateString$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidShopAdapter.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationService\:\:cancel$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationService.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationService\:\:expire$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationService.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationService\:\:fail$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationService.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationServiceInterface\:\:cancel$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationServiceInterface.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationServiceInterface\:\:expire$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationServiceInterface.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Contract\\ContractTerminationServiceInterface\:\:fail$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractTerminationServiceInterface.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Install\\PaymentMethodInstaller\:\:ensurePaymentMethods$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Install/PaymentMethodInstaller.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Reconciliation\\OxpaidReconciliationServiceInterface\:\:findUnpaidOrders$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Reconciliation/OxpaidReconciliationServiceInterface.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Reconciliation\\ProviderPaymentStatus\:\:notPaid$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Reconciliation/ProviderPaymentStatus.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Reconciliation\\ProviderPaymentStatus\:\:paidAt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Reconciliation/ProviderPaymentStatus.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Reconciliation\\ProviderPaymentStatus\:\:paidWithoutTimestamp$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Reconciliation/ProviderPaymentStatus.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Reconciliation\\ReconciliationResult\:\:toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Reconciliation/ReconciliationResult.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Settings\\AbstractModuleConfigurationService\:\:assertReadable$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Settings/AbstractModuleConfigurationService.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Settings\\AbstractModuleConfigurationService\:\:readString$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Settings/AbstractModuleConfigurationService.php
+
+        -
+            message: '#^Property OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:\$addressKind is never read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Property OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:\$code is never read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Property OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:\$field is never read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Property OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:\$offendingChar is never read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Property OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:\$oxidColumn is never read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Validation\\User\\FieldValidationFailure\:\:KIND_ADMIN$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Validation/User/FieldValidationFailure.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Validation\\User\\UserDataValidator\:\:validateFieldMap$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/User/UserDataValidator.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Validation\\User\\UserDataValidator\:\:validateForUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/User/UserDataValidator.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Validation\\User\\UserDataValidatorInterface\:\:validateFieldMap$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/User/UserDataValidatorInterface.php
+
+        -
+            message: '#^Unused OxidEsales\\PaymentBase\\Validation\\User\\UserDataValidatorInterface\:\:validateForUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/User/UserDataValidatorInterface.php
