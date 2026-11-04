@@ -243,36 +243,6 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
         $this->assertNull($found);
     }
 
-    public function testFindByUserId(): void
-    {
-        // Given
-        $contract1 = $this->createTestContract('test_contract_1');
-        $contract2 = $this->createTestContract('test_contract_2');
-        $contract3 = $this->createTestContract('test_contract_3');
-
-        $this->repository->save($contract1);
-        $this->repository->save($contract2);
-        $this->repository->save($contract3);
-
-        // When
-        $found = $this->repository->findByUserId('test_user_123');
-
-        // Then
-        $this->assertIsArray($found);
-        $this->assertCount(3, $found);
-        $this->assertContainsOnlyInstancesOf(PaymentContract::class, $found);
-    }
-
-    public function testFindByUserIdReturnsEmptyArrayWhenNotFound(): void
-    {
-        // When
-        $found = $this->repository->findByUserId('non_existent_user');
-
-        // Then
-        $this->assertIsArray($found);
-        $this->assertEmpty($found);
-    }
-
     public function testFindActiveByUserId(): void
     {
         // Given
@@ -320,64 +290,6 @@ class DoctrineContractRepositoryTest extends IntegrationTestCase
 
         // Then
         $this->assertNull($found);
-    }
-
-    public function testFindExpired(): void
-    {
-        // Given
-        $expiredContract = $this->createTestContract('test_contract_expired');
-
-        // Use reflection to set expiresAt to past date
-        $reflection = new \ReflectionClass($expiredContract);
-        $expiresAtProperty = $reflection->getProperty('expiresAt');
-        $expiresAtProperty->setAccessible(true);
-        $expiresAtProperty->setValue($expiredContract, new DateTime('-2 days'));
-
-        $activeContract = $this->createTestContract('test_contract_active');
-
-        $this->repository->save($expiredContract);
-        $this->repository->save($activeContract);
-
-        // When
-        $found = $this->repository->findExpired();
-
-        // Then
-        $this->assertIsArray($found);
-        $this->assertEquals('test_contract_expired', $found[0]->getId());
-    }
-
-    public function testFindExpiredWithCustomDate(): void
-    {
-        // Given
-        $contract = $this->createTestContract('test_contract_1');
-
-        // Use reflection to set expiresAt to specific date
-        $reflection = new \ReflectionClass($contract);
-        $expiresAtProperty = $reflection->getProperty('expiresAt');
-        $expiresAtProperty->setAccessible(true);
-        $expiresAtProperty->setValue($contract, new DateTime('2025-01-01 12:00:00'));
-
-        $this->repository->save($contract);
-
-        // When
-        $found = $this->repository->findExpired(new DateTime('2025-01-02 00:00:00'));
-
-        // Then
-        $this->assertIsArray($found);
-        $this->assertCount(1, $found);
-    }
-
-    public function testFindExpiredReturnsEmptyArrayWhenNoExpiredContracts(): void
-    {
-        // Given
-        $activeContract = $this->createTestContract('test_contract_active');
-        $this->repository->save($activeContract);
-
-        // When
-        $found = $this->repository->findExpired();
-
-        // Then
-        $this->assertIsArray($found);
     }
 
     /**

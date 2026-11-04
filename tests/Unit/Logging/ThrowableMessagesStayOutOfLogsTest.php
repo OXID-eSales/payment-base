@@ -60,17 +60,6 @@ final class ThrowableMessagesStayOutOfLogsTest extends TestCase
         $this->assertLoggedTheSummaryOnly('42S22');
     }
 
-    public function testAFailedContractQueryLogsTheSummaryNotTheDatabaseMessage(): void
-    {
-        $connection = $this->createMock(Connection::class);
-        $connection->method('fetchAllAssociative')->willThrowException($this->leakyDatabaseError());
-        $repository = new DoctrineContractRepository($connection, $this->logger, new ThrowableSummary([]));
-
-        self::assertSame([], $repository->findByUserId('user-1'));
-
-        $this->assertLoggedTheSummaryOnly('42S22');
-    }
-
     public function testTheStateAndProviderQueryRefusalCarriesTheSummaryLine(): void
     {
         $connection = $this->createMock(Connection::class);

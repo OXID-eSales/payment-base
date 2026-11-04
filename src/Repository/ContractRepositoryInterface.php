@@ -21,22 +21,12 @@ interface ContractRepositoryInterface
 
     public function findByProviderOrderId(string $providerOrderId): ?PaymentContractInterface;
 
-    /**
-     * @return array<int, PaymentContractInterface>
-     */
-    public function findByUserId(string $userId): array;
-
     public function findActiveByUserId(string $userId): ?PaymentContractInterface;
 
     /**
      * Find contract by OXID order ID.
      */
     public function findByOrderId(string $orderId): ?PaymentContractInterface;
-
-    /**
-     * @return array<int, PaymentContractInterface>
-     */
-    public function findExpired(): array;
 
     /**
      * Find non-terminal, non-committed contracts older than the given threshold.

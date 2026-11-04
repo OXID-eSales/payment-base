@@ -43,7 +43,8 @@ Rules:
 1. A finding is fixed by **deleting** the code, or by giving it a production caller. Do not baseline it.
 2. `tests/PhpStan/dead-code-baseline-*.neon` may only **shrink**. Header of each file says what it holds:
    `mcp-acp` (kept by owner decision), `consumer-api` (called by a provider repo that this repo's CI cannot see),
-   `unreviewed` (deletion backlog: dead across all consumers, baselined so the gate could go live).
+   `kept` (reviewed in VR-17 DC-PB8, each group says why it stays: framework-called, public model/event API,
+   value-object fields providers construct, used only by provider tests). The former `unreviewed` backlog is gone.
 3. A baseline line is removed together with the code it covers.
 4. The PR template carries the checkbox "new code has a production caller".
 

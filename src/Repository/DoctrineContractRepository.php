@@ -87,31 +87,6 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
         }
     }
 
-    /**
-     * @return array<int, PaymentContractInterface>
-     */
-    public function findByUserId(string $userId): array
-    {
-        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXUSERID = :userId ORDER BY OXCREATED DESC';
-
-        try {
-            $rows = $this->connection->fetchAllAssociative($sql, ['userId' => $userId]);
-
-            return array_map(fn($row) => $this->hydrateContract($row), $rows);
-        } catch (Exception $e) {
-            // Sprint 133 · Story 16 (F16): an empty array is indistinguishable
-            // from "nothing matched", so a failing query silently turned the
-            // caller into a no-op — for findStaleNotFinished that stopped the
-            // stale-checkout sweep running after every webhook, permanently.
-            $this->logger->error('Contract query failed; returning an empty result', [
-                'query' => __FUNCTION__,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-
-            return [];
-        }
-    }
-
     public function findActiveByUserId(string $userId): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
@@ -170,48 +145,6 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
             return $this->hydrateContract($data);
         } catch (Exception $e) {
             return null;
-        }
-    }
-
-    /**
-     * @return array<int, PaymentContractInterface>
-     */
-    public function findExpired(?DateTimeInterface $before = null): array
-    {
-        $before = $before ?? new DateTime();
-
-        $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . '
-                WHERE OXEXPIRESAT < :before
-                AND OXSTATE NOT IN (:states)
-                ORDER BY OXEXPIRESAT ASC';
-
-        try {
-            $rows = $this->connection->fetchAllAssociative(
-                $sql,
-                [
-                    'before' => $before->format('Y-m-d H:i:s'),
-                    // STRP-168: 'committed' belongs here too — its payment has
-                    // been taken, so it is past any deadline the contract carries.
-                    // Returning it invited exactly the corruption expire() now refuses.
-                    'states' => ['committed', 'fulfilled', 'cancelled', 'expired', 'failed']
-                ],
-                [
-                    'states' => Connection::PARAM_STR_ARRAY
-                ]
-            );
-
-            return array_map(fn($row) => $this->hydrateContract($row), $rows);
-        } catch (Exception $e) {
-            // Sprint 133 · Story 16 (F16): an empty array is indistinguishable
-            // from "nothing matched", so a failing query silently turned the
-            // caller into a no-op — for findStaleNotFinished that stopped the
-            // stale-checkout sweep running after every webhook, permanently.
-            $this->logger->error('Contract query failed; returning an empty result', [
-                'query' => __FUNCTION__,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-
-            return [];
         }
     }
 

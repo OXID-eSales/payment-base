@@ -5,7 +5,13 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17 DC-PB8) - dead-code backlog: Repository (ContractRepository)
+No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
+- `Repository\ContractRepositoryInterface`: `findByUserId()`, `findExpired()`
+- `Repository\DoctrineContractRepository`: `findByUserId()`, `findExpired()`
+
 ### Removed (VR-17 DC-PB8) - dead-code backlog: Repository, Service, GraphQL, Webhook, Model, LateMoney
+- `Repository\OpenAttemptFinderInterface` (empty once `findOpenByUserAndBasketId` went) and its `services.yaml` alias; `DoctrineContractRepository` no longer implements it.
 No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
 - `GraphQL\Admin\Service\AdminPaymentOperation`: `movesMoney()`
 - `GraphQL\Admin\Service\PaymentContractDetails`: `providerBoundsUnavailable()`, `roundToMinorUnit()`
