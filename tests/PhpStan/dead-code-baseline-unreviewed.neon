@@ -906,21 +906,6 @@ parameters:
             count: 1
             path: ../../src/EventSystem/EventListenerProviderInterface.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\Service\\AdminPaymentOperation::movesMoney$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/GraphQL/Admin/Service/AdminPaymentOperation.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\Service\\PaymentContractDetails::providerBoundsUnavailable$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/GraphQL/Admin/Service/PaymentContractDetails.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\Service\\PaymentContractDetails::roundToMinorUnit$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/GraphQL/Admin/Service/PaymentContractDetails.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\Service\\PaymentRightsProvider::rights$#'
             identifier: shipmonk.deadMethod
             count: 1
@@ -976,11 +961,6 @@ parameters:
             count: 1
             path: ../../src/GraphQL/Subscriber/RefusePlaceOrderForContractFirstPayments.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\LateMoney\\LateMoneyOutcome::isMoneyGivenBack$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/LateMoney/LateMoneyOutcome.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\LateMoney\\LateMoneyResolver::resolve$#'
             identifier: shipmonk.deadMethod
             count: 1
@@ -990,26 +970,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/LateMoney/LateMoneyResolverInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::rates$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Math/Vat/VatBreakdown.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::totalVat$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Math/Vat/VatBreakdown.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::vatForRate$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Math/Vat/VatBreakdown.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Model\\AbstractModel::generateId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Model/AbstractModel.php
         -
             message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\CancelRequest::\$contract\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead
@@ -1116,45 +1076,10 @@ parameters:
             count: 1
             path: ../../src/Repository/DoctrineContractRepository.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineContractRepository::findOpenByUserAndBasketId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/DoctrineContractRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrinePaymentCustomerRepository::findByPaymentCustomerId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/DoctrinePaymentCustomerRepository.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::findByOrderId$#'
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Repository/DoctrineTransactionRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::findByTypeAndStatus$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/DoctrineTransactionRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::findChildTransactions$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/DoctrineTransactionRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::getTotalRefundedForContract$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/DoctrineTransactionRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\OpenAttemptFinderInterface::findOpenByUserAndBasketId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/OpenAttemptFinderInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\PaymentCustomerRepositoryInterface::findByPaymentCustomerId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/PaymentCustomerRepositoryInterface.php
         -
             message: '#^Property\ OxidEsales\\PaymentBase\\Repository\\StaleContractException::\$currentVersion\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead
@@ -1171,70 +1096,15 @@ parameters:
             count: 1
             path: ../../src/Repository/TransactionRepositoryInterface.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::findByTypeAndStatus$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/TransactionRepositoryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::findChildTransactions$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/TransactionRepositoryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::getTotalRefundedForContract$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Repository/TransactionRepositoryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::alreadyProcessed$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Return/ReturnResolution.php
-        -
             message: '#^Property\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::\$errorMessage\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead
             count: 1
             path: ../../src/Return/ReturnResolution.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractFulfillmentService::fulfillByContractId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractFulfillmentService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractFulfillmentServiceInterface::fulfillByContractId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractFulfillmentServiceInterface.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataService::getDeliveryAddressId$#'
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Service/ContractMetadataService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataService::getVerifiedDeliveryAddressHash$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractMetadataService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataServiceInterface::getDeliveryAddressHash$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractMetadataServiceInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataServiceInterface::getDeliveryAddressId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractMetadataServiceInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractService::findActiveContractByUser$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractServiceInterface::findActiveContractByUser$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/ContractServiceInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\DeliveryAddressHashService::clearHash$#'
             identifier: shipmonk.deadMethod
@@ -1245,21 +1115,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Service/DeliveryAddressHashService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\DeliveryAddressHashServiceInterface::clearHash$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/DeliveryAddressHashServiceInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\DeliveryAddressHashServiceInterface::getHash$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/DeliveryAddressHashServiceInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\DeliveryAddressHashServiceInterface::hasHash$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/DeliveryAddressHashServiceInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\Factory\\PaymentAdapterFactory::createAdapter$#'
             identifier: shipmonk.deadMethod
@@ -1296,16 +1151,6 @@ parameters:
             count: 1
             path: ../../src/Service/Factory/PaymentAdapterFactoryInterface.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\OrderPaymentStateService::updatePaidTimestampByTransactionId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/OrderPaymentStateService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\OrderPaymentStateServiceInterface::updatePaidTimestampByTransactionId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Service/OrderPaymentStateServiceInterface.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\TokenServiceInterface::extractContractId$#'
             identifier: shipmonk.deadMethod
             count: 1
@@ -1341,11 +1186,6 @@ parameters:
             count: 1
             path: ../../src/Webhook/Guard/TrustedProxyClientIp.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\Guard\\TrustedProxySettings::clientIp$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Webhook/Guard/TrustedProxySettings.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\Guard\\WebhookGuardChain::check$#'
             identifier: shipmonk.deadMethod
             count: 1
@@ -1365,11 +1205,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Webhook/WebhookDeliveryLogRecord.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookEvent::isType$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Webhook/WebhookEvent.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookLog::getEventId$#'
             identifier: shipmonk.deadMethod
@@ -1430,11 +1265,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Webhook/WebhookLog.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookRequest::hasSignature$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Webhook/WebhookRequest.php
         -
             message: '#^Property\ OxidEsales\\PaymentBase\\Webhook\\WebhookRequest::\$receivedAt\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead

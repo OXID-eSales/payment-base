@@ -67,36 +67,6 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         }
     }
 
-    public function updatePaidTimestampByTransactionId(
-        string $transactionId,
-        ?DateTimeImmutable $paidAt = null
-    ): bool {
-        $timestamp = $paidAt ?? new DateTimeImmutable();
-
-        try {
-            $sql = "UPDATE oxorder SET OXPAID = :paid WHERE OXTRANSID = :transId AND OXPAID = '0000-00-00 00:00:00'";
-            $affected = $this->connection->executeStatement($sql, [
-                'paid' => $timestamp->format('Y-m-d H:i:s'),
-                'transId' => $transactionId,
-            ]);
-
-            if ($affected > 0) {
-                $this->logger->debug('OXPAID timestamp updated by transaction ID', [
-                    'transaction_id' => $transactionId,
-                    'paid_at' => $timestamp->format('Y-m-d H:i:s'),
-                ]);
-            }
-
-            return $affected > 0;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to update OXPAID by transaction ID', [
-                'transaction_id' => $transactionId,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-            return false;
-        }
-    }
-
     public function updateTransactionStatus(string $orderId, string $status): bool
     {
         try {

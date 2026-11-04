@@ -125,20 +125,4 @@ final class WebhookEventTest extends TestCase
 
         $this->assertSame([], $event->getObject());
     }
-
-    #[Test]
-    public function isTypeReturnsTrueForMatchingType(): void
-    {
-        $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
-
-        $this->assertTrue($event->isType('payment_intent.succeeded'));
-    }
-
-    #[Test]
-    public function isTypeReturnsFalseForNonMatchingType(): void
-    {
-        $event = new WebhookEvent('evt_123', 'payment_intent.succeeded', [], 0);
-
-        $this->assertFalse($event->isType('charge.refunded'));
-    }
 }

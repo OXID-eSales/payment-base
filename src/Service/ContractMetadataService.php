@@ -98,31 +98,6 @@ class ContractMetadataService implements ContractMetadataServiceInterface
     }
 
     /**
-     * Get delivery address hash with HMAC verification.
-     *
-     * Sprint 68b (M9): Returns hash only if HMAC validates.
-     * Falls back to unverified hash for contracts created before HMAC was added.
-     */
-    public function getVerifiedDeliveryAddressHash(PaymentContractInterface $contract): ?string
-    {
-        $hash = $this->getDeliveryAddressHash($contract);
-        if ($hash === null) {
-            return null;
-        }
-
-        $hmac = $contract->getMetadata('delivery_address_hmac');
-        if (!is_string($hmac) || $hmac === '') {
-            return $hash; // backwards compat: contracts created before HMAC
-        }
-
-        if (!$this->addressHmacService->verify($hash, $hmac)) {
-            return null; // tampered — reject
-        }
-
-        return $hash;
-    }
-
-    /**
      * @inheritDoc
      */
     public function getDeliveryAddressId(PaymentContractInterface $contract): ?string

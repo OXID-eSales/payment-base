@@ -5,6 +5,29 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17 DC-PB8) - dead-code backlog: Repository, Service, GraphQL, Webhook, Model, LateMoney
+No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
+- `GraphQL\Admin\Service\AdminPaymentOperation`: `movesMoney()`
+- `GraphQL\Admin\Service\PaymentContractDetails`: `providerBoundsUnavailable()`, `roundToMinorUnit()`
+- `LateMoney\LateMoneyOutcome`: `isMoneyGivenBack()`
+- `Repository\DoctrineContractRepository`: `findOpenByUserAndBasketId()`
+- `Repository\DoctrinePaymentCustomerRepository`: `findByPaymentCustomerId()`
+- `Repository\DoctrineTransactionRepository`: `findByTypeAndStatus()`, `findChildTransactions()`, `getTotalRefundedForContract()`
+- `Repository\OpenAttemptFinderInterface`: `findOpenByUserAndBasketId()`
+- `Repository\PaymentCustomerRepositoryInterface`: `findByPaymentCustomerId()`
+- `Repository\TransactionRepositoryInterface`: `findByTypeAndStatus()`, `findChildTransactions()`, `getTotalRefundedForContract()`
+- `Service\ContractFulfillmentService`: `fulfillByContractId()`
+- `Service\ContractFulfillmentServiceInterface`: `fulfillByContractId()`
+- `Service\ContractMetadataService`: `getVerifiedDeliveryAddressHash()`
+- `Service\ContractMetadataServiceInterface`: `getDeliveryAddressHash()`, `getDeliveryAddressId()`
+- `Service\ContractService`: `findActiveContractByUser()`
+- `Service\ContractServiceInterface`: `findActiveContractByUser()`
+- `Service\DeliveryAddressHashServiceInterface`: `getHash()`, `hasHash()`, `clearHash()`
+- `Service\OrderPaymentStateService`: `updatePaidTimestampByTransactionId()`
+- `Service\OrderPaymentStateServiceInterface`: `updatePaidTimestampByTransactionId()`
+- `Webhook\WebhookEvent`: `isType()`
+- `Webhook\WebhookRequest`: `hasSignature()`
+
 ### Removed (VR-17 DC-PB8) - dead-code backlog: Admin help, Controller trait, event broker
 No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
 - `Admin\Help\ContractStateHelpInterface`: `SHARED_IDENTS`

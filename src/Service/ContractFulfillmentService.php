@@ -76,20 +76,6 @@ class ContractFulfillmentService implements ContractFulfillmentServiceInterface
         return $this->fulfill($contract);
     }
 
-    public function fulfillByContractId(string $contractId): ?bool
-    {
-        $contract = $this->contractRepository->findById($contractId);
-
-        if ($contract === null) {
-            $this->logger->debug('Contract not found by ID', [
-                'contract_id' => $contractId,
-            ]);
-            return null;
-        }
-
-        return $this->fulfill($contract);
-    }
-
     /**
      * Check if contract can be fulfilled.
      *

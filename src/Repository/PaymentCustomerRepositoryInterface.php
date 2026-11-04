@@ -21,6 +21,4 @@ interface PaymentCustomerRepositoryInterface
     public function save(PaymentCustomer $customer): void;
 
     public function findByUserId(string $userId): ?PaymentCustomer;
-
-    public function findByPaymentCustomerId(string $paymentCustomerId): ?PaymentCustomer;
 }

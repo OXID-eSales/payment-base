@@ -70,12 +70,6 @@ final readonly class AdminPaymentOperation
         return 'admin_payment_' . $this->kind;
     }
 
-    /** Capture and refund move money; releasing an authorisation does not. */
-    public function movesMoney(): bool
-    {
-        return $this->kind !== self::VOID;
-    }
-
     /**
      * @return list<string>
      */

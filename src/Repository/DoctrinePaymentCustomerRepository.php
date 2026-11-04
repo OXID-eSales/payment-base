@@ -64,23 +64,6 @@ class DoctrinePaymentCustomerRepository implements PaymentCustomerRepositoryInte
         }
     }
 
-    public function findByPaymentCustomerId(string $paymentCustomerId): ?PaymentCustomer
-    {
-        $sql = 'SELECT * FROM ' . self::TABLE . ' WHERE OXPAYMENTCUSTOMERID = :paymentCustomerId';
-
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['paymentCustomerId' => $paymentCustomerId]);
-
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateRecord($data);
-        } catch (Exception $e) {
-            return null;
-        }
-    }
-
     /**
      * @return array<string, mixed>
      */

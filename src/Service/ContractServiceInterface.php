@@ -21,12 +21,4 @@ interface ContractServiceInterface extends ServiceInterface
         object $basket,
         array $conditionTypes = []
     ): PaymentContractInterface;
-
-    /**
-     * Find an active (non-terminal) contract for a user.
-     *
-     * @param string $userId User identifier
-     * @return PaymentContractInterface|null Active contract or null if none found
-     */
-    public function findActiveContractByUser(string $userId): ?PaymentContractInterface;
 }

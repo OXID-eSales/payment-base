@@ -48,31 +48,9 @@ interface TransactionRepositoryInterface
     public function findByProviderTransactionId(string $transactionId): ?Transaction;
 
     /**
-     * Find transactions by type and status
-     *
-     * @return Transaction[]
-     */
-    public function findByTypeAndStatus(string $type, string $status): array;
-
-    /**
-     * Find child transactions (refunds, voids) for a parent transaction
-     *
-     * @return Transaction[]
-     */
-    public function findChildTransactions(string $parentTransactionId): array;
-
-    /**
      * Check if a transaction exists by ID
      */
     public function exists(string $id): bool;
-
-    /**
-     * Get total refunded amount for a contract
-     *
-     * @param string $contractId The contract ID
-     * @return float Total amount refunded
-     */
-    public function getTotalRefundedForContract(string $contractId): float;
 
     /**
      * Log a refund transaction

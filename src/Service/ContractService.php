@@ -105,11 +105,6 @@ class ContractService implements ContractServiceInterface
         return $contract;
     }
 
-    public function findActiveContractByUser(string $userId): ?PaymentContractInterface
-    {
-        return $this->contractRepository->findActiveByUserId($userId);
-    }
-
     private function createBasketSnapshot(object $basket): BasketSnapshot
     {
         $items = $this->extractProductItems($basket);

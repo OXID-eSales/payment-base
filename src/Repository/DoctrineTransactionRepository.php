@@ -85,31 +85,6 @@ class DoctrineTransactionRepository implements TransactionRepositoryInterface
         return $this->hydrateTransaction($data);
     }
 
-    /**
-     * @return Transaction[]
-     */
-    public function findByTypeAndStatus(string $type, string $status): array
-    {
-        $sql = 'SELECT * FROM ' . self::TABLE_NAME . ' WHERE OXTYPE = :type AND OXSTATUS = :status ORDER BY OXCREATED DESC';
-        $rows = $this->connection->fetchAllAssociative($sql, [
-            'type' => $type,
-            'status' => $status
-        ]);
-
-        return array_map(fn($row) => $this->hydrateTransaction($row), $rows);
-    }
-
-    /**
-     * @return Transaction[]
-     */
-    public function findChildTransactions(string $parentTransactionId): array
-    {
-        $sql = 'SELECT * FROM ' . self::TABLE_NAME . ' WHERE OXPARENTTRANSACTIONID = :parentId ORDER BY OXCREATED ASC';
-        $rows = $this->connection->fetchAllAssociative($sql, ['parentId' => $parentTransactionId]);
-
-        return array_map(fn($row) => $this->hydrateTransaction($row), $rows);
-    }
-
     public function exists(string $id): bool
     {
         $sql = 'SELECT COUNT(*) FROM ' . self::TABLE_NAME . ' WHERE OXID = :id';
@@ -117,19 +92,6 @@ class DoctrineTransactionRepository implements TransactionRepositoryInterface
         $count = (int) $this->connection->fetchOne($sql, ['id' => $id]);
 
         return $count > 0;
-    }
-
-    public function getTotalRefundedForContract(string $contractId): float
-    {
-        $sql = 'SELECT COALESCE(SUM(OXAMOUNT), 0) FROM ' . self::TABLE_NAME .
-               ' WHERE OXCONTRACTID = :contractId AND OXTYPE = :type';
-        $total = $this->connection->fetchOne($sql, [
-            'contractId' => $contractId,
-            'type' => 'refund'
-        ]);
-
-        /** @phpstan-ignore-next-line */
-        return (float) $total;
     }
 
     public function logRefund(string $contractId, float $amount, string $refundId, string $reason): void

@@ -24,12 +24,4 @@ readonly class WebhookRequest
         public \DateTimeImmutable $receivedAt
     ) {
     }
-
-    /**
-     * Check if request has a signature header.
-     */
-    public function hasSignature(): bool
-    {
-        return $this->signature !== '';
-    }
 }

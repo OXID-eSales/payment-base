@@ -13,11 +13,6 @@ abstract class AbstractModel implements ModelInterface
         return $this->id;
     }
 
-    protected function generateId(): string
-    {
-        return bin2hex(random_bytes(16));
-    }
-
     /**
      * @return array<string, mixed>
      */

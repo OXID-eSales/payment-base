@@ -38,23 +38,4 @@ interface DeliveryAddressHashServiceInterface
      * @param string|null $hash MD5 hash of delivery address, or null to skip
      */
     public function restoreHashForValidation(?string $hash): void;
-
-    /**
-     * Get current delivery address hash from $_REQUEST.
-     *
-     * @return string|null Hash or null if not set
-     */
-    public function getHash(): ?string;
-
-    /**
-     * Check if delivery address hash exists in $_REQUEST.
-     *
-     * @return bool True if hash is set
-     */
-    public function hasHash(): bool;
-
-    /**
-     * Clear delivery address hash from $_REQUEST.
-     */
-    public function clearHash(): void;
 }

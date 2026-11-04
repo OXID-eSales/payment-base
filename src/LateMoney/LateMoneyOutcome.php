@@ -50,11 +50,4 @@ final readonly class LateMoneyOutcome
     {
         return new self(LateMoneyKind::Failed, $reason);
     }
-
-    public function isMoneyGivenBack(): bool
-    {
-        return $this->kind === LateMoneyKind::Refunded
-            || $this->kind === LateMoneyKind::Released
-            || $this->kind === LateMoneyKind::AlreadySettled;
-    }
 }

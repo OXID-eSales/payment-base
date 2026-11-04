@@ -78,20 +78,6 @@ final readonly class PaymentContractDetails
         return $rest < Money::HALF_CENT_EPSILON ? 0.0 : $rest;
     }
 
-    /** The provider declared bounds and could not read them: nothing is offered and a write is refused. */
-    public function providerBoundsUnavailable(): bool
-    {
-        return $this->declaredBounds?->get()?->available === false;
-    }
-
-    /**
-     * The amount as the provider sees it: rounded to the minor unit of the order's currency.
-     */
-    public function roundToMinorUnit(float $amount): float
-    {
-        return MinorUnitConverter::toMajorUnits(MinorUnitConverter::toMinorUnits($amount, $this->currency), $this->currency);
-    }
-
     /**
      * Changes whenever the money or the lifecycle moved: how a caller tells that a provider action did something.
      */

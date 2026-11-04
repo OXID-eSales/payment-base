@@ -83,20 +83,4 @@ final class WebhookRequestTest extends TestCase
             );
         }
     }
-
-    #[Test]
-    public function hasSignatureReturnsTrueWhenSignaturePresent(): void
-    {
-        $request = new WebhookRequest('{}', 't=123,v1=abc', '127.0.0.1', new \DateTimeImmutable());
-
-        $this->assertTrue($request->hasSignature());
-    }
-
-    #[Test]
-    public function hasSignatureReturnsFalseWhenSignatureEmpty(): void
-    {
-        $request = new WebhookRequest('{}', '', '127.0.0.1', new \DateTimeImmutable());
-
-        $this->assertFalse($request->hasSignature());
-    }
 }

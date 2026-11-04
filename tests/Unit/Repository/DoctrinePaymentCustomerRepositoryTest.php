@@ -139,33 +139,6 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
     }
 
     #[Test]
-    public function findByPaymentCustomerIdReturnsRecordWhenFound(): void
-    {
-        $connection = $this->createMock(Connection::class);
-
-        $connection
-            ->expects($this->once())
-            ->method('fetchAssociative')
-            ->with(
-                $this->stringContains('OXPAYMENTCUSTOMERID'),
-                ['paymentCustomerId' => 'cus_stripe_xyz']
-            )
-            ->willReturn([
-                'OXID' => 'id_123',
-                'OXUSERID' => 'user_abc',
-                'OXPAYMENTCUSTOMERID' => 'cus_stripe_xyz',
-                'OXCREATED' => '2026-02-06 10:00:00',
-                'OXUPDATED' => '2026-02-06 11:00:00',
-            ]);
-
-        $repository = new DoctrinePaymentCustomerRepository($connection);
-        $record = $repository->findByPaymentCustomerId('cus_stripe_xyz');
-
-        $this->assertNotNull($record);
-        $this->assertSame('cus_stripe_xyz', $record->getPaymentCustomerId());
-    }
-
-    #[Test]
     public function findByUserIdReturnsNullOnException(): void
     {
         $connection = $this->createMock(Connection::class);
@@ -177,22 +150,6 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
 
         $repository = new DoctrinePaymentCustomerRepository($connection);
         $result = $repository->findByUserId('user_abc');
-
-        $this->assertNull($result);
-    }
-
-    #[Test]
-    public function findByPaymentCustomerIdReturnsNullOnException(): void
-    {
-        $connection = $this->createMock(Connection::class);
-
-        $connection
-            ->expects($this->once())
-            ->method('fetchAssociative')
-            ->willThrowException(new \Doctrine\DBAL\Exception('DB error'));
-
-        $repository = new DoctrinePaymentCustomerRepository($connection);
-        $result = $repository->findByPaymentCustomerId('cus_xyz');
 
         $this->assertNull($result);
     }

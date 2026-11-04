@@ -47,20 +47,4 @@ interface ContractMetadataServiceInterface
      * @param EventContextInterface $context The event context with session data
      */
     public function storeSecurityMetadata(PaymentContractInterface $contract, EventContextInterface $context): void;
-
-    /**
-     * Get delivery address hash from contract metadata.
-     *
-     * @param PaymentContractInterface $contract The contract to read from
-     * @return string|null The stored address hash, or null if not set
-     */
-    public function getDeliveryAddressHash(PaymentContractInterface $contract): ?string;
-
-    /**
-     * Get delivery address ID from contract metadata.
-     *
-     * @param PaymentContractInterface $contract The contract to read from
-     * @return string|null The stored address ID, or null if not set
-     */
-    public function getDeliveryAddressId(PaymentContractInterface $contract): ?string;
 }

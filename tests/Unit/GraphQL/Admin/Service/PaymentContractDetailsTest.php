@@ -53,7 +53,6 @@ final class PaymentContractDetailsTest extends TestCase
 
         self::assertSame(70.0, $multiCapture->amountCapturable(), 'the remainder Mollie still holds, though the shop recorded a capture');
         self::assertSame(12.0, $multiCapture->amountRefundable());
-        self::assertFalse($multiCapture->providerBoundsUnavailable());
     }
 
     public function testProviderBounds_OmittedSide_KeepsThePaymentBaseNumber(): void
@@ -76,7 +75,6 @@ final class PaymentContractDetailsTest extends TestCase
         $details = $this->withBounds('fulfilled', 100.0, 0.0, new LazyActionBounds(static fn (): AdminActionBounds => AdminActionBounds::unavailable()));
 
         self::assertSame([0.0, 0.0], [$details->amountCapturable(), $details->amountRefundable()]);
-        self::assertTrue($details->providerBoundsUnavailable());
     }
 
     public function testProviderBounds_AreAskedOnce_NoMatterHowOftenTheyAreRead(): void
@@ -90,14 +88,8 @@ final class PaymentContractDetailsTest extends TestCase
 
         $details->amountCapturable();
         $details->amountRefundable();
-        $details->providerBoundsUnavailable();
 
         self::assertSame(1, $asked);
-    }
-
-    public function testWithoutProviderBounds_NothingIsAsked_AndTheNumbersAreToday(): void
-    {
-        self::assertFalse($this->withBounds('authorized', 0.0, 0.0, null)->providerBoundsUnavailable());
     }
 
     private function withBounds(string $state, float $captured, float $refunded, ?LazyActionBounds $bounds): PaymentContractDetails

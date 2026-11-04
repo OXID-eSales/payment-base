@@ -126,32 +126,6 @@ class OrderPaymentStateServiceTest extends TestCase
     }
 
     /**
-     * SRP: Updates OXPAID by transaction ID
-     */
-    #[Test]
-    public function updatesPaidTimestampByTransactionId(): void
-    {
-        $transactionId = 'pi_123';
-        $paidAt = new DateTimeImmutable('2025-12-09 14:30:00');
-
-        $this->connection
-            ->expects($this->once())
-            ->method('executeStatement')
-            ->with(
-                $this->stringContains('WHERE OXTRANSID'),
-                $this->callback(function ($params) use ($transactionId) {
-                    return $params['transId'] === $transactionId
-                        && $params['paid'] === '2025-12-09 14:30:00';
-                })
-            )
-            ->willReturn(1);
-
-        $result = $this->service->updatePaidTimestampByTransactionId($transactionId, $paidAt);
-
-        $this->assertTrue($result);
-    }
-
-    /**
      * SRP: Updates OXTRANSSTATUS to OK
      */
     #[Test]

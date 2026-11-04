@@ -150,46 +150,6 @@ class ContractServiceTest extends TestCase
         $this->assertEquals(ContractCondition::TYPE_PAYMENT_AUTHORIZED, $contract->getConditions()[0]->getType());
     }
 
-    public function testFindActiveContractByUser(): void
-    {
-        $basket = $this->createMockBasket();
-
-        $contract = new PaymentContract(
-            1,
-            'user123',
-            BasketSnapshot::fromArray([
-                'items' => [],
-                'discounts' => [],
-                'totalGross' => 100.0,
-                'totalNet' => 84.03,
-                'totalVat' => 15.97,
-                'currency' => 'EUR',
-            ])
-        );
-
-        $this->repository->expects($this->once())
-            ->method('findActiveByUserId')
-            ->with('user123')
-            ->willReturn($contract);
-
-        $found = $this->service->findActiveContractByUser('user123');
-
-        $this->assertInstanceOf(PaymentContract::class, $found);
-        $this->assertEquals($contract->getId(), $found->getId());
-    }
-
-    public function testFindActiveContractByUserReturnsNullWhenNotFound(): void
-    {
-        $this->repository->expects($this->once())
-            ->method('findActiveByUserId')
-            ->with('nonexistent')
-            ->willReturn(null);
-
-        $found = $this->service->findActiveContractByUser('nonexistent');
-
-        $this->assertNull($found);
-    }
-
     // ── OPC-175: one order, one contract ──
 
     public function testCreateContract_WithAnOpenAttempt_ContinuesTheSameContract(): void

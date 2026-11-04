@@ -53,14 +53,4 @@ interface ContractFulfillmentServiceInterface
      * @return bool|null True if fulfilled, false if guards failed, null if not found
      */
     public function fulfillByProviderOrderId(string $providerOrderId): ?bool;
-
-    /**
-     * Fulfill contract by contract ID.
-     *
-     * Looks up contract by its internal OXID and fulfills it if found.
-     *
-     * @param string $contractId Contract OXID
-     * @return bool|null True if fulfilled, false if guards failed, null if not found
-     */
-    public function fulfillByContractId(string $contractId): ?bool;
 }

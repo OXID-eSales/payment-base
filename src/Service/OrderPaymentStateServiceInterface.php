@@ -39,20 +39,6 @@ interface OrderPaymentStateServiceInterface
     ): bool;
 
     /**
-     * Update OXPAID timestamp by transaction ID (OXTRANSID).
-     *
-     * Used when order ID is not known but transaction ID is available.
-     *
-     * @param string $transactionId Provider transaction ID (e.g., PaymentIntent ID)
-     * @param DateTimeImmutable|null $paidAt Timestamp (current time if null)
-     * @return bool True if order was updated
-     */
-    public function updatePaidTimestampByTransactionId(
-        string $transactionId,
-        ?DateTimeImmutable $paidAt = null
-    ): bool;
-
-    /**
      * Update OXTRANSSTATUS.
      *
      * @param string $orderId Order OXID

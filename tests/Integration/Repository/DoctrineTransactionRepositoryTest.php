@@ -217,52 +217,6 @@ class DoctrineTransactionRepositoryTest extends IntegrationTestCase
         $this->assertEquals('txn_unique_123', $found->getTransactionId());
     }
 
-    public function testFindByTypeAndStatus(): void
-    {
-        // Given
-        $tx1 = new Transaction('test_tx_auth_pending', 1, 'order1', null, 'stripe', 'authorization', 'pending', 100.00, 'EUR');
-        $tx2 = new Transaction('test_tx_auth_completed', 1, 'order2', null, 'stripe', 'authorization', 'completed', 200.00, 'EUR');
-        $tx3 = new Transaction('test_tx_capture_pending', 1, 'order3', null, 'stripe', 'capture', 'pending', 150.00, 'EUR');
-
-        $this->repository->save($tx1);
-        $this->repository->save($tx2);
-        $this->repository->save($tx3);
-
-        // When
-        $found = $this->repository->findByTypeAndStatus('authorization', 'pending');
-
-        // Then
-        $this->assertIsArray($found);
-        $this->assertCount(1, $found);
-        $this->assertEquals('test_tx_auth_pending', $found[0]->getId());
-    }
-
-    public function testFindChildTransactions(): void
-    {
-        // Given - parent authorization transaction
-        $parent = $this->createTestTransaction('test_tx_parent');
-        $this->repository->save($parent);
-
-        // Given - child refund transactions
-        $refund1 = new Transaction('test_tx_refund1', 1, 'test_order_123', null, 'stripe', 'refund', 'completed', 25.00, 'EUR');
-        $refund1->setParentTransactionId('test_tx_parent');
-
-        $refund2 = new Transaction('test_tx_refund2', 1, 'test_order_123', null, 'stripe', 'refund', 'completed', 30.00, 'EUR');
-        $refund2->setParentTransactionId('test_tx_parent');
-
-        $this->repository->save($refund1);
-        $this->repository->save($refund2);
-
-        // When
-        $children = $this->repository->findChildTransactions('test_tx_parent');
-
-        // Then
-        $this->assertIsArray($children);
-        $this->assertCount(2, $children);
-        $this->assertEquals('test_tx_refund1', $children[0]->getId());
-        $this->assertEquals('test_tx_refund2', $children[1]->getId());
-    }
-
     public function testExists(): void
     {
         // Given

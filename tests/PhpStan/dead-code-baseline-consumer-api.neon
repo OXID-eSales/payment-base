@@ -1699,3 +1699,19 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Validation/User/UserDataValidatorInterface.php
+        # Added by DC-PB8 cascade: called by a provider repo.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\ContractRepositoryInterface::findActiveByUserId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/ContractRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineContractRepository::findActiveByUserId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineContractRepository.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Webhook\\WebhookRequest::\$signature\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Webhook/WebhookRequest.php

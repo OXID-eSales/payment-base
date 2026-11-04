@@ -30,3 +30,53 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/AtRisk/PaymentAtRiskQueryInterface.php
+        # VatBreakdown: the result value object of the VAT calculator; the calculator's tests and any caller read it through these accessors.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::rates$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::totalVat$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::vatForRate$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
+        # ReturnResolution::alreadyProcessed: factory of the ALREADY_PROCESSED outcome the return responder handles; a provider resolver builds it.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::alreadyProcessed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Return/ReturnResolution.php
+        # AddressHmacService::verify: the verifying half of a signing pair (hashes are written, nothing checks them yet). Owner decision: wire the check or drop signing.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\AddressHmacService::verify$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/AddressHmacService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\AddressHmacServiceInterface::verify$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/AddressHmacServiceInterface.php
+        # TrustedProxySettings::clientIp: the factory of the TrustedProxyClientIp service, called by the container (services.yaml factory), invisible to the detector.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\Guard\\TrustedProxySettings::clientIp$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/Guard/TrustedProxySettings.php
+        # Used only by provider tests (not production code); removing needs those tests changed in the provider repos first.
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Admin\\Contract\\AdminActionBounds::\$available\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Admin/Contract/AdminActionBounds.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataService::getDeliveryAddressHash$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractMetadataService.php

@@ -230,60 +230,6 @@ class ContractFulfillmentServiceTest extends TestCase
     }
 
     /**
-     * SRP: Fulfills by contract ID
-     */
-    #[Test]
-    public function fulfillsByContractId(): void
-    {
-        // Arrange
-        $contractId = 'contract-123';
-        $contract = $this->createContractInState('committed');
-
-        $this->contractRepository
-            ->expects($this->once())
-            ->method('findById')
-            ->with($contractId)
-            ->willReturn($contract);
-
-        $this->contractRepository
-            ->expects($this->once())
-            ->method('save')
-            ->with($contract);
-
-        $this->eventDispatcher
-            ->expects($this->once())
-            ->method('dispatch');
-
-        // Act
-        $result = $this->service->fulfillByContractId($contractId);
-
-        // Assert
-        $this->assertTrue($result);
-    }
-
-    /**
-     * Returns null when contract not found by contract ID
-     */
-    #[Test]
-    public function returnsNullWhenContractNotFoundByContractId(): void
-    {
-        // Arrange
-        $contractId = 'non_existent';
-
-        $this->contractRepository
-            ->expects($this->once())
-            ->method('findById')
-            ->with($contractId)
-            ->willReturn(null);
-
-        // Act
-        $result = $this->service->fulfillByContractId($contractId);
-
-        // Assert
-        $this->assertNull($result);
-    }
-
-    /**
      * Logs successful fulfillment
      */
     #[Test]
