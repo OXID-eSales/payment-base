@@ -18,8 +18,6 @@ use OxidEsales\PaymentBase\Model\ModelInterface;
  *
  * Maps to `oe_payments_customer` table.
  * Links OXID user to payment provider customer (e.g. Stripe cus_xxx).
- *
- * Sprint 45: Stripe Customer lifecycle.
  */
 class PaymentCustomer extends AbstractModel implements ModelInterface
 {

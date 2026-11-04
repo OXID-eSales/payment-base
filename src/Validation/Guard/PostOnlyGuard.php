@@ -13,8 +13,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * Guard #1 — rejects any request that is not HTTP POST.
  *
  * Priority 10 (first in chain) — cheapest check, no dependencies.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class PostOnlyGuard implements ValidationGuardInterface
 {

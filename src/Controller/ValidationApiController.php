@@ -33,8 +33,6 @@ use Psr\Container\ContainerInterface;
  * OXID admin controllers cannot use constructor DI; this class resolves its
  * dependencies via ContainerFactory inside `init()` into typed properties, which
  * are exposed as protected getters (the testable seam — R-4.2).
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class ValidationApiController extends FrontendController
 {

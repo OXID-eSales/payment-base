@@ -30,9 +30,8 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
     private ?DateTimeInterface $committedAt = null;
     private ?DateTimeInterface $fulfilledAt = null;
 
-    // Sprint 8: Capture/Refund tracking (migrated from order_state).
-    // Sprint 01a (2026-05-19): extracted into CaptureRefundTracker to keep
-    // this aggregate below its PHPMD class-complexity threshold.
+    // Capture/Refund tracking lives in CaptureRefundTracker to keep this aggregate
+    // below its PHPMD class-complexity threshold.
     private CaptureRefundTracker $refundTracking;
 
     private ?string $provider = null;
@@ -448,8 +447,7 @@ class PaymentContract extends AbstractModel implements PaymentContractInterface
         return $this->fulfilledAt;
     }
 
-    // Sprint 8: Capture/Refund tracking methods.
-    // Sprint 01a (2026-05-19): now delegates to CaptureRefundTracker.
+    // Capture/Refund tracking methods; they delegate to CaptureRefundTracker.
 
     public function getCapturedAmount(): ?float
     {

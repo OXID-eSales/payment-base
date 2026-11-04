@@ -22,8 +22,6 @@ use Doctrine\DBAL\Exception;
  * Decision rationale: The idempotency table already provides a TTL-keyed
  * key/value store with Doctrine support. No new table or migration is needed;
  * the `validate:` prefix ensures no collision with webhook idempotency keys.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class DoctrineRateLimitStore implements RateLimitStoreInterface
 {

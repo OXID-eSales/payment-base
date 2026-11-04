@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Webhook;
  *
  * Immutable DTO containing parsed event data after signature verification.
  * Provides helper methods for accessing common event properties.
- *
- * @since Sprint 13
  */
 readonly class WebhookEvent
 {

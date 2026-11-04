@@ -20,8 +20,6 @@ $aLang = [
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'Der Anbieter hat den Einzug rückgängig gemacht.',
     'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'Der Kunde hat einen Streitfall eröffnet.',
     'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Geld ist auf einer stornierten Bestellung eingegangen und der Anbieter hat es nicht zurückgegeben.',
-    // Sprint 14 (MOL-10): der OXID-Vertragsstatus, so benannt; die Hilfe-Tabelle erklärt die Werte.
-    'PAYMENT_ADMIN_CONTRACT_STATE'=> 'OXID-Vertragsstatus',
 
     // Moduleinstellungen — Gruppenüberschriften
     'SHOP_MODULE_GROUP_validation'             => 'Validierung',

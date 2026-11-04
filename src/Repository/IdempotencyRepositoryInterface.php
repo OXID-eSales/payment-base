@@ -15,8 +15,6 @@ use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 /**
  * Repository interface for idempotency records.
  *
- * Sprint 42: Idempotency implementation.
- *
  * @since 1.0.0
  */
 interface IdempotencyRepositoryInterface

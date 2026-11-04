@@ -15,7 +15,6 @@ use DateTimeInterface;
  * Normalized response from refunding a payment.
  *
  * Provider-agnostic response for refund operations.
- * Sprint 31: Added success/failure factory methods and error handling.
  *
  * @since 1.0.0
  */

@@ -84,8 +84,7 @@ final class ContractStateHelpTest extends TestCase
     {
         $lang = $this->adminLang($language);
 
-        self::assertSame($language === 'en' ? 'OXID Contract Status' : 'OXID-Vertragsstatus', $lang['PAYMENT_ADMIN_CONTRACT_STATE']);
-        self::assertSame($lang['PAYMENT_ADMIN_CONTRACT_STATE'], $lang['PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE']);
+        self::assertSame($language === 'en' ? 'OXID Contract Status' : 'OXID-Vertragsstatus', $lang['PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE']);
     }
 
     /** @return iterable<string, array{string}> */

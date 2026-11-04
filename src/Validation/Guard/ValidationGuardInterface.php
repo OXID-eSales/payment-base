@@ -15,8 +15,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * Each guard checks one concern (method, size, session, origin, CSRF, rate-limit,
  * plugin-id). Guards are executed in priority order (lowest first). On the first
  * non-null return, the request is rejected with `GuardFailure::httpStatus`.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 interface ValidationGuardInterface
 {

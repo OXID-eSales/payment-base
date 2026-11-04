@@ -21,9 +21,8 @@ use Psr\Log\LoggerInterface;
 /**
  * Handles fraud checking on payment authorization.
  *
- * Sprint 2: Performs fraud check via FraudCheckServiceInterface.
- * The interface is in payment-base, but implementations (e.g., Stripe Radar)
- * are in the provider modules.
+ * Performs the fraud check via FraudCheckServiceInterface. The interface is in payment-base, but
+ * implementations (e.g., Stripe Radar) are in the provider modules.
  *
  * Binary pass/fail only (no manual review):
  * - Passed: Fulfills TYPE_FRAUD_CHECK condition

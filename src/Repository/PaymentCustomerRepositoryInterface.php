@@ -14,8 +14,6 @@ use OxidEsales\PaymentBase\Contract\PaymentCustomer;
 /**
  * Repository interface for payment customer records.
  *
- * Sprint 45: Stripe Customer lifecycle.
- *
  * @since 1.0.0
  */
 interface PaymentCustomerRepositoryInterface

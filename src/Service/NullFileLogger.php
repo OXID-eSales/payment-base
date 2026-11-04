@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Service;
  *
  * Used when logging is disabled (e.g., production mode for MCP logs).
  * All methods are no-ops — safe to inject anywhere without side effects.
- *
- * @since Sprint 56
  */
 class NullFileLogger implements FileLoggerInterface
 {

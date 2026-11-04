@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * The production implementation wraps ModuleActivationBridgeInterface
  * (OXID core). Unit tests stub this without booting the shop.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 interface ActiveModuleQueryInterface
 {

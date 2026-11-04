@@ -1,0 +1,3 @@
+# Items that no code in this repository references but a consumer repository does (bin/dead-assets).
+# One path per line, the reason after "#".
+views/twig/admin/help/contract_state_hint.html.twig  # VR-17 DC-5: included by the stripe and mollie panel templates

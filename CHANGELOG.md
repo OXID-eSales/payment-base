@@ -48,6 +48,19 @@ All notable changes to this module are documented here. Format follows
   a committed contract returns `TerminationOutcome::Committed` for the provider to decide. Audit rows stay with the provider.
 - `services.yaml` now defines `Service\OrderPaymentStateServiceInterface` and `Service\ContractFulfillmentServiceInterface`
   (identical copies sat in every provider's `services.yaml`).
+### Changed (VR-25 D6) - comments only, no behaviour change
+- Removed sprint-history comment lines that only said where code came from or what it replaced ("Sprint 27: Moved
+  from Stripe", "Sprint 119 (STRP-129) - Phase A2", "@since Sprint N", ...); kept every line that gives a reason.
+
+### Added (VR-17 DC-5) - dead-code gate
+- `composer dead-code` (`shipmonk/dead-code-detector` through `phpstan-dead-code.neon`) and `composer dead-assets`
+  (`bin/dead-assets`: unreferenced language keys, templates, assets); CI job `dead-code`; PR template checkbox.
+  Baselines in `tests/PhpStan/dead-code-baseline-*.neon` may only shrink. Dev tooling only, no runtime change.
+
+### Removed (VR-17 DC-5) - dead language key
+- Language key `PAYMENT_ADMIN_CONTRACT_STATE` (admin, en + de): no template, controller or provider module reads it
+  (checked in stripe, mollie-payment, paypal, one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql);
+  the Help table uses `PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE`, which has the same text. Found by `bin/dead-assets`.
 
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new

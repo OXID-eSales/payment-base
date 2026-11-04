@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Narrow interface so `SameOriginGuard` has no direct OXID dependency,
  * and unit tests can inject a stub without booting the shop.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 interface ShopUrlResolverInterface
 {

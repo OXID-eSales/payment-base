@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * `guardName` is for logging only — never serialised into the HTTP body
  * so no fingerprint is exposed to scanners.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class GuardFailure
 {

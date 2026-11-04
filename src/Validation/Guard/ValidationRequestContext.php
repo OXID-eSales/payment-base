@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * Instantiate directly in unit tests; use the static factory
  * `fromRequest()` in production (reads PHP globals).
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class ValidationRequestContext
 {

@@ -17,11 +17,8 @@ use Psr\Log\LoggerInterface;
 /**
  * Event handler that updates OXPAID on orders when contracts are fulfilled.
  *
- * Sprint 27: Moved from Stripe to payment-base (provider-agnostic).
- * Sprint 14: Properly implements event-driven architecture.
  * Listens for ContractFulfilledEvent and updates the order's payment timestamp.
  *
- * Sprint 16: Uses OrderPaymentStateService for DRY compliance.
  * All OXPAID/OXTRANSSTATUS/OXTRANSID updates consolidated in single service.
  *
  * @since 1.0.0
@@ -71,7 +68,7 @@ class OrderPaymentCompletedHandler implements HandlerInterface
             return;
         }
 
-        // Sprint 16: Use OrderPaymentStateService for all payment state updates (DRY)
+        // Use OrderPaymentStateService for all payment state updates (DRY)
         $updated = $this->orderPaymentStateService->markOrderAsPaid(
             $orderId,
             $providerOrderId
