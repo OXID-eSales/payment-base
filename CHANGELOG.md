@@ -24,6 +24,10 @@ All notable changes to this module are documented here. Format follows
   provider's own payment time; a paid payment without a time is skipped for manual review. The batch finds orders through
   their contract (provider column), not by a transaction id prefix; the contract is fulfilled when the order was healed.
   Audit lines go to the PSR logger (the Stripe `stripe_reconciliation.log` file is gone).
+- `Contract\ContractTerminationServiceInterface` / `ContractTerminationService` (+ `TerminationOutcome`): cancel, fail and
+  expire of a contract (terminal guard, transition, save, linked order mirrored) that the Stripe and Mollie webhook
+  handlers copied. An expiry mirrors a cancellation on the order (Stripe's STRP-168 behaviour; Mollie did not). An expiry of
+  a committed contract returns `TerminationOutcome::Committed` for the provider to decide. Audit rows stay with the provider.
 - `services.yaml` now defines `Service\OrderPaymentStateServiceInterface` and `Service\ContractFulfillmentServiceInterface`
   (identical copies sat in every provider's `services.yaml`).
 

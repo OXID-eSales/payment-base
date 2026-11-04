@@ -728,6 +728,14 @@ services:
       $logger: '@Psr\Log\LoggerInterface'
     public: true
 
+  # VR-25 D1: cancel/fail/expire of a contract, the linked order follows.
+  OxidEsales\PaymentBase\Contract\ContractTerminationServiceInterface:
+    class: OxidEsales\PaymentBase\Contract\ContractTerminationService
+    arguments:
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $orderUpdater: '@OxidEsales\PaymentBase\Adapter\ContractLinkedOrderUpdaterInterface'
+    public: true
+
   # Console command: oe:payments:reconcile-oxpaid
   OxidEsales\PaymentBase\Command\ReconcileOxpaidCommand:
     arguments:
