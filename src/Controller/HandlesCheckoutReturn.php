@@ -27,7 +27,11 @@ use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
  */
 trait HandlesCheckoutReturn
 {
-    private ?CheckoutReturnResponder $checkoutReturnResponder = null;
+    /**
+     * The shared return-leg responder, fetched from the container by the using controller (OXID controllers get no
+     * constructor injection).
+     */
+    abstract protected function resolveCheckoutReturnResponder(): CheckoutReturnResponder;
 
     /**
      * @param array<string, mixed> $extraContextKeys
