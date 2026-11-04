@@ -17,8 +17,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *  - field count > 32 → 413
  *
  * Priority 20.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class PayloadSizeGuard implements ValidationGuardInterface
 {

@@ -5,6 +5,10 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (VR-25 D6) - comments only, no behaviour change
+- Removed sprint-history comment lines that only said where code came from or what it replaced ("Sprint 27: Moved
+  from Stripe", "Sprint 119 (STRP-129) - Phase A2", "@since Sprint N", ...); kept every line that gives a reason.
+
 ### Added (VR-17 DC-5) - dead-code gate
 - `composer dead-code` (`shipmonk/dead-code-detector` through `phpstan-dead-code.neon`) and `composer dead-assets`
   (`bin/dead-assets`: unreferenced language keys, templates, assets); CI job `dead-code`; PR template checkbox.

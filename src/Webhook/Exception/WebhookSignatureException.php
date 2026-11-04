@@ -16,8 +16,6 @@ use Exception;
  *
  * Used by AbstractWebhookProcessor to indicate that the incoming
  * webhook request could not be authenticated.
- *
- * @since Sprint 5
  */
 class WebhookSignatureException extends Exception
 {

@@ -16,8 +16,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * Host comparison only (scheme + host, no port comparison for 80/443).
  *
  * Priority 40.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class SameOriginGuard implements ValidationGuardInterface
 {

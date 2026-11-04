@@ -12,8 +12,7 @@ namespace OxidEsales\PaymentBase\Service;
 /**
  * Interface for delivery address hash management.
  *
- * Sprint 27: Moved from Stripe to payment-base.
- * Sprint 20: Encapsulates $_REQUEST modification for delivery address validation.
+ * Encapsulates $_REQUEST modification for delivery address validation.
  *
  * OXID's Order::validateDeliveryAddress() reads 'sDeliveryAddressMD5' through
  * Registry::getRequest(), i.e. from $_POST, then $_GET (never $_REQUEST).

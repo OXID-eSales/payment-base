@@ -17,8 +17,6 @@ use OxidEsales\Eshop\Core\Registry;
  * Wraps `Registry::getSession()->checkSessionChallenge()`. The session
  * reads `stoken` from the current request parameters; our guard extracts it
  * from the POST body and the session method compares it internally.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class OxidSessionChallengeVerifier implements SessionChallengeVerifierInterface
 {

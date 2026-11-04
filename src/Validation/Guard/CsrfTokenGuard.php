@@ -16,8 +16,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * the OXID session dependency can be stubbed in unit tests.
  *
  * Priority 50.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class CsrfTokenGuard implements ValidationGuardInterface
 {

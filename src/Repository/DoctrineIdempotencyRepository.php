@@ -17,8 +17,6 @@ use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 
 /**
  * Doctrine DBAL implementation of IdempotencyRepositoryInterface.
- *
- * Sprint 42: Idempotency implementation.
  */
 class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
 {

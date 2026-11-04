@@ -17,8 +17,6 @@ use OxidEsales\Eshop\Core\Registry;
  * Reads the canonical shop URL from OXID's Config object.
  * Wrapped behind ShopUrlResolverInterface so SameOriginGuard
  * has no direct Registry dependency.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class OxidShopUrlResolver implements ShopUrlResolverInterface
 {

@@ -16,8 +16,6 @@ use OxidEsales\PaymentBase\Contract\PaymentCustomer;
 
 /**
  * Doctrine DBAL implementation of PaymentCustomerRepositoryInterface.
- *
- * Sprint 45: Stripe Customer lifecycle.
  */
 class DoctrinePaymentCustomerRepository implements PaymentCustomerRepositoryInterface
 {

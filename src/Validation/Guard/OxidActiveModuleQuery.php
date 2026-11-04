@@ -17,8 +17,6 @@ use OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface;
  *
  * Delegates to ModuleActivationBridgeInterface which reads the shop's
  * module-state YAML files without touching the DB.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class OxidActiveModuleQuery implements ActiveModuleQueryInterface
 {

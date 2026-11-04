@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\RateLimit;
  *
  * The default implementation checks registered per-PSP overrides first,
  * then falls back to the global admin setting.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 interface RateLimitConfigInterface
 {

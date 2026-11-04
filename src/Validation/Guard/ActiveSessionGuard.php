@@ -16,8 +16,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * (e.g. a scripted request that never loaded a storefront page).
  *
  * Priority 30.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class ActiveSessionGuard implements ValidationGuardInterface
 {

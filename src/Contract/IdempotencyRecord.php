@@ -18,9 +18,6 @@ use OxidEsales\PaymentBase\Model\ModelInterface;
  *
  * Maps to `oe_payments_idempotency` table.
  * Tracks capture/refund operations to prevent duplicate charges.
- *
- * Sprint 42: Idempotency implementation.
- *
  */
 class IdempotencyRecord extends AbstractModel implements ModelInterface
 {

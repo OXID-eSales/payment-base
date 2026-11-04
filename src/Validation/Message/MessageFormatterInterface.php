@@ -19,8 +19,6 @@ namespace OxidEsales\PaymentBase\Validation\Message;
  * `getPluginModuleId()` matches the request's `pluginModuleId`.
  *
  * If no formatter matches, `message` is `null` (backwards-compatible behaviour).
- *
- * Sprint 119 Phase E (STRP-129).
  */
 interface MessageFormatterInterface
 {

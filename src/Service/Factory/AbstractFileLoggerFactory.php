@@ -19,7 +19,7 @@ use Symfony\Component\Filesystem\Path;
 /**
  * Abstract factory for creating file loggers.
  *
- * Sprint 27: Template Method Pattern - subclasses define log file path and prefix.
+ * Template Method: subclasses define log file path and prefix.
  * Phase 1: Optional closure gating seam — ?\Closure $isEnabled = null.
  *   - null (default): always returns FileLogger — identical to prior behavior (LSP/back-compat).
  *   - closure returning false: returns NullFileLogger (channel disabled).

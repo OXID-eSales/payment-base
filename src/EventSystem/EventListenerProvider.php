@@ -15,7 +15,7 @@ use OxidEsales\PaymentBase\EventSystem\Handler\HandlerInterface;
  * Manages event listeners and provides them to EventDispatcher.
  * Integrates with Symfony DI via tagged services.
  *
- * Sprint 11: Uses lazy initialization to prevent circular dependency.
+ * Uses lazy initialization to prevent circular dependency.
  * Handlers are not instantiated until getListenersForEvent() is called.
  *
  * @since 1.0.0

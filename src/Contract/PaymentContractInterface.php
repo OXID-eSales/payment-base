@@ -141,7 +141,7 @@ interface PaymentContractInterface extends ModelInterface
      */
     public function getAllMetadata(): array;
 
-    // Sprint 8: Capture/Refund tracking (consolidated from order_state)
+    // Capture/Refund tracking
 
     /**
      * Get the captured payment amount.

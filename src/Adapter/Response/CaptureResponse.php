@@ -16,7 +16,6 @@ use DateTimeInterface;
  * Normalized response from capturing a payment.
  *
  * Provider-agnostic response for payment capture operations.
- * Sprint 31: Added success/failure factory methods and error handling.
  *
  * @since 1.0.0
  */

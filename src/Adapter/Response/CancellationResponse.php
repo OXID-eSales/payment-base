@@ -15,7 +15,6 @@ use DateTimeInterface;
  * Normalized response from cancelling/voiding a payment authorization.
  *
  * Provider-agnostic response for cancellation/void operations.
- * Sprint 31: Replaces VoidResponse with consistent success/failure pattern.
  *
  * @since 1.0.0
  */

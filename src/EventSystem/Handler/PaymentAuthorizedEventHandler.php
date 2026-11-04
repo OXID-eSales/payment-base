@@ -23,9 +23,6 @@ use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
  * This is the bridge between provider-specific payment confirmation
  * (PaymentAuthorizedEvent) and the contract state machine.
  *
- * Sprint 22: EventDispatcher now injected via constructor (no ContainerFactory).
- * Sprint 25: Added event file logger for debugging.
- *
  * @since 1.0.0
  */
 class PaymentAuthorizedEventHandler implements HandlerInterface

@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  *
  * The production implementation wraps `Registry::getSession()->checkSessionChallenge()`.
  * In unit tests a stub returns true/false without booting OXID.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 interface SessionChallengeVerifierInterface
 {

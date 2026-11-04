@@ -28,8 +28,6 @@ use Throwable;
  * - parseAndValidateRequest(): Parse payload and verify signature
  * - processEvent(): Route event to specific handlers
  * - getContractIdFromResult(): Extract contract ID for linking
- *
- * @since Sprint 5
  */
 abstract class AbstractWebhookProcessor
 {

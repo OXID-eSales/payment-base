@@ -13,7 +13,6 @@ namespace OxidEsales\PaymentBase\Adapter\Response;
  * Response from a fraud check operation.
  *
  * Provider-agnostic response for fraud check operations.
- * Sprint 31: Replaces FraudCheckResult with consistent success/failure pattern.
  *
  * Success means the fraud check passed (payment should proceed).
  * Failure means the fraud check failed (payment should be blocked).

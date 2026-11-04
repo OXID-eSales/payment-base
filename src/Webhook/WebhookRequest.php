@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Webhook;
  *
  * Immutable DTO containing the raw payload, signature header,
  * and request metadata needed for verification and processing.
- *
- * @since Sprint 13
  */
 readonly class WebhookRequest
 {

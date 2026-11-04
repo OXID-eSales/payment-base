@@ -16,8 +16,6 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
  * filesystem reads or rule-loader lookups for non-existent plugins.
  *
  * Priority 70 (last — most expensive, only reached after other guards pass).
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class PluginIdAllowlistGuard implements ValidationGuardInterface
 {

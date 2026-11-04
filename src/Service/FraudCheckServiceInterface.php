@@ -15,10 +15,8 @@ use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 /**
  * Interface for fraud check services.
  *
- * Sprint 2: Contract-aware fraud checking interface.
- * Interface lives in payment-base, implementation in provider modules.
- *
- * Sprint 31: Returns FraudCheckResponse instead of FraudCheckResult.
+ * Contract-aware fraud checking. The interface lives in payment-base, the implementation in provider
+ * modules.
  *
  * For Stripe: Uses Stripe Radar score with configurable threshold (default 0.7).
  * - Score < threshold: Pass

@@ -14,8 +14,6 @@ namespace OxidEsales\PaymentBase\Webhook;
  *
  * Immutable DTO returned by event handlers to indicate success/failure
  * and provide context about what action was taken.
- *
- * @since Sprint 13
  */
 readonly class WebhookResult
 {

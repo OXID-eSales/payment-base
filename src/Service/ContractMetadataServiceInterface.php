@@ -15,9 +15,6 @@ use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 /**
  * Service interface for managing contract metadata.
  *
- * Sprint 27: Moved from Stripe to payment-base.
- * Sprint 21: Extract business logic from StripeContractCreationHandler.
- *
  * SOLID Principles:
  * - SRP: Handles contract metadata operations only
  * - OCP: Can be extended for different metadata sources

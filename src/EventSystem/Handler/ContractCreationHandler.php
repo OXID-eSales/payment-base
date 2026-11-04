@@ -13,7 +13,6 @@ use OxidEsales\PaymentBase\Service\ContractServiceInterface;
 /**
  * Abstract base handler for contract creation using Template Method pattern.
  *
- * Sprint 1: Refactored to use Template Method pattern.
  * This allows provider modules (Stripe, PayPal, etc.) to extend this handler
  * with provider-specific logic while reusing common validation and contract
  * creation code.

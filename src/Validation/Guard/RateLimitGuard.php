@@ -22,8 +22,6 @@ use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface;
  * per-PSP overrides first, then the global admin setting.
  *
  * Priority 60.
- *
- * Sprint 119 (STRP-129) — Phase A2.
  */
 class RateLimitGuard implements ValidationGuardInterface
 {
