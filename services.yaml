@@ -747,6 +747,13 @@ services:
       $loader: '@OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface'
     public: true
 
+  # VR-25 D1: one stateless validator for every provider (the module id is a call argument).
+  OxidEsales\PaymentBase\Validation\User\UserDataValidatorInterface:
+    class: OxidEsales\PaymentBase\Validation\User\UserDataValidator
+    arguments:
+      $factory: '@OxidEsales\PaymentBase\Validation\ValidationBaseFactory'
+    public: true
+
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
     arguments:
       $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'

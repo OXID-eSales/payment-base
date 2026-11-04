@@ -5,6 +5,12 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-25 D1) - shared pieces every provider duplicated
+- `Validation\User\UserDataValidatorInterface` / `UserDataValidator`, `FieldValidationFailure`,
+  `UserFieldReaderInterface`, `OxidUserFieldReader` (replace the Stripe and Mollie copies). The provider's module id is
+  an argument of `validateForUser()` / `validateFieldMap()`, so one stateless service serves all providers. Logical
+  fields include `email` (column `oxusername`); a module without a rule for a field accepts it.
+
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
   `GraphQL\Admin\Contract\PaymentOwnershipProviderInterface` (`providerName()`, `paymentIds()`) and tags it

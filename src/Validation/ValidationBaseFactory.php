@@ -32,7 +32,7 @@ namespace OxidEsales\PaymentBase\Validation;
  * The consuming service calls `$factory->create('oe_payments_provider')` to
  * get an isolated ValidationBase instance for validation.
  */
-class ValidationBaseFactory
+class ValidationBaseFactory implements ValidationBaseFactoryInterface
 {
     public function __construct(
         private readonly ValidationRuleLoaderInterface $loader,
