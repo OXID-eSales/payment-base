@@ -22,6 +22,8 @@ enum AtRiskReason: string
     case CaptureDenied = 'capture_denied';
     /** The provider reversed a capture (the money left the merchant). */
     case CaptureReversed = 'capture_reversed';
+    /** The customer's bank took the money back (a chargeback). */
+    case Chargeback = 'chargeback';
     /** The customer opened a dispute / chargeback. */
     case DisputeOpened = 'dispute_opened';
     /** Money arrived on a contract that cannot take it and the provider refused to give it back. */

@@ -18,6 +18,7 @@ $aLang = [
     'PAYMENT_ADMIN_AT_RISK_AUTHORIZATION_EXPIRED' => 'The authorization expired before the payment was captured.',
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_DENIED' => 'The provider denied the capture.',
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'The provider reversed the capture.',
+    'PAYMENT_ADMIN_AT_RISK_CHARGEBACK' => "The customer's bank took the money back (chargeback).",
     'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'The customer opened a dispute.',
     'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Money arrived on a cancelled order and the provider would not return it.',
 

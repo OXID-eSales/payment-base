@@ -18,6 +18,7 @@ $aLang = [
     'PAYMENT_ADMIN_AT_RISK_AUTHORIZATION_EXPIRED' => 'Die Autorisierung ist abgelaufen, bevor die Zahlung eingezogen wurde.',
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_DENIED' => 'Der Anbieter hat den Einzug abgelehnt.',
     'PAYMENT_ADMIN_AT_RISK_CAPTURE_REVERSED' => 'Der Anbieter hat den Einzug rückgängig gemacht.',
+    'PAYMENT_ADMIN_AT_RISK_CHARGEBACK' => 'Die Bank des Kunden hat das Geld zurückgebucht (Rückbuchung).',
     'PAYMENT_ADMIN_AT_RISK_DISPUTE_OPENED' => 'Der Kunde hat einen Streitfall eröffnet.',
     'PAYMENT_ADMIN_AT_RISK_LATE_MONEY_NOT_RETURNED' => 'Geld ist auf einer stornierten Bestellung eingegangen und der Anbieter hat es nicht zurückgegeben.',
 

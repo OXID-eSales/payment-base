@@ -5,6 +5,9 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-26 D5) - at-risk reason `chargeback`
+- `AtRisk\AtRiskReason::Chargeback` (`chargeback`): a provider that learns of a chargeback raises its own reason instead of `dispute_opened`. The stored value, the GraphQL `AdminPaymentAtRisk.reason` (`CHARGEBACK`, a string, not a schema enum), the owner mail (`Reason: chargeback`) and the classic-admin badge (`PAYMENT_ADMIN_AT_RISK_CHARGEBACK`, en + de) follow from the value; no migration (the column is a `VARCHAR(32)`).
+
 ### Changed (VR-26 A2) - no made-up payment id, no 0.00 contract
 - `EventSystem\Handler\EarlyOrderCreationHandler` throws an `InvalidArgumentException` when the event context carries no payment id; it no longer creates the order with the invented id `unknown_payment`.
 - `Service\ContractService::createContract()` refuses a basket whose gross total is 0.00 (a 100 % voucher; owner decision D2) with the new `Service\ContractTotalsException::zeroTotal()`; no contract is saved. The existing "basket has no price" refusal is now `ContractTotalsException::noPrice()` (still a `RuntimeException`). The provider payment handlers already turn a throwable into their normal error result, so the checkout is refused with that reason, not a 500.
