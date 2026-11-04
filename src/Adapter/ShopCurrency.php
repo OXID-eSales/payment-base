@@ -37,12 +37,13 @@ use RuntimeException;
 final class ShopCurrency
 {
     /**
-     * @param object|null $currency OXID currency object (stdClass with ->name)
+     * @param object|false|null $currency OXID currency object (stdClass with ->name); core's
+     *        Config::getActShopCurrencyObject() returns false when none is configured
      * @param string $context Where the lookup happened, for the error message
      *
      * @throws RuntimeException when no usable currency code is present
      */
-    public static function nameOf(?object $currency, string $context): string
+    public static function nameOf(object|false|null $currency, string $context): string
     {
         /** @var mixed $name */
         $name = $currency->name ?? null;
@@ -61,7 +62,7 @@ final class ShopCurrency
      * Same resolution, but for display-only callers that must not break the
      * page when the currency is unknown. Never invents a code.
      */
-    public static function nameOrEmpty(?object $currency): string
+    public static function nameOrEmpty(object|false|null $currency): string
     {
         /** @var mixed $name */
         $name = $currency->name ?? null;

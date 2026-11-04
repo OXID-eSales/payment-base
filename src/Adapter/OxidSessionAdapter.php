@@ -14,11 +14,8 @@ use OxidEsales\Eshop\Core\Registry;
 /**
  * OXID implementation of {@see SessionAdapterInterface}.
  *
- * The provider modules each ship their own copy of this and bind the interface
- * to it. payment-base needs a session of its own for the retry cleanup, and
- * binding the interface here as well would only add a fourth definition of one
- * container id. So this one is wired by its concrete class instead, which is
- * why it collides with nothing.
+ * The one session adapter (VR-25 D0): payment-base binds {@see SessionAdapterInterface} to it and
+ * the provider modules bind nothing.
  *
  * @since STRP-171
  */
