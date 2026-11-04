@@ -41,6 +41,7 @@
         "phpmd/phpmd": "^2.13",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0",
+        "shipmonk/dead-code-detector": "^1.4",
         "squizlabs/php_codesniffer": "^3.7",
         "symfony/yaml": "^6.4 || ^7.0",
         "twig/twig": "^3.0"
@@ -66,6 +67,8 @@
         "phpcs": "phpcs --standard=tests/phpcs.xml --warning-severity=0 src/",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "phpmd": "phpmd src/ text tests/PhpMd/phpmd.baseline.xml --exclude tests/,migration/data/ --suffixes php --strict",
+        "dead-code": "phpstan analyse -c phpstan-dead-code.neon --memory-limit=1G",
+        "dead-assets": "php bin/dead-assets",
         "style": [
             "@phpcs",
             "@phpstan",

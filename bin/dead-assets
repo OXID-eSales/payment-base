@@ -1,0 +1,189 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Copyright © OXID eSales AG. All rights reserved.
+ * See LICENSE file for license details.
+ *
+ * Non-PHP half of the dead-code gate (sprint 17, DC-5c): `composer dead-assets`.
+ *
+ * Fails (exit 1) when
+ *  - a language key of views/ * /lang files is not referenced in src/, views/, metadata.php or menu.xml,
+ *  - a Twig template of views/twig/ is not included, extended or named anywhere (theme extensions under
+ *    views/twig/extensions/ are loaded by the shop and need no reference),
+ *  - a file of assets/ is not named anywhere.
+ *
+ * A language key counts as referenced when it occurs literally, or when a string literal ending in `_` that is
+ * concatenated in the code is a prefix of it ('PAYMENT_ADMIN_HELP_STATE_' . $state). Settings labels
+ * (SHOP_MODULE_<name>, SHOP_MODULE_GROUP_<group>) are referenced by the setting or group name in metadata.php.
+ *
+ * Items that a consumer repository uses (a shared template its provider modules include) are listed in
+ * `dead-assets.allow` in the module root: one path per line, `# reason` after it. Comment lines start with `#`.
+ *
+ * Usage: bin/dead-assets [module-root]   (default: the directory above bin/)
+ */
+
+declare(strict_types=1);
+
+const REFERENCE_SOURCES = ['src', 'views', 'metadata.php', 'menu.xml', 'services.yaml'];
+const DYNAMIC_PREFIX_MIN_LENGTH = 8;
+
+function listFiles(string $path): array
+{
+    if (is_file($path)) {
+        return [$path];
+    }
+    if (!is_dir($path)) {
+        return [];
+    }
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
+    foreach ($iterator as $file) {
+        $files[] = $file->getPathname();
+    }
+    sort($files);
+
+    return $files;
+}
+
+function isLanguageFile(string $file): bool
+{
+    return preg_match('#_lang\.php$|/lang\.php$#', $file) === 1;
+}
+
+function readCorpus(string $root): string
+{
+    $corpus = '';
+    foreach (REFERENCE_SOURCES as $source) {
+        foreach (listFiles($root . '/' . $source) as $file) {
+            if (isLanguageFile($file) || !preg_match('/\.(php|twig|xml|ya?ml|js|css|json)$/', $file)) {
+                continue;
+            }
+            $corpus .= file_get_contents($file) . "\n";
+        }
+    }
+
+    return $corpus;
+}
+
+function languageKeys(string $file): array
+{
+    preg_match_all("/^\s*'([^']+)'\s*=>/m", (string) file_get_contents($file), $matches);
+
+    return array_values(array_diff($matches[1], ['charset']));
+}
+
+function dynamicPrefixes(string $corpus): array
+{
+    preg_match_all('/[\'"]([A-Z][A-Z0-9_]*_)[\'"]\s*[.~]/', $corpus, $matches);
+
+    return array_values(array_filter(array_unique($matches[1]), static fn (string $p): bool => strlen($p) >= DYNAMIC_PREFIX_MIN_LENGTH));
+}
+
+function isKeyReferenced(string $key, string $corpus, array $prefixes): bool
+{
+    if (str_contains($corpus, $key)) {
+        return true;
+    }
+    foreach ($prefixes as $prefix) {
+        if (str_starts_with($key, $prefix)) {
+            return true;
+        }
+    }
+    if (preg_match('/^SHOP_MODULE_(?:GROUP_)?(.+)$/', $key, $match) === 1) {
+        return str_contains($corpus, "'" . $match[1] . "'");
+    }
+
+    return false;
+}
+
+function deadLanguageKeys(string $root, string $corpus): array
+{
+    $prefixes = dynamicPrefixes($corpus);
+    $dead = [];
+    foreach (listFiles($root . '/views') as $file) {
+        if (!isLanguageFile($file)) {
+            continue;
+        }
+        $relative = substr($file, strlen($root) + 1);
+        foreach (languageKeys($file) as $key) {
+            if (!isKeyReferenced($key, $corpus, $prefixes)) {
+                $dead[] = $relative . ': language key ' . $key;
+            }
+        }
+    }
+
+    return $dead;
+}
+
+function deadTemplates(string $root, string $corpus): array
+{
+    $dead = [];
+    $templateRoot = $root . '/views/twig/';
+    foreach (listFiles($templateRoot) as $file) {
+        $relative = substr($file, strlen($templateRoot));
+        if (str_starts_with($relative, 'extensions/')) {
+            continue;
+        }
+        $withoutSuffix = preg_replace('/\.html\.twig$/', '', $relative);
+        if (!str_contains($corpus, $relative) && !str_contains($corpus, (string) $withoutSuffix)) {
+            $dead[] = 'views/twig/' . $relative . ': template is never included or named';
+        }
+    }
+
+    return $dead;
+}
+
+function deadAssets(string $root, string $corpus): array
+{
+    $dead = [];
+    foreach (listFiles($root . '/assets') as $file) {
+        $relative = substr($file, strlen($root) + 1);
+        if (!str_contains($corpus, $relative) && !str_contains($corpus, substr($relative, strlen('assets/')))) {
+            $dead[] = $relative . ': asset is never referenced';
+        }
+    }
+
+    return $dead;
+}
+
+function allowListedPaths(string $root): array
+{
+    $file = $root . '/dead-assets.allow';
+    if (!is_file($file)) {
+        return [];
+    }
+    $paths = [];
+    foreach (file($file, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        $path = trim(explode('#', $line, 2)[0]);
+        if ($path !== '') {
+            $paths[] = $path;
+        }
+    }
+
+    return $paths;
+}
+
+function withoutAllowListed(string $root, array $findings): array
+{
+    $allowed = allowListedPaths($root);
+
+    return array_values(array_filter(
+        $findings,
+        static fn (string $finding): bool => !in_array(explode(': ', $finding, 2)[0], $allowed, true)
+    ));
+}
+
+$moduleRoot = rtrim($argv[1] ?? dirname(__DIR__), '/');
+$corpus = readCorpus($moduleRoot);
+$findings = withoutAllowListed($moduleRoot, array_merge(
+    deadLanguageKeys($moduleRoot, $corpus),
+    deadTemplates($moduleRoot, $corpus),
+    deadAssets($moduleRoot, $corpus)
+));
+
+foreach ($findings as $finding) {
+    fwrite(STDERR, $finding . "\n");
+}
+echo $findings === [] ? "dead-assets: clean\n" : 'dead-assets: ' . count($findings) . " unreferenced item(s)\n";
+exit($findings === [] ? 0 : 1);

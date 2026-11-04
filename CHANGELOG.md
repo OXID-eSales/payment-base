@@ -5,6 +5,11 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added (VR-17 DC-5) - dead-code gate
+- `composer dead-code` (`shipmonk/dead-code-detector` through `phpstan-dead-code.neon`) and `composer dead-assets`
+  (`bin/dead-assets`: unreferenced language keys, templates, assets); CI job `dead-code`; PR template checkbox.
+  Baselines in `tests/PhpStan/dead-code-baseline-*.neon` may only shrink. Dev tooling only, no runtime change.
+
 ### Removed (VR-17 DC-5) - dead language key
 - Language key `PAYMENT_ADMIN_CONTRACT_STATE` (admin, en + de): no template, controller or provider module reads it
   (checked in stripe, mollie-payment, paypal, one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql);

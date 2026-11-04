@@ -23,8 +23,34 @@ payment-base public API · no overengineering · never suppress static analysis.
 | **Catch `Throwable` at process boundaries** | Webhook processing, cron commands and controllers that hold a claim/lock must release it on `\Error` as well. | pb S1, Stripe S-3, Mollie S-M5, PayPal SEC-2 |
 | **Logs carry ids, never content** | Log contract id, order id, PSP ids, SQLSTATE, HTTP status, reason codes. Never: rendered mails, request/response bodies, addresses, e-mails, tokens (`contract_token`, `cardToken`, `client_secret`, access tokens). Each provider webhook file log records `eventId`, `eventType`, `objectId`, `contractId`, `action`, `reason`, `httpCode`. | pb C4, Mollie log/request body, Stripe L-3, PayPal §4.2 |
 | **Deploy is a tested artefact** | Order: payment-base → providers → OPC → `oe-payment-base-migrate` → `oe:module:…` → rebuild `var/cache/container` → warm-up → traffic. A schema check fails the deploy, not the first order. | pay1 §4.1 of all reports |
-| **Dead-code gate** | Each module runs a dead-code check in CI (sprint 17, story DC-5): no class, service or `fnc` endpoint without a production caller; tests alone do not keep code alive. New code without a caller is a review blocker. | pb C1/D10, PayPal C-4/D-6, Stripe D-12 |
+| **Dead-code gate** | Each module runs a dead-code check in CI (sprint 17, story DC-5): no class, service or `fnc` endpoint without a production caller; tests alone do not keep code alive. New code without a caller is a review blocker. Mechanics: [Dead-code gate](#dead-code-gate-how-it-works) below. | pb C1/D10, PayPal C-4/D-6, Stripe D-12 |
 | **Tests may not pin a bug** | When a finding is "test pins wrong behaviour", the story's first commit *changes the test to the correct expectation* (red), then fixes the code. | Stripe D-2, Mollie T-H1, PayPal T-1 |
+
+## Dead-code gate (how it works)
+
+Sprint 17, story DC-5. Two commands, one CI job `dead-code` (next to the `styles` job):
+
+- `composer dead-code` runs `shipmonk/dead-code-detector` (a PHPStan extension, dev dependency) through
+  `phpstan-dead-code.neon`: methods, constants, enum cases and properties of `src/` and `migration/data/` that nothing
+  calls or reads. **Tests are not a usage source** (only `src/` is analysed), so code that only a test keeps alive is
+  reported. Callers that live in a framework are named once in `tests/PhpStan/DeadCode/OxidEntryPointUsageProvider.php`
+  (GraphQLite attributes, `metadata.php` events, `src/Eshop/` extend chain and admin controllers).
+- `composer dead-assets` runs `bin/dead-assets`: language keys, Twig templates and `assets/` files without a reference.
+  Things a consumer repository uses go in `dead-assets.allow` (path + reason).
+
+Rules:
+
+1. A finding is fixed by **deleting** the code, or by giving it a production caller. Do not baseline it.
+2. `tests/PhpStan/dead-code-baseline-*.neon` may only **shrink**. Header of each file says what it holds:
+   `mcp-acp` (kept by owner decision), `consumer-api` (called by a provider repo that this repo's CI cannot see),
+   `unreviewed` (deletion backlog: dead across all consumers, baselined so the gate could go live).
+3. A baseline line is removed together with the code it covers.
+4. The PR template carries the checkbox "new code has a production caller".
+
+Add a gate to a provider repo: `composer require --dev shipmonk/dead-code-detector`, copy `phpstan-dead-code.neon`,
+`bin/dead-assets` and the `dead-code` job, add the two composer scripts, generate the baseline with
+`vendor/bin/phpstan analyse -c phpstan-dead-code.neon --generate-baseline=tests/PhpStan/dead-code-baseline.neon`
+and review it (every kept line needs an owner decision or a ticket), delete the rest.
 
 ## Branching and merge order (all sprints)
 

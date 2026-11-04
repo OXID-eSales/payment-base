@@ -1,0 +1,125 @@
+# Kept by the owner decision "MCP/ACP is kept" (sprint 17, owner decisions 1; pb DC-PB1 keeps the ACP chain).
+# Remove an entry only together with the code. Ticket: VR-17 DC-PB7a / sprint 24 H8.
+
+parameters:
+    ignoreErrors:
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::cancelCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::commitPaid$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::completeCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::createCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::getCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::updateCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::\$contractService\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AbstractAcpCheckoutService::\$eventDispatcher\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Mcp/Acp/AbstractAcpCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpCheckoutServiceInterface::cancelCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpCheckoutServiceInterface::completeCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpCheckoutServiceInterface::createCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpCheckoutServiceInterface::getCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpCheckoutServiceInterface::updateCheckout$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpResponseFormatter::formatOrder$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpResponseFormatter.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Acp\\AcpResponseFormatterInterface::formatOrder$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Acp/AcpResponseFormatterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContext::getAllMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContext::getMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContext::getToken$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContextInterface::getAllMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContextInterface::getMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\AgentContextInterface::getToken$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/AgentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Auth\\JwtTokenValidator::authenticate$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Auth/JwtTokenValidator.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Http\\ApcuRateLimiter::isAllowed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Http/ApcuRateLimiter.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Mcp\\Http\\RateLimiterInterface::isAllowed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Mcp/Http/RateLimiterInterface.php

@@ -1,0 +1,1508 @@
+# Public API of payment-base that is dead inside this repository but called by a provider/consumer repo
+# (stripe, mollie-payment, paypal, one-page-checkout, opalreturns, opalsubscription, oxid-admin-graphql).
+# Evidence: the same detector run with the consumers' src/ added as analysed paths does NOT report the member.
+# payment-base's own CI cannot see the consumers, so these stay baselined; they are not "dead" for the constellation.
+# See "Dead-code gate" in docs/dev_log/20261030/sprints/_engeneering_requirements.md. Ticket: VR-17 DC-5.
+
+parameters:
+    ignoreErrors:
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Exception\\PaymentAdapterException::getErrorCode$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Exception/PaymentAdapterException.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\LinkedOrderEndingInterface::STATUS_CANCELLED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/LinkedOrderEndingInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\LinkedOrderEndingInterface::STATUS_FAILED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/LinkedOrderEndingInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\LinkedOrderEndingInterface::end$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/LinkedOrderEndingInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\OxidLinkedOrderEnding::end$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/OxidLinkedOrderEnding.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::capturePayment$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::createPayment$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::getPaymentDetails$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::refundPayment$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::voidPayment$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getCancelUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getMetadataValue$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getPaymentMethodId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getReturnUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContext::getUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getCancelUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getMetadataValue$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getPaymentMethodId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getReturnUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentContextInterface::getUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentHandlerInterface::getFrontendConfig$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentHandlerInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentHandlerResult::error$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentHandlerResult.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentHandlerResult::getMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentHandlerResult.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentHandlerResult::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/PaymentHandlerResult.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$customerId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$orderId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$paymentMethodId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$returnUrl\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$shopId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/AuthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CaptureAuthorizationRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CaptureAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CaptureAuthorizationRequest::\$authorizationId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CaptureAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CaptureAuthorizationRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CaptureAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CapturePaymentRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CapturePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CapturePaymentRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CapturePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CapturePaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CapturePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CapturePaymentRequest::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CapturePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentMethodRequest::\$billingAddress\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentMethodRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentMethodRequest::\$customerId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentMethodRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentMethodRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentMethodRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentMethodRequest::\$paymentMethod\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentMethodRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentMethodRequest::\$paymentMethodData\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentMethodRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$customerId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$directCapture\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$orderId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$paymentMethodId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$returnUrl\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\CreatePaymentRequest::\$shopId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/CreatePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\ReauthorizePaymentRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/ReauthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\ReauthorizePaymentRequest::\$authorizationId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/ReauthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\ReauthorizePaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/ReauthorizePaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$idempotencyKey\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\RefundPaymentRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/RefundPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\ThreeDSecureRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/ThreeDSecureRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\ThreeDSecureRequest::\$paymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/ThreeDSecureRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidAuthorizationRequest::\$authorizationId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidAuthorizationRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidAuthorizationRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidAuthorizationRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidPaymentRequest::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidPaymentRequest::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\VoidPaymentRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Request/VoidPaymentRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\AuthorizationResponse::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/AuthorizationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\AuthorizationResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/AuthorizationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\AuthorizationResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/AuthorizationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\AuthorizationResponse::\$redirectUrl\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/AuthorizationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\AuthorizationResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/AuthorizationResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::failure$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::isSuccessful$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CancellationResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CancellationResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::failure$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::isSuccessful$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$amountCaptured\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$captureId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$capturedAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\CaptureResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/CaptureResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\FraudCheckResponse::error$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/FraudCheckResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\FraudCheckResponse::failure$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/FraudCheckResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\FraudCheckResponse::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/FraudCheckResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\FraudCheckResponse::unscreened$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/FraudCheckResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::AUTHORIZED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::CANCELLED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::CAPTURED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::FAILED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::PARTIALLY_REFUNDED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::PENDING$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\NormalizedPaymentStatus::REFUNDED$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Adapter/Response/NormalizedPaymentStatus.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$createdAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$paymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\OrderResponse::\$totalAmount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/OrderResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$amountCaptured\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$capturedAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$createdAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$isCaptured\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$providerData\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentDetailsResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentDetailsResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentMethodResponse::\$createdAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentMethodResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentMethodResponse::\$details\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentMethodResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentMethodResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentMethodResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentMethodResponse::\$type\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentMethodResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$redirectUrl\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\PaymentResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/PaymentResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::failure$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::isSuccessful$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$amountRefunded\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$metadata\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$providerPaymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$refundId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$refundedAt\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\RefundResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/RefundResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\ThreeDSecureResponse::\$paymentId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/ThreeDSecureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\ThreeDSecureResponse::\$redirectUrl\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/ThreeDSecureResponse.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Response\\ThreeDSecureResponse::\$status\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Adapter/Response/ThreeDSecureResponse.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getCurrentLanguageAbbr$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getShopId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getShopName$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getShopUrl$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::translateString$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopAdapterInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getPaymentId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/WebhookEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Contract\\AdminActionDispatcherInterface::cancel$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Contract\\AdminActionDispatcherInterface::capture$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Contract\\AdminActionDispatcherInterface::refund$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Admin/Contract/AdminActionDispatcherInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Panel\\PaymentPanelContext::getProviderName$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Admin/Panel/PaymentPanelContext.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutException::\$providerCode\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutException.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutService::cancel$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutService::return$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutService::start$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutServiceInterface::cancel$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutServiceInterface::return$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\HeadlessCheckoutServiceInterface::start$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/Headless/HeadlessCheckoutServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\InFlightCheckoutAttemptResolver::resolve$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/InFlightCheckoutAttemptResolver.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\InFlightCheckoutAttemptResolverInterface::resolve$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Checkout/InFlightCheckoutAttemptResolverInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\ClientConfig\\SealPrimitivesFactory::create$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/ClientConfig/SealPrimitivesFactory.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\AttemptClosure::Open$#'
+            identifier: shipmonk.deadEnumCase
+            count: 1
+            path: ../../src/Contract/AttemptClosure.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ContractCondition::getStatus$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractCondition.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ContractState::equals$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractState.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ContractState::isCancelled$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractState.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ContractState::isExpired$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractState.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ContractState::isFailed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ContractState.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\IdempotencyRecord::isExpired$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/IdempotencyRecord.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\IdempotencyRecord::setStatus$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/IdempotencyRecord.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\IdempotencyRecord::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/IdempotencyRecord.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContract::authorize$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContract.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContract::captureAuthorization$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContract.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContract::expire$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContract.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContract::isInState$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContract.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContract::setRefundedAt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContract.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContractInterface::authorize$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContractInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContractInterface::captureAuthorization$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContractInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContractInterface::expire$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContractInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContractInterface::isInState$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContractInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentContractInterface::setRefundedAt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentContractInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentCustomer::setUpdatedAt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentCustomer.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\PaymentCustomer::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/PaymentCustomer.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ReplacedAttempts::indexOf$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ReplacedAttempts.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ReplacedAttempts::lateMoneyIn$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ReplacedAttempts.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ReplacedAttempts::of$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ReplacedAttempts.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\ReplacedAttempts::withLateMoney$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/ReplacedAttempts.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\SecurityValidationResultInterface::getScore$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/SecurityValidationResultInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\SecurityValidationResultInterface::getWarnings$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/SecurityValidationResultInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\SecurityValidationResultInterface::isAllowed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/SecurityValidationResultInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\SecurityValidationResultInterface::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/SecurityValidationResultInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\Transaction::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/Transaction.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\Transaction::getParentTransactionId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/Transaction.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\Transaction::getProvider$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/Transaction.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\Transaction::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/Transaction.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\Transaction::setParentTransactionId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/Transaction.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\TransactionInterface::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/TransactionInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\TransactionInterface::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/TransactionInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\TransactionInterface::getStatus$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/TransactionInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\TransactionInterface::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Contract/TransactionInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn::dispatchCheckoutReturn$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Controller/HandlesCheckoutReturn.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Controller\\ValidationApiController::init$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Controller/ValidationApiController.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Controller\\ValidationApiController::validate$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Controller/ValidationApiController.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractCancelledEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractCancelledEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractCreatedEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractCreatedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractCreatedEventInterface::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractCreatedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractDraftCompletedEventInterface::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractDraftCompletedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractExpiredEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractExpiredEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractFulfilledEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractFulfilledEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractReadyToCommitEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractReadyToCommitEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractTransitionedToPendingEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Contract/ContractTransitionedToPendingEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\EventContext::all$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/EventContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\EventContext::getUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/EventContext.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\EventContextInterface::all$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/EventContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\EventContextInterface::getUser$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/EventContextInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\OrderCreatedEvent::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/OrderCreatedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\OrderCreatedEventInterface::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/OrderCreatedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentAuthorizedEventInterface::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentAuthorizedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEvent::getErrorCode$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEvent::getErrorMessage$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEvent::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEventInterface::getErrorCode$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEventInterface::getErrorMessage$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentFailedEventInterface::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentFailedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentRefundedEvent::getOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentRefundedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentRefundedEvent::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentRefundedEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentRefundedEventInterface::getOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentRefundedEventInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Payment\\PaymentRefundedEventInterface::getProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/EventSystem/Event/Payment/PaymentRefundedEventInterface.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\EventSystem\\Handler\\ContractCreationHandler::\$eventDispatcher\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/EventSystem/Handler/ContractCreationHandler.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\DataType\\AuditedPaymentOutcome::errors$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/GraphQL/Admin/DataType/AuditedPaymentOutcome.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\GraphQL\\Admin\\Service\\PaymentContractDetails::fingerprint$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/GraphQL/Admin/Service/PaymentContractDetails.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Model\\AbstractModel::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Model/AbstractModel.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\CancelRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/CancelRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\CaptureRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/CaptureRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\CaptureRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/CaptureRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\CaptureRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/CaptureRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\RefundRequest::\$amount\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/RefundRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\RefundRequest::\$currency\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/RefundRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\RefundRequest::\$description\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/RefundRequest.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Payment\\RefundRequest::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Payment/RefundRequest.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\ContractRepositoryInterface::findStaleNotFinished$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/ContractRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\ContractStateQueryInterface::findByStateAndProvider$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/ContractStateQueryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineContractRepository::findByReplacedAttempt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineContractRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineContractRepository::findByStateAndProvider$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineContractRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineContractRepository::findStaleNotFinished$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineContractRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineIdempotencyRepository::deleteExpired$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineIdempotencyRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrinePaymentCustomerRepository::findByUserId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrinePaymentCustomerRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrinePaymentCustomerRepository::save$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrinePaymentCustomerRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::findById$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineTransactionRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::findByProviderTransactionId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineTransactionRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\DoctrineTransactionRepository::logRefund$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/DoctrineTransactionRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\IdempotencyRepositoryInterface::deleteExpired$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/IdempotencyRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\PaymentCustomerRepositoryInterface::findByUserId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/PaymentCustomerRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\PaymentCustomerRepositoryInterface::save$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/PaymentCustomerRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\ReplacedAttemptFinderInterface::findByReplacedAttempt$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/ReplacedAttemptFinderInterface.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Repository\\StaleContractException::\$contractId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Repository/StaleContractException.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::exists$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/TransactionRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::findById$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/TransactionRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::findByProviderTransactionId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/TransactionRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Repository\\TransactionRepositoryInterface::logRefund$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Repository/TransactionRepositoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::OUTCOME_PENDING$#'
+            identifier: shipmonk.deadConstant
+            count: 1
+            path: ../../src/Return/ReturnResolution.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::authorized$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Return/ReturnResolution.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::failed$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Return/ReturnResolution.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Return\\ReturnResolution::readyToCommit$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Return/ReturnResolution.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Service\\Commit\\CommitOutcome::\$orderId\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Service/Commit/CommitOutcome.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractFulfillmentService::fulfillByProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractFulfillmentService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractFulfillmentServiceInterface::fulfill$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractFulfillmentServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractFulfillmentServiceInterface::fulfillByProviderOrderId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractFulfillmentServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataService::storeDeliveryAddressMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractMetadataService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataService::storeSecurityMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractMetadataService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataServiceInterface::storeDeliveryAddressMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractMetadataServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ContractMetadataServiceInterface::storeSecurityMetadata$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ContractMetadataServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\Factory\\AbstractFileLoggerFactory::create$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/Factory/AbstractFileLoggerFactory.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\Factory\\PaymentAdapterFactoryInterface::createDefaultAdapter$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/Factory/PaymentAdapterFactoryInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\IframeCheckoutSettings::isEnabled$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/IframeCheckoutSettings.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\IframeCheckoutSettingsInterface::isEnabled$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/IframeCheckoutSettingsInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\NotFinishedOrderCleanupSettings::getStaleCheckoutMinutes$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/NotFinishedOrderCleanupSettings.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\NotFinishedOrderCleanupSettingsInterface::getStaleCheckoutMinutes$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/NotFinishedOrderCleanupSettingsInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\OrderPaymentStateService::updatePaidTimestamp$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/OrderPaymentStateService.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\OrderPaymentStateServiceInterface::updatePaidTimestamp$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/OrderPaymentStateServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\RequestLogServiceInterface::logException$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/RequestLogServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\RequestLogServiceInterface::logRequest$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/RequestLogServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\ReturnSecurityValidatorInterface::validateReturn$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/ReturnSecurityValidatorInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Service\\TokenServiceInterface::generateToken$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Service/TokenServiceInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Validation\\ValidationBaseFactory::create$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/ValidationBaseFactory.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Validation\\ValidationBaseInterface::validateField$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Validation/ValidationBaseInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\AbstractWebhookProcessor::process$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/AbstractWebhookProcessor.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Webhook\\Guard\\WebhookGuardResult::\$reason\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Webhook/Guard/WebhookGuardResult.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookEvent::getObjectId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookEvent.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Webhook\\WebhookEvent::\$created\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Webhook/WebhookEvent.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookLog::getContractId$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookLog.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookLog::getError$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookLog.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookLog::getStatus$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookLog.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookPayloadSanitizer::sanitize$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookPayloadSanitizer.php
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Webhook\\WebhookRequest::\$payload\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Webhook/WebhookRequest.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookResult::isFailure$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookResult.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookResult::success$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookResult.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Webhook\\WebhookResult::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Webhook/WebhookResult.php

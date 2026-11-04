@@ -327,6 +327,38 @@ jobs:
             source/test-module/tests/reports/phpmd.report.json
 
   # ==========================================================================
+  # Dead-code gate (sprint 17 DC-5): no member without a production caller, no unreferenced
+  # language key / template / asset. Independent of the shop line, so it runs once, here.
+  # A new finding is fixed by deleting the code, never by growing tests/PhpStan/dead-code-baseline-*.neon.
+  # ==========================================================================
+  dead-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip
+
+      - name: Install component dependencies
+        working-directory: source/test-module
+        run: $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh composer install --no-interaction
+
+      - name: Dead PHP members (shipmonk/dead-code-detector)
+        working-directory: source/test-module
+        run: composer dead-code
+
+      - name: Dead language keys, templates and assets
+        working-directory: source/test-module
+        run: composer dead-assets
+
+  # ==========================================================================
   # Isolated Unit Tests - No shop required, runs standalone
   # ==========================================================================
   isolated_unit_tests:
