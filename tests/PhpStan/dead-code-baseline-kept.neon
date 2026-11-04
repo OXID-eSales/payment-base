@@ -1,0 +1,32 @@
+# Kept deliberately (VR-17 DC-PB8 review of the unreviewed backlog). Remove an entry only together with the code.
+# Each group below says why it stays.
+
+parameters:
+    ignoreErrors:
+        # Value objects the providers construct: a constructor field nothing reads yet (removing it breaks the constructors in the providers).
+        -
+            message: '#^Property\ OxidEsales\\PaymentBase\\Admin\\Panel\\PaymentPanelRenderable::\$providerKey\ is\ never\ read$#'
+            identifier: shipmonk.deadProperty.neverRead
+            count: 1
+            path: ../../src/Admin/Panel/PaymentPanelRenderable.php
+        # At-risk flags: acknowledge and openForContract are the designed merchant-decision API (column OXACKNOWLEDGEDAT, covered by the integration test), no caller yet - owner decision before they go.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\DoctrinePaymentAtRiskRepository::openForContract$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/AtRisk/DoctrinePaymentAtRiskRepository.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskFlag::acknowledge$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/AtRisk/PaymentAtRiskFlag.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskFlagInterface::acknowledge$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/AtRisk/PaymentAtRiskFlagInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskQueryInterface::openForContract$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/AtRisk/PaymentAtRiskQueryInterface.php

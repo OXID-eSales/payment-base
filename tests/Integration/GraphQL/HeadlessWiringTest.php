@@ -109,7 +109,7 @@ final class HeadlessWiringTest extends IntegrationTestCase
     private function firstContractFirstPaymentId(PaymentHandlerRegistryInterface $registry): ?string
     {
         foreach (['oe_payments_stripe_wallet', 'oe_payments_mollie', 'oxidpaypal', 'oe_payments_paypal'] as $candidate) {
-            if ($registry->isContractFirst($candidate)) {
+            if ($registry->forPaymentMethod($candidate) !== null) {
                 return $candidate;
             }
         }

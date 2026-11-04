@@ -15,16 +15,6 @@ namespace OxidEsales\PaymentBase\Admin\Help;
  */
 interface ContractStateHelpInterface
 {
-    /** Idents the table and the hint need besides the per-row meanings (title, intro, headers, "none", "close"). */
-    public const SHARED_IDENTS = [
-        'PAYMENT_ADMIN_HELP',
-        'PAYMENT_ADMIN_HELP_CONTRACT_STATES_INTRO',
-        'PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE',
-        'PAYMENT_ADMIN_HELP_COL_MEANING',
-        'PAYMENT_ADMIN_HELP_NONE',
-        'PAYMENT_ADMIN_HELP_CLOSE',
-    ];
-
     /**
      * One row per contract state a checkout can reach, in ladder order.
      *

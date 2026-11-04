@@ -29,11 +29,6 @@ trait HandlesCheckoutReturn
 {
     private ?CheckoutReturnResponder $checkoutReturnResponder = null;
 
-    public function setCheckoutReturnResponder(CheckoutReturnResponder $responder): void
-    {
-        $this->checkoutReturnResponder = $responder;
-    }
-
     /**
      * @param array<string, mixed> $extraContextKeys
      * @return string|null orderId on success, null on failure.
@@ -50,24 +45,5 @@ trait HandlesCheckoutReturn
             $resolver,
             $extraContextKeys,
         );
-    }
-
-    /**
-     * Subclasses that live outside of constructor-DI (OXID controllers
-     * instantiated via oxNew) override this to fetch the responder from
-     * the container — Stripe's helper + PayPal's helper both already
-     * expose that seam.
-     */
-    protected function resolveCheckoutReturnResponder(): CheckoutReturnResponder
-    {
-        if ($this->checkoutReturnResponder === null) {
-            throw new \LogicException(
-                'CheckoutReturnResponder not injected. Either call '
-                . 'setCheckoutReturnResponder() before dispatchCheckoutReturn() '
-                . 'or override resolveCheckoutReturnResponder() to fetch the '
-                . 'service from the container.'
-            );
-        }
-        return $this->checkoutReturnResponder;
     }
 }

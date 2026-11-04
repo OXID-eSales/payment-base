@@ -21,6 +21,16 @@ use PHPUnit\Framework\TestCase;
  */
 final class ContractStateHelpTest extends TestCase
 {
+    /** Idents the table and the hint need besides the per-row meanings (title, intro, headers, "none", "close"). */
+    private const SHARED_IDENTS = [
+        'PAYMENT_ADMIN_HELP',
+        'PAYMENT_ADMIN_HELP_CONTRACT_STATES_INTRO',
+        'PAYMENT_ADMIN_HELP_COL_CONTRACT_STATE',
+        'PAYMENT_ADMIN_HELP_COL_MEANING',
+        'PAYMENT_ADMIN_HELP_NONE',
+        'PAYMENT_ADMIN_HELP_CLOSE',
+    ];
+
     private const EXPECTED = [
         [['not_finished'], 'PAYMENT_ADMIN_HELP_STATE_NOT_FINISHED'],
         [['pending'], 'PAYMENT_ADMIN_HELP_STATE_PENDING'],
@@ -70,7 +80,7 @@ final class ContractStateHelpTest extends TestCase
     {
         $lang = $this->adminLang($language);
         $idents = array_merge(
-            ContractStateHelp::SHARED_IDENTS,
+            self::SHARED_IDENTS,
             array_map(static fn (ContractStateHelpRow $r): string => $r->meaningIdent, (new ContractStateHelp())->rows())
         );
         foreach ($idents as $ident) {

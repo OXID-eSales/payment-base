@@ -5,6 +5,16 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17 DC-PB8) - dead-code backlog: Admin help, Controller trait, event broker
+No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
+- `Admin\Help\ContractStateHelpInterface`: `SHARED_IDENTS`
+- `Admin\Panel\PaymentPanelRenderable`: `withExtraViewData()`
+- `Controller\HandlesCheckoutReturn`: `setCheckoutReturnResponder()`
+- `EventSystem\Broker\ConventionProviderEventResolver`: `registerCanonicalName()`
+- `EventSystem\Broker\ProviderEventResolverInterface`: `registerCanonicalName()`
+- `EventSystem\EventDispatcher`: `removeListener()`
+- `EventSystem\EventDispatcherInterface`: `removeListener()`
+
 ### Removed (VR-17 DC-PB8) - dead-code backlog: Adapter and Checkout
 No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
 - `Adapter\Exception\PaymentAdapterException`: `isNetworkError()`, `isAuthenticationError()`, `isRetryable()`

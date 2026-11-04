@@ -27,20 +27,6 @@ class EventDispatcher implements EventDispatcherInterface
         ];
     }
 
-    public function removeListener(string $eventClass, callable $listener): void
-    {
-        if (!isset($this->listeners[$eventClass])) {
-            return;
-        }
-
-        /** @var array<array{listener: callable, priority: int}> $eventListeners */
-        $eventListeners = $this->listeners[$eventClass];
-        $this->listeners[$eventClass] = array_filter(
-            $eventListeners,
-            static fn(array $item): bool => $item['listener'] !== $listener
-        );
-    }
-
     public function dispatch(EventInterface $event): EventInterface
     {
         $eventClass = get_class($event);

@@ -336,40 +336,10 @@ parameters:
             count: 1
             path: ../../src/Adapter/ShopCurrency.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Help\\ContractStateHelpInterface::SHARED_IDENTS$#'
-            identifier: shipmonk.deadConstant
-            count: 1
-            path: ../../src/Admin/Help/ContractStateHelpInterface.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Help\\ContractStateHelpProviderInterface::TAG$#'
             identifier: shipmonk.deadConstant
             count: 1
             path: ../../src/Admin/Help/ContractStateHelpProviderInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Panel\\PaymentPanelRenderable::withExtraViewData$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Admin/Panel/PaymentPanelRenderable.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\DoctrinePaymentAtRiskRepository::openForContract$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/AtRisk/DoctrinePaymentAtRiskRepository.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskFlag::acknowledge$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/AtRisk/PaymentAtRiskFlag.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskFlagInterface::acknowledge$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/AtRisk/PaymentAtRiskFlagInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\AtRisk\\PaymentAtRiskQueryInterface::openForContract$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/AtRisk/PaymentAtRiskQueryInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Return\\ContractReturnTokenService::generateToken$#'
             identifier: shipmonk.deadMethod
@@ -666,16 +636,6 @@ parameters:
             count: 1
             path: ../../src/Contract/TransactionInterface.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn::resolveCheckoutReturnResponder$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Controller/HandlesCheckoutReturn.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn::setCheckoutReturnResponder$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Controller/HandlesCheckoutReturn.php
-        -
             message: '#^Property\ OxidEsales\\PaymentBase\\Controller\\HandlesCheckoutReturn::\$checkoutReturnResponder\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead
             count: 1
@@ -690,16 +650,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Eshop/Application/Model/Voucher.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Broker\\ConventionProviderEventResolver::registerCanonicalName$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/EventSystem/Broker/ConventionProviderEventResolver.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Broker\\ProviderEventResolverInterface::registerCanonicalName$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/EventSystem/Broker/ProviderEventResolverInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\Event\\Contract\\ContractCancelledEvent::getContract$#'
             identifier: shipmonk.deadMethod
@@ -946,17 +896,7 @@ parameters:
             count: 1
             path: ../../src/EventSystem/EventDispatcher.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\EventDispatcher::removeListener$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/EventSystem/EventDispatcher.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\EventDispatcherInterface::addListener$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/EventSystem/EventDispatcherInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\EventSystem\\EventDispatcherInterface::removeListener$#'
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/EventSystem/EventDispatcherInterface.php

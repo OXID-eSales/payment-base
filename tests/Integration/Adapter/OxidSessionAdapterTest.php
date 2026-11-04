@@ -15,7 +15,6 @@ use OxidEsales\PaymentBase\Adapter\SessionAdapterInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 /**
  * The one session adapter (VR-25 D0): union of the Stripe, Mollie and PayPal copy tests.
@@ -37,27 +36,8 @@ final class OxidSessionAdapterTest extends TestCase
         $this->assertSame('hello', $adapter->getVariable('payment_base_test_var'));
     }
 
-    public function testSessionIdIsTheSessionsId(): void
+    public function testTheBasketIsTheSessionsBasket(): void
     {
-        $this->assertSame((string) Registry::getSession()->getId(), (new OxidSessionAdapter())->getSessionId());
-    }
-
-    public function testBasketRoundTripsThroughTheSession(): void
-    {
-        $adapter = new OxidSessionAdapter();
-        $basket = Registry::getSession()->getBasket();
-
-        $adapter->setBasket($basket);
-
-        $this->assertSame($basket, $adapter->getBasket());
-    }
-
-    public function testSetUserStoresItUnderThePaymentUserKey(): void
-    {
-        $user = new stdClass();
-
-        (new OxidSessionAdapter())->setUser($user);
-
-        $this->assertSame($user, Registry::getSession()->getVariable('oePaymentUser'));
+        $this->assertSame(Registry::getSession()->getBasket(), (new OxidSessionAdapter())->getBasket());
     }
 }

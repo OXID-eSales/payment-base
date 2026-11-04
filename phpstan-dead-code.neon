@@ -10,6 +10,7 @@ includes:
     - vendor/shipmonk/dead-code-detector/rules.neon
     - tests/PhpStan/dead-code-baseline-mcp-acp.neon
     - tests/PhpStan/dead-code-baseline-consumer-api.neon
+    - tests/PhpStan/dead-code-baseline-kept.neon
     - tests/PhpStan/dead-code-baseline-unreviewed.neon
 
 parameters:

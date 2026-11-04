@@ -26,15 +26,4 @@ final class PaymentPanelRenderableTest extends TestCase
         self::assertSame(['contractId' => 'c_1', 'amount' => 42.0], $renderable->viewData);
         self::assertSame('stripe', $renderable->providerKey);
     }
-
-    public function testMergeExtendsViewDataAtRenderBoundary(): void
-    {
-        $renderable = new PaymentPanelRenderable('@x/y', ['a' => 1], 'stripe');
-        $merged = $renderable->withExtraViewData(['b' => 2, 'a' => 10]);
-
-        self::assertSame(['a' => 1], $renderable->viewData, 'Original DTO stays untouched');
-        self::assertSame(['a' => 10, 'b' => 2], $merged->viewData);
-        self::assertSame($renderable->templatePath, $merged->templatePath);
-        self::assertSame($renderable->providerKey, $merged->providerKey);
-    }
 }

@@ -45,12 +45,4 @@ interface ProviderEventResolverInterface
      * @throws \InvalidArgumentException If $providerId or $baseName is empty.
      */
     public function resolveClassName(string $providerId, string $baseName): string;
-
-    /**
-     * Register the canonical PascalCase name for a provider id whose
-     * `ucfirst()` is not the canonical PascalCase form. Optional —
-     * providers like `stripe` whose canonical is `Stripe == ucfirst('stripe')`
-     * do not need to register anything.
-     */
-    public function registerCanonicalName(string $providerId, string $canonical): void;
 }

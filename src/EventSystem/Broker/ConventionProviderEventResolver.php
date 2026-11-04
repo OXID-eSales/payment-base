@@ -67,12 +67,4 @@ class ConventionProviderEventResolver implements ProviderEventResolverInterface
 
         return $fqcn;
     }
-
-    public function registerCanonicalName(string $providerId, string $canonical): void
-    {
-        if ($providerId === '' || $canonical === '') {
-            throw new InvalidArgumentException('providerId and canonical must not be empty');
-        }
-        $this->canonicalNames[strtolower($providerId)] = $canonical;
-    }
 }

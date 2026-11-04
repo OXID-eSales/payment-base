@@ -46,23 +46,6 @@ final class ConventionProviderEventResolverTest extends TestCase
         );
     }
 
-    public function testResolvesPayPalEventByRegisteredCanonicalName(): void
-    {
-        // 'paypal' does not match the canonical PascalCase 'PayPal' via
-        // ucfirst alone — must register the canonical name explicitly.
-        $resolver = new ConventionProviderEventResolver();
-        $resolver->registerCanonicalName('paypal', 'PayPal');
-
-        self::assertSame(
-            'OxidEsales\\Payments\\PayPal\\EventSystem\\Event\\PayPalRefundRequestEvent',
-            $resolver->resolveClassName('paypal', 'RefundRequestEvent'),
-        );
-        self::assertSame(
-            'OxidEsales\\Payments\\PayPal\\EventSystem\\Event\\PayPalCaptureRequestEvent',
-            $resolver->resolveClassName('paypal', 'CaptureRequestEvent'),
-        );
-    }
-
     public function testFallsBackToUcfirstWhenNoCanonicalNameRegistered(): void
     {
         // Hypothetical third-party provider 'klarna' whose canonical
@@ -86,17 +69,6 @@ final class ConventionProviderEventResolverTest extends TestCase
         self::assertSame($expected, $resolver->resolveClassName('Stripe', 'RefundRequestEvent'));
     }
 
-    public function testCanonicalRegistrationIsCaseInsensitiveOnProviderId(): void
-    {
-        $resolver = new ConventionProviderEventResolver();
-        $resolver->registerCanonicalName('PAYPAL', 'PayPal');
-
-        self::assertSame(
-            'OxidEsales\\Payments\\PayPal\\EventSystem\\Event\\PayPalRefundRequestEvent',
-            $resolver->resolveClassName('paypal', 'RefundRequestEvent'),
-        );
-    }
-
     public function testRejectsEmptyProviderId(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -107,14 +79,6 @@ final class ConventionProviderEventResolverTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         (new ConventionProviderEventResolver())->resolveClassName('stripe', '');
-    }
-
-    public function testRejectsRegisterCanonicalNameWithEmptyValues(): void
-    {
-        $resolver = new ConventionProviderEventResolver();
-
-        $this->expectException(InvalidArgumentException::class);
-        $resolver->registerCanonicalName('', 'PayPal');
     }
 
     public function testKnownPaymentBaseEventBaseNamesResolveToRealClasses(): void
@@ -136,7 +100,6 @@ final class ConventionProviderEventResolverTest extends TestCase
         }
 
         $resolver = new ConventionProviderEventResolver();
-        $resolver->registerCanonicalName('paypal', 'PayPal');
 
         $bases = ['RefundRequestEvent', 'CaptureRequestEvent', 'CancelAuthorizationRequestEvent'];
 

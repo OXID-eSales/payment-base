@@ -28,16 +28,4 @@ readonly class PaymentPanelRenderable
         public string $providerKey,
     ) {
     }
-
-    /**
-     * @param array<string, mixed> $extra
-     */
-    public function withExtraViewData(array $extra): self
-    {
-        return new self(
-            templatePath: $this->templatePath,
-            viewData: array_merge($this->viewData, $extra),
-            providerKey: $this->providerKey,
-        );
-    }
 }

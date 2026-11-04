@@ -129,26 +129,6 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(1, $callCount);
     }
 
-    public function testRemoveListener(): void
-    {
-        $listenerCalled = false;
-
-        $listener = function () use (&$listenerCalled) {
-            $listenerCalled = true;
-        };
-
-        $this->dispatcher->addListener(ContractCreatedEvent::class, $listener);
-        $this->dispatcher->removeListener(ContractCreatedEvent::class, $listener);
-
-        $contract = $this->createTestContract();
-        $context = new EventContext(['test' => 'data']);
-        $event = new ContractCreatedEvent($contract, $context);
-
-        $this->dispatcher->dispatch($event);
-
-        $this->assertFalse($listenerCalled);
-    }
-
     public function testNoListenersRegistered(): void
     {
         $contract = $this->createTestContract();
