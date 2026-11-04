@@ -113,7 +113,7 @@ $contract->fulfillCondition('payment_authorized');
 └────────────────────────────┬────────────────────────────────┘
                              │ uses
 ┌────────────────────────────▼────────────────────────────────┐
-│  ADAPTER LAYER - PaymentAdapterInterface (provider-agnostic)│
+│  ADAPTER LAYER - PaymentHandlerInterface, ShopAdapterInterface│
 └────────────────────────────┬────────────────────────────────┘
                              │ persists
 ┌────────────────────────────▼────────────────────────────────┐
@@ -126,7 +126,7 @@ $contract->fulfillCondition('payment_authorized');
 ```
 src/
 ├── Adapter/            # Payment provider abstraction
-│   ├── PaymentAdapterInterface.php
+│   ├── PaymentHandlerInterface.php
 │   ├── Dto/            # Data transfer objects
 │   └── Response/       # Standardized adapter responses
 ├── Contract/           # Smart-contract domain
@@ -162,40 +162,10 @@ src/
 
 ### Implementing a Payment Provider
 
-Create an adapter implementing `PaymentAdapterInterface`:
-
-```php
-use OxidEsales\PaymentBase\Adapter\PaymentAdapterInterface;
-use OxidEsales\PaymentBase\Adapter\Response\AuthorizationResponse;
-
-class StripeAdapter implements PaymentAdapterInterface
-{
-    public function authorize(PaymentRequest $request): AuthorizationResponse
-    {
-        $paymentIntent = $this->stripeClient->paymentIntents->create([
-            'amount' => $request->getAmount(),
-            'currency' => $request->getCurrency(),
-            'capture_method' => 'manual',
-        ]);
-
-        return new AuthorizationResponse(
-            success: true,
-            transactionId: $paymentIntent->id,
-            providerReference: $paymentIntent->client_secret
-        );
-    }
-
-    public function capture(CaptureRequest $request): CaptureResponse
-    {
-        // Capture implementation
-    }
-
-    public function refund(RefundRequest $request): RefundResponse
-    {
-        // Refund implementation
-    }
-}
-```
+Implement `PaymentHandlerInterface` (starts and confirms a payment for your provider) and tag it as a payment
+handler in your module's `services.yaml`. The provider SDK calls stay in your module; payment-base only sees the
+handler, the events it emits and the contract it writes. Shop access (translations, shop URL, shop id) is
+payment-base's own `ShopAdapterInterface`, already bound — do not bind it yourself.
 
 ### Creating a Payment Contract
 

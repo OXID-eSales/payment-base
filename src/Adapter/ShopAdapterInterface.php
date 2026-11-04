@@ -16,8 +16,6 @@ namespace OxidEsales\PaymentBase\Adapter;
  * session management, etc. This allows the Payment Component to remain
  * platform-agnostic while working with different shop systems (OXID, Shopware, Magento, etc.).
  *
- * Following the same pattern as PaymentAdapterInterface for consistency.
- *
  * @since 1.0.0
  */
 interface ShopAdapterInterface

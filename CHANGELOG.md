@@ -5,6 +5,25 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-22 A4) - the fat provider adapter (BREAKING for Stripe: drop the extends)
+- `Adapter\PaymentAdapterInterface`, `Service\Factory\PaymentAdapterFactoryInterface` and `PaymentAdapterFactory`:
+  Stripe was the only consumer (its `StripeAdapterInterface`, `StripeAdapterFactoryInterface` and `StripeAdapterFactory`
+  extended them; Mollie and PayPal never did). Nothing in payment-base called the interface. README sections updated.
+  `Adapter\Exception\PaymentAdapterException` stays (Stripe's services throw and catch it).
+
+### Added (VR-25 D0) - one shop adapter, owned by payment-base
+- `Adapter\OxidShopAdapter` is the one `ShopAdapterInterface` implementation, bound in payment-base's `services.yaml`
+  (like `SessionAdapterInterface` -> `OxidSessionAdapter`). Stripe, Mollie and PayPal each bound that id to a copy of
+  their own and the last-merged `services.yaml` won, so one provider could run on another's adapter. Behaviour where
+  the copies differed: `getShopName()` is `''` when unset (never `'OXID eShop'`); `getShopCurrency()` throws when the
+  currency cannot be read (no `'EUR'` / `''`); `isTestMode()` is the shop's `blDebugMode`, as the interface documents
+  (a provider's test/live mode is its own configuration); `getAdapterName()` is `'oxid'`.
+- `Adapter\ShopName::of()`: the shop name or `''`.
+
+### Changed (VR-25 D0)
+- `Adapter\ShopCurrency::nameOf()` / `nameOrEmpty()` accept `object|false|null`: core's
+  `Config::getActShopCurrencyObject()` returns `false` when no currency is configured, which was a `TypeError`.
+
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
   `GraphQL\Admin\Contract\PaymentOwnershipProviderInterface` (`providerName()`, `paymentIds()`) and tags it

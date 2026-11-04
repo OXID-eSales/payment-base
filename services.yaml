@@ -555,20 +555,25 @@ services:
   # one caller (CLAUDE.md "one impl before an interface").
   OxidEsales\PaymentBase\Adapter\OrderShippingAddressCopier: ~
 
-  # Retiring the checkout attempt a shopper left behind on retry (STRP-171).
-  # Wired by concrete class: the SessionAdapterInterface id is bound by the
-  # provider modules, and payment-base must not depend on one of them being
-  # active - nor add a fourth definition of that id.
+  # VR-25 D0 — payment-base owns the one session adapter and the one shop adapter.
+  # Stripe, Mollie and PayPal each used to bind both ids to a copy of their own; the
+  # last services.yaml merged won, so one provider could run on another's adapter.
+  # The providers bind neither id any more. The concrete id stays (STRP-171 retry
+  # cleanup is wired by it).
   OxidEsales\PaymentBase\Adapter\OxidSessionAdapter:
     class: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
     public: false
 
-  # Sprint 15 / S2 (GRAPH-QL, 2026-10-06) — payment-base owns the session
-  # adapter binding. The provider modules still define this id themselves
-  # (their definitions win while they exist); P-Stripe / P-Mollie / P-PayPal
-  # delete those, after which this is the one definition.
   OxidEsales\PaymentBase\Adapter\SessionAdapterInterface:
     alias: OxidEsales\PaymentBase\Adapter\OxidSessionAdapter
+    public: true
+
+  OxidEsales\PaymentBase\Adapter\OxidShopAdapter:
+    class: OxidEsales\PaymentBase\Adapter\OxidShopAdapter
+    public: false
+
+  OxidEsales\PaymentBase\Adapter\ShopAdapterInterface:
+    alias: OxidEsales\PaymentBase\Adapter\OxidShopAdapter
     public: true
 
   # Sprint 15 / S2 — the checkout context: the per-attempt flags that were
