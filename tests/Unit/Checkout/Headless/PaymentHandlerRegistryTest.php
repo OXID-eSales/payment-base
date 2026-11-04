@@ -76,35 +76,4 @@ final class PaymentHandlerRegistryTest extends TestCase
         self::assertSame($stripe, $registry->forPaymentMethod('oe_payments_stripe_wallet'));
         self::assertNull($registry->forPaymentMethod('oxidpayadvance'), 'a core payment is not contract-first');
     }
-
-    public function testFindsTheHandlerOfAProviderByItsId(): void
-    {
-        $stripe = new FakePaymentHandler('stripe', ['oe_payments_stripe_wallet']);
-        $registry = new PaymentHandlerRegistry([$stripe]);
-
-        self::assertSame($stripe, $registry->forProvider('stripe'));
-        self::assertNull($registry->forProvider('paypal'));
-    }
-
-    public function testAcceptsAnyIterableAsTaggedIteratorsAre(): void
-    {
-        $registry = new PaymentHandlerRegistry(new \ArrayIterator([new FakePaymentHandler('paypal', ['oxidpaypal'])]));
-
-        self::assertTrue($registry->isContractFirst('oxidpaypal'));
-        self::assertFalse($registry->isContractFirst('oxidinvoice'));
-    }
-
-    /**
-     * A handler that does not declare itself contract-first is invisible here,
-     * however many payment ids it claims to support - or the OPC standard
-     * handler would turn every core payment into a "provider" one.
-     */
-    public function testIgnoresHandlersThatAreNotContractFirst(): void
-    {
-        $registry = new PaymentHandlerRegistry([new StandardLikeHandler(), new FakePaymentHandler('stripe', ['oe_payments_stripe_wallet'])]);
-
-        self::assertFalse($registry->isContractFirst('oxidpayadvance'));
-        self::assertNull($registry->forProvider('standard'));
-        self::assertTrue($registry->isContractFirst('oe_payments_stripe_wallet'));
-    }
 }

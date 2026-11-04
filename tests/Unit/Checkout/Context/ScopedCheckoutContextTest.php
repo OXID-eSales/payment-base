@@ -55,7 +55,6 @@ final class ScopedCheckoutContextTest extends TestCase
 
         self::assertSame('twig', $this->session->getVariable('flag'));
         self::assertSame([], $this->store->rows, 'a Twig checkout must never write the headless store');
-        self::assertSame('session-1', $this->context->getScopeId());
     }
 
     public function testWithAHeadlessScopeItIsThePersistedContext(): void
@@ -66,17 +65,5 @@ final class ScopedCheckoutContextTest extends TestCase
 
         self::assertSame(['flag' => 'headless'], $this->store->rows['contract-1']);
         self::assertNull($this->session->getVariable('flag'), 'a headless checkout must never touch the PHP session');
-        self::assertSame('contract-1', $this->context->getScopeId());
-    }
-
-    public function testLeavingTheScopeGoesBackToTheSession(): void
-    {
-        $this->scope->enter('contract-1');
-        $this->context->set('flag', 'headless');
-        $this->scope->leave();
-
-        self::assertNull($this->context->get('flag'));
-        $this->context->remove('flag');
-        self::assertSame(['flag' => 'headless'], $this->store->rows['contract-1'], 'the headless row is untouched after leaving');
     }
 }

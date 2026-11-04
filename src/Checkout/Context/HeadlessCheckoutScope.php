@@ -42,13 +42,6 @@ final class HeadlessCheckoutScope implements HeadlessCheckoutScopeInterface
         $this->basketId = $basketId;
     }
 
-    public function leave(): void
-    {
-        $this->scopeId = null;
-        $this->userId = null;
-        $this->basketId = null;
-    }
-
     public function isActive(): bool
     {
         return $this->scopeId !== null;

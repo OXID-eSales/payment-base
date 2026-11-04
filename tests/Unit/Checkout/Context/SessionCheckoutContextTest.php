@@ -26,11 +26,6 @@ final class SessionCheckoutContextTest extends TestCase
         self::assertInstanceOf(CheckoutContextInterface::class, new SessionCheckoutContext(new RecordingSessionAdapter()));
     }
 
-    public function testTheScopeIsTheSessionId(): void
-    {
-        self::assertSame('session-1', (new SessionCheckoutContext(new RecordingSessionAdapter()))->getScopeId());
-    }
-
     public function testReadsAndWritesSessionVariablesUnderTheSameKeys(): void
     {
         $session = new RecordingSessionAdapter();

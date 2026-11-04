@@ -29,6 +29,4 @@ interface ReturnUrlPolicyInterface
      * @throws ReturnUrlRejectedException otherwise, naming the reason
      */
     public function assertAllowed(string $url): string;
-
-    public function isAllowed(string $url): bool;
 }

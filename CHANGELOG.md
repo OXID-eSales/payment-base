@@ -5,6 +5,28 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Removed (VR-17 DC-PB8) - dead-code backlog: Adapter and Checkout
+No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
+- `Adapter\Exception\PaymentAdapterException`: `isNetworkError()`, `isAuthenticationError()`, `isRetryable()`
+- `Adapter\OxidSessionAdapter`: `getSessionId()`, `setBasket()`, `setUser()`
+- `Adapter\PaymentHandlerInterface`: `confirmPayment()`
+- `Adapter\SessionAdapterInterface`: `getSessionId()`, `setBasket()`, `setUser()`
+- `Adapter\ShopAdapterInterface`: `getShopCurrency()`, `isTestMode()`, `getAdapterName()`
+- `Adapter\WebhookEvent`: `getEventId()`, `getEventType()`, `getProviderEventType()`, `getData()`, `getCreatedAt()`, `isVerified()`, `getRawPayload()`
+- `Checkout\Context\CheckoutContextInterface`: `getScopeId()`
+- `Checkout\Context\HeadlessCheckoutScope`: `leave()`
+- `Checkout\Context\HeadlessCheckoutScopeInterface`: `leave()`
+- `Checkout\Context\ScopedCheckoutContext`: `getScopeId()`
+- `Checkout\Context\SessionCheckoutContext`: `getScopeId()`
+- `Checkout\Headless\PaymentHandlerRegistry`: `forProvider()`, `isContractFirst()`
+- `Checkout\Headless\PaymentHandlerRegistryInterface`: `forProvider()`, `isContractFirst()`
+- `Checkout\OpenCheckoutAttemptRegistry`: `takePrevious()`
+- `Checkout\OpenCheckoutAttemptRegistryInterface`: `takePrevious()`
+- `Checkout\Return\ContractReturnTokenService`: `extractContractId()`
+- `Checkout\Return\ContractReturnTokenServiceInterface`: `extractContractId()`
+- `Checkout\ReturnUrl\AllowListReturnUrlPolicy`: `isAllowed()`
+- `Checkout\ReturnUrl\ReturnUrlPolicyInterface`: `isAllowed()`
+
 ### Removed (VR-22 A4) - the fat provider adapter (BREAKING for Stripe: drop the extends)
 - `Adapter\PaymentAdapterInterface`, `Service\Factory\PaymentAdapterFactoryInterface` and `PaymentAdapterFactory`:
   Stripe was the only consumer (its `StripeAdapterInterface`, `StripeAdapterFactoryInterface` and `StripeAdapterFactory`

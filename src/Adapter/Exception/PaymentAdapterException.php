@@ -63,35 +63,4 @@ class PaymentAdapterException extends \RuntimeException
     {
         return $this->context;
     }
-
-    /**
-     * Check if this is a network/timeout error.
-     *
-     * @return bool True if network-related error
-     */
-    public function isNetworkError(): bool
-    {
-        return in_array($this->errorCode, ['timeout', 'connection_error', 'network_error'], true);
-    }
-
-    /**
-     * Check if this is an authentication error.
-     *
-     * @return bool True if authentication failed
-     */
-    public function isAuthenticationError(): bool
-    {
-        return in_array($this->errorCode, ['invalid_api_key', 'authentication_required', 'unauthorized'], true);
-    }
-
-    /**
-     * Check if this error is retryable.
-     *
-     * @return bool True if operation can be retried
-     */
-    public function isRetryable(): bool
-    {
-        return $this->isNetworkError()
-            || in_array($this->errorCode, ['rate_limit_error', 'idempotency_error'], true);
-    }
 }

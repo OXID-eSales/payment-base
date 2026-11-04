@@ -24,8 +24,6 @@ interface HeadlessCheckoutScopeInterface
      */
     public function enter(string $scopeId, ?string $userId = null, ?string $basketId = null): void;
 
-    public function leave(): void;
-
     public function isActive(): bool;
 
     public function getScopeId(): ?string;

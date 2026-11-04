@@ -25,13 +25,4 @@ use OxidEsales\PaymentBase\Adapter\PaymentHandlerInterface;
 interface PaymentHandlerRegistryInterface
 {
     public function forPaymentMethod(string $paymentMethodId): ?PaymentHandlerInterface;
-
-    public function forProvider(string $providerName): ?PaymentHandlerInterface;
-
-    /**
-     * Whether this payment id belongs to a contract-first provider, i.e. is
-     * paid through the provider's checkout mutations and never through core
-     * `placeOrder`.
-     */
-    public function isContractFirst(string $paymentMethodId): bool;
 }

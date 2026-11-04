@@ -34,19 +34,6 @@ class OpenCheckoutAttemptRegistry implements OpenCheckoutAttemptRegistryInterfac
         $this->context->set(self::SESSION_KEY, $contractId);
     }
 
-    /**
-     * Returns the attempt this session had open and forgets it, so the same
-     * contract is never cleaned twice - the second pass would find it already
-     * cancelled and report a failure that never happened.
-     */
-    public function takePrevious(): ?string
-    {
-        $stored = $this->peek();
-        $this->context->remove(self::SESSION_KEY);
-
-        return $stored;
-    }
-
     public function peek(): ?string
     {
         $stored = $this->context->get(self::SESSION_KEY);

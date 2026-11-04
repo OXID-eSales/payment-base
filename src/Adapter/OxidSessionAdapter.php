@@ -21,11 +21,6 @@ use OxidEsales\Eshop\Core\Registry;
  */
 class OxidSessionAdapter implements SessionAdapterInterface
 {
-    public function getSessionId(): string
-    {
-        return (string) Registry::getSession()->getId();
-    }
-
     /** @phpstan-ignore return.unusedType (interface allows null, OXID always returns a basket) */
     public function getBasket(): ?object
     {
@@ -40,15 +35,5 @@ class OxidSessionAdapter implements SessionAdapterInterface
     public function getVariable(string $name): mixed
     {
         return Registry::getSession()->getVariable($name);
-    }
-
-    public function setBasket(object $basket): void
-    {
-        Registry::getSession()->setBasket($basket);
-    }
-
-    public function setUser(object $user): void
-    {
-        Registry::getSession()->setVariable('oePaymentUser', $user);
     }
 }

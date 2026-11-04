@@ -39,14 +39,6 @@ interface PaymentHandlerInterface
     public function processPayment(PaymentContextInterface $context): PaymentHandlerResult;
 
     /**
-     * Confirm payment with provider
-     *
-     * @param string $transactionId Provider transaction ID
-     * @return PaymentHandlerResult Result with confirmation status
-     */
-    public function confirmPayment(string $transactionId): PaymentHandlerResult;
-
-    /**
      * Get required frontend configuration (e.g., publishable keys)
      *
      * @return array<string, mixed> Configuration array

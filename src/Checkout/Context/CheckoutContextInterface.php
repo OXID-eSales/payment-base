@@ -28,12 +28,6 @@ namespace OxidEsales\PaymentBase\Checkout\Context;
  */
 interface CheckoutContextInterface
 {
-    /**
-     * What this context is keyed by: the shop session id, or the headless
-     * scope id (a contract id, or a basket id before a contract exists).
-     */
-    public function getScopeId(): string;
-
     public function get(string $key, mixed $default = null): mixed;
 
     public function set(string $key, mixed $value): void;

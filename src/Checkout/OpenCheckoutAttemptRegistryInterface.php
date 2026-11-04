@@ -14,11 +14,6 @@ interface OpenCheckoutAttemptRegistryInterface
     public function remember(string $contractId): void;
 
     /**
-     * Returns the attempt this session had open, and forgets it.
-     */
-    public function takePrevious(): ?string;
-
-    /**
      * Returns the attempt this session has open WITHOUT forgetting it - for a
      * caller that only asks whether one is in flight (MOL-18).
      */

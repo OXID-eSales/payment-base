@@ -22,11 +22,4 @@ interface ContractReturnTokenServiceInterface
      * are checked before expiry, so a forged token is never told it merely "expired".
      */
     public function verify(string $token, string $contractId, string $contractUserId): ReturnTokenVerdict;
-
-    /**
-     * The contract id a token with an authentic signature names (expired or not - expiry is
-     * {@see verify()}'s question), or null. For callers that must find the contract before they can
-     * ask the guard about it.
-     */
-    public function extractContractId(string $token): ?string;
 }

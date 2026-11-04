@@ -62,28 +62,28 @@ final class AllowListReturnUrlPolicyTest extends TestCase
         $url = 'https://shop.example.com/index.php?cl=order&fnc=checkoutSuccess&contract_id=c1';
 
         self::assertSame($url, $this->policy()->assertAllowed($url));
-        self::assertTrue($this->policy()->isAllowed('HTTPS://SHOP.EXAMPLE.COM/thank-you'));
+        self::assertTrue(self::allows($this->policy(), 'HTTPS://SHOP.EXAMPLE.COM/thank-you'));
     }
 
     public function testAConfiguredStorefrontOriginIsAllowed(): void
     {
         $policy = $this->policy(['https://app.example.com', 'https://m.example.com:8443/some/path']);
 
-        self::assertTrue($policy->isAllowed('https://app.example.com/checkout/return?contract_id=c1'));
-        self::assertTrue($policy->isAllowed('https://m.example.com:8443/return'));
+        self::assertTrue(self::allows($policy, 'https://app.example.com/checkout/return?contract_id=c1'));
+        self::assertTrue(self::allows($policy, 'https://m.example.com:8443/return'));
     }
 
     public function testAnEntryWithoutASchemeMeansHttps(): void
     {
         $policy = $this->policy(['app.example.com']);
 
-        self::assertTrue($policy->isAllowed('https://app.example.com/return'));
-        self::assertFalse($policy->isAllowed('http://app.example.com/return'));
+        self::assertTrue(self::allows($policy, 'https://app.example.com/return'));
+        self::assertFalse(self::allows($policy, 'http://app.example.com/return'));
     }
 
     public function testWithNoEntriesOnlyTheShopIsAllowed(): void
     {
-        self::assertFalse($this->policy()->isAllowed('https://app.example.com/return'));
+        self::assertFalse(self::allows($this->policy(), 'https://app.example.com/return'));
     }
 
     /**
@@ -110,7 +110,7 @@ final class AllowListReturnUrlPolicyTest extends TestCase
     {
         $policy = $this->policy(['https://app.example.com']);
 
-        self::assertFalse($policy->isAllowed($url));
+        self::assertFalse(self::allows($policy, $url));
         try {
             $policy->assertAllowed($url);
             self::fail("$url must be rejected");
@@ -124,8 +124,19 @@ final class AllowListReturnUrlPolicyTest extends TestCase
     {
         $policy = $this->policy(['http://dev.example.com:80']);
 
-        self::assertTrue($policy->isAllowed('https://shop.example.com:443/return'));
-        self::assertTrue($policy->isAllowed('http://dev.example.com/return'));
+        self::assertTrue(self::allows($policy, 'https://shop.example.com:443/return'));
+        self::assertTrue(self::allows($policy, 'http://dev.example.com/return'));
+    }
+
+    private static function allows(AllowListReturnUrlPolicy $policy, string $url): bool
+    {
+        try {
+            $policy->assertAllowed($url);
+
+            return true;
+        } catch (ReturnUrlRejectedException) {
+            return false;
+        }
     }
 
     /**

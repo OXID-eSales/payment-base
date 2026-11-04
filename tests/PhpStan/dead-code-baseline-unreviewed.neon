@@ -11,31 +11,6 @@ parameters:
             count: 1
             path: ../../src/Adapter/Exception/PaymentAdapterException.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Exception\\PaymentAdapterException::isAuthenticationError$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/Exception/PaymentAdapterException.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\Exception\\PaymentAdapterException::isRetryable$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/Exception/PaymentAdapterException.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\OxidSessionAdapter::getSessionId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/OxidSessionAdapter.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\OxidSessionAdapter::setBasket$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/OxidSessionAdapter.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\OxidSessionAdapter::setUser$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/OxidSessionAdapter.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentAdapterInterface::authorizePayment$#'
             identifier: shipmonk.deadMethod
             count: 1
@@ -110,11 +85,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Adapter/PaymentContextInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\PaymentHandlerInterface::confirmPayment$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/PaymentHandlerInterface.php
         -
             message: '#^Property\ OxidEsales\\PaymentBase\\Adapter\\Request\\AuthorizePaymentRequest::\$billingAddress\ is\ never\ read$#'
             identifier: shipmonk.deadProperty.neverRead
@@ -361,75 +331,10 @@ parameters:
             count: 1
             path: ../../src/Adapter/Response/ThreeDSecureResponse.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\SessionAdapterInterface::getSessionId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/SessionAdapterInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\SessionAdapterInterface::setBasket$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/SessionAdapterInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\SessionAdapterInterface::setUser$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/SessionAdapterInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getAdapterName$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/ShopAdapterInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::getShopCurrency$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/ShopAdapterInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopAdapterInterface::isTestMode$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/ShopAdapterInterface.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopCurrency::nameOrEmpty$#'
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Adapter/ShopCurrency.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getCreatedAt$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getData$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getEventId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getEventType$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getProviderEventType$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::getRawPayload$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\WebhookEvent::isVerified$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Adapter/WebhookEvent.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Admin\\Help\\ContractStateHelpInterface::SHARED_IDENTS$#'
             identifier: shipmonk.deadConstant
@@ -466,70 +371,10 @@ parameters:
             count: 1
             path: ../../src/AtRisk/PaymentAtRiskQueryInterface.php
         -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Context\\CheckoutContextInterface::getScopeId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Context/CheckoutContextInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Context\\HeadlessCheckoutScope::leave$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Context/HeadlessCheckoutScope.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Context\\HeadlessCheckoutScopeInterface::leave$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Context/HeadlessCheckoutScopeInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Context\\ScopedCheckoutContext::getScopeId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Context/ScopedCheckoutContext.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\PaymentHandlerRegistry::forProvider$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Headless/PaymentHandlerRegistry.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\PaymentHandlerRegistry::isContractFirst$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Headless/PaymentHandlerRegistry.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\PaymentHandlerRegistryInterface::forProvider$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Headless/PaymentHandlerRegistryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Headless\\PaymentHandlerRegistryInterface::isContractFirst$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Headless/PaymentHandlerRegistryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\OpenCheckoutAttemptRegistry::takePrevious$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/OpenCheckoutAttemptRegistry.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\OpenCheckoutAttemptRegistryInterface::takePrevious$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/OpenCheckoutAttemptRegistryInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Return\\ContractReturnTokenService::extractContractId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Return/ContractReturnTokenService.php
-        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Return\\ContractReturnTokenService::generateToken$#'
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Checkout/Return/ContractReturnTokenService.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Return\\ContractReturnTokenServiceInterface::extractContractId$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/Return/ContractReturnTokenServiceInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\Return\\ContractReturnTokenServiceInterface::generateToken$#'
             identifier: shipmonk.deadMethod
@@ -555,16 +400,6 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/Checkout/Return/ReturnAccessGuardInterface.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\ReturnUrl\\AllowListReturnUrlPolicy::isAllowed$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/ReturnUrl/AllowListReturnUrlPolicy.php
-        -
-            message: '#^Unused\ OxidEsales\\PaymentBase\\Checkout\\ReturnUrl\\ReturnUrlPolicyInterface::isAllowed$#'
-            identifier: shipmonk.deadMethod
-            count: 1
-            path: ../../src/Checkout/ReturnUrl/ReturnUrlPolicyInterface.php
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Contract\\BasketSnapshot::getCapturedAt$#'
             identifier: shipmonk.deadMethod

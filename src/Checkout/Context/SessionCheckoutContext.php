@@ -23,11 +23,6 @@ final class SessionCheckoutContext implements CheckoutContextInterface
     {
     }
 
-    public function getScopeId(): string
-    {
-        return $this->session->getSessionId();
-    }
-
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->session->getVariable($key) ?? $default;

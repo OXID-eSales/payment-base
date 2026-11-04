@@ -100,7 +100,6 @@ final class ContractReturnTokenServiceTest extends TestCase
         $service = $this->service(new InMemoryReturnTokenSecretStore('secret-one'));
 
         self::assertSame(ReturnTokenVerdict::Invalid, $service->verify($token, 'contract-1', 'user-1'));
-        self::assertNull($service->extractContractId($token));
     }
 
     /** @return iterable<string, array{string}> */
@@ -147,21 +146,6 @@ final class ContractReturnTokenServiceTest extends TestCase
         $store->remove('key0');
 
         self::assertSame(ReturnTokenVerdict::Invalid, $service->verify($oldToken, 'contract-1', 'user-1'));
-    }
-
-    public function testTheContractIdOfAnAuthenticTokenCanBeRead(): void
-    {
-        $service = $this->service(new InMemoryReturnTokenSecretStore('secret-one'));
-
-        self::assertSame('contract-1', $service->extractContractId($service->generateToken('contract-1', 'user-1')));
-    }
-
-    public function testTheContractIdOfAForgedTokenIsNotReturned(): void
-    {
-        $token = $this->service(new InMemoryReturnTokenSecretStore('secret-one'))->generateToken('contract-1', 'user-1');
-        $other = $this->service(new InMemoryReturnTokenSecretStore('secret-two'));
-
-        self::assertNull($other->extractContractId($token));
     }
 
     public function testATokenWithoutAShopperIsValidForAnyContractOwner(): void

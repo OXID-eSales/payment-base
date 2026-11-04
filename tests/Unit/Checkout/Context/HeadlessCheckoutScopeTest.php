@@ -53,17 +53,6 @@ final class HeadlessCheckoutScopeTest extends TestCase
         self::assertSame('contract-1', $scope->getScopeId());
     }
 
-    public function testLeavingDeactivatesIt(): void
-    {
-        $scope = new HeadlessCheckoutScope();
-        $scope->enter('contract-1');
-
-        $scope->leave();
-
-        self::assertFalse($scope->isActive());
-        self::assertNull($scope->getScopeId());
-    }
-
     public function testAnEmptyScopeIdIsRefused(): void
     {
         $this->expectException(\InvalidArgumentException::class);

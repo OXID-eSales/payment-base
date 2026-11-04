@@ -24,11 +24,6 @@ final class ScopedCheckoutContext implements CheckoutContextInterface
     ) {
     }
 
-    public function getScopeId(): string
-    {
-        return $this->active()->getScopeId();
-    }
-
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->active()->get($key, $default);

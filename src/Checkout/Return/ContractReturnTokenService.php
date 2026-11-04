@@ -53,11 +53,6 @@ class ContractReturnTokenService implements ContractReturnTokenServiceInterface
         return $claims['expiresAt'] < $this->now() ? ReturnTokenVerdict::Expired : ReturnTokenVerdict::Valid;
     }
 
-    public function extractContractId(string $token): ?string
-    {
-        return $this->authenticClaims($token)['contractId'] ?? null;
-    }
-
     /**
      * Seam for tests: the clock.
      */

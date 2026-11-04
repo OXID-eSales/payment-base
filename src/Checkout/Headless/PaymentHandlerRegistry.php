@@ -47,20 +47,4 @@ final class PaymentHandlerRegistry implements PaymentHandlerRegistryInterface
 
         return null;
     }
-
-    public function forProvider(string $providerName): ?PaymentHandlerInterface
-    {
-        foreach ($this->handlers as $handler) {
-            if (strcasecmp($handler->getId(), $providerName) === 0) {
-                return $handler;
-            }
-        }
-
-        return null;
-    }
-
-    public function isContractFirst(string $paymentMethodId): bool
-    {
-        return $this->forPaymentMethod($paymentMethodId) !== null;
-    }
 }

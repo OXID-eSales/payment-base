@@ -79,32 +79,14 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
 
         $registry->remember('contract-1');
 
-        $this->assertSame('contract-1', $registry->takePrevious());
-    }
-
-    public function testTakingThePreviousAttemptClearsIt(): void
-    {
-        // Cleanup must not be attempted twice against the same contract - the
-        // second pass would find it already cancelled and log a false alarm.
-        $session = $this->sessionHolding('contract-1');
-        $registry = new OpenCheckoutAttemptRegistry($session);
-
-        $this->assertSame('contract-1', $registry->takePrevious());
-        $this->assertNull($registry->takePrevious());
-    }
-
-    public function testReportsNoPreviousAttemptForAFreshSession(): void
-    {
-        $registry = new OpenCheckoutAttemptRegistry($this->sessionHolding(null));
-
-        $this->assertNull($registry->takePrevious());
+        $this->assertSame('contract-1', $registry->peek());
     }
 
     public function testIgnoresAValueThatIsNotAContractId(): void
     {
         $registry = new OpenCheckoutAttemptRegistry($this->sessionHolding(['not', 'a', 'string']));
 
-        $this->assertNull($registry->takePrevious());
+        $this->assertNull($registry->peek());
     }
 
     public function testPeekingAtTheOpenAttemptKeepsIt(): void
@@ -116,7 +98,6 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
 
         $this->assertSame('contract-1', $registry->peek());
         $this->assertSame('contract-1', $registry->peek());
-        $this->assertSame('contract-1', $registry->takePrevious());
     }
 
     public function testPeekReportsNoOpenAttemptForAFreshSession(): void
@@ -137,7 +118,7 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
     }
 
     /**
-     * Sprint 15 / S2: remember → peek → take → forgotten, identically on the
+     * Sprint 15 / S2: remember → peek, identically on the
      * session-backed and on the persisted context. The registry does not know
      * which one it got.
      */
@@ -150,9 +131,5 @@ final class OpenCheckoutAttemptRegistryTest extends TestCase
 
         $registry->remember('contract-1');
         self::assertSame('contract-1', $registry->peek());
-
-        self::assertSame('contract-1', $registry->takePrevious());
-        self::assertNull($registry->peek(), 'taken once, forgotten');
-        self::assertNull($registry->takePrevious());
     }
 }

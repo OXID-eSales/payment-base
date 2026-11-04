@@ -61,17 +61,6 @@ final class AllowListReturnUrlPolicy implements ReturnUrlPolicyInterface
         return $url;
     }
 
-    public function isAllowed(string $url): bool
-    {
-        try {
-            $this->assertAllowed($url);
-
-            return true;
-        } catch (ReturnUrlRejectedException) {
-            return false;
-        }
-    }
-
     /**
      * @return list<string>
      */
