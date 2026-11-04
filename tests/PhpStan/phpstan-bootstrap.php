@@ -141,6 +141,8 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\User::class, false)) {
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
         . '  public function getEncodedDeliveryAddress(): string { return ""; } '
+        . '  public function getSelectedAddress(): mixed { return null; } '
+        . '  public function getFieldData(string $name): mixed { return null; } '
         . '  public function save(): mixed { return true; } '
         . '}'
     );
@@ -191,7 +193,12 @@ if (!class_exists(\OxidEsales\Eshop\Core\Registry::class, false)) {
         . 'class StubUtilsView { '
         . '  public function addErrorToDisplay(string $message): void { } '
         . '} '
+        . 'class StubLang { '
+        . '  /** @return array<int, string> */ '
+        . '  public function getLanguageIds(): array { return []; } '
+        . '} '
         . 'class Registry { '
+        . '  public static function getLang(): StubLang { return new StubLang(); } '
         . '  public static function getUtilsView(): StubUtilsView { return new StubUtilsView(); } '
         . '  public static function getLogger(): \\Psr\\Log\\LoggerInterface { return new \\Psr\\Log\\NullLogger(); } '
         . '  public static function getSession(): StubSession { return new StubSession(); } '
@@ -226,7 +233,25 @@ if (!class_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Configura
         . 'class ModuleConfiguration { '
         . '  public function getModuleSource(): string { return ""; } '
         . '  public function getId(): string { return ""; } '
+        . '  public function getModuleSetting(string $settingName): \\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setting\\Setting { throw new \\RuntimeException(); } '
+        . '  public function addModuleSetting(\\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setting\\Setting $setting): static { return $this; } '
         . '}'
+    );
+}
+if (!class_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Setting\Setting::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setting; '
+        . 'class Setting { '
+        . '  public function getValue(): mixed { return null; } '
+        . '  public function setValue(mixed $value): static { return $this; } '
+        . '  public function setName(string $name): static { return $this; } '
+        . '}'
+    );
+}
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Database\QueryBuilderFactoryInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Database; '
+        . 'interface QueryBuilderFactoryInterface { public function create(): \\Doctrine\\DBAL\\Query\\QueryBuilder; }'
     );
 }
 if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface::class, false)) {
@@ -236,6 +261,12 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Transition\Utility\Bas
         . '  public function getShopRootPath(): string; '
         . '  public function getCurrentShopId(): int; '
         . '}'
+    );
+}
+if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Transition\Utility\ContextInterface::class, false)) {
+    eval(
+        'namespace OxidEsales\\EshopCommunity\\Internal\\Transition\\Utility; '
+        . 'interface ContextInterface extends BasicContextInterface { }'
     );
 }
 
@@ -360,12 +391,26 @@ if (!class_exists(\OxidEsales\PaymentBase\Eshop\Application\Controller\OrderCont
         . '}'
     );
 }
+if (!class_exists(\OxidEsales\Eshop\Core\Model\BaseModel::class, false)) {
+    eval(
+        'namespace OxidEsales\\Eshop\\Core\\Model; '
+        . 'class BaseModel { '
+        . '  public function init(string $table): void {} '
+        . '  public function assign(array $values): void {} '
+        . '  public function save(): mixed { return true; } '
+        . '}'
+    );
+}
 if (!class_exists(\OxidEsales\Eshop\Application\Model\Payment::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . 'class Payment { '
         . '  public function load(string $oxid): bool { return false; } '
         . '  public function getId(): ?string { return null; } '
+        . '  public function setId(string $oxid): void {} '
+        . '  public function assign(array $values): void {} '
+        . '  public function save(): mixed { return true; } '
+        . '  public function loadInLang(int $language, string $oxid): bool { return false; } '
         . '  public function getDynValues(): ?array { return []; } '
         . '  public function isValidPayment($dynValue, $shopId, $user, $basketPrice, $shipSetId): bool { return false; } '
         . '}'
@@ -666,7 +711,8 @@ if (!class_exists(\OxidEsales\Eshop\Application\Model\Address::class, false)) {
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Model; '
         . '#[\\AllowDynamicProperties] '
-        . 'class Address { public function save(): mixed { return true; } public function getId(): ?string { return null; } }'
+        . 'class Address { public function save(): mixed { return true; } public function getId(): ?string { return null; } '
+        . '  public function getFieldData(string $name): mixed { return null; } }'
     );
 }
 if (!class_exists(\OxidEsales\Eshop\Core\DatabaseProvider::class, false)) {

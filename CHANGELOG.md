@@ -12,6 +12,12 @@ All notable changes to this module are documented here. Format follows
   fields include `email` (column `oxusername`); a module without a rule for a field accepts it.
 - `Adapter\ContractLinkedOrderUpdaterInterface` / `OxidContractLinkedOrderUpdater`: cancel/fail transition ends the linked
   order via `LinkedOrderEndingInterface` (replace the Stripe and Mollie copies).
+- `Settings\AbstractModuleConfigurationService` (+ `ModuleConfigurationUnreadableException`): the DAO read, `get()`,
+  `readString()` and the fail-closed `assertReadable()` the three provider configuration services copied. Unset
+  setting = '' + warning; unreadable configuration = error log and `assertReadable()` throws, so a provider's mode and
+  credential getters call it first. Not a container service: providers extend it.
+- `Install\PaymentMethodInstaller::ensurePaymentMethods(array $definitionsByPaymentId)`: the idempotent `oxpayments` +
+  delivery-set assignment the Mollie and PayPal copies shared (not a container service: built in the activation event).
 
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
