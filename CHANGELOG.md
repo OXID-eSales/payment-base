@@ -23,6 +23,31 @@ All notable changes to this module are documented here. Format follows
 ### Changed (VR-25 D0)
 - `Adapter\ShopCurrency::nameOf()` / `nameOrEmpty()` accept `object|false|null`: core's
   `Config::getActShopCurrencyObject()` returns `false` when no currency is configured, which was a `TypeError`.
+### Added (VR-25 D1) - shared pieces every provider duplicated
+- `Validation\User\UserDataValidatorInterface` / `UserDataValidator`, `FieldValidationFailure`,
+  `UserFieldReaderInterface`, `OxidUserFieldReader` (replace the Stripe and Mollie copies). The provider's module id is
+  an argument of `validateForUser()` / `validateFieldMap()`, so one stateless service serves all providers. Logical
+  fields include `email` (column `oxusername`); a module without a rule for a field accepts it.
+- `Adapter\ContractLinkedOrderUpdaterInterface` / `OxidContractLinkedOrderUpdater`: cancel/fail transition ends the linked
+  order via `LinkedOrderEndingInterface` (replace the Stripe and Mollie copies).
+- `Settings\AbstractModuleConfigurationService` (+ `ModuleConfigurationUnreadableException`): the DAO read, `get()`,
+  `readString()` and the fail-closed `assertReadable()` the three provider configuration services copied. Unset
+  setting = '' + warning; unreadable configuration = error log and `assertReadable()` throws, so a provider's mode and
+  credential getters call it first. Not a container service: providers extend it.
+- `Install\PaymentMethodInstaller::ensurePaymentMethods(array $definitionsByPaymentId)`: the idempotent `oxpayments` +
+  delivery-set assignment the Mollie and PayPal copies shared (not a container service: built in the activation event).
+- `oe:payments:reconcile-oxpaid [orderId] [--dry-run] [--max-age=7] [--provider=]` with `Reconciliation\OxpaidReconciliationService`,
+  `ProviderPaymentStatusInterface` (port, tag `oe.payment.paid_status_provider`), `ProviderPaymentStatus`,
+  `ReconciliationResult` (replace the Stripe and Mollie commands and services). OXPAID is only ever stamped with the
+  provider's own payment time; a paid payment without a time is skipped for manual review. The batch finds orders through
+  their contract (provider column), not by a transaction id prefix; the contract is fulfilled when the order was healed.
+  Audit lines go to the PSR logger (the Stripe `stripe_reconciliation.log` file is gone).
+- `Contract\ContractTerminationServiceInterface` / `ContractTerminationService` (+ `TerminationOutcome`): cancel, fail and
+  expire of a contract (terminal guard, transition, save, linked order mirrored) that the Stripe and Mollie webhook
+  handlers copied. An expiry mirrors a cancellation on the order (Stripe's STRP-168 behaviour; Mollie did not). An expiry of
+  a committed contract returns `TerminationOutcome::Committed` for the provider to decide. Audit rows stay with the provider.
+- `services.yaml` now defines `Service\OrderPaymentStateServiceInterface` and `Service\ContractFulfillmentServiceInterface`
+  (identical copies sat in every provider's `services.yaml`).
 
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new

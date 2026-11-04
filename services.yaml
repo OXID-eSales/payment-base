@@ -139,6 +139,13 @@ services:
     class: OxidEsales\PaymentBase\Adapter\OxidLinkedOrderEnding
     public: true
 
+  # VR-25 D1: contract cancel/fail transitions end the linked order the shared way.
+  OxidEsales\PaymentBase\Adapter\ContractLinkedOrderUpdaterInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidContractLinkedOrderUpdater
+    arguments:
+      $ending: '@OxidEsales\PaymentBase\Adapter\LinkedOrderEndingInterface'
+    public: true
+
   # OPC-175 / S4 (G9): core restock of an ended order.
   OxidEsales\PaymentBase\Adapter\OrderRestockInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidOrderRestock
@@ -695,6 +702,53 @@ services:
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
 
+  # VR-25 D1: the order-state and fulfilment services every provider used to define identically
+  # (the shared reconciliation needs them from payment-base alone).
+  OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface:
+    class: OxidEsales\PaymentBase\Service\OrderPaymentStateService
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $logger: '@Psr\Log\LoggerInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface:
+    class: OxidEsales\PaymentBase\Service\ContractFulfillmentService
+    arguments:
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $eventDispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $logger: '@Psr\Log\LoggerInterface'
+    public: true
+
+  # VR-25 D1: one reconciliation for every provider; providers tag a status port
+  # (OxidEsales\PaymentBase\Reconciliation\ProviderPaymentStatusInterface) `oe.payment.paid_status_provider`.
+  OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationServiceInterface:
+    class: OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationService
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $contractFulfillmentService: '@OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface'
+      $orderPaymentStateService: '@OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface'
+      $statusPorts: !tagged_iterator oe.payment.paid_status_provider
+      $logger: '@Psr\Log\LoggerInterface'
+    public: true
+
+  # VR-25 D1: cancel/fail/expire of a contract, the linked order follows.
+  OxidEsales\PaymentBase\Contract\ContractTerminationServiceInterface:
+    class: OxidEsales\PaymentBase\Contract\ContractTerminationService
+    arguments:
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $orderUpdater: '@OxidEsales\PaymentBase\Adapter\ContractLinkedOrderUpdaterInterface'
+    public: true
+
+  # Console command: oe:payments:reconcile-oxpaid
+  OxidEsales\PaymentBase\Command\ReconcileOxpaidCommand:
+    arguments:
+      $reconciliationService: '@OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationServiceInterface'
+    tags:
+      - { name: 'console.command', command: 'oe:payments:reconcile-oxpaid' }
+    public: true
+
   # Console command: oe:payments:not_finished:cleanup
   OxidEsales\PaymentBase\Command\CleanupNotFinishedOrdersCommand:
     arguments:
@@ -750,6 +804,13 @@ services:
   OxidEsales\PaymentBase\Validation\ValidationBaseFactory:
     arguments:
       $loader: '@OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface'
+    public: true
+
+  # VR-25 D1: one stateless validator for every provider (the module id is a call argument).
+  OxidEsales\PaymentBase\Validation\User\UserDataValidatorInterface:
+    class: OxidEsales\PaymentBase\Validation\User\UserDataValidator
+    arguments:
+      $factory: '@OxidEsales\PaymentBase\Validation\ValidationBaseFactory'
     public: true
 
   OxidEsales\PaymentBase\EventSystem\Handler\RefundIntentHandler:
