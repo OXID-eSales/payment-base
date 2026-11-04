@@ -1,6 +1,6 @@
 # Sprint 26 — VR-AUDIT: the six code defects still open after the VR waves
 
-**Date:** 2026-11-04 (planned) · **Epic:** VR · **Status:** PROPOSED — waiting for the owner's go
+**Date:** 2026-11-04 (planned) · **Epic:** VR · **Status:** APPROVED 2026-11-04 (owner: go; D2 refuse, D3 migrate once, D4 "ignore" ⇒ defect #6 dropped, D1/D5 as proposed)
 **Repos:** payment-base, mollie-payment, stripe (stripe-wallet), paypal (paypal-payment)
 **Base:** `b-7.4.x` — payment-base 1a081dc, stripe c7f7bb7, mollie baaed48, paypal c5fbc27 (all CI-green)
 **Requirements:** [`../../20261030/sprints/_engeneering_requirements.md`](../../20261030/sprints/_engeneering_requirements.md)
@@ -44,7 +44,13 @@ the end, not part of this sprint).
 | S1 | stripe | Legacy fallbacks out (#4) | `PaymentIntentSucceededWebhookHandlerTest::unknownProviderOrderIdIsSkippedNotMatchedByMetadata`; `…authorisedOnlyBooksNothing`; `ModuleConfigurationServiceTest::legacySecretIsNotRead`; migration test | delete paths; one-time secret migration | Stripe test mode: webhook with the stored secret ⇒ 200; with only the old single secret set before the migration ⇒ migrated, still 200 |
 | P1 | stripe, mollie, paypal | Adopt `TrustedRequestScheme` (#6) | per provider: `WebhookController…Test::forwardedProtoFromUntrustedClientIsHttp` | delete own scheme code; PayPal: private ranges out of `services.yaml` | pay1: webhook deliveries still 200 behind Cloudflare once the proxy setting lists Cloudflare (see D4) |
 
-## Decisions for the owner (please answer before I start)
+## Decisions (answered 2026-11-04)
+
+Owner answers: **D1** as proposed (`amount`), **D2** refuse 0.00, **D3** migrate once, **D4** "ignore" — defect #6
+(`X-Forwarded-Proto` / PayPal private ranges) is **dropped from this sprint**: stories A1 and P1 are not done, **D5** add
+`chargeback` to `AtRiskReason`.
+
+| # | Question | My proposal |
 
 | # | Question | My proposal |
 |---|---|---|
