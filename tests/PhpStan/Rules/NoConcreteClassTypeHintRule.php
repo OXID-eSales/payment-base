@@ -57,6 +57,7 @@ final class NoConcreteClassTypeHintRule implements Rule
         '#\\\\Order\\\\#',    // Order entities
         '#\\\\Admin\\\\Panel\\\\#', // Sprint I admin-panel DTOs (context + renderable)
         '#\\\\Admin\\\\PaymentAdminActionDispatcher$#', // Sprint I admin action dispatcher
+        '#\\\\Reconciliation\\\\(ReconciliationResult|ProviderPaymentStatus)$#', // VR-25 D1: final result VOs
         '#\\\\Validation\\\\RuleSet$#',                // Sprint 119: RuleSet is a final VO — no interface needed
         '#\\\\Validation\\\\Guard\\\\ValidationRequestContext$#', // Sprint 119: immutable request-context VO — single concrete type
         '#\\\\Eshop\\\\Core\\\\Price$#',                          // Sprint 125: OXID core Price is a concrete value-type, no interface exists

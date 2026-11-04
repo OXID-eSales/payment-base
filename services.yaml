@@ -697,6 +697,45 @@ services:
       $logger:             '@?Psr\Log\LoggerInterface'
     public: true
 
+  # VR-25 D1: the order-state and fulfilment services every provider used to define identically
+  # (the shared reconciliation needs them from payment-base alone).
+  OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface:
+    class: OxidEsales\PaymentBase\Service\OrderPaymentStateService
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $logger: '@Psr\Log\LoggerInterface'
+      $throwableSummary: '@OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface'
+    public: true
+
+  OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface:
+    class: OxidEsales\PaymentBase\Service\ContractFulfillmentService
+    arguments:
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $eventDispatcher: '@OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface'
+      $logger: '@Psr\Log\LoggerInterface'
+    public: true
+
+  # VR-25 D1: one reconciliation for every provider; providers tag a status port
+  # (OxidEsales\PaymentBase\Reconciliation\ProviderPaymentStatusInterface) `oe.payment.paid_status_provider`.
+  OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationServiceInterface:
+    class: OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationService
+    arguments:
+      $connection: '@doctrine.dbal.connection'
+      $contractRepository: '@OxidEsales\PaymentBase\Repository\ContractRepositoryInterface'
+      $contractFulfillmentService: '@OxidEsales\PaymentBase\Service\ContractFulfillmentServiceInterface'
+      $orderPaymentStateService: '@OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface'
+      $statusPorts: !tagged_iterator oe.payment.paid_status_provider
+      $logger: '@Psr\Log\LoggerInterface'
+    public: true
+
+  # Console command: oe:payments:reconcile-oxpaid
+  OxidEsales\PaymentBase\Command\ReconcileOxpaidCommand:
+    arguments:
+      $reconciliationService: '@OxidEsales\PaymentBase\Reconciliation\OxpaidReconciliationServiceInterface'
+    tags:
+      - { name: 'console.command', command: 'oe:payments:reconcile-oxpaid' }
+    public: true
+
   # Console command: oe:payments:not_finished:cleanup
   OxidEsales\PaymentBase\Command\CleanupNotFinishedOrdersCommand:
     arguments:

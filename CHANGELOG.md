@@ -18,6 +18,14 @@ All notable changes to this module are documented here. Format follows
   credential getters call it first. Not a container service: providers extend it.
 - `Install\PaymentMethodInstaller::ensurePaymentMethods(array $definitionsByPaymentId)`: the idempotent `oxpayments` +
   delivery-set assignment the Mollie and PayPal copies shared (not a container service: built in the activation event).
+- `oe:payments:reconcile-oxpaid [orderId] [--dry-run] [--max-age=7] [--provider=]` with `Reconciliation\OxpaidReconciliationService`,
+  `ProviderPaymentStatusInterface` (port, tag `oe.payment.paid_status_provider`), `ProviderPaymentStatus`,
+  `ReconciliationResult` (replace the Stripe and Mollie commands and services). OXPAID is only ever stamped with the
+  provider's own payment time; a paid payment without a time is skipped for manual review. The batch finds orders through
+  their contract (provider column), not by a transaction id prefix; the contract is fulfilled when the order was healed.
+  Audit lines go to the PSR logger (the Stripe `stripe_reconciliation.log` file is gone).
+- `services.yaml` now defines `Service\OrderPaymentStateServiceInterface` and `Service\ContractFulfillmentServiceInterface`
+  (identical copies sat in every provider's `services.yaml`).
 
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
