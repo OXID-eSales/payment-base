@@ -216,21 +216,17 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->handler->handle($event);
     }
 
-    public function testHandlerFallsBackToUnknownWhenNoPaymentIdInContext(): void
+    /**
+     * VR-26 A2: an order never carries a made-up payment id; a context without one is a wiring error.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function withoutPaymentIdItThrows(): void
     {
-        $contract = $this->createDraftContract();
-        $context = new EventContext();
-        $event = new ContractDraftCompletedEvent($contract, $context);
+        $event = new ContractDraftCompletedEvent($this->createDraftContract(), new EventContext());
 
-        $this->shopOrderService
-            ->expects($this->once())
-            ->method('createOrder')
-            ->with($this->callback(function ($request) {
-                $this->assertInstanceOf(\OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest::class, $request);
-                $this->assertEquals('unknown_payment', $request->paymentId);
-                return true;
-            }))
-            ->willReturn($this->createOrderResponse('666'));
+        $this->shopOrderService->expects($this->never())->method('createOrder');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('payment id');
 
         $this->handler->handle($event);
     }

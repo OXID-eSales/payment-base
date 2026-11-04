@@ -6,6 +6,7 @@ namespace OxidEsales\PaymentBase\Tests\Unit\Service;
 
 use OxidEsales\PaymentBase\Adapter\ShopContextInterface;
 use OxidEsales\PaymentBase\Service\ContractService;
+use OxidEsales\PaymentBase\Service\ContractTotalsException;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
@@ -114,6 +115,29 @@ class ContractServiceTest extends TestCase
         $this->expectExceptionMessage('basket has no price');
 
         $this->service->createContract('user123', $this->createMockBasket('EUR', withPrice: false));
+    }
+
+    /**
+     * VR-26 A2 (owner decision D2): a 100 % voucher leaves nothing to charge; a provider cannot
+     * take a 0.00 payment, so no contract is made and the checkout is refused with a reason.
+     */
+    #[\PHPUnit\Framework\Attributes\Test]
+    #[\PHPUnit\Framework\Attributes\DataProvider('uncollectableTotals')]
+    public function zeroTotalIsRefused(float $gross): void
+    {
+        $this->repository->expects(self::never())->method('save');
+        $this->expectException(ContractTotalsException::class);
+        $this->expectExceptionMessage('nothing to charge');
+
+        $this->service->createContract('user123', new PricedBasket('EUR', true, $gross, 0.0, 0.0));
+    }
+
+    /**
+     * @return array<string, array{float}>
+     */
+    public static function uncollectableTotals(): array
+    {
+        return ['zero' => [0.0], 'rounds to zero' => [0.004]];
     }
 
     public function testCreateContract(): void

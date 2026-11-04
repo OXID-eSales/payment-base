@@ -8,7 +8,9 @@ use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
+use InvalidArgumentException;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractDraftCompletedEvent;
+use OxidEsales\PaymentBase\EventSystem\Event\EventContextInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractTransitionedToPendingEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
@@ -110,6 +112,20 @@ class EarlyOrderCreationHandler extends AbstractHandler
     }
 
     /**
+     * An order names the payment it is paid with. A context without it is a
+     * wiring error of the caller, never a reason to invent an id (VR-26 A2).
+     */
+    private function paymentIdOf(EventContextInterface $context): string
+    {
+        $paymentId = $context->get('paymentId');
+        if (!is_string($paymentId) || $paymentId === '') {
+            throw new InvalidArgumentException('Cannot create the order: the event context carries no payment id');
+        }
+
+        return $paymentId;
+    }
+
+    /**
      * @return array{orderId: string, orderNumber: string}
      */
     private function createOrder(PaymentContractInterface $contract, ContractDraftCompletedEvent $event): array
@@ -117,8 +133,7 @@ class EarlyOrderCreationHandler extends AbstractHandler
         $basket = $event->getBasketSnapshot();
         $context = $event->getContext();
 
-        $contextPaymentId = $context->get('paymentId');
-        $paymentId = is_string($contextPaymentId) ? $contextPaymentId : 'unknown_payment';
+        $paymentId = $this->paymentIdOf($context);
         $sessionId = (string) $context->get('sessionId', 'contract_' . $contract->getId());
         $basketId = $this->basketIdOf($event);
         if ($basketId !== null) {

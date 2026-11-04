@@ -5,6 +5,10 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed (VR-26 A2) - no made-up payment id, no 0.00 contract
+- `EventSystem\Handler\EarlyOrderCreationHandler` throws an `InvalidArgumentException` when the event context carries no payment id; it no longer creates the order with the invented id `unknown_payment`.
+- `Service\ContractService::createContract()` refuses a basket whose gross total is 0.00 (a 100 % voucher; owner decision D2) with the new `Service\ContractTotalsException::zeroTotal()`; no contract is saved. The existing "basket has no price" refusal is now `ContractTotalsException::noPrice()` (still a `RuntimeException`). The provider payment handlers already turn a throwable into their normal error result, so the checkout is refused with that reason, not a 500.
+
 ### Removed (VR-17 DC-PB8) - dead-code backlog: Repository (ContractRepository)
 No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
 - `Repository\ContractRepositoryInterface`: `findByUserId()`, `findExpired()`

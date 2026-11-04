@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Service;
 
-use RuntimeException;
 use OxidEsales\PaymentBase\Adapter\ShopContextInterface;
 use OxidEsales\PaymentBase\Adapter\ShopCurrency;
 use OxidEsales\PaymentBase\Checkout\Attempt\CheckoutAttemptAlreadyPaidException;
@@ -20,6 +19,8 @@ use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 
 class ContractService implements ContractServiceInterface
 {
+    private const MONEY_DECIMALS = 2;
+
     private ContractRepositoryInterface $contractRepository;
 
     public function __construct(
@@ -352,13 +353,19 @@ class ContractService implements ContractServiceInterface
             || !method_exists($price, 'getNettoPrice')
             || !method_exists($price, 'getVatValue')
         ) {
-            throw new RuntimeException('Cannot create a payment contract: the basket has no price.');
+            throw ContractTotalsException::noPrice();
+        }
+
+        $totalGross = (float) $price->getBruttoPrice();
+        if (round($totalGross, self::MONEY_DECIMALS) <= 0.0) {
+            // VR-26 A2 (owner decision D2): a provider cannot charge nothing, a 100 % voucher is no contract.
+            throw ContractTotalsException::zeroTotal();
         }
 
         $currency = method_exists($basket, 'getBasketCurrency') ? $basket->getBasketCurrency() : null;
 
         return [
-            'totalGross' => (float) $price->getBruttoPrice(),
+            'totalGross' => $totalGross,
             'totalNet' => (float) $price->getNettoPrice(),
             'totalVat' => (float) $price->getVatValue(),
             'currency' => ShopCurrency::nameOf(is_object($currency) ? $currency : null, 'payment contract'),
