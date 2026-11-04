@@ -139,6 +139,13 @@ services:
     class: OxidEsales\PaymentBase\Adapter\OxidLinkedOrderEnding
     public: true
 
+  # VR-25 D1: contract cancel/fail transitions end the linked order the shared way.
+  OxidEsales\PaymentBase\Adapter\ContractLinkedOrderUpdaterInterface:
+    class: OxidEsales\PaymentBase\Adapter\OxidContractLinkedOrderUpdater
+    arguments:
+      $ending: '@OxidEsales\PaymentBase\Adapter\LinkedOrderEndingInterface'
+    public: true
+
   # OPC-175 / S4 (G9): core restock of an ended order.
   OxidEsales\PaymentBase\Adapter\OrderRestockInterface:
     class: OxidEsales\PaymentBase\Adapter\OxidOrderRestock

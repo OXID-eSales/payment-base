@@ -10,6 +10,8 @@ All notable changes to this module are documented here. Format follows
   `UserFieldReaderInterface`, `OxidUserFieldReader` (replace the Stripe and Mollie copies). The provider's module id is
   an argument of `validateForUser()` / `validateFieldMap()`, so one stateless service serves all providers. Logical
   fields include `email` (column `oxusername`); a module without a rule for a field accepts it.
+- `Adapter\ContractLinkedOrderUpdaterInterface` / `OxidContractLinkedOrderUpdater`: cancel/fail transition ends the linked
+  order via `LinkedOrderEndingInterface` (replace the Stripe and Mollie copies).
 
 ### Changed (VR-24 H6) - provider knowledge out of the core (BREAKING for providers: tag your rows and secret shapes)
 - `PaymentOwnershipSubscriber` no longer lists the provider payment rows. Each provider implements the new
