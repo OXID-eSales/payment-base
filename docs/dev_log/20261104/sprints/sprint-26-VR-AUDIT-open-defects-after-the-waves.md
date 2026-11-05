@@ -1,6 +1,6 @@
 # Sprint 26 — VR-AUDIT: the six code defects still open after the VR waves
 
-**Date:** 2026-11-04 (planned) · **Epic:** VR · **Status:** APPROVED 2026-11-04 (owner: go; D2 refuse, D3 migrate once, D4 "ignore" ⇒ defect #6 dropped, D1/D5 as proposed)
+**Date:** 2026-11-04 (planned) · **Epic:** VR · **Status:** DONE 2026-11-05 — merged into `b-7.4.x`: payment-base 2cebca4, stripe b8db293, mollie cf83f90 (CI green 7.4/7.5/7.6 + secret scan + dead-code gate)
 **Repos:** payment-base, mollie-payment, stripe (stripe-wallet), paypal (paypal-payment)
 **Base:** `b-7.4.x` — payment-base 1a081dc, stripe c7f7bb7, mollie baaed48, paypal c5fbc27 (all CI-green)
 **Requirements:** [`../../20261030/sprints/_engeneering_requirements.md`](../../20261030/sprints/_engeneering_requirements.md)
@@ -75,3 +75,17 @@ owner items (legacy return-token window S-6/S-M3, Stripe Connect middleware POST
 Stripe L-3 refunds on non-FULFILLED contracts), and cleanup-only findings (god classes, shared webhook controller base
 D-1, Stripe `WebhookLogService`/`BasketBuyabilityValidator`, Mollie `RefundBound` test / stateful flag / services.yaml
 size, PayPal D-4/D-5/Q-1/Q-3).
+
+## Outcome (2026-11-05)
+
+| Story | Repo | Commits | Notes |
+|---|---|---|---|
+| A2 | payment-base | f93be1c | `EarlyOrderCreationHandler` throws without a payment id; `ContractTotalsException::zeroTotal()` refuses a 0.00 contract (providers' handlers turn it into their normal error result; headless: `provider_failed`). |
+| D5 | payment-base | 2cebca4 | `AtRiskReason::Chargeback` + en/de admin text. |
+| S1 | stripe | 454fb2f, 96cc605, b8db293 | Contract only by PI id; `amount_received` only; PI id for capture only from `providerOrderId`; old single secret migrated once on activation (never overwrites, not across modes) and no longer read. **Owner decision 2026-11-04:** the manual "Webhook Endpoint secret" field stays removed — secrets come only from "Create webhooks". Deploy note: shops that pasted a secret by hand run `oe:module:activate` once. Metadata lookup in `AbstractStripeWebhookHandler::contractOfPaymentIntent/contractOfPayment` stays (Checkout-Session contracts carry the session id until commit). |
+| M1 | mollie | 366a6fe | Commit on Mollie's `amount`/`currency` (return resolver + paid/authorized webhook); missing figures ⇒ `provider_amount_missing`. |
+| M3 | mollie | 014bff8, 55fbf5f | `MollieApiExceptionSummary` (HTTP status + field), no SDK text in logs/stored failures, `WebhookDeliveryLogRecord` for every delivery; request-id extraction dropped (no PSR-7 in CI, header name unverified). |
+| M2 | mollie | be5d26c | Event id per change, refund and chargeback handled independently, `AtRiskReason::Chargeback` raised once per new chargeback delta. |
+
+Still to prove with the Mollie test API / Stripe test mode (not possible in CI): M1 tampered amount, M2 chargeback-then-refund,
+M3 no `Request body` line on a live failure; Stripe secret migration on a real shop.
