@@ -79,7 +79,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-b-7.4.x": "1.6.x-dev"
+            "dev-b-7.4.x": "1.7.x-dev"
         }
     },
     "config": {
