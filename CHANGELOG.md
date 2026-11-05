@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [v1.7.0 - 2026-11-05]
 
 ### Added (VR-26 D5) - at-risk reason `chargeback`
 - `AtRisk\AtRiskReason::Chargeback` (`chargeback`): a provider that learns of a chargeback raises its own reason instead of `dispute_opened`. The stored value, the GraphQL `AdminPaymentAtRisk.reason` (`CHARGEBACK`, a string, not a schema enum), the owner mail (`Reason: chargeback`) and the classic-admin badge (`PAYMENT_ADMIN_AT_RISK_CHARGEBACK`, en + de) follow from the value; no migration (the column is a `VARCHAR(32)`).
@@ -11,67 +11,6 @@ All notable changes to this module are documented here. Format follows
 ### Changed (VR-26 A2) - no made-up payment id, no 0.00 contract
 - `EventSystem\Handler\EarlyOrderCreationHandler` throws an `InvalidArgumentException` when the event context carries no payment id; it no longer creates the order with the invented id `unknown_payment`.
 - `Service\ContractService::createContract()` refuses a basket whose gross total is 0.00 (a 100 % voucher; owner decision D2) with the new `Service\ContractTotalsException::zeroTotal()`; no contract is saved. The existing "basket has no price" refusal is now `ContractTotalsException::noPrice()` (still a `RuntimeException`). The provider payment handlers already turn a throwable into their normal error result, so the checkout is refused with that reason, not a 500.
-
-### Removed (VR-17 DC-PB8) - dead-code backlog: Repository (ContractRepository)
-No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
-- `Repository\ContractRepositoryInterface`: `findByUserId()`, `findExpired()`
-- `Repository\DoctrineContractRepository`: `findByUserId()`, `findExpired()`
-
-### Removed (VR-17 DC-PB8) - dead-code backlog: Repository, Service, GraphQL, Webhook, Model, LateMoney
-- `Repository\OpenAttemptFinderInterface` (empty once `findOpenByUserAndBasketId` went) and its `services.yaml` alias; `DoctrineContractRepository` no longer implements it.
-No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
-- `GraphQL\Admin\Service\AdminPaymentOperation`: `movesMoney()`
-- `GraphQL\Admin\Service\PaymentContractDetails`: `providerBoundsUnavailable()`, `roundToMinorUnit()`
-- `LateMoney\LateMoneyOutcome`: `isMoneyGivenBack()`
-- `Repository\DoctrineContractRepository`: `findOpenByUserAndBasketId()`
-- `Repository\DoctrinePaymentCustomerRepository`: `findByPaymentCustomerId()`
-- `Repository\DoctrineTransactionRepository`: `findByTypeAndStatus()`, `findChildTransactions()`, `getTotalRefundedForContract()`
-- `Repository\OpenAttemptFinderInterface`: `findOpenByUserAndBasketId()`
-- `Repository\PaymentCustomerRepositoryInterface`: `findByPaymentCustomerId()`
-- `Repository\TransactionRepositoryInterface`: `findByTypeAndStatus()`, `findChildTransactions()`, `getTotalRefundedForContract()`
-- `Service\ContractFulfillmentService`: `fulfillByContractId()`
-- `Service\ContractFulfillmentServiceInterface`: `fulfillByContractId()`
-- `Service\ContractMetadataService`: `getVerifiedDeliveryAddressHash()`
-- `Service\ContractMetadataServiceInterface`: `getDeliveryAddressHash()`, `getDeliveryAddressId()`
-- `Service\ContractService`: `findActiveContractByUser()`
-- `Service\ContractServiceInterface`: `findActiveContractByUser()`
-- `Service\DeliveryAddressHashServiceInterface`: `getHash()`, `hasHash()`, `clearHash()`
-- `Service\OrderPaymentStateService`: `updatePaidTimestampByTransactionId()`
-- `Service\OrderPaymentStateServiceInterface`: `updatePaidTimestampByTransactionId()`
-- `Webhook\WebhookEvent`: `isType()`
-- `Webhook\WebhookRequest`: `hasSignature()`
-
-### Removed (VR-17 DC-PB8) - dead-code backlog: Admin help, Controller trait, event broker
-No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
-- `Admin\Help\ContractStateHelpInterface`: `SHARED_IDENTS`
-- `Admin\Panel\PaymentPanelRenderable`: `withExtraViewData()`
-- `Controller\HandlesCheckoutReturn`: `setCheckoutReturnResponder()`
-- `EventSystem\Broker\ConventionProviderEventResolver`: `registerCanonicalName()`
-- `EventSystem\Broker\ProviderEventResolverInterface`: `registerCanonicalName()`
-- `EventSystem\EventDispatcher`: `removeListener()`
-- `EventSystem\EventDispatcherInterface`: `removeListener()`
-
-### Removed (VR-17 DC-PB8) - dead-code backlog: Adapter and Checkout
-No payment-base source, no provider (stripe, mollie, paypal incl. VR-pbw6) and no other consumer called these; tests removed with them.
-- `Adapter\Exception\PaymentAdapterException`: `isNetworkError()`, `isAuthenticationError()`, `isRetryable()`
-- `Adapter\OxidSessionAdapter`: `getSessionId()`, `setBasket()`, `setUser()`
-- `Adapter\PaymentHandlerInterface`: `confirmPayment()`
-- `Adapter\SessionAdapterInterface`: `getSessionId()`, `setBasket()`, `setUser()`
-- `Adapter\ShopAdapterInterface`: `getShopCurrency()`, `isTestMode()`, `getAdapterName()`
-- `Adapter\WebhookEvent`: `getEventId()`, `getEventType()`, `getProviderEventType()`, `getData()`, `getCreatedAt()`, `isVerified()`, `getRawPayload()`
-- `Checkout\Context\CheckoutContextInterface`: `getScopeId()`
-- `Checkout\Context\HeadlessCheckoutScope`: `leave()`
-- `Checkout\Context\HeadlessCheckoutScopeInterface`: `leave()`
-- `Checkout\Context\ScopedCheckoutContext`: `getScopeId()`
-- `Checkout\Context\SessionCheckoutContext`: `getScopeId()`
-- `Checkout\Headless\PaymentHandlerRegistry`: `forProvider()`, `isContractFirst()`
-- `Checkout\Headless\PaymentHandlerRegistryInterface`: `forProvider()`, `isContractFirst()`
-- `Checkout\OpenCheckoutAttemptRegistry`: `takePrevious()`
-- `Checkout\OpenCheckoutAttemptRegistryInterface`: `takePrevious()`
-- `Checkout\Return\ContractReturnTokenService`: `extractContractId()`
-- `Checkout\Return\ContractReturnTokenServiceInterface`: `extractContractId()`
-- `Checkout\ReturnUrl\AllowListReturnUrlPolicy`: `isAllowed()`
-- `Checkout\ReturnUrl\ReturnUrlPolicyInterface`: `isAllowed()`
 
 ### Removed (VR-22 A4) - the fat provider adapter (BREAKING for Stripe: drop the extends)
 - `Adapter\PaymentAdapterInterface`, `Service\Factory\PaymentAdapterFactoryInterface` and `PaymentAdapterFactory`:
