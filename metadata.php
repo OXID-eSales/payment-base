@@ -85,10 +85,6 @@ $aModule = [
         // register per-plugin overrides via the tagged iterator
         // `oe.payment_base.rate_limit_override`.
         ['name' => 'iValidationApiRatePerMinute', 'type' => 'num', 'value' => '30', 'group' => 'validation'],
-        // Sprint 125 (STRP-157) — enable per-line VAT calculation (default off).
-        // When true, PriceList::getVatInfo() rounds VAT per line before aggregating
-        // instead of grouping all lines at the same rate and rounding once.
-        ['name' => 'blPaymentBasePerLineVat', 'type' => 'bool', 'value' => false, 'group' => 'per_line_vat'],
         // IFRAME-01 — "Use iframe instead of checkout button" (default off). When true, a PSP whose
         // payment handler opts in embeds its payment UI inline (iframe) via the OPC footer widget
         // instead of rendering a button that redirects to the provider's hosted page. Read

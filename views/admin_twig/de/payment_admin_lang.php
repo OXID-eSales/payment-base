@@ -24,7 +24,6 @@ $aLang = [
 
     // Moduleinstellungen — Gruppenüberschriften
     'SHOP_MODULE_GROUP_validation'             => 'Validierung',
-    'SHOP_MODULE_GROUP_per_line_vat'           => 'Positionsbezogene USt.',
     'SHOP_MODULE_GROUP_iframe_checkout'        => 'Iframe-Checkout',
     'SHOP_MODULE_GROUP_checkout_flow'          => 'Checkout-Ablauf',
     'SHOP_MODULE_GROUP_cleanup'                => 'Bereinigung',
@@ -34,7 +33,6 @@ $aLang = [
 
     // Moduleinstellungen — Feldbeschriftungen
     'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
-    'SHOP_MODULE_blPaymentBasePerLineVat'      => 'USt. pro Position berechnen (jede Position vor Summierung runden)',
     'SHOP_MODULE_blPaymentBaseReleaseVouchersOnOrderEnd' => 'Gutscheine bei Stornierung oder Löschung einer Bestellung wieder freigeben',
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Iframe statt Checkout-Schaltfläche verwenden',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'
