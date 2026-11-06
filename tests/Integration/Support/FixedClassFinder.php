@@ -47,7 +47,7 @@ final class FixedClassFinder implements FinderInterface
         return new ArrayIterator($found);
     }
 
-    public function inNamespace(string|array $namespaces): self
+    public function inNamespace(string|array $namespaces): static
     {
         $clone = clone $this;
         $clone->namespaces = array_map(
@@ -58,52 +58,62 @@ final class FixedClassFinder implements FinderInterface
         return $clone;
     }
 
-    public function implementationOf(string|array $interface): self
+    public function implementationOf(string|array $interface): static
     {
         return $this;
     }
 
-    public function subclassOf(string|null $superClass): self
+    public function subclassOf(string|null $superClass): static
     {
         return $this;
     }
 
-    public function annotatedBy(string|null $annotationClass): self
+    public function annotatedBy(string|null $annotationClass): static
     {
         return $this;
     }
 
-    public function withAttribute(string|null $attributeClass): self
+    public function withAttribute(string|null $attributeClass): static
     {
         return $this;
     }
 
-    public function in(string|array $dirs): self
+    public function in(string|array $dirs): static
     {
         return $this;
     }
 
-    public function notInNamespace(string|array $namespaces): self
+    public function notInNamespace(string|array $namespaces): static
     {
         return $this;
     }
 
-    public function filter(callable|null $callback): self
+    public function filter(callable|null $callback): static
     {
         return $this;
     }
 
-    public function path(string $pattern): self
+    public function path(string $pattern): static
     {
         return $this;
     }
 
-    public function notPath(string $pattern): self
+    public function notPath(string $pattern): static
     {
         return $this;
     }
 
-    public function pathFilter(callable|null $callback): self
+    public function pathFilter(callable|null $callback): static
+    {
+        return $this;
+    }
+
+    public function skipNonInstantiable(bool $skip = true): static
+    {
+        return $this;
+    }
+
+    public function skipBogonFiles(bool $skip = true): static
     {
         return $this;
     }
