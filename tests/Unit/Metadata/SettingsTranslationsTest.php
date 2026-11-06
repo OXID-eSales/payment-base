@@ -17,9 +17,9 @@ use PHPUnit\Framework\TestCase;
  * label (SHOP_MODULE_<name>) and the group header (SHOP_MODULE_GROUP_<group>) —
  * in every admin language.
  *
- * Regression: settings added in STRP-129 (group `validation`) and STRP-157
- * (group `per_line_vat`) shipped without these keys, so the admin settings tab
- * logged "Translation for SHOP_MODULE_GROUP_validation not found!" etc.
+ * Regression: the setting added in STRP-129 (group `validation`) shipped without
+ * these keys, so the admin settings tab logged
+ * "Translation for SHOP_MODULE_GROUP_validation not found!".
  */
 final class SettingsTranslationsTest extends TestCase
 {

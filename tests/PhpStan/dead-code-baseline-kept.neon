@@ -30,6 +30,25 @@ parameters:
             identifier: shipmonk.deadMethod
             count: 1
             path: ../../src/AtRisk/PaymentAtRiskQueryInterface.php
+        # Per-line VAT math (Sprint 27 RC, owner decision D1): kept as the provider-payload primitive for
+        # per-line VAT (invariant I2, docs/invariants/oxid-totals-win.md). Its only production caller, the
+        # PriceList override, was deleted because it rewrote OXID's totals (invariant I1). First consumer
+        # to come: a shared itemisation reconciler in the provider line builders.
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\PerLineVatCalculator::calculate$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/PerLineVatCalculator.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\PerLineVatCalculatorInterface::calculate$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/PerLineVatCalculatorInterface.php
+        -
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::toArray$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Math/Vat/VatBreakdown.php
         # VatBreakdown: the result value object of the VAT calculator; the calculator's tests and any caller read it through these accessors.
         -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Math\\Vat\\VatBreakdown::rates$#'

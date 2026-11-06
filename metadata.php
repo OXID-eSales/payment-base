@@ -8,7 +8,6 @@
 declare(strict_types=1);
 
 use OxidEsales\Eshop\Core\Email as oxEmail;
-use OxidEsales\Eshop\Core\PriceList as oxPriceList;
 use OxidEsales\Eshop\Application\Controller\PaymentController as oxPaymentController;
 use OxidEsales\Eshop\Application\Controller\OrderController as oxOrderController;
 use OxidEsales\Eshop\Application\Controller\ThankYouController as oxThankYouController;
@@ -21,7 +20,6 @@ use OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController;
 use OxidEsales\PaymentBase\Eshop\Core\Email;
-use OxidEsales\PaymentBase\Eshop\Core\PriceList;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Voucher;
 
@@ -39,13 +37,12 @@ $aModule = [
         'en' => 'Provider-agnostic payment infrastructure (smart-contract architecture, '
               . 'shared admin "Payment" tab). Consumed by the PSP modules (Stripe, PayPal).',
     ],
-    'version'     => '1.7.1',
+    'version'     => '1.8.0',
     'author'      => 'OXID eSales AG',
     'url'         => 'https://www.oxid-esales.com',
     'email'       => 'info@oxid-esales.com',
     'thumbnail'   => 'img/logo.png',
     'extend'      => [
-        oxPriceList::class => PriceList::class,
         // Sprint 06 — single active payment method: assign it and skip the step.
         oxPaymentController::class => PaymentController::class,
         oxOrderController::class => OrderController::class,
@@ -88,10 +85,6 @@ $aModule = [
         // register per-plugin overrides via the tagged iterator
         // `oe.payment_base.rate_limit_override`.
         ['name' => 'iValidationApiRatePerMinute', 'type' => 'num', 'value' => '30', 'group' => 'validation'],
-        // Sprint 125 (STRP-157) — enable per-line VAT calculation (default off).
-        // When true, PriceList::getVatInfo() rounds VAT per line before aggregating
-        // instead of grouping all lines at the same rate and rounding once.
-        ['name' => 'blPaymentBasePerLineVat', 'type' => 'bool', 'value' => false, 'group' => 'per_line_vat'],
         // IFRAME-01 — "Use iframe instead of checkout button" (default off). When true, a PSP whose
         // payment handler opts in embeds its payment UI inline (iframe) via the OPC footer widget
         // instead of rendering a button that redirects to the provider's hosted page. Read

@@ -97,11 +97,15 @@ $line = LineItemAmount::forQuantity($unitGross, $unitNet, $unitVat, $qty);
 $line->totalPrice; $line->netPrice; $line->vatValue;
 ```
 
-### `Math\Vat\PerLineVatCalculator` — per-line VAT
+### `Math\Vat\PerLineVatCalculator` — per-line VAT for provider payloads
 
-Pre-existing (STRP-157). Per-line VAT with configurable precision; rounds **each line** then sums,
-which deliberately diverges from OXID's sum-then-round (see its characterization tests for the
-over-collection trade-off). Use it via `PerLineVatCalculatorInterface`.
+Per-line VAT with configurable precision; rounds **each line** then sums, which deliberately diverges
+from OXID's sum-then-round (see its characterization tests for the over-collection trade-off). Use it
+via `PerLineVatCalculatorInterface` — and only to build what a provider receives. It is never an input
+to an OXID total: the shop's VAT is OXID's, and the cent residual between a per-line payload and OXID's
+total is absorbed in the payload (invariants I1/I2, `docs/invariants/oxid-totals-win.md`). The
+`PriceList` override that once fed this calculator into `oxPriceList::getVatInfo()` behind a checkbox
+was removed in Sprint 27 (RC).
 
 ---
 

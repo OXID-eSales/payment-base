@@ -3,6 +3,17 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [v1.8.0 - 2026-11-06]
+
+### Removed (RC-27) - the per-line VAT override and its checkbox (BREAKING for shops that had it ticked)
+- `Eshop\Core\PriceList` (the `oxPriceList` extension) and `Eshop\Core\PriceToTaxableLineMapper`: with the setting on, `getVatInfo()` replaced OXID's sum-then-round VAT with round-each-line-then-sum, moving every order's VAT total by up to a cent per rate so that a provider payload would add up. That is the shop bending to the provider; the policy is the other way round (invariant I1: OXID's totals win, `docs/invariants/oxid-totals-win.md`). The providers never read the setting and already absorb the residual in their own payloads (invariant I2).
+- Setting `blPaymentBasePerLineVat` (group `per_line_vat`) and its en/de admin labels. No migration: the module-configuration install drops a setting that metadata no longer declares; a stale `oxconfig` row is inert. Shops that had the box ticked return to OXID core rounding for new orders; existing orders are untouched.
+- The `PriceList_parent` / `Price` test stubs that existed only for the override.
+
+### Changed (RC-27)
+- `Math\Vat\PerLineVatCalculatorInterface` is no longer `public` in the container (no container pull is left); the kept per-line VAT math (`PerLineVatCalculator`, `TaxableLine`, `VatBreakdown`) is listed in `dead-code-baseline-kept.neon` as the provider-payload primitive until a provider line builder consumes it.
+- New `tests/Unit/Metadata/MetadataExtendTest` and `MetadataSettingsTest` guard I1 at its single source of truth.
+
 ## [v1.7.0 - 2026-11-05]
 
 ### Added (VR-26 D5) - at-risk reason `chargeback`
