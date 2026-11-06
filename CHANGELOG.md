@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [v1.8.0 - 2026-11-06]
+## [v1.7.2 - 2026-11-06]
 
 ### Removed (RC-27) - the per-line VAT override and its checkbox (BREAKING for shops that had it ticked)
 - `Eshop\Core\PriceList` (the `oxPriceList` extension) and `Eshop\Core\PriceToTaxableLineMapper`: with the setting on, `getVatInfo()` replaced OXID's sum-then-round VAT with round-each-line-then-sum, moving every order's VAT total by up to a cent per rate so that a provider payload would add up. That is the shop bending to the provider; the policy is the other way round (invariant I1: OXID's totals win, `docs/invariants/oxid-totals-win.md`). The providers never read the setting and already absorb the residual in their own payloads (invariant I2).
