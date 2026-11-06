@@ -38,7 +38,59 @@ final class DoctrineContractOrderMailStoreTest extends TestCase
         self::assertSame('pending', $params['pending']);
         self::assertSame('contract-1', $params['id']);
 
-        self::assertFalse((new DoctrineContractOrderMailStore($this->connection(affected: 0), new ThrowableSummary([])))->stash('gone', []));
+        $gone = $this->connection(affected: 0);
+        $gone->method('fetchAssociative')->willReturn(false);
+        self::assertFalse((new DoctrineContractOrderMailStore($gone, new ThrowableSummary([])))->stash('gone', []));
+    }
+
+    /**
+     * Sprint 28 (OMS) — MySQL reports changed rows, not matched rows: a rewrite
+     * that re-renders the very same mails changes nothing, and the mails are
+     * still kept. The store asks the row before answering.
+     */
+    public function testStash_WhenNothingChangedButTheRowAlreadyHoldsExactlyTheseMails_AnswersTrue(): void
+    {
+        $connection = $this->connection(affected: 0);
+        $connection->method('fetchAssociative')->willReturnCallback(
+            function (string $sql, array $params): array {
+                $this->statements[] = [$sql, $params];
+
+                return ['OXID' => 'contract-1'];
+            }
+        );
+
+        self::assertTrue((new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->stash('contract-1', [$this->mail()]));
+
+        [$update, $updateParams] = $this->statements[0];
+        [$select, $selectParams] = $this->statements[1];
+        self::assertStringContainsString('UPDATE', $update);
+        self::assertStringContainsString('OXORDERMAILSTATE = :pending', $select);
+        self::assertStringContainsString('OXORDERMAILS = :mails', $select);
+        self::assertStringContainsString('OXORDERMAILSENTAT IS NULL', $select);
+        self::assertSame('contract-1', $selectParams['id']);
+        self::assertSame($updateParams['mails'], $selectParams['mails']);
+    }
+
+    public function testStash_WhenTheKeptCheckFails_ThrowsWithoutTheMailContent(): void
+    {
+        $connection = $this->connection(affected: 0);
+        $connection->method('fetchAssociative')->willThrowException(new class (
+            "An exception occurred while executing 'SELECT …' with params [\"zoe@example.test\"]"
+        ) extends DbalException {
+            public function getSQLState(): string
+            {
+                return 'HY000';
+            }
+        });
+
+        try {
+            (new DoctrineContractOrderMailStore($connection, new ThrowableSummary([])))->stash('contract-1', [$this->mail()]);
+            self::fail('a database error must not pass silently');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('contract-1', $e->getMessage());
+            self::assertStringContainsString('SQLSTATE HY000', $e->getMessage());
+            self::assertStringNotContainsString('zoe@example.test', $e->getMessage());
+        }
     }
 
     public function testStash_WritesPlainAscii_SoTheLatin1ContractTableKeepsEveryCharacter(): void
