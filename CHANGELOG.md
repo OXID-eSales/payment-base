@@ -5,6 +5,20 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+- **CI on OXID 7.1 / 7.2 / 7.3 (PHP 8.3, PHPUnit 12).** Workflow `.github/workflows/tests-integration-7.1-7.3.yml`
+  installs the component into a CE shop of each line as the recipes build it (composer project, `oxideshop-ce
+  dev-b-7.N.x`), with the deltas the older shops need: `conflict oxideshop-ce <7.4` relaxed to `<7.1` in the
+  checked-out copy for the run only, PHPUnit 12 required at shop level (the 7.1/7.2 clones would bring ^10.4),
+  composer's advisory policy off (7.1/7.2 pin twig 3.8.0), and `.github/scripts/fix-unified-namespace-dirs.sh`
+  repairing the OXDEV-10249 layout after the shop-level composer update. Runs the `tests/phpunit-integration.xml`
+  suite on the shop's PHPUnit. No GraphQL dimension yet (phase 2 of the 7.1-7.3 experiment) and no styles / unit jobs
+  (shop-independent; 7.4-7.6 workflows). Migrations run through `bin/oe-payment-base-migrate` directly, not the
+  composer hook (the generator fires on post-update-cmd before the root scripts). Known 7.x reds from the 2026-11-05
+  experiment: `FullDataPersistenceFlowTest` on 7.1 (`restoreRequestData()` comes from the shop's
+  `tests/RequestTrait.php`, present from 7.2 on); `ContainerBootTest` alias row fails on every fresh shop, 7.4
+  included.
+
 ### Fixed
 - **Issue #3 — the class chain stays open for `render()`.** The overrides of `OrderController::render()`,
   `PaymentController::render()` and `ThankYouController::render()` declared `: string` although core declares no
