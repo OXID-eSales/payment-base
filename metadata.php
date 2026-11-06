@@ -8,7 +8,6 @@
 declare(strict_types=1);
 
 use OxidEsales\Eshop\Core\Email as oxEmail;
-use OxidEsales\Eshop\Core\PriceList as oxPriceList;
 use OxidEsales\Eshop\Application\Controller\PaymentController as oxPaymentController;
 use OxidEsales\Eshop\Application\Controller\OrderController as oxOrderController;
 use OxidEsales\Eshop\Application\Controller\ThankYouController as oxThankYouController;
@@ -21,7 +20,6 @@ use OxidEsales\PaymentBase\Eshop\Application\Controller\OrderController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\PaymentController;
 use OxidEsales\PaymentBase\Eshop\Application\Controller\ThankYouController;
 use OxidEsales\PaymentBase\Eshop\Core\Email;
-use OxidEsales\PaymentBase\Eshop\Core\PriceList;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Order;
 use OxidEsales\PaymentBase\Eshop\Application\Model\Voucher;
 
@@ -45,7 +43,6 @@ $aModule = [
     'email'       => 'info@oxid-esales.com',
     'thumbnail'   => 'img/logo.png',
     'extend'      => [
-        oxPriceList::class => PriceList::class,
         // Sprint 06 — single active payment method: assign it and skip the step.
         oxPaymentController::class => PaymentController::class,
         oxOrderController::class => OrderController::class,
