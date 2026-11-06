@@ -311,8 +311,9 @@ if (!class_exists(\OxidEsales\EshopCommunity\Internal\Container\ContainerFactory
     );
 }
 
-// Sprint 125 (STRP-157) — stub ModuleSettingServiceInterface for static analysis of
-// PriceList::isPerLineEnabled() which resolves it from the DI container.
+// Stub ModuleSettingServiceInterface for static analysis of the settings readers
+// (SinglePaymentSettings, SingleShippingSettings, IframeCheckoutSettings,
+// VoucherReleaseSettings, ReturnAccessSettings) that resolve it from the DI container.
 if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Facade\ModuleSettingServiceInterface::class, false)) {
     eval(
         'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Facade; '
@@ -336,34 +337,6 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Confi
         . 'interface ModuleSettingBridgeInterface { '
         . '  public function save(string $name, mixed $value, string $moduleId): void; '
         . '  public function get(string $name, string $moduleId): mixed; '
-        . '}'
-    );
-}
-
-// Sprint 125 (STRP-157) — stub OxidEsales\Eshop\Core\Price for static analysis of
-// PriceToTaxableLineMapper (which accepts Price as a parameter).
-if (!class_exists(\OxidEsales\Eshop\Core\Price::class, false)) {
-    eval(
-        'namespace OxidEsales\\Eshop\\Core; '
-        . 'class Price { '
-        . '  public function getPrice(): float { return 0.0; } '
-        . '  public function getVat(): float { return 0.0; } '
-        . '}'
-    );
-}
-
-// Sprint 125 (STRP-157) — stub PriceList_parent (OXID virtual class generated at activation)
-// so PHPStan can analyse PriceList which extends PriceList_parent.
-// PriceList_parent is resolved in the namespace OxidEsales\PaymentBase\Eshop\Core
-// (because PriceList uses unqualified 'PriceList_parent', not '\PriceList_parent').
-// The real alias is created by OXID's ModuleChainsGenerator::createClassExtension at runtime.
-if (!class_exists(\OxidEsales\PaymentBase\Eshop\Core\PriceList_parent::class, false)) {
-    eval(
-        'namespace OxidEsales\\PaymentBase\\Eshop\\Core; '
-        . 'class PriceList_parent { '
-        . '  protected array $_aList = []; '
-        . '  public function __construct() {} '
-        . '  public function getVatInfo($isNettoMode = true) { return []; } '
         . '}'
     );
 }

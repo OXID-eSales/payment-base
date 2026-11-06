@@ -972,11 +972,10 @@ services:
   # Empty by default; the tag is the opt-in point for PSP modules.
   # (No concrete formatter is registered here — payment-base is provider-agnostic.)
 
-  # Sprint 125 (STRP-157) — per-line VAT calculator.
-  # Public so PriceList can resolve it via ContainerFactory::get().
+  # Per-line VAT calculator — a provider-payload primitive (invariant I2, see
+  # docs/invariants/oxid-totals-win.md). It never feeds an OXID total (invariant I1).
   OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculatorInterface:
     class: OxidEsales\PaymentBase\Math\Vat\PerLineVatCalculator
-    public: true
     arguments:
       $precision: 2
 
