@@ -39,16 +39,35 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
 
     /**
      * @inheritDoc
+     *
+     * MySQL counts the rows an UPDATE changed, not the rows it matched: a
+     * rewritten order that renders the very same mails changes nothing, and
+     * they are kept all the same. Only that case costs a second statement.
      */
     public function stash(string $contractId, array $mails): bool
     {
-        return $this->write(
+        $encoded = $this->encode($mails);
+        $changed = $this->write(
             'UPDATE ' . self::TABLE . '
              SET OXORDERMAILSTATE = :pending, OXORDERMAILS = :mails, OXORDERMAILSENTAT = NULL
              WHERE OXID = :id',
-            ['pending' => self::STATE_PENDING, 'mails' => $this->encode($mails), 'id' => $contractId],
+            ['pending' => self::STATE_PENDING, 'mails' => $encoded, 'id' => $contractId],
             'store the order mails of contract ' . $contractId
-        ) === 1;
+        );
+
+        return $changed === 1 || $this->isKept($contractId, $encoded);
+    }
+
+    private function isKept(string $contractId, string $encodedMails): bool
+    {
+        $row = $this->fetchRow(
+            'SELECT OXID FROM ' . self::TABLE . '
+             WHERE OXID = :id AND OXORDERMAILSTATE = :pending AND OXORDERMAILS = :mails AND OXORDERMAILSENTAT IS NULL',
+            ['id' => $contractId, 'pending' => self::STATE_PENDING, 'mails' => $encodedMails],
+            'read the order mails of contract ' . $contractId
+        );
+
+        return $row !== false;
     }
 
     public function claim(string $contractId): ?ClaimedOrderMails
@@ -138,16 +157,26 @@ class DoctrineContractOrderMailStore implements ContractOrderMailStoreInterface
      */
     private function read(string $contractId): array
     {
-        try {
-            $row = $this->connection->fetchAssociative(
-                'SELECT OXORDERID, OXSHOPID, OXORDERMAILS FROM ' . self::TABLE . ' WHERE OXID = :id',
-                ['id' => $contractId]
-            );
-        } catch (Exception $e) {
-            throw $this->failure('Failed to read the order mails of contract ' . $contractId, $e);
-        }
+        $row = $this->fetchRow(
+            'SELECT OXORDERID, OXSHOPID, OXORDERMAILS FROM ' . self::TABLE . ' WHERE OXID = :id',
+            ['id' => $contractId],
+            'read the order mails of contract ' . $contractId
+        );
 
         return $row === false ? [] : $row;
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @return array<string, mixed>|false
+     */
+    private function fetchRow(string $sql, array $params, string $what): array|false
+    {
+        try {
+            return $this->connection->fetchAssociative($sql, $params);
+        } catch (Exception $e) {
+            throw $this->failure('Failed to ' . $what, $e);
+        }
     }
 
     /**
