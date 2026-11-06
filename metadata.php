@@ -37,7 +37,7 @@ $aModule = [
         'en' => 'Provider-agnostic payment infrastructure (smart-contract architecture, '
               . 'shared admin "Payment" tab). Consumed by the PSP modules (Stripe, PayPal).',
     ],
-    'version'     => '1.7.2',
+    'version'     => '1.7.3',
     'author'      => 'OXID eSales AG',
     'url'         => 'https://www.oxid-esales.com',
     'email'       => 'info@oxid-esales.com',

@@ -3,6 +3,11 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [v1.7.3 - 2026-11-06]
+
+### Fixed (OMS-28) - a repeated checkout attempt on an unchanged basket no longer fails with `order_mails_not_kept`
+- `Repository\DoctrineContractOrderMailStore::stash()` answered `false` whenever its UPDATE changed no bytes: MySQL and MariaDB report changed rows, not matched rows, and OXID's connection does not set `MYSQL_ATTR_FOUND_ROWS`. A rewritten order whose basket did not change re-renders byte-identical mails (they carry no date or time), so the second rewrite of one early order was refused by `OxidShopOrderService::keepRewrittenOrderMailsOnContract()` (VR-16 O5) and the provider checkout returned 500 "Payment processing failed" on the third attempt of a contract and on every retry after it (pay1, 2026-11-06, contracts `9f7660af…`/`dd46c4c6…`). `stash()` now answers whether the row holds exactly these mails as `pending`: the common path stays one statement, the zero-changed case asks the row with one SELECT. New integration test `DoctrineContractOrderMailStoreRestashTest` re-stashes identical mails on a real connection.
+
 ## [v1.7.2 - 2026-11-06]
 
 ### Removed (RC-27) - the per-line VAT override and its checkbox (BREAKING for shops that had it ticked)
