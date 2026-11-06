@@ -49,11 +49,13 @@ final class FixedClassFinder implements FinderInterface
 
     public function inNamespace(string|array $namespaces): static
     {
+        // kcs/class-finder merges the namespaces of repeated calls; GraphQLite 8 relies on it
+        // and applies every registered namespace to the one finder it was given.
         $clone = clone $this;
-        $clone->namespaces = array_map(
+        $clone->namespaces = array_unique(array_merge($this->namespaces, array_map(
             static fn(string $ns): string => rtrim($ns, '\\') . '\\',
             (array) $namespaces
-        );
+        )));
 
         return $clone;
     }
