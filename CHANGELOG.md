@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [v1.7.4 - 2026-11-09]
 
 ### Added
 - **CI on OXID 7.1 / 7.2 / 7.3 (PHP 8.3, PHPUnit 12).** Workflow `.github/workflows/tests-integration-7.1-7.3.yml`
