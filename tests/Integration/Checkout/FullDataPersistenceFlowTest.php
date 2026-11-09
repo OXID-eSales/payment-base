@@ -77,6 +77,18 @@ final class FullDataPersistenceFlowTest extends IntegrationTestCase
     {
         $this->commitTransaction();
         $this->cleanupCaching();
+        $this->restoreRequestDataWhereTheShopBackedItUp();
+    }
+
+    /**
+     * restoreRequestData() is the shop's tests/RequestTrait.php, mixed into IntegrationTestCase from
+     * OXID 7.2 on; b-7.1.x has neither the trait nor the backup in setUp(), so there is nothing to restore.
+     */
+    private function restoreRequestDataWhereTheShopBackedItUp(): void
+    {
+        if (!method_exists($this, 'restoreRequestData')) {
+            return;
+        }
         $this->restoreRequestData();
     }
 

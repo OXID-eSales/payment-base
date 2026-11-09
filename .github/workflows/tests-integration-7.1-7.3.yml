@@ -1,0 +1,417 @@
+name: Tests on OXID 7.1-7.3
+
+# payment-base (b-7.4.x) on the OXID 7.1, 7.2 and 7.3 lines, PHP 8.3, PHPUnit 12. One matrix
+# workflow for the three lines; the per-line files (test-integration-7.4.yml ...) stay the model,
+# these are the deltas the older shops need (multishop 7.1/7.2/7.3 experiment, 2026-11-05):
+#
+#  * The shop is a composer PROJECT (recipe layout: oxid-esales/oxideshop-project requiring
+#    oxideshop-ce dev-b-7.N.x), not a clone of oxideshop_ce as composer root. The clone's
+#    require-dev pins PHPUnit ^10.4 on 7.1/7.2 and this component's suites need 11+; a project
+#    installs no shop dev dependencies, so PHPUnit 12 can be required at shop level.
+#  * The component declares `conflict oxideshop-ce <7.4`. It is relaxed to <7.1 in the
+#    checked-out copy for this run only (see "Relax the shop-version conflict").
+#  * 7.1 and 7.2 pin twig/twig 3.8.0 (16 advisories), which composer's advisory policy refuses
+#    to resolve: the policy is switched off for this test shop.
+#  * OXDEV-10249: the unified-namespace generator of the lines below 7.4 writes a broken layout
+#    with symfony/filesystem >= 6.4.48; .github/scripts/fix-unified-namespace-dirs.sh repairs it
+#    after every shop-level composer update. That is also why the migrations run through
+#    bin/oe-payment-base-migrate directly and not through the composer hook the 7.4+ workflows
+#    prove: the generator fires on post-update-cmd BEFORE the root scripts, so the hook would
+#    boot a shop with the broken layout.
+#  * No GraphQL dimension: graphql-base/storefront for 7.1-7.3 is phase 2 of the experiment, so
+#    every shop is the 'without' variant and the headless tests skip themselves.
+#  * No styles / isolated unit jobs: they do not depend on the shop line and run in the
+#    7.4/7.5/7.6 workflows already.
+
+on: [ push, pull_request ]
+
+env:
+  # Composer in the php container downloads the dist zips from api.github.com. Without credentials GitHub
+  # refuses those bursts from the shared runner IPs ("curl error 7 ... Connection refused" for every
+  # package at once). Handed to each composer call with `docker compose exec -e COMPOSER_AUTH`, so it
+  # never lands in the container's composer home, which the workspace cache saves.
+  COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
+  PACKAGE_NAME: 'oxid-esales/payment-base'
+  PHP_VERSION: '8.3'
+  MYSQL_VERSION: '8.0'
+  TEMPLATE_ENGINE: 'twig'
+  # In a composer project the console lives in vendor/bin (the ce clone of the 7.4+ workflows
+  # has bin/oe-console).
+  OE_CONSOLE: 'vendor/bin/oe-console'
+
+jobs:
+  # ==========================================================================
+  # Install Shop with Component - one shop per OXID line, cached for the test job
+  # ==========================================================================
+  install_shop_with_module:
+    name: install_shop_with_module (OXID ${{ matrix.oxid }}, without GraphQL)
+    strategy:
+      fail-fast: false
+      matrix:
+        oxid: [ '7.1', '7.2', '7.3' ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print run parameters
+        run: |
+          echo "Running job with:\
+            OXID line: ${{ matrix.oxid }}\
+            PHP version: ${{ env.PHP_VERSION }}\
+            MySQL version: ${{ env.MYSQL_VERSION }}\
+            Template engine: ${{ env.TEMPLATE_ENGINE }}\
+            Trigger event: ${{ github.event_name }}"
+
+      - name: Cleanup workspace
+        run: |
+          ls -la ./
+          sudo rm -rf ./* || true
+          sudo rm -rf ./.??* || true
+          ls -la ./
+
+      # actions/checkout authenticates with the job's own token (an anonymous clone was refused
+      # from the shared runner egress, see the 7.4 workflow). The workspace is cached below as
+      # `./*`, so `persist-credentials: false` keeps the token out of .git/config and the cache.
+      - name: Clone testing environment
+        uses: actions/checkout@v5
+        with:
+          repository: OXID-eSales/docker-eshop-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prepare container configuration
+        run: |
+          make setup
+          make addbasicservices
+          perl -pi\
+            -e 's#PHP_VERSION=.*#PHP_VERSION=${{ env.PHP_VERSION }}#g;'\
+            -e "s#MYSQL_VERSION=.*#MYSQL_VERSION=${{ env.MYSQL_VERSION }}#g;"\
+            .env
+          perl -pi\
+            -e 's#display_errors =.*#display_errors = false#g;'\
+            -e 's#error_reporting = .*#error_reporting = E_ALL ^ E_WARNING ^ E_DEPRECATED#g;'\
+            -e 'print "xdebug.max_nesting_level=1000\nxdebug.mode=coverage\n\n"'\
+            containers/php/custom.ini
+          perl -pi\
+            -e 's#/var/www/#/var/www/source/#g;'\
+            containers/httpd/project.conf
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Checkout current component
+        uses: actions/checkout@v5
+        with:
+          path: source/test-module
+
+      # The component refuses shops below 7.4 by declaration. This run exists to find out whether
+      # the code agrees, so the declaration is widened in the checked-out copy only - nothing is
+      # committed. The step fails loudly when the line it expects is gone, so a changed
+      # composer.json cannot silently turn this into a run that never installed on the old shop.
+      - name: Relax the shop-version conflict (<7.4 -> <7.1) in the checked-out copy
+        run: |
+          file=source/test-module/composer.json
+          grep -q '"oxid-esales/oxideshop-ce": *"<7.4"' "$file" || {
+            echo "::error title=conflict line not found::$file no longer declares conflict oxideshop-ce <7.4; update this step."
+            exit 1
+          }
+          sed -i 's#"oxid-esales/oxideshop-ce": *"<7.4"#"oxid-esales/oxideshop-ce": "<7.1"#' "$file"
+          echo "$file: $(grep -o '"oxid-esales/oxideshop-ce": *"<[^"]*"' "$file")"
+
+      # The recipe's composer.json.base (docker-eshop-sdk-recipes, parts/bases): `preferred-install
+      # source` keeps the shop's tests/ directory, which the integration suite autoloads
+      # (OxidEsales\EshopCommunity\Tests\).
+      - name: Create the shop project
+        run: |
+          mkdir -p source
+          cat > source/composer.json <<'JSON'
+          {
+              "name": "oxid-esales/oxideshop-project",
+              "minimum-stability": "dev",
+              "prefer-stable": true,
+              "version": "1.0.0",
+              "require": {
+              },
+              "autoload-dev": {
+                  "psr-4": {
+                      "OxidEsales\\EshopCommunity\\Tests\\": "./vendor/oxid-esales/oxideshop-ce/tests"
+                  }
+              },
+              "config": {
+                  "github-protocols": ["https"],
+                  "allow-plugins": {
+                      "oxid-esales/oxideshop-composer-plugin": true,
+                      "oxid-esales/oxideshop-unified-namespace-generator": true
+                  },
+                  "preferred-install": {
+                      "oxid-esales/*": "source"
+                  }
+              }
+          }
+          JSON
+          docker compose up -d php mysql
+          sleep 2
+
+      # 7.1 and 7.2 pin twig/twig 3.8.0 and symfony/filesystem < 6.4.50 is blocked as well:
+      # composer >= 2.9 refuses to resolve packages with security advisories, so the recipe for
+      # these lines cannot install without switching the policy off. Test shop only.
+      - name: Shop composer configuration
+        run: |
+          docker compose exec -T php composer config policy.advisories.block false
+
+      # Same packages and branches as docker-eshop-sdk-recipes shop/b-7.N.x-components.sh (CE):
+      # shop, twig engine + admin theme, developer-tools (oe:database:reset), apex theme (the
+      # order mails render from the storefront theme's templates; without a theme Mailpit
+      # receives the template names instead).
+      - name: Require the OXID ${{ matrix.oxid }} shop packages
+        run: |
+          line='b-${{ matrix.oxid }}.x'
+          docker compose exec -T php composer config repositories.oxid-esales/oxideshop-ce git https://github.com/OXID-eSales/oxideshop_ce.git
+          docker compose exec -T php composer config repositories.oxid-esales/twig-component git https://github.com/OXID-eSales/twig-component
+          docker compose exec -T php composer require --no-update --no-interaction \
+            "oxid-esales/oxideshop-ce:dev-$line" \
+            "oxid-esales/twig-component:dev-$line" \
+            "oxid-esales/twig-admin-theme:dev-$line" \
+            "oxid-esales/developer-tools:dev-$line" \
+            "oxid-esales/apex-theme:dev-$line"
+
+      - name: Install component
+        run: |
+          docker compose exec -T \
+            php composer config repositories.${{ env.PACKAGE_NAME }} \
+            --json '{"type":"path", "url":"./test-module", "options": {"symlink": true}}'
+          docker compose exec -T \
+            php composer require "${{ env.PACKAGE_NAME }}:*@dev" --no-interaction --no-update
+
+      # The integration suite runs on the SHOP's PHPUnit (one binary, one autoloader). A project
+      # installs no shop dev dependencies, so the version is this requirement alone: 12, as the
+      # experiment proved the suites under (the 7.1/7.2 clones would bring ^10.4).
+      - name: Require PHPUnit 12 at shop level
+        run: |
+          docker compose exec -T php composer require --dev "phpunit/phpunit:^12" --no-interaction --no-update
+
+      - name: Install dependencies
+        run: |
+          RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/composer.lock' "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --with-all-dependencies --no-interaction
+
+      # OXDEV-10249, see the script header. Must follow every shop-level composer update.
+      - name: Repair the unified-namespace layout (OXDEV-10249)
+        run: |
+          docker compose exec -T php sh /var/www/test-module/.github/scripts/fix-unified-namespace-dirs.sh
+
+      - name: Print the stack under test
+        run: |
+          docker compose exec -T php php -v | head -1
+          docker compose exec -T -e COMPOSER_AUTH php composer show oxid-esales/oxideshop-ce | grep -E '^(name|versions)'
+          docker compose exec -T php vendor/bin/phpunit --version
+          docker compose exec -T -e COMPOSER_AUTH php composer show --locked twig/twig symfony/filesystem oxid-esales/oxideshop-unified-namespace-generator 2>/dev/null | grep -E '^(name|versions)' || true
+
+      - name: Start all containers
+        run: |
+          make up
+          sleep 2
+
+      # Recipe parts/shared/setup_database.sh: oe:setup:shop writes source/config.inc.php
+      # (the clone-based workflows sed the .dist file instead; a project has none before install).
+      # bin/oe-payment-base-migrate reads that file to decide whether the shop is set up.
+      - name: Set up the shop
+        run: |
+          docker compose exec -T php sh -c 'mkdir -p /var/www/source/tmp'
+          docker compose exec -T php ${{ env.OE_CONSOLE }} oe:setup:shop \
+            --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root \
+            --shop-url=http://localhost.local/ --shop-directory=/var/www/source/ --compile-directory=/var/www/source/tmp/
+          sed -i "1s+^+SetEnvIf Authorization "\(.*\)" HTTP_AUTHORIZATION=\$1\n\n+" source/source/.htaccess
+
+      # `oe:database:reset` MUST run before `oe:module:install`: install writes module config via
+      # ModuleConfigurationDao->save(), which fires the cache-invalidation subscriber, which loads
+      # `oxconfig` from the database. Without the schema that load fatals with
+      # "Table 'example.oxconfig' doesn't exist".
+      - name: Reset database
+        run: |
+          docker compose exec -T php ${{ env.OE_CONSOLE }} oe:database:reset \
+            --db-host=mysql --db-port=3306 --db-name=example --db-user=root --db-password=root --force
+
+      - name: Activate theme
+        run: |
+          docker compose exec -T php ${{ env.OE_CONSOLE }} oe:theme:activate apex
+
+      # Every 7.1-7.3 shop is the 'without' variant (header): no GraphQL package may reach the
+      # shop through any dependency, or the headless tests would run against an untested stack.
+      - name: Prove GraphQL absent
+        run: |
+          present=''
+          for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
+            if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
+              present="$present $package"
+            fi
+          done
+          if [ -n "$present" ]; then
+            echo "::error title=GraphQL in the shop::installed:$present. Something requires GraphQL; the 7.1-7.3 shops are the 'without' variant."
+            exit 1
+          fi
+          echo "No GraphQL package in the shop (graphql-base, graphql-storefront, GraphQLite, graphql-php)"
+
+      # payment-base is itself an oxideshop-module and must be installed and activated as a real
+      # module, not just composer-required.
+      - name: Install + activate payment-base module
+        run: |
+          docker compose exec -T php ${{ env.OE_CONSOLE }} oe:module:install /var/www/test-module
+          docker compose exec -T php ${{ env.OE_CONSOLE }} oe:module:activate oe_payment_base
+
+      # The same script the project's composer hook runs (README, "Migrations"), called directly:
+      # see the header for why the hook itself cannot be exercised on these lines.
+      - name: Run payment-base migrations
+        run: |
+          set -o pipefail
+          docker compose exec -T php vendor/bin/oe-payment-base-migrate 2>&1 | tee migrate.log
+          grep -q "\[payment-base\] migrations done" migrate.log
+
+      - name: Show docker log
+        if: always()
+        run: |
+          docker compose logs
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+          sleep 2
+
+      # Sole writer of this key (actions/cache@v4 would ALSO save in its post-step and the two
+      # saves race). The line is part of the key: the three legs share PHP/MySQL values.
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ matrix.oxid }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-without-${{ github.run_number }}-${{ github.run_attempt }}
+
+      - name: Upload configuration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstallShopWithComponent-${{ matrix.oxid }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
+          path: |
+            docker-compose.yml
+            source/composer.json
+            source/composer.lock
+            source/source/config.inc.php
+            data/php/logs/error_log.txt
+
+  # ==========================================================================
+  # Integration Tests - the cached shop of each line, PHP 8.3
+  # ==========================================================================
+  integration_tests:
+    name: integration_tests (OXID ${{ matrix.oxid }}, PHP ${{ matrix.php }}, MySQL ${{ matrix.mysql }}, without GraphQL)
+    strategy:
+      fail-fast: false
+      matrix:
+        oxid: [ '7.1', '7.2', '7.3' ]
+        php: [ '8.3' ]
+        mysql: [ '8.0' ]
+    needs: [ install_shop_with_module ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load current installation from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ./*
+          key: installation-${{ matrix.oxid }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-without-${{ github.run_number }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Start containers
+        run: |
+          make up
+          sleep 2
+
+      # The component's own vendor (module-level composer.lock, independent of the shop line).
+      # Nothing runs composer at SHOP level here, so no second OXDEV-10249 repair is needed.
+      - name: Install component dev dependencies
+        run: |
+          RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/test-module/composer.lock' "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php bash -c "cd /var/www/test-module && composer install --no-interaction"
+
+      # Proves the schema is complete on the restored shop; a no-op after the install job.
+      - name: Run payment-base migrations
+        run: |
+          set -o pipefail
+          docker compose exec -T php vendor/bin/oe-payment-base-migrate 2>&1 | tee migrate.log
+          grep -q "\[payment-base\] migrations done" migrate.log
+
+      - name: Check the shop before the tests
+        run: |
+          docker compose exec -T php php -v | head -1
+          docker compose exec -T -e COMPOSER_AUTH php composer show oxid-esales/oxideshop-ce | grep -E '^(name|versions)'
+          docker compose exec -T php vendor/bin/phpunit --version
+          present=''
+          for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
+            if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
+              present="$present $package"
+            fi
+          done
+          if [ -n "$present" ]; then
+            echo "::error title=GraphQL in the shop::installed:$present. The 7.1-7.3 shops are the 'without' variant."
+            exit 1
+          fi
+          echo "No GraphQL package in the shop (graphql-base, graphql-storefront, GraphQLite, graphql-php)"
+
+      - name: Run integration tests with shop bootstrap
+        run: |
+          set -o pipefail
+          docker compose exec -T -e XDEBUG_MODE=coverage php vendor/bin/phpunit \
+            -c /var/www/test-module/tests/phpunit-integration.xml \
+            --display-skipped | tee integration-tests.log
+
+      # Informational on these lines: the headless tests skip themselves without GraphQL.
+      - name: Count the tests skipped for a missing GraphQL package
+        run: |
+          skipped=$(grep -c -E 'graphql-(base|storefront).* is not installed' integration-tests.log || true)
+          echo "Tests skipped for a missing GraphQL package (phase 2 on 7.1-7.3): $skipped"
+
+      - name: Upload log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: IntegrationTestsLog-${{ matrix.oxid }}-${{ matrix.php }}-${{ matrix.mysql }}
+          path: |
+            integration-tests.log
+            source/source/log/oxideshop.log
+            data/php/logs/error_log.txt
+            source/composer.lock
+            source/composer.json
+
+      - name: Stop containers
+        if: always()
+        run: |
+          docker compose down
+          sleep 2
+
+  test_gate:
+    # A red run has to say which kind of red it is. integration_tests needs
+    # install_shop_with_module, so when an install breaks the tests of that line are SKIPPED and
+    # the run still goes red - indistinguishable from a test catching a defect. This job exists
+    # only to name the case.
+    needs: [ integration_tests ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report which kind of red this run is
+        run: |
+          integration='${{ needs.integration_tests.result }}'
+          echo "integration_tests=$integration"
+
+          case "$integration" in
+            skipped|cancelled)
+              echo "::error title=No tests were executed::integration_tests never ran ($integration). A shop install almost certainly broke, so this run says nothing about the code. Repair the pipeline and re-run before reading this red as a test failure."
+              exit 1
+              ;;
+          esac
+
+          echo "Every test job reached a verdict - a red above is a real finding, not a broken pipeline."

@@ -8,7 +8,7 @@
 # already fetched in its cache, so a retry only downloads the rest. Each retry
 # is reported as a workflow warning, so a flake stays visible.
 #
-# Usage: retry.sh <command> [args...]
+# Usage: [RETRY_BETWEEN='<command>'] retry.sh <command> [args...]
 
 set -u
 
@@ -18,6 +18,12 @@ for attempt in $(seq 1 "$attempts"); do
     "$@" && exit 0
     status=$?
     if [ "$attempt" -lt "$attempts" ]; then
+        # RETRY_BETWEEN: a command to run between attempts, e.g. seeding composer's dist cache from
+        # codeload.github.com when api.github.com is refused (composer-dist-cache-from-codeload.php).
+        if [ -n "${RETRY_BETWEEN:-}" ]; then
+            echo "::notice::between attempts: $RETRY_BETWEEN"
+            eval "$RETRY_BETWEEN" || true
+        fi
         echo "::warning::attempt $attempt of $attempts failed (exit $status), retrying in $delay s: $*"
         sleep "$delay"
         delay=$((delay * 2))
