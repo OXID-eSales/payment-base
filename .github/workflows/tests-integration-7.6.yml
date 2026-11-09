@@ -24,6 +24,7 @@ jobs:
   # Install Shop with Component - Shared setup cached for other jobs
   # ==========================================================================
   install_shop_with_module:
+    name: install_shop_with_module (PHP ${{ matrix.php }}, ${{ matrix.graphql }} GraphQL)
     strategy:
       fail-fast: false
       matrix:
@@ -364,6 +365,7 @@ jobs:
   # Integration Tests - Requires full OXID shop setup with database
   # ==========================================================================
   integration_tests:
+    name: integration_tests (PHP ${{ matrix.php }}, MySQL ${{ matrix.mysql }}, ${{ matrix.graphql }} GraphQL)
     strategy:
       fail-fast: false
       max-parallel: 1

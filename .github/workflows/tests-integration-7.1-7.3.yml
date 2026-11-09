@@ -44,6 +44,7 @@ jobs:
   # Install Shop with Component - one shop per OXID line, cached for the test job
   # ==========================================================================
   install_shop_with_module:
+    name: install_shop_with_module (OXID ${{ matrix.oxid }}, without GraphQL)
     strategy:
       fail-fast: false
       matrix:
@@ -302,6 +303,7 @@ jobs:
   # Integration Tests - the cached shop of each line, PHP 8.3
   # ==========================================================================
   integration_tests:
+    name: integration_tests (OXID ${{ matrix.oxid }}, PHP ${{ matrix.php }}, MySQL ${{ matrix.mysql }}, without GraphQL)
     strategy:
       fail-fast: false
       matrix:
