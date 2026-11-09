@@ -14,10 +14,9 @@ All notable changes to this module are documented here. Format follows
   repairing the OXDEV-10249 layout after the shop-level composer update. Runs the `tests/phpunit-integration.xml`
   suite on the shop's PHPUnit. No GraphQL dimension yet (phase 2 of the 7.1-7.3 experiment) and no styles / unit jobs
   (shop-independent; 7.4-7.6 workflows). Migrations run through `bin/oe-payment-base-migrate` directly, not the
-  composer hook (the generator fires on post-update-cmd before the root scripts). Known 7.x reds from the 2026-11-05
-  experiment: `FullDataPersistenceFlowTest` on 7.1 (`restoreRequestData()` comes from the shop's
-  `tests/RequestTrait.php`, present from 7.2 on); `ContainerBootTest` alias row fails on every fresh shop, 7.4
-  included.
+  composer hook (the generator fires on post-update-cmd before the root scripts). `FullDataPersistenceFlowTest` restores the request data
+  only where the shop backed it up (`restoreRequestData()` is the shop's `tests/RequestTrait.php`, mixed into
+  `IntegrationTestCase` from 7.2 on; absent on b-7.1.x).
 
 ### Fixed
 - **Issue #3 — the class chain stays open for `render()`.** The overrides of `OrderController::render()`,
