@@ -193,7 +193,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --with-all-dependencies --no-interaction
+          RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/composer.lock' "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --with-all-dependencies --no-interaction
 
       # OXDEV-10249, see the script header. Must follow every shop-level composer update.
       - name: Repair the unified-namespace layout (OXDEV-10249)
@@ -336,7 +336,7 @@ jobs:
       # Nothing runs composer at SHOP level here, so no second OXDEV-10249 repair is needed.
       - name: Install component dev dependencies
         run: |
-          "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php bash -c "cd /var/www/test-module && composer install --no-interaction"
+          RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/test-module/composer.lock' "$GITHUB_WORKSPACE"/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php bash -c "cd /var/www/test-module && composer install --no-interaction"
 
       # Proves the schema is complete on the restored shop; a no-op after the install job.
       - name: Run payment-base migrations
