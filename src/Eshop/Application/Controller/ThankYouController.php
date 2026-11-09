@@ -38,7 +38,16 @@ class ThankYouController extends ThankYouController_parent
     /** @var array<int, string>|null */
     private ?array $paymentNotices = null;
 
-    public function render(): string
+    /**
+     * {@inheritDoc}
+     *
+     * No native return type on purpose: core declares none, and the first module in the class chain to
+     * declare one forces every other module extending this method to repeat it or PHP fatals
+     * (payment-base issue #3). The type lives in the docblock.
+     *
+     * @return string
+     */
+    public function render()
     {
         // Before parent::render(), because taking the messages is what keeps
         // them out of the red banner, and nothing downstream needs them there.

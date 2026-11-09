@@ -54,8 +54,16 @@ class OrderController extends OrderController_parent
      * away — to `cl=payment`, `cl=basket` or the home page — when it cannot put
      * an order together, and those redirects exit; the guard then stays spent,
      * which is exactly what stops the two steps redirecting at each other.
+     *
+     * No native return type on purpose: core declares none, and the first module in the class chain to
+     * declare one forces every other module extending this method to repeat it or PHP fatals
+     * (payment-base issue #3). The type lives in the docblock.
+     *
+     * {@inheritDoc}
+     *
+     * @return string
      */
-    public function render(): string
+    public function render()
     {
         $template = (string) parent::render();
 

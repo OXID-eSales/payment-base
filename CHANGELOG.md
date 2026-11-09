@@ -3,6 +3,18 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **Issue #3 — the class chain stays open for `render()`.** The overrides of `OrderController::render()`,
+  `PaymentController::render()` and `ThankYouController::render()` declared `: string` although core declares no
+  return type; the first module in the chain to declare a type closes it, and every other module extending the method
+  had to repeat it or PHP fataled ("Declaration of ... must be compatible with ..."). Affected: v1.2.0 to v1.7.3
+  (`Order::cancelOrder()` had the same defect in v1.2.0 to v1.2.3). The three overrides carry the type in the docblock
+  now, like core. `tests/Integration/Eshop/ExtensionSignatureTest` reflects every class-chain override against core
+  and fails on a native return type core does not have, so the rule cannot regress. The unit-test `FrontendController`
+  stub is untyped like core for the same reason.
+
 ## [v1.7.3 - 2026-11-06]
 
 ### Fixed (OMS-28) - a repeated checkout attempt on an unchanged basket no longer fails with `order_mails_not_kept`

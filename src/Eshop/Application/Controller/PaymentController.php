@@ -46,7 +46,16 @@ class PaymentController extends PaymentController_parent
     private ?string $autoAssignedPaymentId = null;
     private ?string $autoAssignedShipSetId = null;
 
-    public function render(): string
+    /**
+     * {@inheritDoc}
+     *
+     * No native return type on purpose: core declares none, and the first module in the class chain to
+     * declare one forces every other module extending this method to repeat it or PHP fatals
+     * (payment-base issue #3). The type lives in the docblock.
+     *
+     * @return string
+     */
+    public function render()
     {
         $template = (string) parent::render();
 

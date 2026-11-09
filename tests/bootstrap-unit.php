@@ -138,8 +138,9 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\FrontendController::c
     eval(
         'namespace OxidEsales\\Eshop\\Application\\Controller; '
         . 'class FrontendController { '
-        . '  public function init(): void {} '
-        . '  public function render(): string { return ""; } '
+        // Untyped like core: a stub that declares a type would hide the class-chain rule (payment-base issue #3).
+        . '  public function init() {} '
+        . '  public function render() { return ""; } '
         . '}'
     );
 }
