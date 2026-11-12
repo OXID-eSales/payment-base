@@ -3,6 +3,27 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [v1.8.0 - unreleased]
+
+### Fixed
+- **The migration commands reach the shop's `vendor/bin` again.** `.gitattributes` excluded the whole `bin/` folder
+  from the archive composer installs (`/bin export-ignore`, since v1.2.1, when the folder held developer helpers only).
+  From v1.6.1 on, composer.json declares `bin/oe-payment-base-migrate` and `bin/oe-payment-base-schema-check` there;
+  a shop installing from a release archive (`--prefer-dist`, the default) got neither command, and composer skips a
+  declared command whose file is missing without an error. Affected: v1.6.1 to v1.7.4 installed from a release
+  archive; a path repository (a link to a git checkout) was not affected. Only the two developer helpers
+  (`bin/dead-assets`, `bin/pre-commit-check.sh`) stay out of the archive now. `tests/Unit/Packaging/DistArchiveTest`
+  fails when a declared command is export-ignored or not executable.
+- **`metadata.php` carries the release version.** v1.7.4 shipped with `'version' => '1.7.3'`. The composer branch alias
+  of `b-7.4.x` follows the release line (`1.8.x-dev`).
+
+### Upgrade
+- `composer update oxid-esales/payment-base` brings both commands into `vendor/bin`. A shop whose root composer.json
+  lists `oe-payment-base-migrate` under `post-install-cmd` / `post-update-cmd` (README, "Migrations") runs the
+  migrations on every install and update from then on. Do not use `composer reinstall` on a shop to get the commands:
+  OXID's composer plugin deactivates the module before it reinstalls it, and a crash in between leaves the module
+  marked active with its services unloaded.
+
 ## [v1.7.4 - 2026-11-09]
 
 ### Added

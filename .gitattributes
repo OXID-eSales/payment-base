@@ -10,9 +10,13 @@
 /.gitignore         export-ignore
 /.gitleaks.toml     export-ignore
 
-# Developer helper scripts. Migrations are run through the official
-# oe-eshop-db_migrate flow, not through bin/run-migrations.sh.
-/bin                export-ignore
+# Developer helper scripts. The two commands composer.json declares under "bin"
+# (bin/oe-payment-base-migrate, bin/oe-payment-base-schema-check) MUST stay in the
+# archive: composer links them into the shop's vendor/bin only when the files are
+# there. v1.6.1 to v1.7.4 excluded the whole folder and shipped neither command
+# (tests/Unit/Packaging/DistArchiveTest guards this now).
+/bin/dead-assets          export-ignore
+/bin/pre-commit-check.sh  export-ignore
 
 # Generated API documentation and sprint logs.
 /docs/html          export-ignore
