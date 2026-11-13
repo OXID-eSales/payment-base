@@ -1,5 +1,6 @@
 # Sprint 11 — MOL-18: one order per checkout attempt (payment-base half)
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-09-24 · **Branch:** `b-7.4.x-MOL-18-single-order-per-checkout-attempt` · **Status:** DONE, pushed, not merged.
 Twin plan and full report live in mollie-payment: `docs/dev_day_log/20260923/sprints/MOL-18-…md`,
 `docs/dev_day_log/20260924/reports/MOL-18-…md`.

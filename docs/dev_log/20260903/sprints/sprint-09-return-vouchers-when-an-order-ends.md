@@ -1,5 +1,6 @@
 # Sprint 09 — Return the voucher to the pool when an order ends
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Branch:** `b-7.4.x` (payment-base only)
 **Module:** `payment-base` — the rule is shop-level order behaviour, not a PSP concern. No PSP module is touched.
 **Engineering requirements:** [`_engeneering_requirements.md`](./_engeneering_requirements.md) — binding for every story below.

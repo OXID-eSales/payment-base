@@ -1,5 +1,6 @@
 # Sprint 20 — VR-RETURN: one commit path, and a return leg only the paying shopper can drive
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-20-return-leg` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P0 for PayPal SEC-1 and Stripe S-1 (exploitable), P1 for the rest.

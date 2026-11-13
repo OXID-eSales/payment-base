@@ -1,5 +1,8 @@
 # Engineering requirements — dev_log 20260826
 
+> **Consolidated:** these rules are merged into [`../../_engeneering_requirements.md`](../../_engeneering_requirements.md),
+> which is binding for every payment-base sprint. This file stays as the record of the rules for this day's sprints.
+
 Binding for every sprint in this folder. A sprint doc references this file
 instead of repeating the principles.
 

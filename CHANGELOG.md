@@ -46,7 +46,7 @@ All notable changes to this module are documented here. Format follows
   limit is reached.
 - A cron entry for `stripe:prune-idempotency` can be removed.
 
-## [v1.8.0-rc1 - 2026-11-12]
+## [v1.8.0-rc2 - 2026-11-13]
 
 ### Fixed
 - **The migration commands reach the shop's `vendor/bin` again.** `.gitattributes` excluded the whole `bin/` folder

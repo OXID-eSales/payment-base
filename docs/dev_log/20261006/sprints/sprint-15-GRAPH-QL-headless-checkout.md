@@ -1,5 +1,6 @@
 # Sprint 15 — GRAPH-QL: headless checkout (GraphQL Storefront + MCP/ACP) on the contract-first flow
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-06 · **Epic:** GRAPH-QL · **Branch:** `b-7.4.x-GRAPH-QL` in payment-base, stripe, paypal, mollie-payment
 (all cut from `b-7.4.x`; payment-base lands first, the providers' CI installs payment-base from `b-7.4.x`).
 **Status:** payment-base part **DONE 2026-10-06** (S1–S8, reports in [`../done/`](../done/)); provider stories open. Decision taken 2026-10-06: **Option B** of

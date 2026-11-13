@@ -1,7 +1,7 @@
 # Sprints 16–25 — violations review 2026-10-30 (epic VR)
 
 Plan built from the four violations reports and the four dead-code checks in [`../reports/`](../reports/).
-Rules for every sprint: [`_engeneering_requirements.md`](_engeneering_requirements.md).
+Rules for every sprint: [`../../_engeneering_requirements.md`](../../_engeneering_requirements.md) (binding, all payment-base sprints) and this wave's additions in [`_engeneering_requirements.md`](_engeneering_requirements.md).
 Code state the plan is based on: payment-base `6fc1f0a` (review) / `d062955` (dead-code check; the 5 commits in
 between are SEAL-1 sealed client config and touch no story here), stripe `b4ae8b0`, mollie-payment `5f9fc0e`, paypal
 `8538946`.

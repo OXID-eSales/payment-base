@@ -1,5 +1,6 @@
 # Sprint 27 — RC: OXID totals win — the per-line VAT override and its checkbox leave payment-base
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-11-06 (planned) · **Epic:** RC (rounding correction) · **Status:** IMPLEMENTED 2026-11-06 (approved same day) — commits b947e62, 07a6fe2, 1de0327, b3cd084, c15f2ca; gates green; awaiting no-ff merge into `b-7.4.x`; S5 sandbox proof open — see `../done/sprint-27-RC.md`
 **Repos:** payment-base only (see *Why only payment-base* below)
 **Branch:** `b-7.4.x-rounding-correction` (created from `b-7.4.x` e35a849, v1.7.0)

@@ -1,5 +1,6 @@
 # Sprint 12 — MOL-17: refund after a paid payment — no lost update (payment-base half)
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-09-24 · **Branch:** `b-7.4.x-MOL-17-refund-after-paid-lost-update` · **Status:** DONE, pushed, not merged.
 Twin plan and full report in mollie-payment: `docs/dev_day_log/20260924/{sprints,reports}/MOL-17-refund-after-paid-lost-update.md`.
 

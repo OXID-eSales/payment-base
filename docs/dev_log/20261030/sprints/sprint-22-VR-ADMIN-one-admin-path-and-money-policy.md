@@ -1,5 +1,6 @@
 # Sprint 22 — VR-ADMIN: one admin money path, invariants in the aggregate, policy in payment-base
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-22-admin-money-policy` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P1 · **Depends on:** sprint 21 (ledger), sprint 17 (dead `PaymentAdapterInterface` /

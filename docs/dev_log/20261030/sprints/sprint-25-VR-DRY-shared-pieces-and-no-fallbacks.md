@@ -1,5 +1,6 @@
 # Sprint 25 — VR-DRY: shared pieces live in payment-base once; required means required
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-25-dry` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P2 · **Depends on:** sprints 19–23 (they already move the guard chain, token

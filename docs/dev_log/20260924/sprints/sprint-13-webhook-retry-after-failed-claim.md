@@ -1,5 +1,6 @@
 # Sprint 13 — a failed webhook delivery must stay retryable (payment-base)
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-09-24 · **Branch:** `b-7.4.x-webhook-retry-after-failed-claim` · **Ticket:** (id tbd, follow-up of MOL-17)
 **Status:** IN PROGRESS — merge only on approval. Twin plan: mollie-payment
 `docs/dev_day_log/20260924/sprints/webhook-retry-after-failed-claim.md`.

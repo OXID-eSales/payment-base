@@ -1,5 +1,6 @@
 # Sprint 18 — VR-LOG: logs carry ids, never content; every webhook delivery is traceable
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-18-log-hygiene` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P1 (PII in production logs) · **Depends on:** sprint 16 O5 (payment-base mail log).

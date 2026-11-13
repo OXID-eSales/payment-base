@@ -1,5 +1,6 @@
 # Sprint 21 — VR-REFUND: every refund booked once, with the PSP's amount, and restock only when it is due
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-21-refund-booking` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P0 (money + inventory corruption in normal merchant use).

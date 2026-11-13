@@ -1,5 +1,6 @@
 # Sprint 19 — VR-WEBHOOK: no webhook delivery is ever lost; one claim, one guard chain
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd (follow-up of sprint 13 "webhook retry after failed claim")
 **Branches:** `b-7.4.x-VR-19-webhook-claim` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P1 · **Depends on:** sprint 18 L2 (delivery record) for logging only.

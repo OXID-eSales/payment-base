@@ -1,5 +1,6 @@
 # Sprint 16 — VR-OPS: pay1 recovery and a deploy that cannot leave the shop half-migrated
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned 2026-11-03) · **Epic:** VR (violations review 2026-10-30) · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-16-deploy-hygiene` in payment-base (schema check command, mail fail-loud), the deploy
 scripts' repo (wherever pay1's GitHub Actions deploy lives), stripe (endpoint registrar).

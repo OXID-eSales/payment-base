@@ -1,5 +1,6 @@
 # Sprint 28 — OMS: `stash()` answers "are the mails kept", not "did bytes change"
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-11-06 · **Epic:** OMS (order mail stash, STRP-176 follow-up) · **Status:** IMPLEMENTED 2026-11-06 — commits 4d66a14 (plan), 0cf7d29 (S1 red), e3ad212 (S2), S3 see `../done/sprint-28-OMS.md`; gates green; awaiting owner's no-ff merge into `b-7.4.x`
 **Repos:** payment-base only
 **Branch:** `b-7.4.x-order-mail-stash` (created from `b-7.4.x` 7b53ad1, v1.7.2)

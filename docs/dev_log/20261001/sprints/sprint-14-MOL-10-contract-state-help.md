@@ -1,5 +1,6 @@
 # Sprint 14 — MOL-10: shared "Help" for the OXID contract states (payment-base)
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-01 · **Ticket:** MOL-10 (follow-up: shared approach) · **Branch:** `b-7.4.x-MOL-10-contract-state-help`
 **Status:** IN PROGRESS — TDD; merge into `b-7.4.x` on the product owner's word (Mollie's and Stripe's CI install
 payment-base from `b-7.4.x`, so this lands first).

@@ -1,5 +1,6 @@
 # Sprint 24 — VR-HARDEN: every entry point checks CSRF, consent and rights; secrets never travel in URLs
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-24-harden` in payment-base, stripe, paypal (mollie only if R/L items left over).
 **Status:** PLANNED · **Priority:** P2 (medium findings, not exploitable without extra conditions).

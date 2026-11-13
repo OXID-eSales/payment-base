@@ -1,5 +1,6 @@
 # Sprint 10 — Fill the order's shipping address from billing when the shopper ships to billing
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Branch:** `b-7.4.x-order-shipping-address-from-billing` (off `b-7.4.x`)
 **Module:** `payment-base` — decided by the product owner on 2026-09-23: shop-level order behaviour
 for every provider, not a Mollie concern. Mollie contributes only the e2e repro.

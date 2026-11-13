@@ -1,5 +1,6 @@
 # Sprint 06 — Single active payment method: auto-assign and hide the payment blocks
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Branch:** `b-7.4.x` (payment-base; consumer story in `one-page-checkout`)
 **Module:** `payment-base` — decision logic + classic-checkout behaviour.
 Consumer wiring in `one-page-checkout` (S5). No PSP module is touched.

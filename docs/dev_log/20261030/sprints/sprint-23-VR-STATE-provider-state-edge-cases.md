@@ -1,5 +1,6 @@
 # Sprint 23 — VR-STATE: money that arrives late or leaves early always ends in a defined state
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (planned) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-23-state-edges` in payment-base (if a shared "late money" service is extracted), stripe,
 mollie-payment, paypal.

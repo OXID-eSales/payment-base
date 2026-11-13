@@ -1,5 +1,6 @@
 # Sprint 17 — VR-DEAD: dead-code check in each module — remove what never runs, then keep it out with a CI gate
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-10-30 (check run 2026-11-03) · **Epic:** VR · **Ticket:** tbd
 **Branches:** `b-7.4.x-VR-17-dead-code` in payment-base, stripe, mollie-payment, paypal.
 **Status:** PLANNED · **Priority:** P1 — runs right after sprint 16, before 18–25, so that the later sprints do not

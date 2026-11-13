@@ -1,5 +1,8 @@
 # Engineering requirements — dev_log 20261030 (violations review sprints 16–25)
 
+> **Consolidated:** these rules are merged into [`../../_engeneering_requirements.md`](../../_engeneering_requirements.md),
+> which is binding for every payment-base sprint. This file stays as the record of the rules for this day's sprints.
+
 Binding for every sprint in this folder. Carried over from
 [`20260903`](../../20260903/sprints/_engeneering_requirements.md) unchanged; this file only adds the rules
 that the 2026-10-30 violations review showed were being broken, so each sprint can point here instead of

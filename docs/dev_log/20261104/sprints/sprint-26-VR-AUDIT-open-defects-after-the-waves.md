@@ -1,5 +1,6 @@
 # Sprint 26 — VR-AUDIT: the six code defects still open after the VR waves
 
+**Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-11-04 (planned) · **Epic:** VR · **Status:** DONE 2026-11-05 — merged into `b-7.4.x`: payment-base 2cebca4, stripe b8db293, mollie cf83f90 (CI green 7.4/7.5/7.6 + secret scan + dead-code gate)
 **Repos:** payment-base, mollie-payment, stripe (stripe-wallet), paypal (paypal-payment)
 **Base:** `b-7.4.x` — payment-base 1a081dc, stripe c7f7bb7, mollie baaed48, paypal c5fbc27 (all CI-green)
