@@ -915,6 +915,7 @@ services:
     class: OxidEsales\PaymentBase\Validation\RateLimit\DoctrineRateLimitStore
     arguments:
       $connection: '@doctrine.dbal.connection'
+      $records: '@OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface'
 
   # Sprint 29 (VRL): the admin setting `iValidationApiRatePerMinute` (requests per visitor address and minute).
   OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface:
