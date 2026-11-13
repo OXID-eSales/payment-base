@@ -14,4 +14,9 @@ Report: [`reports/01-mythos-o08-…`](reports/01-mythos-o08-validation-endpoint-
 | S3 per-visitor key + admin setting | done | 40 invented ids → 422, 0 rows; fresh sessions → 429; limit from iValidationApiRatePerMinute; mollie branch b-7.4.x-validation-rate-limit (2 test lines) |
 | S4 atomic store, purge, fail closed | done | one upsert, expired key restarts at 1, new row purges expired rows, DB error propagates; gates green |
 | S5 table cleans itself on every insert (no CLI) | done | every insert purges ≤ 500 expired rows (sparing its own row); deleteExpired batched, fails closed; stripe branch: test + docs |
-| S6 prove + record | open | |
+| S6 prove + record | done | HTTP: 30×200 → 429 at 31; 40 invented ids → 422, 0 rows; fresh sessions → 429; 0 expired rows left; CHANGELOG/README |
+
+**Sprint 29 DONE 2026-11-13** — awaiting owner review and no-ff merges, in this order: payment-base
+`b-7.4.x-validation-rate-limit`, then mollie-payment `b-7.4.x-validation-rate-limit` (parity test, 2 lines), then stripe
+`b-7.4.x-validation-rate-limit` (prune command docs + one integration assertion). Open: trusted proxies on production shops behind a
+CDN; CVSS-B and the answer to Mythos (security team); Mantis for appendix D can reference this sprint.

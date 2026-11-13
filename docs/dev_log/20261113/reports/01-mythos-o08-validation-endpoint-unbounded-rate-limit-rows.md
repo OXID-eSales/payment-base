@@ -159,3 +159,29 @@ configuration makes `isActive` throw. Open for Mythos: which two module IDs were
 A hand-rolled curl session through the Cloudflare tunnel (`daniil.oxiddev.de`) got no `sid` cookie and stopped at
 `ActiveSessionGuard` (401), so the HTTP-level measurement moves to S6. Until then, S1's integration test on the real
 guard chain stands in for it.
+
+## After sprint 29 (measured 2026-11-13, local shop, HTTPS through its tunnel)
+
+Branch `b-7.4.x-validation-rate-limit`. Same three steps as the Mythos script (`repro29.sh`: browser User-Agent, session
+from a product page, Origin of the shop):
+
+| Step | Before (Mythos, v1.7.4) | After |
+|---|---|---|
+| 1 control: 40 calls, existing plugin id, one session | 500 before the limit, first 429 at call 31, 1 row | **30 × 200 (`valid:true`), first 429 at call 31, 1 row** |
+| 2 test: 40 invented plugin ids, same session | no 429, **40 rows** | **40 × 422, 0 rows** |
+| 3 test: 5 fresh sessions after the limit | 5 × 500 (not limited) | **5 × 429** |
+| `oe_payment_base` (active, no rules) | 500 | 422 |
+| refused value (`firstName=Jo<script>`) for stripe / mollie | — | 200 `valid:false`, `blocked_character "<"`, formatted message |
+
+The window's one row: `validate:{sha1(address)}:{minute}`, count 45 = 40 + 5 fresh sessions. After the first inserts
+on the branch the table held **0 expired rows** (it had 223, among them rows from 2026-10-07); what remains is live:
+160 PayPal webhook rows inside their 90-day life and the current rate-limit row.
+
+**Deployment finding:** the local shop's address in the key is the tunnel's (Docker gateway 172.18.0.1), because
+`sPaymentBaseTrustedProxies` is empty. Behind a reverse proxy or CDN without that setting, all visitors share one bucket.
+Both checkout footers fail open on 429 (the server-side check stays the gate), so checkout keeps working; only the early
+field feedback stops once the shared limit is reached. CHANGELOG "Upgrade" and README say to set the trusted proxies.
+
+**Size estimate corrected:** no current code writes `paypal_webhook` rows (the 90-day rows are leftovers of older PayPal
+code), so they leave as they expire. At 10,000 visitors a day the table now holds about one day of 24-hour rows plus a few
+minutes of 2-minute rows: **~1,000 rows ≈ 1 MB**, under abuse as well (one live rate-limit row per client address).

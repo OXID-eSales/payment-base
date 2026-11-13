@@ -1,7 +1,7 @@
 # Sprint 29 — VRL: the validation rate limit counts per visitor and writes no rows for unknown plugins
 
 **Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
-**Date:** 2026-11-13 · **Epic:** VRL (validation rate limit, Mythos O-08) · **Status:** IN PROGRESS — D1–D8 accepted as recommended by the owner 2026-11-13
+**Date:** 2026-11-13 · **Epic:** VRL (validation rate limit, Mythos O-08) · **Status:** DONE 2026-11-13 — D1–D6 as recommended, D7/D8 superseded (automatic purge); see `../done/sprint-29-VRL-S*.md`; awaiting owner merges
 **Repos:** payment-base (all code). mollie-payment: one test line, only if D2 = "required". stripe: deprecate or
 Feature branch only. stripe: no change (D7 superseded).
 **Branch:** `b-7.4.x-validation-rate-limit` (to be created from `b-7.4.x` d25a286, v1.8.0-rc1)
