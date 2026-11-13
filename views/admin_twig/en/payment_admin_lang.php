@@ -32,7 +32,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_return_leg'             => 'Return leg',
 
     // Module settings — field labels
-    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per minute)',
+    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validation API rate limit (requests per visitor address and minute)',
     'SHOP_MODULE_blPaymentBaseReleaseVouchersOnOrderEnd' => 'Return vouchers to the pool when an order is cancelled or deleted',
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Use iframe instead of checkout button',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'

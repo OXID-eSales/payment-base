@@ -10,12 +10,12 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Validation\RateLimit;
 
 /**
- * Returns the effective rate-limit (requests / minute) for a given plugin.
+ * The validation endpoint's limit: requests per visitor (client address) and minute, the same for every plugin.
  *
- * The default implementation checks registered per-PSP overrides first,
- * then falls back to the global admin setting.
+ * Sprint 29 (VRL, Mythos O-08): was `getLimitForPlugin(string)`; the limit stopped depending on the plugin id
+ * when the counter stopped being keyed on it.
  */
 interface RateLimitConfigInterface
 {
-    public function getLimitForPlugin(string $pluginModuleId): int;
+    public function getLimitPerMinute(): int;
 }

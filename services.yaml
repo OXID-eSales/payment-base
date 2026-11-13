@@ -916,13 +916,11 @@ services:
     arguments:
       $connection: '@doctrine.dbal.connection'
 
-  # The global default is 30 req/min, matching the admin setting `iValidationApiRatePerMinute`.
-  # Note: wiring the live admin setting requires ModuleSettingBridgeInterface; deferred
-  # to Phase E when an admin-UI integration sprint adds the bridge dep.
+  # Sprint 29 (VRL): the admin setting `iValidationApiRatePerMinute` (requests per visitor address and minute).
   OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface:
-    class: OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig
+    class: OxidEsales\PaymentBase\Validation\RateLimit\ModuleSettingRateLimitConfig
     arguments:
-      $globalDefault: 30
+      $settings: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Bridge\ModuleSettingBridgeInterface'
 
   OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard:
     arguments:

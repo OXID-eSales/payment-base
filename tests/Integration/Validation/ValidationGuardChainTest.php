@@ -13,7 +13,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use OxidEsales\EshopCommunity\Internal\Container\ContainerFactory;
 use OxidEsales\EshopCommunity\Internal\Framework\Database\ConnectionProviderInterface;
-use OxidEsales\EshopCommunity\Internal\Framework\Module\Facade\ModuleSettingServiceInterface;
+use OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Bridge\ModuleSettingBridgeInterface;
 use OxidEsales\PaymentBase\Repository\DoctrineIdempotencyRepository;
 use OxidEsales\PaymentBase\Validation\Guard\CsrfTokenGuard;
 use OxidEsales\PaymentBase\Validation\Guard\GuardFailure;
@@ -166,10 +166,10 @@ final class ValidationGuardChainTest extends TestCase
 
     private function configuredLimit(): int
     {
-        /** @var ModuleSettingServiceInterface $settings */
-        $settings = ContainerFactory::getInstance()->getContainer()->get(ModuleSettingServiceInterface::class);
+        /** @var ModuleSettingBridgeInterface $settings */
+        $settings = ContainerFactory::getInstance()->getContainer()->get(ModuleSettingBridgeInterface::class);
 
-        return $settings->getInteger('iValidationApiRatePerMinute', 'oe_payment_base');
+        return (int) $settings->get('iValidationApiRatePerMinute', 'oe_payment_base');
     }
 
     private function store(): DoctrineRateLimitStore

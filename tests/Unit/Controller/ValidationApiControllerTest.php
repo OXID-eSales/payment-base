@@ -15,6 +15,7 @@ use OxidEsales\PaymentBase\Validation\Guard\ValidationGuardInterface;
 use OxidEsales\PaymentBase\Validation\Guard\ValidationRequestContext;
 use OxidEsales\PaymentBase\Validation\Message\MessageFormatterInterface;
 use OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface;
+use OxidEsales\PaymentBase\Webhook\Guard\TrustedProxyClientIp;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -130,6 +131,7 @@ class ValidationApiControllerTest extends TestCase
             sessionId: 'sess',
             originHeader: null,
             refererHeader: null,
+            clientIp: '203.0.113.1',
         );
         $sut = new TestableValidationApiController([$guard], $ctx, $loader, [$formatter]);
 
@@ -162,6 +164,7 @@ class ValidationApiControllerTest extends TestCase
             sessionId: 'sess',
             originHeader: null,
             refererHeader: null,
+            clientIp: '203.0.113.1',
         );
         $sut = new TestableValidationApiController([$guard], $ctx, $loader, []);
 
@@ -193,6 +196,7 @@ class ValidationApiControllerTest extends TestCase
         $services = [
             'oe.payment_base.validation_guard_iterator' => [$this->failingGuard(403, 1)],
             ValidationRuleLoaderInterface::class => $this->loader,
+            TrustedProxyClientIp::class => new TrustedProxyClientIp(),
             'oe.payment_base.validation_message_formatter_iterator' => [],
         ];
         $controller = new ContainerFailingValidationApiController(null, $services);
@@ -201,6 +205,23 @@ class ValidationApiControllerTest extends TestCase
 
         self::assertSame('', $controller->validate());
         self::assertSame(403, $controller->capturedStatus, 'the guard from the container ran');
+    }
+
+    /**
+     * Sprint 29 (VRL): the rate limit counts per visitor address; without the resolver it could not, so init fails.
+     */
+    public function testInitWithoutTheClientAddressResolver_Fails(): void
+    {
+        $services = [
+            'oe.payment_base.validation_guard_iterator' => [$this->passingGuard()],
+            ValidationRuleLoaderInterface::class => $this->loader,
+            TrustedProxyClientIp::class => null,
+            'oe.payment_base.validation_message_formatter_iterator' => [],
+        ];
+        $controller = new ContainerFailingValidationApiController(null, $services);
+
+        $this->expectExceptionMessage('client address resolver');
+        $controller->init();
     }
 
     private function passingGuard(): ValidationGuardInterface&MockObject
@@ -242,6 +263,7 @@ class ValidationApiControllerTest extends TestCase
             sessionId: 'sess',
             originHeader: null,
             refererHeader: null,
+            clientIp: '203.0.113.1',
         );
 
         return new TestableValidationApiController($guards, $ctx, $this->loader, $formatters);
@@ -310,7 +332,7 @@ class ContainerFailingValidationApiController extends ValidationApiController
 
     protected function buildRequestContext(): ValidationRequestContext
     {
-        return new ValidationRequestContext('POST', 10, [], 'p', null, 'sess', null, null);
+        return new ValidationRequestContext('POST', 10, [], 'p', null, 'sess', null, null, '203.0.113.1');
     }
 
     protected function sendFailureResponse(int $httpStatus): string

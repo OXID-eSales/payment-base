@@ -106,7 +106,7 @@ class RateLimitGuardTest extends TestCase
     private function config(int $limit): RateLimitConfigInterface
     {
         $config = $this->createStub(RateLimitConfigInterface::class);
-        $config->method('getLimitForPlugin')->willReturn($limit);
+        $config->method('getLimitPerMinute')->willReturn($limit);
 
         return $config;
     }

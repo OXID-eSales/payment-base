@@ -77,6 +77,7 @@ class SameOriginGuardTest extends TestCase
             sessionId: 'sess',
             originHeader: $origin,
             refererHeader: $referer,
+            clientIp: '203.0.113.1',
         );
     }
 }

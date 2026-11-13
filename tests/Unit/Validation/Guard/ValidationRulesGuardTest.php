@@ -77,6 +77,7 @@ final class ValidationRulesGuardTest extends TestCase
             sessionId: 'sess',
             originHeader: null,
             refererHeader: null,
+            clientIp: '203.0.113.1',
         );
     }
 }
