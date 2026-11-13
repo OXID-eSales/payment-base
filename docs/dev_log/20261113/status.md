@@ -8,7 +8,7 @@ Report: [`reports/01-mythos-o08-…`](reports/01-mythos-o08-validation-endpoint-
 
 | Story | State | Notes |
 |---|---|---|
-| S0 local repro + R1 | open | |
+| S0 local repro + R1 | done | problems 5/6 confirmed in the container; R1: Stripe validates fine locally, no extra story; HTTP measurement moved to S6 |
 | S1 tests red | open | |
 | S2 allowlist + rules guard before the limit | open | |
 | S3 per-visitor key + admin setting | open | |

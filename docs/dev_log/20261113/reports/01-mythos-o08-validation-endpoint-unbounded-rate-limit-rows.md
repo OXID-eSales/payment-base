@@ -137,3 +137,25 @@ Conclusion: at this traffic the table does not hurt an honest shop today; it gro
 risk is abuse. One client fills it at about 1.4 GB a day, and nothing ever removes the rows. After the sprint,
 the table stays at about 20 MB regardless of abuse, and 90 % of that is PayPal's 90-day webhook retention.
 Whether 90 days is needed there is a PayPal question, not part of this sprint.
+
+## Local reproduction (sprint 29 S0, 2026-11-13)
+
+The Mythos script was not available; probed the real container services in the local shop's PHP container instead
+(payment-base `b-7.4.x-validation-rate-limit` = v1.8.0-rc1 code, CE of this SDK checkout):
+
+| pluginModuleId | `ModuleActivationBridge::isActive` | rules file | validation run |
+|---|---|---|---|
+| `oe_payments_stripe_wallet` | true | yes (`vendor/oxid-esales/stripe-wallet`) | `validateField` returns, no exception |
+| `oe_payments_mollie` | true | yes | returns, no exception |
+| `oe_payment_base` | true | **no** | → "Validation rules file not found" → 500 (problem 6) |
+| `oe_one_page_checkout` (not installed here) | **throws** `ModuleConfigurationNotFoundException` | — | → 500 (problem 5) |
+| `cc29probe-x1` (invented) | **throws** `ModuleConfigurationNotFoundException` | — | → 500 (problem 5) |
+
+**R1:** locally Stripe's validation path works end to end, so no Stripe story is needed. The appendix-D 500s
+for "the two active modules" match problems 5/6: `oe_payment_base` ships no rules, and an ID without module
+configuration makes `isActive` throw. Open for Mythos: which two module IDs were sent. If one was
+`oe_payments_stripe_wallet` on sec-760, that instance's Stripe install lacks `src/Resources/validation-rules.php`.
+
+A hand-rolled curl session through the Cloudflare tunnel (`daniil.oxiddev.de`) got no `sid` cookie and stopped at
+`ActiveSessionGuard` (401), so the HTTP-level measurement moves to S6. Until then, S1's integration test on the real
+guard chain stands in for it.
