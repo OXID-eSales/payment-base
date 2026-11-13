@@ -9,9 +9,9 @@ Report: [`reports/01-mythos-o08-…`](reports/01-mythos-o08-validation-endpoint-
 | Story | State | Notes |
 |---|---|---|
 | S0 local repro + R1 | done | problems 5/6 confirmed in the container; R1: Stripe validates fine locally, no extra story; HTTP measurement moved to S6 |
-| S1 tests red | open | |
+| S1 tests red | done | 5 unit + 2 integration files; all red for the named reason; OxidActiveModuleQueryTest moved to Integration (CE DAO not in standalone autoload) |
 | S2 allowlist + rules guard before the limit | open | |
 | S3 per-visitor key + admin setting | open | |
 | S4 atomic store, purge, fail closed | open | |
-| S5 `oe:payments:idempotency:prune` | open | |
+| S5 table cleans itself on every insert (no CLI) | open | changed after owner question 2026-11-13 |
 | S6 prove + record | open | |

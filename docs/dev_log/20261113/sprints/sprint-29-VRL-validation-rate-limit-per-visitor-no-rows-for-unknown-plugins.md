@@ -3,7 +3,7 @@
 **Engineering requirements (binding):** [`dev_log/_engeneering_requirements.md`](../../_engeneering_requirements.md)  
 **Date:** 2026-11-13 · **Epic:** VRL (validation rate limit, Mythos O-08) · **Status:** IN PROGRESS — D1–D8 accepted as recommended by the owner 2026-11-13
 **Repos:** payment-base (all code). mollie-payment: one test line, only if D2 = "required". stripe: deprecate or
-remove `stripe:prune-idempotency` (D7). Feature branches only in both.
+Feature branch only. stripe: no change (D7 superseded).
 **Branch:** `b-7.4.x-validation-rate-limit` (to be created from `b-7.4.x` d25a286, v1.8.0-rc1)
 **Requirements:** [`../../20261030/sprints/_engeneering_requirements.md`](../../20261030/sprints/_engeneering_requirements.md)
 — TDD (red first), SOLID, DRY, Clean Code, no overengineering, one path / no fallbacks, tests may not pin a bug,
@@ -72,22 +72,29 @@ Guard order (ascending):  PostOnly 10 → PayloadSize 20 → ActiveSession 30 �
      OXRESULT  = IF(OXEXPIRES <= :now, '1', CAST(OXRESULT AS UNSIGNED) + 1),
      OXEXPIRES = IF(OXEXPIRES <= :now, :expires, OXEXPIRES)
    ```
-   then `SELECT OXRESULT … WHERE OXKEY = :key`. When the insert created the row (affected rows = 1), it also runs
-   `DELETE … WHERE OXSTATUS = 'rate_limit' AND OXEXPIRES < :now` (uses `IDX_EXPIRES`). That is once per new
-   key, i.e. once per client and minute, and it touches only `rate_limit` rows, never payment idempotency rows.
+   then `SELECT OXRESULT … WHERE OXKEY = :key`. When the insert created the row (affected rows = 1), it calls the
+   shared purge of §5 (`IdempotencyRepositoryInterface::deleteExpired()`), once per new key, i.e. once per
+   client and minute.
    DBAL exceptions are **not** caught any more: the request fails with 500 (validation and webhooks alike; PSPs
    retry webhooks). `RateLimitStoreInterface` is unchanged (stripe's wiring test implements it).
    MySQL/MariaDB only, like the shop.
-5. **The table is cleaned by payment-base, in two places with separate jobs** (D8):
-   - **Inline (§4), `rate_limit` rows only.** Anonymous traffic creates them at the attacker's pace, so they must
-     stay bounded without depending on a cron someone may never set up. The first purge after deploy also
-     removes all historic expired `rate_limit` rows (the DELETE has no key filter).
-   - **Console command `oe:payments:idempotency:prune`** (payment-base, beside `oe:payments:reconcile-oxpaid` and
-     `oe:payments:not_finished:cleanup`) → `IdempotencyRepositoryInterface::deleteExpired()`. Every expired row of
-     every kind (checkout attempts, webhook claims, admin operations, rate limits). These grow at the pace of
-     orders, so a daily cron is enough. It is documented in the README's cron section. It exits non-zero on a DB
-     error, without a "pruned 0" success message.
-   - Stripe's `stripe:prune-idempotency` becomes a duplicate (D7).
+5. **The table cleans itself on every insert, with no cron and no CLI** (owner question 2026-11-13: "is the table
+   cleaned up automatically, always, without CLI?"; replaces the earlier D7/D8):
+   - `IdempotencyRepositoryInterface::deleteExpired()` (exists) becomes
+     `DELETE FROM oe_payments_idempotency WHERE OXEXPIRES < :now LIMIT 500` (on `IDX_EXPIRES`) and no longer
+     swallows DBAL exceptions (no fallbacks).
+   - It runs after every **insert** into the table: `DoctrineIdempotencyRepository::save()` (insert branch) and
+     `::claim()` (insert branch), and `DoctrineRateLimitStore::increment()` when its upsert inserted (the store now
+     takes `IdempotencyRepositoryInterface`; there is one purge, not two). Each order, webhook event, admin operation
+     and new rate-limit window therefore removes up to 500 expired rows. The table stays at about its live size, and
+     an old backlog (a year without cleanup ≈ 800k rows) is worked off in steps of 500 instead of one long DELETE
+     in a shopper's request.
+   - Safe for every reader, checked 2026-11-13: `claim()` takes over an expired row, `IdempotentAttemptGuard` and
+     stripe's `IdempotentExecutor` treat an expired row as absent, `release()` writes an already-expired row on
+     purpose ("no attempt"), and `OperationIdempotency` re-claims. A deleted row and an expired row behave the same.
+     No current code writes `paypal_webhook` rows (the 90-day rows in the local DB are leftovers from older PayPal
+     code), so they go as they expire.
+   - Stripe's `stripe:prune-idempotency` stays as it is: a manual tool, no longer needed in cron. No stripe change.
 
 Rejected:
 - A separate rate-limit table: needs a migration and a second store for an unbounded-growth problem that the purge
@@ -109,8 +116,8 @@ Rejected:
 | D4 | Purge inline on insert (this plan), or a separate table? | Inline purge; table only if it shows up in slow logs. |
 | D5 | Version: CHANGELOG entry under the coming `v1.8.0` (b-7.4.x is at `v1.8.0-rc1`), so the fix ships in the release, not as v1.7.5. A v1.7.x backport only on request. | Into v1.8.0. |
 | D6 | Response for `oe_payment_base` / OPC (active, no rules): 422 (this plan). | 422. |
-| D7 | Stripe's `stripe:prune-idempotency` once payment-base has `oe:payments:idempotency:prune`: remove it now (stripe feature branch, CHANGELOG tells merchants to change their cron), or keep it for one release as a deprecated wrapper that prints the new name and calls the same `deleteExpired()`. | Deprecate now (merchant crons keep working, no silent cron failure), remove in the next stripe major. |
-| D8 | Inline purge of `rate_limit` rows **and** the cron command, or the cron command only? | Both. They have separate jobs: the inline purge bounds what anonymous traffic writes without any cron, and the command cleans the payment rows. The command only overlaps on rows the inline purge already removes. |
+| D7 | ~~payment-base prune command, stripe's deprecated~~ **Superseded 2026-11-13:** no CLI. The table cleans itself on every insert (§5). Stripe's command stays untouched as a manual tool. | — |
+| D8 | ~~inline purge for rate-limit rows plus cron~~ **Superseded 2026-11-13:** one automatic purge of all expired rows (§5). | — |
 
 ## Out of scope
 
@@ -177,8 +184,8 @@ counts and the R1 answer. If Stripe 500s locally: stop and raise a new story bef
   tagged guards in controller order with a real `DoctrineRateLimitStore`:
   - `testInventedPluginIds_WriteNoRows` (40 IDs → 40×422, row delta 0). Red (today 40 rows).
   - `testFreshSessions_FromOneClient_AreLimited` (31st call with a new session each time → 429). Red.
-  - `testExpiredRateLimitRows_AreRemovedOnTheNextNewKey` (seed an expired `rate_limit` row and an expired
-    non-rate-limit row → the next call removes only the first). Red.
+  - `testExpiredRows_AreRemovedOnTheNextNewKey` (seed an expired `rate_limit` row, an expired payment row and a
+    live payment row → the next new key removes both expired rows and keeps the live one). Red.
   - `testAnExpiredKeyIsReused_AndStartsAtOne` (seed same key expired, count 99 → next increment = 1). Red.
   - Fixtures: keys prefixed `vrl29-`, removed in setUp/tearDown (pattern of `ContractLostUpdateTest`).
 
@@ -251,8 +258,8 @@ green.
 **Estimate:** M
 
 **Implementation steps:**
-1. `DoctrineRateLimitStore::increment()`: the upsert from Design §4, then the count read. Purge of expired
-   `rate_limit` rows only when the upsert inserted.
+1. `DoctrineRateLimitStore::increment()`: the upsert from Design §4, then the count read. When the upsert
+   inserted, it calls `IdempotencyRepositoryInterface::deleteExpired()` (the one purge, made automatic in S5).
 2. Remove `findRow`, `isExpired`, `insertRow`, `updateRow` and the `catch (Exception) { return 0; }`.
 3. Class docblock: why the table is shared, the purge rule, fail-closed.
 4. Unit test (mocked `Connection`): the statements and their order; a DBAL exception propagates.
@@ -262,38 +269,42 @@ keeps its contract and loses the hidden "0 on error"; no new interface or class.
 
 **DevOps gate:** all gates; Integration `--group database` ✓; stripe `WebhookGuardChainWiringTest` ✓.
 
-**Definition of Done:** `testExpiredRateLimitRows_AreRemovedOnTheNextNewKey` and `testAnExpiredKeyIsReused_AndStartsAtOne`
+**Definition of Done:** `testExpiredRows_AreRemovedOnTheNextNewKey` and `testAnExpiredKeyIsReused_AndStartsAtOne`
 green; two concurrent first calls (integration, two connections) give counts 1 and 2, not 1 and 0.
 
 ---
 
-## Story 5 — `oe:payments:idempotency:prune` in payment-base
+## Story 5 — The table cleans itself on every insert
 
-**Why:** closes problem 9. The table owner cleans its table for every provider.
+**Why:** closes problem 9 without depending on a cron (design §5).
 **Estimate:** S
 
 **Tests first (TDD):**
-- `tests/Unit/Command/PruneIdempotencyCommandTest.php`: success prints the count and exits 0; a repository
-  exception exits 1 with the error and no success line.
-- `tests/Integration/Repository/IdempotencyPruneTest.php` (`#[Group('database')]`): seed an expired and a live row
-  of each kind (`rate_limit`, checkout attempt, webhook claim, admin operation) → the command removes exactly the
-  expired ones; a later `claim()` on a pruned key inserts as on a fresh key.
+- `tests/Integration/Repository/IdempotencyAutoPurgeTest.php` (`#[Group('integration')]`):
+  - `testAnInsertBySave_RemovesExpiredRowsOfEveryKind`: seed expired rows of each kind (`rate_limit`, checkout
+    attempt, admin operation, legacy `paypal_webhook`) and live ones → one `save()` of a new record → the expired
+    rows are gone, the live ones stay.
+  - `testAnInsertByClaim_RemovesExpiredRows`: the same through `claim()`.
+  - `testAnUpdate_DoesNotPurge`: `save()` of an existing id leaves an expired row in place (the purge runs on inserts only).
+  - `testOnePurgeRemovesAtMost500Rows`: seed 501 expired rows → one insert → one left.
+  - `testAPurgedKeyIsClaimedLikeAFreshKey`.
+- `tests/Unit/Repository/DoctrineIdempotencyRepositoryTest.php`: `deleteExpired()` lets a DBAL exception through
+  (today it answers 0).
 
 **Implementation steps:**
-1. `src/Command/PruneIdempotencyCommand.php` (payment-base), `oe:payments:idempotency:prune`, wired in `services.yaml`
-   next to the other two commands. The command is taken over from stripe's class, in payment-base's namespace.
-2. README "Cron" section: daily `bin/oe-console oe:payments:idempotency:prune`.
-3. D7 in stripe (feature branch `b-7.4.x-validation-rate-limit` from `b-7.4.x`, owner merges): deprecated wrapper or
-   removal, plus a CHANGELOG line about the cron entry.
-4. The dead-code gate keeps `deleteExpired()` alive through a production caller in payment-base itself.
+1. `deleteExpired()`: `LIMIT 500`, no catch; docblock.
+2. `save()` / `claim()`: call it after their insert.
+3. `DoctrineRateLimitStore`: inject `IdempotencyRepositoryInterface`; purge via it (replaces S4's own DELETE).
+4. README: "The table cleans itself; no cron needed." CHANGELOG mentions that `stripe:prune-idempotency` is no longer
+   needed in cron.
 
-**SOLID/Clean check:** SRP: the command only prunes, retention lives in each row's `OXEXPIRES`. Agnosticism: no
-provider is named. DRY: one prune path, stripe delegates to it (or is gone).
+**SOLID/Clean check:** SRP: the repository owns its table's housekeeping. DRY: one purge for all writers. No new
+class, command or interface.
 
-**DevOps gate:** all payment-base gates; stripe unit suite (+ its command test changed or removed per D7).
+**DevOps gate:** all payment-base gates; stripe unit suite (IdempotentExecutor, PruneIdempotencyCommand) green.
 
-**Definition of Done:** on the local DB, `select oxstatus, count(*) from oe_payments_idempotency where oxexpires < now() group by 1`
-returns no rows after one run. The before/after counts go into the done report.
+**Definition of Done:** on the local DB, after one order (or one validation call),
+`select count(*) from oe_payments_idempotency where oxexpires < now()` decreases by up to 500 per insert and reaches 0.
 
 ---
 
@@ -314,7 +325,7 @@ returns no rows after one run. The before/after counts go into the done report.
 5. `../status.md` one line.
 
 **Definition of Done:** sprint-level DoD met; owner can merge no-ff into `b-7.4.x` (payment-base first, then
-mollie if D2 = required, then stripe for D7).
+mollie (D2).
 
 ## Suggested order
 S0 → S1 → S2 → S3 → S4 → S5 → S6. S2 alone already removes the row growth from invented IDs. S3 and S4 make the limit

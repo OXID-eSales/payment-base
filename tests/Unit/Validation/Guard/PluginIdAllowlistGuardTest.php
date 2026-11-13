@@ -47,9 +47,13 @@ class PluginIdAllowlistGuardTest extends TestCase
         $this->assertSame(422, $failure->httpStatus);
     }
 
-    public function testHasPrioritySeventyenty(): void
+    /**
+     * Sprint 29 (VRL, Mythos O-08): a rejected plugin id must not reach the rate limit, which writes a row.
+     */
+    public function testRunsBeforeTheRulesGuardAndTheRateLimit(): void
     {
-        $this->assertSame(70, $this->guard->getPriority());
+        $this->assertSame(53, $this->guard->getPriority());
+        $this->assertLessThan(60, $this->guard->getPriority(), 'RateLimitGuard has priority 60');
     }
 
     private function makeContext(string $pluginModuleId): ValidationRequestContext

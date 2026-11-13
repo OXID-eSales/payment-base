@@ -9,15 +9,18 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Tests\Unit\Validation\Guard;
 
+use OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore;
 use OxidEsales\PaymentBase\Validation\Guard\RateLimitGuard;
 use OxidEsales\PaymentBase\Validation\Guard\ValidationRequestContext;
-use OxidEsales\PaymentBase\Validation\RateLimit\ConfigurableRateLimitConfig;
-use OxidEsales\PaymentBase\Tests\Support\Validation\InMemoryRateLimitStore;
 use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface;
+use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Sprint 29 (VRL, Mythos O-08): the limit counts per visitor (client IP), not per plugin id or session,
+ * which the caller chooses freely.
+ */
 #[CoversClass(RateLimitGuard::class)]
 class RateLimitGuardTest extends TestCase
 {
@@ -30,16 +33,15 @@ class RateLimitGuardTest extends TestCase
 
     public function testAllowsUnderLimit(): void
     {
-        $guard = $this->makeGuard(globalDefault: 3);
-        $ctx = $this->makeContext('plugin_a', 'sess1');
+        $guard = $this->makeGuard(limit: 3);
 
-        $this->assertNull($guard->check($ctx));
+        $this->assertNull($guard->check($this->makeContext('plugin_a', 'sess1', '203.0.113.7')));
     }
 
     public function testRejectsAtCapPlusOneInWindow(): void
     {
-        $guard = $this->makeGuard(globalDefault: 2);
-        $ctx = $this->makeContext('plugin_a', 'sess1');
+        $guard = $this->makeGuard(limit: 2);
+        $ctx = $this->makeContext('plugin_a', 'sess1', '203.0.113.7');
 
         $guard->check($ctx);
         $guard->check($ctx);
@@ -49,51 +51,67 @@ class RateLimitGuardTest extends TestCase
         $this->assertSame(429, $failure->httpStatus);
     }
 
-    public function testCountersAreScopedByPluginModuleId(): void
+    public function testOneClientSharesOneCounter_AcrossPluginIdsAndSessions(): void
     {
-        $guard = $this->makeGuard(globalDefault: 2);
-        $ctxA = $this->makeContext('plugin_a', 'sess1');
-        $ctxB = $this->makeContext('plugin_b', 'sess1');
+        $guard = $this->makeGuard(limit: 2);
 
-        $guard->check($ctxA);
-        $guard->check($ctxA);
-        // plugin_a is at limit; plugin_b is independent
-        $this->assertNotNull($guard->check($ctxA), 'plugin_a should be blocked');
-        $this->assertNull($guard->check($ctxB), 'plugin_b should still pass');
+        $this->assertNull($guard->check($this->makeContext('plugin_a', 'sess1', '203.0.113.7')));
+        $this->assertNull($guard->check($this->makeContext('plugin_b', 'sess2', '203.0.113.7')));
+        $failure = $guard->check($this->makeContext('invented-id', 'sess3', '203.0.113.7'));
+
+        $this->assertNotNull($failure, 'a new plugin id or a new session must not start the count again');
+        $this->assertSame(429, $failure->httpStatus);
     }
 
-    public function testRespectsPerPluginOverride(): void
+    public function testDifferentClients_HaveOwnCounters(): void
     {
-        $config = $this->createMock(RateLimitConfigInterface::class);
-        $config->method('getLimitForPlugin')
-            ->willReturnCallback(static fn (string $id): int => $id === 'acme_pay' ? 5 : 30);
+        $guard = $this->makeGuard(limit: 1);
 
-        $guard = new RateLimitGuard($this->store, $config);
-        $ctxAcme = $this->makeContext('acme_pay', 'sess1');
-        $ctxStripe = $this->makeContext('oe_payments_stripe_wallet', 'sess1');
+        $guard->check($this->makeContext('plugin_a', 'sess1', '203.0.113.7'));
 
-        for ($i = 0; $i < 5; $i++) {
-            $guard->check($ctxAcme);
-        }
-        $this->assertNotNull($guard->check($ctxAcme), 'acme_pay at limit of 5 should be rejected');
-        $this->assertNull($guard->check($ctxStripe), 'stripe still has 30-limit headroom');
+        $this->assertNotNull($guard->check($this->makeContext('plugin_a', 'sess1', '203.0.113.7')));
+        $this->assertNull($guard->check($this->makeContext('plugin_a', 'sess1', '198.51.100.9')));
+    }
+
+    public function testTheKeyCarriesNothingTheCallerChooses(): void
+    {
+        $keys = [];
+        $store = $this->createMock(RateLimitStoreInterface::class);
+        $store->method('increment')->willReturnCallback(static function (string $key) use (&$keys): int {
+            $keys[] = $key;
+
+            return 1;
+        });
+        $guard = new RateLimitGuard($store, $this->config(30));
+
+        $guard->check($this->makeContext('plugin-chosen-by-caller', 'session-chosen-by-caller', '203.0.113.7'));
+
+        $this->assertCount(1, $keys);
+        $this->assertStringNotContainsString('plugin-chosen-by-caller', $keys[0]);
+        $this->assertStringNotContainsString('session-chosen-by-caller', $keys[0]);
+        $this->assertStringNotContainsString('203.0.113.7', $keys[0], 'the address is hashed, not stored');
+        $this->assertStringContainsString(sha1('203.0.113.7'), $keys[0]);
     }
 
     public function testHasPrioritySixty(): void
     {
-        $guard = $this->makeGuard(globalDefault: 30);
-
-        $this->assertSame(60, $guard->getPriority());
+        $this->assertSame(60, $this->makeGuard(limit: 30)->getPriority());
     }
 
-    private function makeGuard(int $globalDefault): RateLimitGuard
+    private function makeGuard(int $limit): RateLimitGuard
     {
-        $config = new ConfigurableRateLimitConfig($globalDefault, []);
-
-        return new RateLimitGuard($this->store, $config);
+        return new RateLimitGuard($this->store, $this->config($limit));
     }
 
-    private function makeContext(string $pluginModuleId, string $sessionId): ValidationRequestContext
+    private function config(int $limit): RateLimitConfigInterface
+    {
+        $config = $this->createStub(RateLimitConfigInterface::class);
+        $config->method('getLimitForPlugin')->willReturn($limit);
+
+        return $config;
+    }
+
+    private function makeContext(string $pluginModuleId, string $sessionId, string $clientIp): ValidationRequestContext
     {
         return new ValidationRequestContext(
             method: 'POST',
@@ -104,6 +122,7 @@ class RateLimitGuardTest extends TestCase
             sessionId: $sessionId,
             originHeader: null,
             refererHeader: null,
+            clientIp: $clientIp,
         );
     }
 }
