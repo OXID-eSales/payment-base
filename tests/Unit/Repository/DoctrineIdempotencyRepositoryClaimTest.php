@@ -31,7 +31,10 @@ final class DoctrineIdempotencyRepositoryClaimTest extends TestCase
     {
         $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())->method('insert')->willReturn(1);
-        $connection->expects(self::never())->method('executeStatement');
+        // Sprint 29 (VRL): the insert is followed by one bounded purge of expired rows, nothing else.
+        $connection->expects(self::once())->method('executeStatement')
+            ->with(self::callback(static fn (string $sql): bool => str_starts_with($sql, 'DELETE FROM oe_payments_idempotency WHERE OXEXPIRES < :now AND OXID <> :keep LIMIT')))
+            ->willReturn(0);
 
         self::assertTrue((new DoctrineIdempotencyRepository($connection))->claim($this->record(), $this->now()));
     }

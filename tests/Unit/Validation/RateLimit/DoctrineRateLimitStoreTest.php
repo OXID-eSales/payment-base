@@ -41,7 +41,7 @@ final class DoctrineRateLimitStoreTest extends TestCase
     public function testANewRow_ClearsExpiredRows(): void
     {
         $records = $this->createMock(IdempotencyRepositoryInterface::class);
-        $records->expects($this->once())->method('deleteExpired');
+        $records->expects($this->once())->method('deleteExpiredBatch');
 
         $count = (new DoctrineRateLimitStore($this->connection(affected: 1, count: '1'), $records))->increment('validate:k:1', 60);
 
@@ -51,7 +51,7 @@ final class DoctrineRateLimitStoreTest extends TestCase
     public function testACountedRow_DoesNotPurge(): void
     {
         $records = $this->createMock(IdempotencyRepositoryInterface::class);
-        $records->expects($this->never())->method('deleteExpired');
+        $records->expects($this->never())->method('deleteExpiredBatch');
 
         $count = (new DoctrineRateLimitStore($this->connection(affected: 2, count: '7'), $records))->increment('validate:k:1', 60);
 

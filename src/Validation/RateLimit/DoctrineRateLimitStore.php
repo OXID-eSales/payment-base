@@ -23,7 +23,7 @@ use OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface;
  * - One atomic statement (INSERT … ON DUPLICATE KEY UPDATE on UNIQUE(OXKEY)). The former find-then-insert let two
  *   concurrent first calls collide on the key; the loser answered 0, i.e. "under the limit". An expired row of the
  *   same key is taken over and starts again at 1.
- * - A new row clears expired rows: `IdempotencyRepositoryInterface::deleteExpired()`, the table's one purge. Before,
+ * - A new row clears one batch of expired rows: `IdempotencyRepositoryInterface::deleteExpiredBatch()`, the table's one purge. Before,
  *   nothing removed a rate-limit row, so the table grew with every visitor and minute.
  * - Database errors propagate. A limiter that cannot count fails the request; it no longer lets it through.
  */
@@ -45,7 +45,7 @@ class DoctrineRateLimitStore implements RateLimitStoreInterface
     {
         $now = new DateTimeImmutable();
         if ($this->upsert($key, $now, $now->modify('+' . $ttlSeconds . ' seconds')) === self::INSERTED) {
-            $this->records->deleteExpired();
+            $this->records->deleteExpiredBatch();
         }
 
         return (int) $this->connection->fetchOne(

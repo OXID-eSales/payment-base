@@ -70,4 +70,9 @@ final class InMemoryIdempotency implements IdempotencyRepositoryInterface
     {
         return 0;
     }
+
+    public function deleteExpiredBatch(): int
+    {
+        return 0;
+    }
 }
