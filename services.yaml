@@ -838,7 +838,7 @@ services:
 
   # ---------------------------------------------------------------
   # Sprint 119 (STRP-129) Phase A2 — central frontend validation
-  # endpoint + seven-guard chain + per-PSP rate-limit override.
+  # endpoint + guard chain (eight guards since Sprint 29 VRL: … CSRF 50 → allowlist 53 → rules 56 → rate limit 60).
   # ---------------------------------------------------------------
 
   # --- Guard implementations ---
@@ -934,14 +934,22 @@ services:
   OxidEsales\PaymentBase\Validation\Guard\ActiveModuleQueryInterface:
     class: OxidEsales\PaymentBase\Validation\Guard\OxidActiveModuleQuery
     arguments:
-      $bridge: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Setup\Bridge\ModuleActivationBridgeInterface'
+      $moduleConfigurationDao: '@OxidEsales\EshopCommunity\Internal\Framework\Module\Configuration\Dao\ModuleConfigurationDaoInterface'
       $context: '@OxidEsales\EshopCommunity\Internal\Transition\Utility\BasicContextInterface'
 
+  # Sprint 29 (VRL, Mythos O-08): the allowlist (53) and the rules check (56) run BEFORE the rate limit (60), so a
+  # rejected plugin id writes no row into oe_payments_idempotency.
   OxidEsales\PaymentBase\Validation\Guard\PluginIdAllowlistGuard:
     arguments:
       $activeModuleQuery: '@OxidEsales\PaymentBase\Validation\Guard\ActiveModuleQueryInterface'
     tags:
-      - { name: oe.payment_base.validation_guard, priority: 70 }
+      - { name: oe.payment_base.validation_guard, priority: 53 }
+
+  OxidEsales\PaymentBase\Validation\Guard\ValidationRulesGuard:
+    arguments:
+      $pathResolver: '@OxidEsales\PaymentBase\Validation\PluginPathResolverInterface'
+    tags:
+      - { name: oe.payment_base.validation_guard, priority: 56 }
 
   # --- Controller ---
   # Registered in metadata.php `controllers` map (cl=oepaymentvalidationapi).

@@ -25,7 +25,7 @@ use InvalidArgumentException;
  */
 class FilesystemValidationRuleLoader implements ValidationRuleLoaderInterface
 {
-    private const RULES_RELATIVE_PATH = '/src/Resources/validation-rules.php';
+    public const RULES_RELATIVE_PATH = '/src/Resources/validation-rules.php';
 
     public function __construct(
         private readonly PluginPathResolverInterface $pathResolver,

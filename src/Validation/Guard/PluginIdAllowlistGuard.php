@@ -10,12 +10,13 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Validation\Guard;
 
 /**
- * Guard #7 — rejects requests for unknown or inactive plugin module ids.
+ * Guard — rejects requests for unknown or inactive plugin module ids (HTTP 422).
  *
  * Prevents arbitrary strings being used as pluginModuleId to trigger
  * filesystem reads or rule-loader lookups for non-existent plugins.
  *
- * Priority 70 (last — most expensive, only reached after other guards pass).
+ * Priority 53: before the rate limit (60). Sprint 29 (VRL, Mythos O-08): at 70 it ran after the rate limit, so
+ * every invented plugin id had already written a row into oe_payments_idempotency before it was rejected.
  */
 class PluginIdAllowlistGuard implements ValidationGuardInterface
 {
@@ -35,6 +36,6 @@ class PluginIdAllowlistGuard implements ValidationGuardInterface
 
     public function getPriority(): int
     {
-        return 70;
+        return 53;
     }
 }
