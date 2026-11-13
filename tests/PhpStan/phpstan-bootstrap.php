@@ -230,6 +230,7 @@ if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Confi
         . 'interface ModuleConfigurationDaoInterface { '
         . '  public function get(string $moduleId, int $shopId): '
         . '    \\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Configuration\\DataObject\\ModuleConfiguration; '
+        . '  public function exists(string $moduleId, int $shopId): bool; '
         . '}'
     );
 }
@@ -239,6 +240,7 @@ if (!class_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Configura
         . 'class ModuleConfiguration { '
         . '  public function getModuleSource(): string { return ""; } '
         . '  public function getId(): string { return ""; } '
+        . '  public function isActivated(): bool { return false; } '
         . '  public function getModuleSetting(string $settingName): \\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setting\\Setting { throw new \\RuntimeException(); } '
         . '  public function addModuleSetting(\\OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setting\\Setting $setting): static { return $this; } '
         . '}'
@@ -285,15 +287,6 @@ if (!class_exists(\OxidEsales\Eshop\Application\Controller\FrontendController::c
         // Untyped like core: a stub that declares a type would hide the class-chain rule (payment-base issue #3).
         . '  public function init() {} '
         . '  public function render() { return ""; } '
-        . '}'
-    );
-}
-
-if (!interface_exists(\OxidEsales\EshopCommunity\Internal\Framework\Module\Setup\Bridge\ModuleActivationBridgeInterface::class, false)) {
-    eval(
-        'namespace OxidEsales\\EshopCommunity\\Internal\\Framework\\Module\\Setup\\Bridge; '
-        . 'interface ModuleActivationBridgeInterface { '
-        . '  public function isActive(string $moduleId, int $shopId): bool; '
         . '}'
     );
 }

@@ -31,7 +31,15 @@ interface IdempotencyRepositoryInterface
     public function claim(IdempotencyRecord $record, DateTimeImmutable $now): bool;
 
     /**
-     * Delete expired records. Returns count of deleted rows.
+     * Delete every expired record (in batches); returns the number deleted. A manual tool since Sprint 29 (VRL):
+     * the table cleans itself through deleteExpiredBatch().
      */
     public function deleteExpired(): int;
+
+    /**
+     * Sprint 29 (VRL): delete one bounded batch of expired records; returns the number deleted. Runs after every
+     * insert into the table (save, claim, rate-limit store), so it stays at its live size without cron. An expired
+     * record means "free" to every reader, so deleting it changes nothing for them.
+     */
+    public function deleteExpiredBatch(): int;
 }

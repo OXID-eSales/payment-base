@@ -57,6 +57,7 @@ class PostOnlyGuardTest extends TestCase
             sessionId: null,
             originHeader: null,
             refererHeader: null,
+            clientIp: '203.0.113.1',
         );
     }
 }

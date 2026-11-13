@@ -12,8 +12,8 @@ namespace OxidEsales\PaymentBase\Validation\Guard;
 /**
  * Narrow interface for checking whether an OXID module is active.
  *
- * The production implementation wraps ModuleActivationBridgeInterface
- * (OXID core). Unit tests stub this without booting the shop.
+ * The production implementation reads the module configuration (OXID core); an id the shop does not know
+ * is "not active", never an exception. Unit tests stub this without booting the shop.
  */
 interface ActiveModuleQueryInterface
 {

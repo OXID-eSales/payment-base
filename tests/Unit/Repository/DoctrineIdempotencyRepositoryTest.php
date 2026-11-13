@@ -160,8 +160,12 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
         $this->assertSame(3, $count);
     }
 
+    /**
+     * Sprint 29 (VRL): was deleteExpiredReturnsZeroOnException, which pinned "a failed purge reports 0 deleted".
+     * The purge now runs on every insert; a database error there is not "nothing to do".
+     */
     #[Test]
-    public function deleteExpiredReturnsZeroOnException(): void
+    public function deleteExpiredLetsADatabaseErrorThrough(): void
     {
         $connection = $this->createMock(Connection::class);
 
@@ -171,9 +175,38 @@ class DoctrineIdempotencyRepositoryTest extends TestCase
             ->willThrowException(new \Doctrine\DBAL\Exception('DB error'));
 
         $repository = new DoctrineIdempotencyRepository($connection);
-        $count = $repository->deleteExpired();
 
-        $this->assertSame(0, $count);
+        $this->expectException(\Doctrine\DBAL\Exception::class);
+        $repository->deleteExpired();
+    }
+
+    /**
+     * Sprint 29 (VRL): the full purge deletes in batches of 500 until a batch comes back short.
+     */
+    #[Test]
+    public function deleteExpiredRunsBatchesUntilOneComesBackShort(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection
+            ->expects($this->exactly(3))
+            ->method('executeStatement')
+            ->with($this->stringContains('LIMIT 500'))
+            ->willReturnOnConsecutiveCalls(500, 500, 12);
+
+        $this->assertSame(1012, (new DoctrineIdempotencyRepository($connection))->deleteExpired());
+    }
+
+    #[Test]
+    public function deleteExpiredBatchDeletesOneBatch(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection
+            ->expects($this->once())
+            ->method('executeStatement')
+            ->with($this->logicalAnd($this->stringContains('OXEXPIRES < :now'), $this->stringContains('LIMIT 500')))
+            ->willReturn(500);
+
+        $this->assertSame(500, (new DoctrineIdempotencyRepository($connection))->deleteExpiredBatch());
     }
 
     #[Test]

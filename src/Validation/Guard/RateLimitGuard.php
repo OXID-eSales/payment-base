@@ -13,15 +13,14 @@ use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitConfigInterface;
 use OxidEsales\PaymentBase\Validation\RateLimit\RateLimitStoreInterface;
 
 /**
- * Guard #6 — sliding-window rate-limiter keyed by (pluginModuleId, sessionId).
+ * Fixed-window rate limit per visitor: `validate:{sha1(clientIp)}:{minuteBucket}`, `minuteBucket` = floor(time / 60).
  *
- * Key format: `validate:{pluginModuleId}:{sessionId}:{minuteBucket}`
- * where `minuteBucket` is `floor(time / 60)`.
+ * Sprint 29 (VRL, Mythos O-08): the key used to be (pluginModuleId, sessionId). Both are chosen by the caller, so a
+ * new plugin id or a fresh session started the count again. The address comes from TrustedProxyClientIp (as for the
+ * webhook limiters) and is hashed, not stored. The shop JS calls this endpoint only on a Pay click, so one limit per
+ * address is far above what shoppers behind a shared NAT produce. Limit: admin setting `iValidationApiRatePerMinute`.
  *
- * Limit per plugin is resolved via RateLimitConfigInterface which checks
- * per-PSP overrides first, then the global admin setting.
- *
- * Priority 60.
+ * Priority 60: after the allowlist (53) and the rules check (56), so only a request for a real plugin is counted.
  */
 class RateLimitGuard implements ValidationGuardInterface
 {
@@ -35,11 +34,9 @@ class RateLimitGuard implements ValidationGuardInterface
 
     public function check(ValidationRequestContext $ctx): ?GuardFailure
     {
-        $key = $this->buildKey($ctx);
-        $limit = $this->config->getLimitForPlugin($ctx->getPluginModuleId());
-        $count = $this->store->increment($key, self::TTL_SECONDS);
+        $count = $this->store->increment($this->buildKey($ctx), self::TTL_SECONDS);
 
-        if ($count > $limit) {
+        if ($count > $this->config->getLimitPerMinute()) {
             return GuardFailure::httpStatus(429, self::class);
         }
 
@@ -53,8 +50,8 @@ class RateLimitGuard implements ValidationGuardInterface
 
     private function buildKey(ValidationRequestContext $ctx): string
     {
-        $bucket = (int) floor(time() / self::TTL_SECONDS);
+        $client = $ctx->getClientIp() !== '' ? $ctx->getClientIp() : 'unknown';
 
-        return 'validate:' . $ctx->getPluginModuleId() . ':' . ($ctx->getSessionId() ?? '') . ':' . $bucket;
+        return 'validate:' . sha1($client) . ':' . (int) floor(time() / self::TTL_SECONDS);
     }
 }

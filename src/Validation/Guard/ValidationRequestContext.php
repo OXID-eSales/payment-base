@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Validation\Guard;
 
+use OxidEsales\PaymentBase\Webhook\Guard\TrustedProxyClientIp;
+
 /**
  * Immutable value object carrying a parsed validation request.
  *
@@ -27,6 +29,7 @@ class ValidationRequestContext
         private readonly ?string $sessionId,
         private readonly ?string $originHeader,
         private readonly ?string $refererHeader,
+        private readonly string $clientIp,
     ) {
     }
 
@@ -37,6 +40,7 @@ class ValidationRequestContext
      * @param array<string, mixed>|null $bodyArray   overrides $_POST (tests)
      */
     public static function fromRequest(
+        TrustedProxyClientIp $clientIpResolver,
         ?array $serverArray = null,
         ?array $bodyArray = null,
     ): self {
@@ -81,6 +85,7 @@ class ValidationRequestContext
             sessionId: $sessionId,
             originHeader: $originHeader,
             refererHeader: $refererHeader,
+            clientIp: self::extractClientIp($clientIpResolver, $server),
         );
     }
 
@@ -125,6 +130,14 @@ class ValidationRequestContext
         return $this->refererHeader;
     }
 
+    /**
+     * The visitor's address as TrustedProxyClientIp resolved it; '' when the server gave none.
+     */
+    public function getClientIp(): string
+    {
+        return $this->clientIp;
+    }
+
     public function getFieldCount(): int
     {
         return count($this->fields);
@@ -148,6 +161,24 @@ class ValidationRequestContext
         }
 
         return $fields;
+    }
+
+    /**
+     * Sprint 29 (VRL): REMOTE_ADDR, or the configured proxy header when the request comes from a trusted proxy.
+     *
+     * @param array<string, mixed> $server
+     */
+    private static function extractClientIp(TrustedProxyClientIp $resolver, array $server): string
+    {
+        $remoteAddr = isset($server['REMOTE_ADDR']) && is_string($server['REMOTE_ADDR']) ? $server['REMOTE_ADDR'] : '';
+        $headers = [];
+        foreach ($server as $key => $value) {
+            if (is_string($key) && is_string($value) && str_starts_with($key, 'HTTP_')) {
+                $headers[str_replace('_', '-', substr($key, 5))] = $value;
+            }
+        }
+
+        return $resolver->resolve($remoteAddr, $headers);
     }
 
     /**

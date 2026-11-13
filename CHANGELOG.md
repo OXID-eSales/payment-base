@@ -3,6 +3,49 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
+## [Unreleased - for v1.8.0]
+
+### Security (Mythos O-08, sprint 29 VRL)
+- **The validation endpoint's rate limit counts per visitor and writes no rows for unknown plugins.**
+  `cl=oepaymentvalidationapi&fnc=validate` counted per (plugin id, session), both chosen by the caller, and its counter
+  ran *before* the plugin allowlist. So every invented plugin id wrote a row into `oe_payments_idempotency`, and a fresh
+  session started the count again. Now the allowlist (priority 53) and a new rules check (`ValidationRulesGuard`, 56) run
+  before the rate limit (60), and the limit counts per client address (`validate:{sha1(ip)}:{minute}`, resolved by
+  `TrustedProxyClientIp` like the webhook limiters). Measured on the local shop: 40 invented ids → 40 × HTTP 422 and
+  0 rows (was 40 × 500 and 40 rows); 5 fresh sessions after the limit → 5 × 429 (was 5 × 500).
+- **The rate-limit store no longer fails open.** It answered 0 ("under the limit") on any database error and on two
+  concurrent first calls (find-then-insert on a unique key). It is now one atomic `INSERT … ON DUPLICATE KEY UPDATE`, and
+  database errors fail the request, for the validation endpoint and the providers' webhook limiters alike.
+
+### Fixed
+- **`oe_payments_idempotency` cleans itself; no cron needed.** Nothing removed expired rows unless the merchant scheduled
+  stripe's `stripe:prune-idempotency`; shops with only Mollie or PayPal had no cleanup at all. Every insert (save, claim,
+  a new rate-limit window) now deletes up to 500 expired rows (`IdempotencyRepositoryInterface::deleteExpiredBatch()`),
+  so the table stays at its live size and an old backlog is worked off 500 rows at a time. `deleteExpired()` deletes in
+  batches and lets database errors through.
+- **HTTP 422 instead of 500** for an unknown plugin id (`OxidActiveModuleQuery` reads the module configuration instead of
+  throwing `ModuleConfigurationNotFoundException`) and for an active module without validation rules (e.g. payment-base).
+- **The admin setting `iValidationApiRatePerMinute` is used.** The limit was a literal 30 in `services.yaml`. Label now
+  "per visitor address and minute". A value that is not a positive number fails the request (no guessed limit).
+
+### Changed (API)
+- `ValidationRequestContext`: required `clientIp` (9th constructor argument), `getClientIp()`;
+  `fromRequest(TrustedProxyClientIp $resolver, ?array $server, ?array $body)`.
+- `RateLimitConfigInterface::getLimitForPlugin(string)` → `getLimitPerMinute()`; `ConfigurableRateLimitConfig` removed
+  (`ModuleSettingRateLimitConfig`).
+- `IdempotencyRepositoryInterface::deleteExpiredBatch(): int` added; `DoctrineRateLimitStore` takes the repository.
+- `OxidActiveModuleQuery` takes `ModuleConfigurationDaoInterface` (was `ModuleActivationBridgeInterface`).
+- Consumers: mollie-payment's `ValidationEndpointGuardParityTest` and stripe's `DoctrineIdempotencyRepositoryTest` are
+  adapted on their `b-7.4.x-validation-rate-limit` branches.
+
+### Upgrade
+- **Behind a reverse proxy or CDN, set the trusted proxies** (module settings, group "Webhooks":
+  `sPaymentBaseTrustedProxies`, `sPaymentBaseClientIpHeader`, e.g. `CF-Connecting-IP`). Without them every visitor
+  arrives with the proxy's address and shares one validation bucket. Checkout still works (the Stripe and Mollie
+  footers fail open on 429 and the server-side check stays), but the early field feedback is skipped once the shared
+  limit is reached.
+- A cron entry for `stripe:prune-idempotency` can be removed.
+
 ## [v1.8.0-rc1 - 2026-11-12]
 
 ### Fixed

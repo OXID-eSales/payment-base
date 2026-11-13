@@ -11,98 +11,69 @@ namespace OxidEsales\PaymentBase\Validation\RateLimit;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception;
+use OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface;
 
 /**
- * Doctrine DBAL-backed rate-limit store.
+ * Doctrine DBAL-backed rate-limit store for the validation endpoint and the providers' webhook limiters.
  *
- * Reuses the `oe_payments_idempotency` table with a `validate:` key prefix.
- * The counter value is stored as a string in `OXRESULT`; `OXSTATUS` = 'rate_limit'.
+ * Reuses `oe_payments_idempotency` (OXSTATUS = 'rate_limit', count in OXRESULT); the key prefixes (`validate:`,
+ * `{provider}:webhook:`) keep it apart from the payment idempotency keys.
  *
- * Decision rationale: The idempotency table already provides a TTL-keyed
- * key/value store with Doctrine support. No new table or migration is needed;
- * the `validate:` prefix ensures no collision with webhook idempotency keys.
+ * Sprint 29 (VRL, Mythos O-08):
+ * - One atomic statement (INSERT … ON DUPLICATE KEY UPDATE on UNIQUE(OXKEY)). The former find-then-insert let two
+ *   concurrent first calls collide on the key; the loser answered 0, i.e. "under the limit". An expired row of the
+ *   same key is taken over and starts again at 1.
+ * - A new row clears one batch of expired rows: `IdempotencyRepositoryInterface::deleteExpiredBatch()`, the table's one purge. Before,
+ *   nothing removed a rate-limit row, so the table grew with every visitor and minute.
+ * - Database errors propagate. A limiter that cannot count fails the request; it no longer lets it through.
  */
 class DoctrineRateLimitStore implements RateLimitStoreInterface
 {
     private const TABLE = 'oe_payments_idempotency';
     private const STATUS = 'rate_limit';
 
+    /** MySQL's affected-rows answer for INSERT … ON DUPLICATE KEY UPDATE when it inserted (2 = updated). */
+    private const INSERTED = 1;
+
     public function __construct(
         private readonly Connection $connection,
+        private readonly IdempotencyRepositoryInterface $records,
     ) {
     }
 
     public function increment(string $key, int $ttlSeconds): int
     {
         $now = new DateTimeImmutable();
-        $expires = $now->modify("+{$ttlSeconds} seconds");
-
-        try {
-            $existing = $this->findRow($key);
-
-            if ($existing === null || $this->isExpired($existing, $now)) {
-                $this->insertRow($key, 1, $expires);
-
-                return 1;
-            }
-
-            $newCount = (int) ($existing['OXRESULT'] ?? 0) + 1;
-            $this->updateRow($key, $newCount);
-
-            return $newCount;
-        } catch (Exception) {
-            return 0;
+        if ($this->upsert($key, $now, $now->modify('+' . $ttlSeconds . ' seconds')) === self::INSERTED) {
+            $this->records->deleteExpiredBatch();
         }
-    }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function findRow(string $key): ?array
-    {
-        $row = $this->connection->fetchAssociative(
-            'SELECT * FROM ' . self::TABLE . ' WHERE OXKEY = :key AND OXSTATUS = :status',
-            ['key' => $key, 'status' => self::STATUS],
+        return (int) $this->connection->fetchOne(
+            'SELECT OXRESULT FROM ' . self::TABLE . ' WHERE OXKEY = :key',
+            ['key' => $key],
         );
-
-        return $row !== false ? $row : null;
     }
 
     /**
-     * @param array<string, mixed> $row
+     * OXRESULT is assigned before OXEXPIRES: MySQL evaluates the assignments left to right, so the expiry test of
+     * the count still sees the old expiry.
      */
-    private function isExpired(array $row, DateTimeImmutable $now): bool
+    private function upsert(string $key, DateTimeImmutable $now, DateTimeImmutable $expires): int
     {
-        $expires = $row['OXEXPIRES'] ?? null;
-
-        if (!is_string($expires)) {
-            return true;
-        }
-
-        return new DateTimeImmutable($expires) <= $now;
-    }
-
-    private function insertRow(string $key, int $count, DateTimeImmutable $expires): void
-    {
-        $this->connection->insert(self::TABLE, [
-            'OXID' => md5($key . microtime()),
-            'OXKEY' => $key,
-            'OXORDERID' => '',
-            'OXOPERATION' => 'rate_limit',
-            'OXRESULT' => (string) $count,
-            'OXSTATUS' => self::STATUS,
-            'OXCREATED' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
-            'OXEXPIRES' => $expires->format('Y-m-d H:i:s'),
-        ]);
-    }
-
-    private function updateRow(string $key, int $count): void
-    {
-        $this->connection->update(
-            self::TABLE,
-            ['OXRESULT' => (string) $count],
-            ['OXKEY' => $key, 'OXSTATUS' => self::STATUS],
+        return (int) $this->connection->executeStatement(
+            'INSERT INTO ' . self::TABLE
+            . ' (OXID, OXKEY, OXORDERID, OXOPERATION, OXRESULT, OXSTATUS, OXCREATED, OXEXPIRES)'
+            . " VALUES (:id, :key, '', :status, '1', :status, :now, :expires)"
+            . ' ON DUPLICATE KEY UPDATE'
+            . " OXRESULT = IF(OXEXPIRES <= :now, '1', CAST(OXRESULT AS UNSIGNED) + 1),"
+            . ' OXEXPIRES = IF(OXEXPIRES <= :now, :expires, OXEXPIRES)',
+            [
+                'id' => md5($key),
+                'key' => $key,
+                'status' => self::STATUS,
+                'now' => $now->format('Y-m-d H:i:s'),
+                'expires' => $expires->format('Y-m-d H:i:s'),
+            ],
         );
     }
 }

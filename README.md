@@ -52,6 +52,16 @@ the shop is not set up yet (no migration wrapper, or `source/config.inc.php` sti
 migration fails the composer run. The module must be installed (`oe:module:install`); it does not
 have to be active.
 
+## Housekeeping and rate limits
+
+- **`oe_payments_idempotency` cleans itself.** Every insert into the table deletes up to 500 expired rows, so it stays
+  at about its live size without cron. `IdempotencyRepositoryInterface::deleteExpired()` (stripe:
+  `bin/oe-console stripe:prune-idempotency`) clears a backlog at once by hand.
+- **Validation endpoint rate limit:** `iValidationApiRatePerMinute` requests per visitor address and minute (default 30).
+  Unknown plugin ids and plugins without `src/Resources/validation-rules.php` are refused (422) before they are counted.
+- **Behind a reverse proxy or CDN** set `sPaymentBaseTrustedProxies` and `sPaymentBaseClientIpHeader` (group
+  "Webhooks"), or all visitors share the proxy's address, and with it one bucket of the validation and webhook limits.
+
 ## Requirements
 
 - OXID eShop 7.4 or 7.5

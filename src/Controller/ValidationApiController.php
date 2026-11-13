@@ -18,6 +18,7 @@ use OxidEsales\PaymentBase\Validation\Guard\ValidationRequestContext;
 use OxidEsales\PaymentBase\Validation\Message\MessageFormatterInterface;
 use OxidEsales\PaymentBase\Validation\ValidationBase;
 use OxidEsales\PaymentBase\Validation\ValidationRuleLoaderInterface;
+use OxidEsales\PaymentBase\Webhook\Guard\TrustedProxyClientIp;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -41,6 +42,9 @@ class ValidationApiController extends FrontendController
 
     private ?ValidationRuleLoaderInterface $loader = null;
 
+    /** Sprint 29 (VRL): the rate limit counts per visitor address; set in init(), required. */
+    private ?TrustedProxyClientIp $clientIpResolver = null;
+
     /** @var list<MessageFormatterInterface> */
     private array $formatters = [];
 
@@ -60,6 +64,11 @@ class ValidationApiController extends FrontendController
         if (!$loader instanceof ValidationRuleLoaderInterface) {
             throw new \RuntimeException('The validation rule loader is not available from the container');
         }
+        $clientIpResolver = $container->get(TrustedProxyClientIp::class);
+        if (!$clientIpResolver instanceof TrustedProxyClientIp) {
+            throw new \RuntimeException('The client address resolver is not available from the container');
+        }
+        $this->clientIpResolver = $clientIpResolver;
 
         $this->initWithDependencies(
             $this->taggedServices($container, 'oe.payment_base.validation_guard_iterator', ValidationGuardInterface::class),
@@ -169,7 +178,11 @@ class ValidationApiController extends FrontendController
      */
     protected function buildRequestContext(): ValidationRequestContext
     {
-        return ValidationRequestContext::fromRequest();
+        if ($this->clientIpResolver === null) {
+            throw new \RuntimeException('TrustedProxyClientIp not initialised');
+        }
+
+        return ValidationRequestContext::fromRequest($this->clientIpResolver);
     }
 
     /**

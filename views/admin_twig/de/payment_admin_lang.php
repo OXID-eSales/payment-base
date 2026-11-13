@@ -32,7 +32,7 @@ $aLang = [
     'SHOP_MODULE_GROUP_return_leg'             => 'Rücksprung',
 
     // Moduleinstellungen — Feldbeschriftungen
-    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Minute)',
+    'SHOP_MODULE_iValidationApiRatePerMinute'  => 'Validierungs-API Ratenlimit (Anfragen pro Besucheradresse und Minute)',
     'SHOP_MODULE_blPaymentBaseReleaseVouchersOnOrderEnd' => 'Gutscheine bei Stornierung oder Löschung einer Bestellung wieder freigeben',
     'SHOP_MODULE_blPaymentBaseUseIframe'       => 'Iframe statt Checkout-Schaltfläche verwenden',
     'SHOP_MODULE_blPaymentBaseAutoAssignSinglePayment'

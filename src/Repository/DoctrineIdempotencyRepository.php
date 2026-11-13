@@ -12,7 +12,6 @@ namespace OxidEsales\PaymentBase\Repository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\DBAL\Exception;
 use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 
 /**
@@ -21,6 +20,13 @@ use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
 class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
 {
     private const TABLE = 'oe_payments_idempotency';
+
+    /**
+     * Sprint 29 (VRL): rows one insert clears at most. Enough to keep the table at its live size (a shop writes a few
+     * rows per order); small enough that a backlog (a year without cleanup ≈ 800k rows) is worked off step by step
+     * instead of in one long DELETE inside a shopper's request.
+     */
+    private const PURGE_BATCH = 500;
 
     public function __construct(
         private readonly Connection $connection
@@ -42,6 +48,7 @@ class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
         }
 
         $this->connection->insert(self::TABLE, $data);
+        $this->purgeBatch($record->getId());
     }
 
     public function findByKey(string $key): ?IdempotencyRecord
@@ -59,6 +66,7 @@ class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
         $data = $this->prepareData($record);
         try {
             $this->connection->insert(self::TABLE, $data);
+            $this->purgeBatch($record->getId());
 
             return true;
         } catch (UniqueConstraintViolationException) {
@@ -76,14 +84,31 @@ class DoctrineIdempotencyRepository implements IdempotencyRepositoryInterface
 
     public function deleteExpired(): int
     {
-        try {
-            return (int) $this->connection->executeStatement(
-                'DELETE FROM ' . self::TABLE . ' WHERE OXEXPIRES < :now',
-                ['now' => (new DateTimeImmutable())->format('Y-m-d H:i:s')]
-            );
-        } catch (Exception $e) {
-            return 0;
-        }
+        $total = 0;
+        do {
+            $deleted = $this->deleteExpiredBatch();
+            $total += $deleted;
+        } while ($deleted === self::PURGE_BATCH);
+
+        return $total;
+    }
+
+    public function deleteExpiredBatch(): int
+    {
+        return $this->purgeBatch('');
+    }
+
+    /**
+     * One batch of expired rows, sparing the row an insert has just written (`$keepId`; '' spares none): what save()
+     * wrote, findByKey() returns, even when the record was saved already expired (a released attempt). The next insert
+     * removes it.
+     */
+    private function purgeBatch(string $keepId): int
+    {
+        return (int) $this->connection->executeStatement(
+            'DELETE FROM ' . self::TABLE . ' WHERE OXEXPIRES < :now AND OXID <> :keep LIMIT ' . self::PURGE_BATCH,
+            ['now' => (new DateTimeImmutable())->format('Y-m-d H:i:s'), 'keep' => $keepId]
+        );
     }
 
     /**
