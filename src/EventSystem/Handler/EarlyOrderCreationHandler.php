@@ -16,6 +16,9 @@ use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface;
+use OxidEsales\PaymentBase\Contract\IdempotencyRecord;
+use DateTimeImmutable;
 use OxidEsales\PaymentBase\Service\FileLoggerInterface;
 
 /**
@@ -50,7 +53,12 @@ class EarlyOrderCreationHandler extends AbstractHandler
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
         EventDispatcherInterface $eventDispatcher,
         private readonly ThrowableSummaryInterface $throwableSummary,
-        private readonly ?FileLoggerInterface $eventLogger = null
+        private readonly ?FileLoggerInterface $eventLogger = null,
+        // MOL-39 — the atomic order-creation claim. Appended LAST and optional so
+        // every positional construction (and the many hand-built test instances)
+        // keeps working; null means "no claim store wired" and the handler behaves
+        // exactly as before (single-caller contexts, unit tests).
+        private readonly ?IdempotencyRepositoryInterface $orderCreationClaims = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
     }
@@ -85,6 +93,21 @@ class EarlyOrderCreationHandler extends AbstractHandler
         ]);
 
         try {
+            // MOL-39 / OPC-385 (2026.11-106) — claim order creation for this contract
+            // atomically BEFORE creating the order. Requests of ONE session serialize
+            // and MOL-18's sess_challenge guard refuses their second submit; requests
+            // of DIFFERENT sessions of the same customer each carry their own challenge
+            // and all passed the isDraft() check above, so without a claim several reach
+            // createOrder() and one checkout is stored as two or three orders. The claim
+            // is a unique INSERT keyed on the contract: exactly one concurrent request
+            // wins, the losers create nothing — no phantom order, no stock, no mail.
+            if (!$this->claimOrderCreation($contract)) {
+                $this->logEvent('EarlyOrderCreationHandler: order creation already claimed by a concurrent request — no order created', [
+                    'contractId' => $contract->getId(),
+                ]);
+                return;
+            }
+
             $orderData = $this->createOrder($contract, $event);
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
             $this->transitionContractToPending($contract, $event);
@@ -178,6 +201,44 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'orderId' => $orderResponse->orderId,
             'orderNumber' => (string) $orderResponse->orderNumber,
         ];
+    }
+
+    /**
+     * MOL-39 — claim order creation for one contract, atomically and across sessions.
+     *
+     * The claim is a unique INSERT into the idempotency table keyed deterministically
+     * on the contract id ({@see IdempotencyRepositoryInterface::claim()}): concurrent
+     * requests produce the SAME row id, so exactly one INSERT wins and the rest hit the
+     * unique constraint and return false. This is the cross-session guarantee MOL-17's
+     * optimistic version cannot give (staggered reads each load a fresh version and all
+     * win) and MOL-18's sess_challenge cannot give (each session has its own challenge).
+     *
+     * When no claim store is wired (null — unit tests, single-caller contexts), the
+     * handler keeps its prior behaviour. Protected so the claim can be unit-tested.
+     *
+     * @since payment-base — MOL-39 / OPC-385 / 2026.11-106 (follow-up to MOL-18)
+     */
+    protected function claimOrderCreation(PaymentContractInterface $contract): bool
+    {
+        if ($this->orderCreationClaims === null) {
+            return true;
+        }
+
+        $now = new DateTimeImmutable();
+        $key = 'order-creation:' . $contract->getId();
+        $record = new IdempotencyRecord(
+            substr(md5($key), 0, 32),
+            $key,
+            '',
+            'early-order-create',
+            'claimed',
+            $now,
+            // A short lease: a crashed winner that left the contract DRAFT must not
+            // block a legitimate later retry forever, but order creation is sub-second.
+            $now->modify('+5 minutes'),
+        );
+
+        return $this->orderCreationClaims->claim($record, $now);
     }
 
     private function transitionContractToNotFinished(PaymentContractInterface $contract, string $orderId): void
