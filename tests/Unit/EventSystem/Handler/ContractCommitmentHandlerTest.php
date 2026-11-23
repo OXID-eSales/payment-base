@@ -52,6 +52,50 @@ final class ContractCommitmentHandlerTest extends TestCase
         self::assertSame('committed', $contract->getStateValue());
     }
 
+    /**
+     * Sprint 147 (AW): a refused write of the provider ids stops the handler before the contract is
+     * committed. Before, the `false` of the service was ignored.
+     */
+    public function testHandle_WhenTheOrderStateWriteFails_DoesNotCommitTheContract(): void
+    {
+        $contract = $this->readyToCommitContract();
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $contracts->expects(self::never())->method('save');
+        $state = $this->createMock(OrderPaymentStateServiceInterface::class);
+        $state->method('updateTransactionId')->willThrowException(new \RuntimeException('Failed to update OXTRANSID'));
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        try {
+            (new ContractCommitmentHandler($contracts, $state, $dispatcher))->handle(
+                $this->event($contract, providerName: 'stripe', requiresCapture: false, authId: 'auth_1'),
+            );
+            self::fail('the refused write must leave the handler');
+        } catch (\RuntimeException) {
+            self::assertSame('ready_to_commit', $contract->getStateValue());
+        }
+    }
+
+    /**
+     * The paid mark is written after the contract is saved as committed. A refused paid mark leaves
+     * the handler and announces no committed contract; the reconciliation writes the mark later.
+     */
+    public function testHandle_WhenThePaidMarkFails_DoesNotAnnounceTheCommit(): void
+    {
+        $contract = $this->readyToCommitContract();
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $state = $this->createMock(OrderPaymentStateServiceInterface::class);
+        $state->method('markOrderAsPaid')->willThrowException(new \RuntimeException('Failed to update order paid mark'));
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+
+        $this->expectException(\RuntimeException::class);
+
+        (new ContractCommitmentHandler($contracts, $state, $dispatcher))->handle(
+            $this->event($contract, providerName: 'stripe', requiresCapture: false, authId: 'auth_1'),
+        );
+    }
+
     public function testSkipsOxpaidOnManualCapture(): void
     {
         $contract = $this->readyToCommitContract();

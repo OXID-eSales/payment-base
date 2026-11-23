@@ -17,14 +17,29 @@ interface ContractRepositoryInterface
      */
     public function save(PaymentContractInterface $contract): void;
 
+    /**
+     * Sprint 147 (AW): for every finder below `null` means "no such contract" and nothing else. A
+     * database error is not "not found" - a webhook handler would drop the provider's event - so it
+     * leaves the finder as an exception.
+     *
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function findById(string $id): ?PaymentContractInterface;
 
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function findByProviderOrderId(string $providerOrderId): ?PaymentContractInterface;
 
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     */
     public function findActiveByUserId(string $userId): ?PaymentContractInterface;
 
     /**
      * Find contract by OXID order ID.
+     *
+     * @throws \Doctrine\DBAL\Exception
      */
     public function findByOrderId(string $orderId): ?PaymentContractInterface;
 

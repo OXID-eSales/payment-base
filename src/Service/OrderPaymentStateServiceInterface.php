@@ -31,7 +31,8 @@ interface OrderPaymentStateServiceInterface
      *
      * @param string $orderId Order OXID
      * @param DateTimeImmutable|null $paidAt Timestamp (current time if null)
-     * @return bool True if order was updated
+     * @return bool True if the order row changed; false when the value was set already (a repeated call)
+     * @throws \RuntimeException when the database refuses the write (sprint 147 AW: never `false`)
      */
     public function updatePaidTimestamp(
         string $orderId,
@@ -43,7 +44,8 @@ interface OrderPaymentStateServiceInterface
      *
      * @param string $orderId Order OXID
      * @param string $status Status value ('OK', 'ERROR', 'NOT_FINISHED')
-     * @return bool True if order was updated
+     * @return bool True if the order row changed; false when the value was set already (a repeated call)
+     * @throws \RuntimeException when the database refuses the write (sprint 147 AW: never `false`)
      */
     public function updateTransactionStatus(string $orderId, string $status): bool;
 
@@ -54,7 +56,8 @@ interface OrderPaymentStateServiceInterface
      *
      * @param string $orderId Order OXID
      * @param string $transactionId Provider transaction ID
-     * @return bool True if order was updated
+     * @return bool True if the order row changed; false when the value was set already (a repeated call)
+     * @throws \RuntimeException when the database refuses the write (sprint 147 AW: never `false`)
      */
     public function updateTransactionId(string $orderId, string $transactionId): bool;
 
@@ -69,7 +72,8 @@ interface OrderPaymentStateServiceInterface
      * @param string $orderId Order OXID
      * @param string|null $transactionId Provider transaction ID
      * @param DateTimeImmutable|null $paidAt Timestamp (current time if null)
-     * @return bool True if order was updated
+     * @return bool True if the order row changed; false when the value was set already (a repeated call)
+     * @throws \RuntimeException when the database refuses the write (sprint 147 AW: never `false`)
      */
     public function markOrderAsPaid(
         string $orderId,

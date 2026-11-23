@@ -46,45 +46,33 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
         // Repository does not manage transactions - this is the responsibility of the application layer
         // This follows SOLID principles (Single Responsibility) and allows proper transaction management
         // at the use case/service layer where business logic resides
-        try {
-            $this->saveContract($contract);
-        } catch (Exception $e) {
-            throw $e;
-        }
+        $this->saveContract($contract);
     }
 
     public function findById(string $id): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXID = :id';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['id' => $id]);
+        $data = $this->connection->fetchAssociative($sql, ['id' => $id]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     public function findByProviderOrderId(string $providerOrderId): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXPROVIDERORDERID = :providerOrderId';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['providerOrderId' => $providerOrderId]);
+        $data = $this->connection->fetchAssociative($sql, ['providerOrderId' => $providerOrderId]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     public function findActiveByUserId(string $userId): ?PaymentContractInterface
@@ -95,26 +83,22 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
                 ORDER BY OXCREATED DESC
                 LIMIT 1';
 
-        try {
-            $data = $this->connection->fetchAssociative(
-                $sql,
-                [
-                    'userId' => $userId,
-                    'states' => ['draft', 'pending', 'ready_to_commit', 'committed']
-                ],
-                [
-                    'states' => Connection::PARAM_STR_ARRAY
-                ]
-            );
+        $data = $this->connection->fetchAssociative(
+            $sql,
+            [
+                'userId' => $userId,
+                'states' => ['draft', 'pending', 'ready_to_commit', 'committed']
+            ],
+            [
+                'states' => Connection::PARAM_STR_ARRAY
+            ]
+        );
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     /**
@@ -135,17 +119,13 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
+        $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     /**
@@ -310,9 +290,9 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
      */
     private function hydrateContractBasketSnapshot(array $data): BasketSnapshot
     {
-        $basketDataString = is_string($data['OXBASKETDATA']) ? $data['OXBASKETDATA'] : '[]';
         /** @var array<string, mixed> $basketData */
-        $basketData = json_decode($basketDataString, true) ?: [];
+        $basketData = $this->jsonColumn($data, 'OXBASKETDATA');
+
         return BasketSnapshot::fromArray($basketData);
     }
 
@@ -322,9 +302,9 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
      */
     private function hydrateContractConditions(array $data): array
     {
-        $conditionsDataString = is_string($data['OXCONDITIONS']) ? $data['OXCONDITIONS'] : '[]';
         /** @var array<int, array<string, mixed>> $conditionsData */
-        $conditionsData = json_decode($conditionsDataString, true) ?: [];
+        $conditionsData = $this->jsonColumn($data, 'OXCONDITIONS');
+
         return array_map(
             fn(array $condData): ContractCondition => ContractCondition::fromArray($condData),
             $conditionsData
@@ -373,6 +353,53 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
     }
 
     /**
+     * Sprint 147 (AW): a column that is not a JSON list or map is a damaged row, not an empty value.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return array<mixed>
+     *
+     * @throws UnreadableRowException
+     */
+    private function jsonColumn(array $data, string $column): array
+    {
+        $raw = $data[$column] ?? null;
+        $decoded = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($decoded)) {
+            throw UnreadableRowException::forColumn(self::TABLE_CONTRACTS, $this->rowId($data), $column);
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * A contract without a state is no draft: it is a row that cannot be read.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @throws UnreadableRowException
+     */
+    private function stateColumn(array $data): string
+    {
+        $state = $data['OXSTATE'] ?? null;
+        if (!is_string($state) || $state === '') {
+            throw UnreadableRowException::forColumn(self::TABLE_CONTRACTS, $this->rowId($data), 'OXSTATE');
+        }
+
+        return $state;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function rowId(array $data): string
+    {
+        $id = $data['OXID'] ?? '';
+
+        return is_string($id) ? $id : '';
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function hydrateProviderRedirectUrl(array $data): ?string
@@ -397,9 +424,7 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
         array $data,
         array $conditions
     ): void {
-        /** @phpstan-ignore-next-line */
-        $stateValue = is_string($data['OXSTATE']) ? $data['OXSTATE'] : (string) ($data['OXSTATE'] ?? 'draft');
-        $this->setPrivateProperty($contract, 'state', ContractState::fromValue($stateValue));
+        $this->setPrivateProperty($contract, 'state', ContractState::fromValue($this->stateColumn($data)));
         $this->setPrivateProperty($contract, 'orderId', $data['OXORDERID']);
         $this->setPrivateProperty($contract, 'provider', $data['OXPROVIDER']);
         $this->setPrivateProperty($contract, 'providerOrderId', $data['OXPROVIDERORDERID']);

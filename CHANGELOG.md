@@ -17,6 +17,24 @@ All notable changes to this module are documented here. Format follows
   concurrent first calls (find-then-insert on a unique key). It is now one atomic `INSERT … ON DUPLICATE KEY UPDATE`, and
   database errors fail the request, for the validation endpoint and the providers' webhook limiters alike.
 
+### Changed (sprint 147 AW — honest failures; **providers: read this**)
+- **A contract or customer finder throws on a database error.** `ContractRepositoryInterface::findById()`,
+  `findByProviderOrderId()`, `findActiveByUserId()`, `findByOrderId()` and
+  `PaymentCustomerRepositoryInterface::findByUserId()` returned `null` for a database error, with no log. `null` now
+  means "not found" and nothing else; a `Doctrine\DBAL\Exception` leaves the finder. A webhook handler that read
+  `null` as "no contract" dropped the provider's event; it now fails, and the provider sends the event again.
+- **A refused order-state write is an exception.** `OrderPaymentStateServiceInterface::markOrderAsPaid()`,
+  `updatePaidTimestamp()`, `updateTransactionStatus()` and `updateTransactionId()` returned `false` both for "the
+  value is set already" and for a database error. `false` now is only the repeated call; a database error throws
+  `RuntimeException` with the summary line. Four callers ignored the `false`, so a contract was committed while its
+  order had no paid mark.
+- **A damaged contract row is refused.** A row with no state loaded as a draft, a row with a damaged basket or
+  conditions column loaded with an empty one. The repository now throws `UnreadableRowException` (table, row id and
+  column; no content).
+- **A headless cancel does not answer the contract copy from before the cleanup** when the reload finds nothing.
+- `OxidShopOrderService`: two branches that made an order total of 0.0 for a basket without a price are removed
+  (the shop always gives a price object; the two PHPStan suppressions are gone).
+
 ### Fixed
 - **One checkout, one order — also across sessions (MOL-39 / OPC-385, sprint 143 AW; claim by Bartosz Sosnowski).**
   Parallel `placeOrder` requests from different sessions of one customer each passed the draft check and each created
