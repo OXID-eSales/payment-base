@@ -1,4 +1,4 @@
-# The money actions of the classic admin's "Payment" tab of an order (cl=PaymentAdmin), for the OXID Admin Assistant:
+# The money actions of the classic admin's "Payment" tab of an order (cl=PaymentAdmin), for the OXID Assistant Admin:
 # in the classic admin it names these places ("How can I refund this order?"); in peroxid-admin it uses the fields of the
 # payment-base plugin of oxid-fe-admin (payment.refund.submit, …). Format: admin-assistant docs/api/ui-map.md, section 4.
 # The buttons are the provider's own (Stripe, Mollie, PayPal): the texts name the function, not one button label.

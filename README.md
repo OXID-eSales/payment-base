@@ -280,7 +280,7 @@ events. Without it nothing changes. [docs/admin-payment-api.md](docs/admin-payme
 
 ## Admin assistant: where the money actions are
 
-With the OXID Admin Assistant (`oe_admin_assistant`) active, an administrator can ask "How can I refund this order?" or
+With the OXID Assistant Admin (`oe_admin_assistant`) active, an administrator can ask "How can I refund this order?" or
 "Where do I capture a payment?". The assistant answers with the place of the function in the admin in use:
 
 | Admin | Where the description comes from | What the assistant gives |
