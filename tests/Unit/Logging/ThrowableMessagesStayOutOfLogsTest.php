@@ -55,7 +55,12 @@ final class ThrowableMessagesStayOutOfLogsTest extends TestCase
         $connection->method('executeStatement')->willThrowException($this->leakyDatabaseError());
         $service = new OrderPaymentStateService($connection, $this->logger, new ThrowableSummary([]));
 
-        self::assertFalse($service->updatePaidTimestamp('order-1'));
+        try {
+            $service->updatePaidTimestamp('order-1');
+            self::fail('expected a refusal');
+        } catch (RuntimeException $refusal) {
+            self::assertStringNotContainsString(self::SECRET, $refusal->getMessage());
+        }
 
         $this->assertLoggedTheSummaryOnly('42S22');
     }

@@ -191,7 +191,7 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         $cancelled = $this->cleaner->clean((string) $contract->getId());
         // The cleaner works on its own copy of the contract; answer the state
         // the repository holds now, not the one loaded before the cleanup.
-        $contract = $this->contracts->findById((string) $contract->getId()) ?? $contract;
+        $contract = $this->contractAfterCleanup((string) $contract->getId());
         $this->logger->info('[HeadlessCheckoutService] cancel', [
             'contractId' => $contract->getId(),
             'cancelled' => $cancelled,
@@ -325,6 +325,25 @@ class HeadlessCheckoutService implements HeadlessCheckoutServiceInterface
         }
 
         return $basket;
+    }
+
+    /**
+     * The cleanup cancels the contract, it never removes it. A contract that is gone after its own
+     * cleanup is an error, not a reason to answer the copy from before (sprint 147 AW).
+     *
+     * @throws HeadlessCheckoutException
+     */
+    private function contractAfterCleanup(string $contractId): PaymentContractInterface
+    {
+        $contract = $this->contracts->findById($contractId);
+        if ($contract === null) {
+            throw new HeadlessCheckoutException(
+                HeadlessCheckoutException::CONTRACT_NOT_FOUND,
+                sprintf('Contract %s is gone after its cleanup', $contractId)
+            );
+        }
+
+        return $contract;
     }
 
     /**

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\Service;
 
+use Throwable;
+use RuntimeException;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use OxidEsales\PaymentBase\Logging\ThrowableSummaryInterface;
@@ -43,80 +45,29 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
     ): bool {
         $timestamp = $paidAt ?? new DateTimeImmutable();
 
-        try {
-            $sql = "UPDATE oxorder SET OXPAID = :paid WHERE OXID = :orderId AND OXPAID = '0000-00-00 00:00:00'";
-            $affected = $this->connection->executeStatement($sql, [
-                'paid' => $timestamp->format('Y-m-d H:i:s'),
-                'orderId' => $orderId,
-            ]);
-
-            if ($affected > 0) {
-                $this->logger->debug('OXPAID timestamp updated', [
-                    'order_id' => $orderId,
-                    'paid_at' => $timestamp->format('Y-m-d H:i:s'),
-                ]);
-            }
-
-            return $affected > 0;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to update OXPAID', [
-                'order_id' => $orderId,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-            return false;
-        }
+        return $this->write(
+            'OXPAID',
+            "UPDATE oxorder SET OXPAID = :paid WHERE OXID = :orderId AND OXPAID = '0000-00-00 00:00:00'",
+            ['paid' => $timestamp->format('Y-m-d H:i:s'), 'orderId' => $orderId]
+        );
     }
 
     public function updateTransactionStatus(string $orderId, string $status): bool
     {
-        try {
-            $sql = 'UPDATE oxorder SET OXTRANSSTATUS = :status WHERE OXID = :orderId';
-            $affected = $this->connection->executeStatement($sql, [
-                'status' => $status,
-                'orderId' => $orderId,
-            ]);
-
-            if ($affected > 0) {
-                $this->logger->debug('OXTRANSSTATUS updated', [
-                    'order_id' => $orderId,
-                    'status' => $status,
-                ]);
-            }
-
-            return $affected > 0;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to update OXTRANSSTATUS', [
-                'order_id' => $orderId,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-            return false;
-        }
+        return $this->write(
+            'OXTRANSSTATUS',
+            'UPDATE oxorder SET OXTRANSSTATUS = :status WHERE OXID = :orderId',
+            ['status' => $status, 'orderId' => $orderId]
+        );
     }
 
     public function updateTransactionId(string $orderId, string $transactionId): bool
     {
-        try {
-            $sql = "UPDATE oxorder SET OXTRANSID = :transId WHERE OXID = :orderId AND (OXTRANSID IS NULL OR OXTRANSID = '')";
-            $affected = $this->connection->executeStatement($sql, [
-                'transId' => $transactionId,
-                'orderId' => $orderId,
-            ]);
-
-            if ($affected > 0) {
-                $this->logger->debug('OXTRANSID updated', [
-                    'order_id' => $orderId,
-                    'transaction_id' => $transactionId,
-                ]);
-            }
-
-            return $affected > 0;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to update OXTRANSID', [
-                'order_id' => $orderId,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-            return false;
-        }
+        return $this->write(
+            'OXTRANSID',
+            "UPDATE oxorder SET OXTRANSID = :transId WHERE OXID = :orderId AND (OXTRANSID IS NULL OR OXTRANSID = '')",
+            ['transId' => $transactionId, 'orderId' => $orderId]
+        );
     }
 
     public function markOrderAsPaid(
@@ -125,51 +76,53 @@ class OrderPaymentStateService implements OrderPaymentStateServiceInterface
         ?DateTimeImmutable $paidAt = null
     ): bool {
         $timestamp = $paidAt ?? new DateTimeImmutable();
-
-        try {
-            // Build SQL based on whether we have transaction ID
-            if ($transactionId !== null && $transactionId !== '') {
-                $sql = "UPDATE oxorder
-                        SET OXPAID = :paid,
-                            OXTRANSSTATUS = 'OK',
-                            OXTRANSID = CASE
-                                WHEN OXTRANSID IS NULL OR OXTRANSID = '' THEN :transId
-                                ELSE OXTRANSID
-                            END
-                        WHERE OXID = :orderId AND OXPAID = '0000-00-00 00:00:00'";
-
-                $affected = $this->connection->executeStatement($sql, [
-                    'paid' => $timestamp->format('Y-m-d H:i:s'),
-                    'transId' => $transactionId,
-                    'orderId' => $orderId,
-                ]);
-            } else {
-                $sql = "UPDATE oxorder
-                        SET OXPAID = :paid,
-                            OXTRANSSTATUS = 'OK'
-                        WHERE OXID = :orderId AND OXPAID = '0000-00-00 00:00:00'";
-
-                $affected = $this->connection->executeStatement($sql, [
-                    'paid' => $timestamp->format('Y-m-d H:i:s'),
-                    'orderId' => $orderId,
-                ]);
-            }
-
-            if ($affected > 0) {
-                $this->logger->info('Order marked as paid', [
-                    'order_id' => $orderId,
-                    'transaction_id' => $transactionId,
-                    'paid_at' => $timestamp->format('Y-m-d H:i:s'),
-                ]);
-            }
-
-            return $affected > 0;
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to mark order as paid', [
-                'order_id' => $orderId,
-                'throwable' => $this->throwableSummary->fromThrowable($e),
-            ]);
-            return false;
+        $columns = "OXPAID = :paid, OXTRANSSTATUS = 'OK'";
+        $parameters = ['paid' => $timestamp->format('Y-m-d H:i:s'), 'orderId' => $orderId];
+        if ($transactionId !== null && $transactionId !== '') {
+            // An order that already names its transaction keeps it.
+            $columns .= ", OXTRANSID = CASE WHEN OXTRANSID IS NULL OR OXTRANSID = '' THEN :transId ELSE OXTRANSID END";
+            $parameters['transId'] = $transactionId;
         }
+
+        return $this->write(
+            'order paid mark',
+            'UPDATE oxorder SET ' . $columns . " WHERE OXID = :orderId AND OXPAID = '0000-00-00 00:00:00'",
+            $parameters
+        );
+    }
+
+    /**
+     * One guarded UPDATE of the order row. The answer says whether the row changed: `false` is the
+     * repeated call (the value is set already), never a failure. A database error is logged and
+     * leaves as an exception (sprint 147 AW): four callers ignored the `false` it used to become, and
+     * the contract was committed while the order had no paid mark. The exception text is the summary
+     * line: a database message carries the bound values (VR-18).
+     *
+     * @param array<string, string> $parameters
+     *
+     * @throws RuntimeException
+     */
+    private function write(string $what, string $sql, array $parameters): bool
+    {
+        try {
+            $changed = $this->connection->executeStatement($sql, $parameters) > 0;
+        } catch (Throwable $failure) {
+            $this->logger->error('Failed to update ' . $what, [
+                'order_id' => $parameters['orderId'],
+                'throwable' => $this->throwableSummary->fromThrowable($failure),
+            ]);
+
+            throw new RuntimeException(
+                'Failed to update ' . $what . ' of order ' . $parameters['orderId'] . ': '
+                . $this->throwableSummary->toLine($failure),
+                0,
+                $failure
+            );
+        }
+        if ($changed) {
+            $this->logger->debug($what . ' updated', ['order_id' => $parameters['orderId']]);
+        }
+
+        return $changed;
     }
 }

@@ -11,7 +11,6 @@ namespace OxidEsales\PaymentBase\Repository;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception;
 use OxidEsales\PaymentBase\Contract\PaymentCustomer;
 
 /**
@@ -30,38 +29,26 @@ class DoctrinePaymentCustomerRepository implements PaymentCustomerRepositoryInte
     {
         $data = $this->prepareData($customer);
 
-        try {
-            $exists = $this->connection->fetchOne(
-                'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE OXID = :id',
-                ['id' => $customer->getId()]
-            );
+        $exists = $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE OXID = :id',
+            ['id' => $customer->getId()]
+        );
 
-            if ($exists > 0) {
-                $this->connection->update(self::TABLE, $data, ['OXID' => $customer->getId()]);
-                return;
-            }
-
-            $this->connection->insert(self::TABLE, $data);
-        } catch (Exception $e) {
-            throw $e;
+        if ($exists > 0) {
+            $this->connection->update(self::TABLE, $data, ['OXID' => $customer->getId()]);
+            return;
         }
+
+        $this->connection->insert(self::TABLE, $data);
     }
 
     public function findByUserId(string $userId): ?PaymentCustomer
     {
         $sql = 'SELECT * FROM ' . self::TABLE . ' WHERE OXUSERID = :userId';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['userId' => $userId]);
+        $data = $this->connection->fetchAssociative($sql, ['userId' => $userId]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateRecord($data);
-        } catch (Exception $e) {
-            return null;
-        }
+        return $data === false ? null : $this->hydrateRecord($data);
     }
 
     /**

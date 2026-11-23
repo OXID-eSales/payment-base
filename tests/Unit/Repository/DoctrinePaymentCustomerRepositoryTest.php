@@ -139,8 +139,9 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
     }
 
     #[Test]
-    public function findByUserIdReturnsNullOnException(): void
+    public function testFindByUserId_WhenTheDatabaseFails_Throws(): void
     {
+        // Sprint 147 (AW): "not found" made the caller create a second provider customer for the user.
         $connection = $this->createMock(Connection::class);
 
         $connection
@@ -149,9 +150,10 @@ class DoctrinePaymentCustomerRepositoryTest extends TestCase
             ->willThrowException(new \Doctrine\DBAL\Exception('DB error'));
 
         $repository = new DoctrinePaymentCustomerRepository($connection);
-        $result = $repository->findByUserId('user_abc');
 
-        $this->assertNull($result);
+        $this->expectException(\Doctrine\DBAL\Exception::class);
+
+        $repository->findByUserId('user_abc');
     }
 
     #[Test]

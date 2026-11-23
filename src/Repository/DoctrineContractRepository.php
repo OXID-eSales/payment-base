@@ -46,45 +46,33 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
         // Repository does not manage transactions - this is the responsibility of the application layer
         // This follows SOLID principles (Single Responsibility) and allows proper transaction management
         // at the use case/service layer where business logic resides
-        try {
-            $this->saveContract($contract);
-        } catch (Exception $e) {
-            throw $e;
-        }
+        $this->saveContract($contract);
     }
 
     public function findById(string $id): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXID = :id';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['id' => $id]);
+        $data = $this->connection->fetchAssociative($sql, ['id' => $id]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     public function findByProviderOrderId(string $providerOrderId): ?PaymentContractInterface
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXPROVIDERORDERID = :providerOrderId';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['providerOrderId' => $providerOrderId]);
+        $data = $this->connection->fetchAssociative($sql, ['providerOrderId' => $providerOrderId]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     public function findActiveByUserId(string $userId): ?PaymentContractInterface
@@ -95,26 +83,22 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
                 ORDER BY OXCREATED DESC
                 LIMIT 1';
 
-        try {
-            $data = $this->connection->fetchAssociative(
-                $sql,
-                [
-                    'userId' => $userId,
-                    'states' => ['draft', 'pending', 'ready_to_commit', 'committed']
-                ],
-                [
-                    'states' => Connection::PARAM_STR_ARRAY
-                ]
-            );
+        $data = $this->connection->fetchAssociative(
+            $sql,
+            [
+                'userId' => $userId,
+                'states' => ['draft', 'pending', 'ready_to_commit', 'committed']
+            ],
+            [
+                'states' => Connection::PARAM_STR_ARRAY
+            ]
+        );
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     /**
@@ -135,17 +119,13 @@ class DoctrineContractRepository implements ContractRepositoryInterface, Contrac
     {
         $sql = 'SELECT * FROM ' . self::TABLE_CONTRACTS . ' WHERE OXORDERID = :orderId';
 
-        try {
-            $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
+        $data = $this->connection->fetchAssociative($sql, ['orderId' => $orderId]);
 
-            if ($data === false) {
-                return null;
-            }
-
-            return $this->hydrateContract($data);
-        } catch (Exception $e) {
+        if ($data === false) {
             return null;
         }
+
+        return $this->hydrateContract($data);
     }
 
     /**

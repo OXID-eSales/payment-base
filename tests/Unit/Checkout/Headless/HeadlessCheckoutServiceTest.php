@@ -793,6 +793,24 @@ final class HeadlessCheckoutServiceTest extends TestCase
         self::assertSame('cancelled', $result->contractState);
     }
 
+    /**
+     * Sprint 147 (AW): the cleanup cancels, it never removes. No answer with the copy from before.
+     */
+    public function testCancel_WhenTheReloadFindsNothing_FailsAndDoesNotAnswerTheOldCopy(): void
+    {
+        $loadedFirst = $this->pendingContract('contract-1');
+        $loadedFirst->setMetadata('headless_token', HeadlessTokenHash::fromToken('tok-fixed')->value);
+        $this->contracts->method('findById')->willReturnOnConsecutiveCalls($loadedFirst, null);
+        $this->cleaner->method('clean')->willReturn(true);
+
+        try {
+            $this->service()->cancel('contract-1', 'tok-fixed');
+            self::fail('a contract that is gone after its cleanup must not be answered from the old copy');
+        } catch (HeadlessCheckoutException $e) {
+            self::assertSame(HeadlessCheckoutException::CONTRACT_NOT_FOUND, $e->errorCode);
+        }
+    }
+
     public function testCancelWithAWrongTokenIsRefused(): void
     {
         $contract = $this->pendingContract('contract-1');

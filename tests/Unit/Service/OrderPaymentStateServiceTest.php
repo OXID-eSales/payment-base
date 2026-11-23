@@ -261,9 +261,47 @@ class OrderPaymentStateServiceTest extends TestCase
                 })
             );
 
-        $result = $this->service->updatePaidTimestamp($orderId);
+        // Sprint 147 (AW): a refused write is an exception, not `false` - callers ignored the `false`.
+        $this->expectException(\RuntimeException::class);
 
-        $this->assertFalse($result);
+        $this->service->updatePaidTimestamp($orderId);
+    }
+
+    public function testUpdateTransactionId_WhenTheWriteFails_Throws(): void
+    {
+        $this->connection->method('executeStatement')->willThrowException(new \Exception('Database error'));
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->updateTransactionId('order-123', 'pi_1');
+    }
+
+    public function testUpdateTransactionStatus_WhenTheWriteFails_Throws(): void
+    {
+        $this->connection->method('executeStatement')->willThrowException(new \Exception('Database error'));
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->updateTransactionStatus('order-123', 'OK');
+    }
+
+    public function testMarkOrderAsPaid_WhenTheWriteFails_Throws(): void
+    {
+        $this->connection->method('executeStatement')->willThrowException(new \Exception('Database error'));
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->markOrderAsPaid('order-123', 'pi_1');
+    }
+
+    /**
+     * The repeated call: the value is set already. That is `false`, not a failure.
+     */
+    public function testMarkOrderAsPaid_WhenTheOrderIsPaidAlready_ReturnsFalseAndDoesNotThrow(): void
+    {
+        $this->connection->method('executeStatement')->willReturn(0);
+
+        $this->assertFalse($this->service->markOrderAsPaid('order-123', 'pi_1'));
     }
 
     /**
@@ -283,7 +321,7 @@ class OrderPaymentStateServiceTest extends TestCase
             ->expects($this->once())
             ->method('debug')
             ->with(
-                'OXPAID timestamp updated',
+                'OXPAID updated',
                 $this->callback(function ($context) use ($orderId) {
                     return $context['order_id'] === $orderId;
                 })
