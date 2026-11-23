@@ -16,6 +16,7 @@ use OxidEsales\PaymentBase\Adapter\Response\OrderResponse;
 use OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface;
 use OxidEsales\PaymentBase\Adapter\ShopOrderServiceInterface;
 use OxidEsales\PaymentBase\Checkout\Context\SessionCheckoutContext;
+use OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationClaimInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistry;
 use OxidEsales\PaymentBase\Contract\AttemptClosure;
 use OxidEsales\PaymentBase\Contract\BasketSnapshot;
@@ -43,6 +44,7 @@ final class EarlyOrderCreationHandlerOpenAttemptTest extends TestCase
     private ShopOrderServiceInterface&MockObject $orderService;
     private ShopOrderRewriterInterface&MockObject $orderRewriter;
     private OpenCheckoutAttemptRegistry $openAttempts;
+    private OrderCreationClaimInterface&MockObject $claims;
 
     protected function setUp(): void
     {
@@ -50,6 +52,8 @@ final class EarlyOrderCreationHandlerOpenAttemptTest extends TestCase
         $this->orderService = $this->createMock(ShopOrderServiceInterface::class);
         $this->orderRewriter = $this->createMock(ShopOrderRewriterInterface::class);
         $this->openAttempts = new OpenCheckoutAttemptRegistry(new SessionCheckoutContext(new RecordingSessionAdapter()));
+        $this->claims = $this->createMock(OrderCreationClaimInterface::class);
+        $this->claims->method('claim')->willReturn(true);
     }
 
     public function testANewContract_GetsANewOrderAndIsRemembered(): void
@@ -114,6 +118,7 @@ final class EarlyOrderCreationHandlerOpenAttemptTest extends TestCase
             $this->openAttempts,
             $this->createMock(EventDispatcherInterface::class),
             new ThrowableSummary([]),
+            $this->claims,
         );
         $handler->handle(new ContractDraftCompletedEvent($contract, new EventContext($context)));
 

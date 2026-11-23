@@ -18,6 +18,16 @@ All notable changes to this module are documented here. Format follows
   database errors fail the request, for the validation endpoint and the providers' webhook limiters alike.
 
 ### Fixed
+- **One checkout, one order — also across sessions (MOL-39 / OPC-385, sprint 143 AW; claim by Bartosz Sosnowski).**
+  Parallel `placeOrder` requests from different sessions of one customer each passed the draft check and each created
+  an order (1 OK + N NOT_FINISHED, stock taken). `EarlyOrderCreationHandler` now claims the order creation before it
+  creates the order: one unique row in `oe_payments_idempotency` per contract and row version
+  (`Checkout\Attempt\OrderCreationClaim`). The request that loses creates nothing and throws
+  `OrderCreationAlreadyClaimedException`; a provider catches it and tells the shopper that the order is being
+  processed. A failed order creation releases the claim, so the next attempt does not wait. The row version is part of
+  the key, so a contract that is reopened for a new attempt (OPC-175) gets its order rewritten as before.
+  **Providers:** `EarlyOrderCreationHandler` has a new required constructor argument `$orderCreationClaims`
+  (autowired; positional constructions must add it before `$eventLogger`).
 - **`oe_payments_idempotency` cleans itself; no cron needed.** Nothing removed expired rows unless the merchant scheduled
   stripe's `stripe:prune-idempotency`; shops with only Mollie or PayPal had no cleanup at all. Every insert (save, claim,
   a new rate-limit window) now deletes up to 500 expired rows (`IdempotencyRepositoryInterface::deleteExpiredBatch()`),

@@ -163,6 +163,13 @@ services:
       $orderMails: '@OxidEsales\PaymentBase\Repository\ContractOrderMailStoreInterface'
     public: true
 
+  # Sprint 143 (AW) / MOL-39 — the right to create the order of a contract. The
+  # providers register EarlyOrderCreationHandler; its claim is autowired from here.
+  OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationClaimInterface:
+    class: OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationClaim
+    arguments:
+      $records: '@OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface'
+
   # Sprint 15 / S3 (GRAPH-QL, 2026-10-06) — the attempt guard on
   # `oe_payments_idempotency` (table from 2025-10-31, first consumer).
   OxidEsales\PaymentBase\Repository\IdempotencyRepositoryInterface:
