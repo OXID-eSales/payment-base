@@ -19,6 +19,8 @@ use OxidEsales\PaymentBase\EventSystem\Event\Payment\OrderCreatedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
 use OxidEsales\PaymentBase\EventSystem\Handler\EarlyOrderCreationHandler;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
+use OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationAlreadyClaimedException;
+use OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationClaimInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -30,6 +32,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
     private ContractRepositoryInterface&MockObject $contractRepository;
     private ShopOrderServiceInterface&MockObject $shopOrderService;
     private EventDispatcherInterface&MockObject $eventDispatcher;
+    private OrderCreationClaimInterface&MockObject $orderCreationClaims;
     private EarlyOrderCreationHandler $handler;
 
     protected function setUp(): void
@@ -37,6 +40,9 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->contractRepository = $this->createMock(ContractRepositoryInterface::class);
         $this->shopOrderService = $this->createMock(ShopOrderServiceInterface::class);
         $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->orderCreationClaims = $this->createMock(OrderCreationClaimInterface::class);
+        // MOL-39 — default: this request wins the order-creation claim.
+        $this->orderCreationClaims->method('claim')->willReturn(true);
 
         $this->handler = new EarlyOrderCreationHandler(
             $this->contractRepository,
@@ -46,7 +52,8 @@ class EarlyOrderCreationHandlerTest extends TestCase
             ),
             $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
             $this->eventDispatcher,
-            new \OxidEsales\PaymentBase\Logging\ThrowableSummary([])
+            new \OxidEsales\PaymentBase\Logging\ThrowableSummary([]),
+            $this->orderCreationClaims
         );
     }
 
@@ -110,7 +117,7 @@ class EarlyOrderCreationHandlerTest extends TestCase
             ->method('createOrder')
             ->willReturn($this->createOrderResponse('456'));
 
-        // Contract is saved twice: once after NOT_FINISHED, once after PENDING
+        // Contract is saved twice: once after NOT_FINISHED, once after PENDING.
         $this->contractRepository
             ->expects($this->exactly(2))
             ->method('save');
@@ -121,6 +128,141 @@ class EarlyOrderCreationHandlerTest extends TestCase
         $this->assertTrue($contract->getState()->isPending());
         $this->assertEquals('456', $contract->getOrderId());
     }
+
+    /**
+     * MOL-39 / sprint 143 (AW): a request that loses the order-creation claim creates no order (no stock,
+     * no mail) and tells its caller so: another request creates the order of this contract.
+     */
+    public function testHandle_WhenTheClaimIsLost_ThrowsOrderCreationAlreadyClaimedAndCreatesNoOrder(): void
+    {
+        $contract = $this->createDraftContract();
+        $event = new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay']));
+        $handler = $this->handlerWith($this->claims(false));
+
+        $this->shopOrderService->expects($this->never())->method('createOrder');
+        $this->contractRepository->expects($this->never())->method('save');
+
+        try {
+            $handler->handle($event);
+            $this->fail('a lost claim must be reported to the caller');
+        } catch (OrderCreationAlreadyClaimedException $e) {
+            $this->assertStringContainsString('contract_123', $e->getMessage());
+        }
+
+        $this->assertTrue($contract->getState()->isDraft(), 'the loser leaves the contract untouched (still DRAFT)');
+        $this->assertNull($contract->getOrderId(), 'the loser created no order');
+    }
+
+    public function testHandle_WhenTheClaimIsLost_ReleasesNothing(): void
+    {
+        $claims = $this->claims(false);
+        $claims->expects($this->never())->method('release');
+        $event = new ContractDraftCompletedEvent($this->createDraftContract(), new EventContext(['paymentId' => 'pay']));
+
+        $this->expectException(OrderCreationAlreadyClaimedException::class);
+
+        $this->handlerWith($claims)->handle($event);
+    }
+
+    public function testHandle_WhenContractIsDraft_ClaimsBeforeCreatingTheOrder(): void
+    {
+        $contract = $this->createDraftContract();
+        $steps = [];
+        $claims = $this->createMock(OrderCreationClaimInterface::class);
+        $claims->expects($this->once())->method('claim')->with($contract)
+            ->willReturnCallback(static function () use (&$steps): bool {
+                $steps[] = 'claim';
+
+                return true;
+            });
+        $this->shopOrderService->method('createOrder')
+            ->willReturnCallback(function () use (&$steps): OrderResponse {
+                $steps[] = 'createOrder';
+
+                return $this->createOrderResponse('456');
+            });
+
+        $this->handlerWith($claims)->handle(new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay'])));
+
+        $this->assertSame(['claim', 'createOrder'], $steps);
+    }
+
+    public function testHandle_OnSuccess_KeepsTheClaim(): void
+    {
+        $claims = $this->claims(true);
+        $claims->expects($this->never())->method('release');
+        $this->shopOrderService->method('createOrder')->willReturn($this->createOrderResponse('456'));
+
+        $this->handlerWith($claims)->handle(
+            new ContractDraftCompletedEvent($this->createDraftContract(), new EventContext(['paymentId' => 'pay']))
+        );
+    }
+
+    /**
+     * Sprint 143 (AW): a failed order creation must not block the shopper's next attempt.
+     */
+    public function testHandle_WhenCreateOrderThrows_ReleasesTheClaimAndRethrows(): void
+    {
+        $contract = $this->createDraftContract();
+        $claims = $this->claims(true);
+        $claims->expects($this->once())->method('release')->with($contract);
+        $this->shopOrderService->method('createOrder')->willThrowException(new \RuntimeException('no stock'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('no stock');
+
+        $this->handlerWith($claims)->handle(new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay'])));
+    }
+
+    public function testHandle_WhenSavingTheContractThrows_ReleasesTheClaimAndRethrows(): void
+    {
+        $contract = $this->createDraftContract();
+        $claims = $this->claims(true);
+        $claims->expects($this->once())->method('release')->with($contract);
+        $this->shopOrderService->method('createOrder')->willReturn($this->createOrderResponse('456'));
+        $this->contractRepository->method('save')->willThrowException(new \RuntimeException('database gone'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('database gone');
+
+        $this->handlerWith($claims)->handle(new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay'])));
+    }
+
+    public function testHandle_WhenContractIsNotDraft_ClaimsNothing(): void
+    {
+        $contract = $this->createDraftContract();
+        $contract->transitionToNotFinished('order-1');
+        $claims = $this->createMock(OrderCreationClaimInterface::class);
+        $claims->expects($this->never())->method('claim');
+
+        $this->handlerWith($claims)->handle(new ContractDraftCompletedEvent($contract, new EventContext(['paymentId' => 'pay'])));
+    }
+
+    private function claims(bool $won): OrderCreationClaimInterface&MockObject
+    {
+        $claims = $this->createMock(OrderCreationClaimInterface::class);
+        $claims->method('claim')->willReturn($won);
+
+        return $claims;
+    }
+
+    private function handlerWith(OrderCreationClaimInterface $claims): EarlyOrderCreationHandler
+    {
+        return new EarlyOrderCreationHandler(
+            $this->contractRepository,
+            new \OxidEsales\PaymentBase\Adapter\EarlyOrderWriter(
+                $this->shopOrderService,
+                $this->createMock(\OxidEsales\PaymentBase\Adapter\ShopOrderRewriterInterface::class)
+            ),
+            $this->createMock(\OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface::class),
+            $this->eventDispatcher,
+            new \OxidEsales\PaymentBase\Logging\ThrowableSummary([]),
+            $claims
+        );
+    }
+
+    /**
+     * VR-22 D4 (D2) - the handler skipped every PaymentContractInterface implementation
 
     /**
      * VR-22 D4 (D2) - the handler skipped every PaymentContractInterface implementation

@@ -6,6 +6,8 @@ namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
 use OxidEsales\PaymentBase\Adapter\Request\CreateOrderRequest;
 use OxidEsales\PaymentBase\Adapter\EarlyOrderWriterInterface;
+use OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationAlreadyClaimedException;
+use OxidEsales\PaymentBase\Checkout\Attempt\OrderCreationClaimInterface;
 use OxidEsales\PaymentBase\Checkout\OpenCheckoutAttemptRegistryInterface;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use InvalidArgumentException;
@@ -50,6 +52,9 @@ class EarlyOrderCreationHandler extends AbstractHandler
         private readonly OpenCheckoutAttemptRegistryInterface $openAttempts,
         EventDispatcherInterface $eventDispatcher,
         private readonly ThrowableSummaryInterface $throwableSummary,
+        // MOL-39: requests that loaded the same copy of the contract (also from
+        // different sessions) race for the order; one creates it.
+        private readonly OrderCreationClaimInterface $orderCreationClaims,
         private readonly ?FileLoggerInterface $eventLogger = null
     ) {
         parent::__construct($contractRepository, $eventDispatcher);
@@ -84,6 +89,16 @@ class EarlyOrderCreationHandler extends AbstractHandler
             'state' => $contract->getStateValue(),
         ]);
 
+        // MOL-39 / OPC-385: the session challenge (MOL-18) is per session and the row version (MOL-17)
+        // is checked on save, after the order exists. The claim comes first: the request that loses it
+        // creates nothing - no order, no stock, no mail - and says so.
+        if (!$this->orderCreationClaims->claim($contract)) {
+            $this->logEvent('EarlyOrderCreationHandler: order creation already claimed by a concurrent request', [
+                'contractId' => $contract->getId(),
+            ]);
+            throw OrderCreationAlreadyClaimedException::forContract((string) $contract->getId());
+        }
+
         try {
             $orderData = $this->createOrder($contract, $event);
             $this->transitionContractToNotFinished($contract, $orderData['orderId']);
@@ -96,6 +111,8 @@ class EarlyOrderCreationHandler extends AbstractHandler
                 'contract_id' => $contract->getId(),
                 'throwable' => $this->throwableSummary->fromThrowable($e),
             ]);
+            // The shopper's next attempt for this contract must not wait for the lease.
+            $this->orderCreationClaims->release($contract);
             throw $e;
         }
     }
