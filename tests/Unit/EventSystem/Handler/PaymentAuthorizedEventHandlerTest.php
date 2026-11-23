@@ -94,4 +94,48 @@ class PaymentAuthorizedEventHandlerTest extends TestCase
         // Regression lock: the old code overwrote this to 'stripe'.
         $this->assertSame('paypal', $contract->getProvider());
     }
+
+    /**
+     * Sprint 147 (AW): the transaction id links the order to the provider payment (STRP-74).
+     */
+    public function testHandle_WhenAuthorizedForAnEarlyOrder_WritesTheTransactionIdToTheOrder(): void
+    {
+        $contract = $this->createPendingContract();
+        $this->orderPaymentState->expects($this->once())->method('updateTransactionId')->with('order_123', 'pi_9');
+
+        $context = new EventContext(['providerName' => 'stripe']);
+        $context->setContract($contract);
+
+        $this->handler->handle(new PaymentAuthorizedEvent($context, 'auth_1', 'pi_9', 100.0, 'EUR'));
+    }
+
+    public function testHandle_WhenAllConditionsAreFulfilled_MovesTheContractToReadyToCommit(): void
+    {
+        $contract = $this->createPendingContract();
+        $context = new EventContext(['providerName' => 'stripe']);
+        $context->setContract($contract);
+
+        $this->handler->handle(new PaymentAuthorizedEvent($context, 'auth_1', 'pi_9', 100.0, 'EUR'));
+
+        $this->assertTrue($contract->getState()->isReadyToCommit());
+    }
+
+    /**
+     * Sprint 147 (AW) Story 2: a refused write of the transaction id leaves the handler before the
+     * contract is saved. Before, the `false` of the service was ignored.
+     */
+    public function testHandle_WhenTheTransactionIdWriteFails_DoesNotSaveTheContract(): void
+    {
+        $contract = $this->createPendingContract();
+        $this->orderPaymentState->method('updateTransactionId')
+            ->willThrowException(new \RuntimeException('Failed to update OXTRANSID'));
+        $this->repository->expects($this->never())->method('save');
+
+        $context = new EventContext(['providerName' => 'stripe']);
+        $context->setContract($contract);
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->handler->handle(new PaymentAuthorizedEvent($context, 'auth_1', 'pi_9', 100.0, 'EUR'));
+    }
 }

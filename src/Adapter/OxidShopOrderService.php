@@ -470,7 +470,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
             orderId: (string) $order->getId(),
             orderNumber: $this->getIntField($order, 'oxordernr'),
             userId: (string) $user->getId(),
-            totalAmount: $price ? (float) $price->getBruttoPrice() : 0.0, // @phpstan-ignore ternary.alwaysTrue
+            totalAmount: (float) $price->getBruttoPrice(),
             currency: $currencyName,
             status: $this->mapOrderStateToStatus($orderState),
             paymentId: $request->paymentId,
@@ -535,8 +535,7 @@ class OxidShopOrderService implements ShopOrderServiceInterface, ShopOrderRewrit
             'user_id' => $request->userId,
             'payment_id' => $request->paymentId,
             'basket_count' => $basket->getProductsCount(),
-            // @phpstan-ignore ternary.alwaysTrue (OXID Basket::getPrice() PHPDoc is non-nullable, but defensive)
-            'basket_total' => $basketPrice ? (float) $basketPrice->getBruttoPrice() : 0.0,
+            'basket_total' => (float) $basketPrice->getBruttoPrice(),
         ]);
         throw new ShopOrderException(
             message: 'Order finalization failed with state: ' . $orderState . ' (' . $errorCode . ')',
