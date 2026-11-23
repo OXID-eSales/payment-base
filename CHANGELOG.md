@@ -5,6 +5,14 @@ All notable changes to this module are documented here. Format follows
 
 ## [Unreleased - for v1.8.0]
 
+### Added (assistant, 2026-11-23)
+- **`assistant.classic-places.yaml`: the admin assistant names the money actions of the classic Payment tab.**
+  `classic.payment_base_refund`, `classic.payment_base_capture`, `classic.payment_base_void` (controller `PaymentAdmin`,
+  rights `ADMIN_PAYMENT_REFUND` / `ADMIN_PAYMENT_CAPTURE`, label, help and menu path in English and German). "How can I
+  refund this order?" in the classic admin now gets the classic path instead of a manual search. peroxid-admin uses the
+  plugin's fields (oxid-fe-admin). README "Admin assistant: where the money actions are";
+  `AssistantClassicPlacesTest`.
+
 ### Security (Mythos O-08, sprint 29 VRL)
 - **The validation endpoint's rate limit counts per visitor and writes no rows for unknown plugins.**
   `cl=oepaymentvalidationapi&fnc=validate` counted per (plugin id, session), both chosen by the caller, and its counter

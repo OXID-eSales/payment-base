@@ -278,6 +278,26 @@ With `oxid-admin-graphql` installed (optional), payment-base adds the payment of
 of the provider modules' own capture, refund and cancel code, plus the answers to the admin API's order and payment-ownership
 events. Without it nothing changes. [docs/admin-payment-api.md](docs/admin-payment-api.md).
 
+## Admin assistant: where the money actions are
+
+With the OXID Admin Assistant (`oe_admin_assistant`) active, an administrator can ask "How can I refund this order?" or
+"Where do I capture a payment?". The assistant answers with the place of the function in the admin in use:
+
+| Admin | Where the description comes from | What the assistant gives |
+|---|---|---|
+| Classic admin | `assistant.classic-places.yaml` of this module: `classic.payment_base_refund`, `classic.payment_base_capture`, `classic.payment_base_void` (controller `PaymentAdmin`) | The menu path "Administer Orders › Orders › open the order › tab Payment › Refund" (German: "Bestellungen verwalten › Bestellungen › …") and a link to the classic admin |
+| peroxid-admin | The payment-base plugin of oxid-fe-admin (`plugins/payment-base/uiFields.ts`: `payment.refund.submit`, `payment.capture.submit`, `payment.void.submit` and the form fields) | A guide with **Show me** on the order's Payment tab |
+
+Each place has the right of its function (`ADMIN_PAYMENT_REFUND`, `ADMIN_PAYMENT_CAPTURE`): an administrator without the
+right does not get it. The help texts say what the function does (full or partial refund, capture of an
+authorisation, release of an authorisation that is not captured) and when its form shows. The buttons themselves come
+from the provider modules (Stripe, Mollie, PayPal); the texts name the function and the usual button labels.
+
+The assistant reads `assistant.classic-places.yaml` of every active module in each request: no cache to clear. Change
+the texts there when the Payment tab changes. Format and rules: admin-assistant `docs/api/ui-map.md`, section 4. The
+test `tests/Unit/Admin/AssistantClassicPlacesTest.php` checks the ids, the controller, the rights and the texts in
+English and German.
+
 ## Domain Events
 
 ### Contract Events
