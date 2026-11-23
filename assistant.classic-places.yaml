@@ -1,0 +1,54 @@
+# The money actions of the classic admin's "Payment" tab of an order (cl=PaymentAdmin), for the OXID Assistant Admin:
+# in the classic admin it names these places ("How can I refund this order?"); in peroxid-admin it uses the fields of the
+# payment-base plugin of oxid-fe-admin (payment.refund.submit, …). Format: admin-assistant docs/api/ui-map.md, section 4.
+# The buttons are the provider's own (Stripe, Mollie, PayPal): the texts name the function, not one button label.
+places:
+  classic.payment_base_refund:
+    controller: PaymentAdmin
+    right: ADMIN_PAYMENT_REFUND
+    label: { en: "Refund (Payment tab of the order)", de: "Erstattung (Tab Zahlung der Bestellung)" }
+    help:
+      en: >-
+        Refund an order: send money back to the customer through the payment provider of the order (Stripe, Mollie,
+        PayPal). Refund all of the captured amount or a part of it, and refund again until the captured amount is used
+        up. The form shows when part of the captured amount can still be refunded. The button is "Execute refund".
+      de: >-
+        Eine Bestellung erstatten: Geld über den Zahlungsanbieter der Bestellung (Stripe, Mollie, PayPal) an den Kunden
+        zurückzahlen. Den ganzen eingezogenen Betrag oder einen Teil erstatten, auch mehrmals, bis der eingezogene Betrag
+        aufgebraucht ist. Das Formular erscheint, solange ein Teil des eingezogenen Betrags erstattet werden kann. Die
+        Schaltfläche heißt „Erstattung durchführen“ bzw. „Erstattung ausführen“.
+    where:
+      en: "Administer Orders › Orders › open the order › tab Payment › Refund"
+      de: "Bestellungen verwalten › Bestellungen › Bestellung öffnen › Tab Zahlung › Erstattung"
+  classic.payment_base_capture:
+    controller: PaymentAdmin
+    right: ADMIN_PAYMENT_CAPTURE
+    label: { en: "Capture (Payment tab of the order)", de: "Einzug (Tab Zahlung der Bestellung)" }
+    help:
+      en: >-
+        Capture a payment: take the money that the payment provider holds as an authorisation, all of it or a part. The
+        form shows while an authorisation is open and not fully captured. The button is "Execute capture" or "Capture
+        Payment".
+      de: >-
+        Eine Zahlung einziehen: das Geld, das der Zahlungsanbieter als Autorisierung reserviert hält, ganz oder teilweise
+        einziehen. Das Formular erscheint, solange eine Autorisierung offen und nicht ganz eingezogen ist. Die
+        Schaltfläche heißt je nach Anbieter „Betrag einziehen“, „Zahlung erfassen“ oder „Erfassung ausführen“.
+    where:
+      en: "Administer Orders › Orders › open the order › tab Payment › Capture"
+      de: "Bestellungen verwalten › Bestellungen › Bestellung öffnen › Tab Zahlung › Einzug"
+  classic.payment_base_void:
+    controller: PaymentAdmin
+    right: ADMIN_PAYMENT_CAPTURE
+    label: { en: "Release the authorisation (Payment tab of the order)", de: "Autorisierung freigeben (Tab Zahlung der Bestellung)" }
+    help:
+      en: >-
+        Void or release an authorisation: the reserved money goes back to the customer's card or account; nothing is
+        captured and nothing is refunded. Use it when an authorised order is not shipped. After a capture, use Refund.
+        Mollie calls it "Release remainder".
+      de: >-
+        Eine Autorisierung freigeben (Void): das reservierte Geld wird wieder frei; nichts wird eingezogen und nichts
+        erstattet. Für eine autorisierte Bestellung, die nicht versendet wird. Nach einem Einzug: Erstattung verwenden.
+        Bei Mollie heißt es „Restbetrag freigeben“.
+    where:
+      en: "Administer Orders › Orders › open the order › tab Payment › Release"
+      de: "Bestellungen verwalten › Bestellungen › Bestellung öffnen › Tab Zahlung › Freigabe"
