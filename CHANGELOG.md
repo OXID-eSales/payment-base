@@ -17,6 +17,11 @@ All notable changes to this module are documented here. Format follows
   concurrent first calls (find-then-insert on a unique key). It is now one atomic `INSERT … ON DUPLICATE KEY UPDATE`, and
   database errors fail the request, for the validation endpoint and the providers' webhook limiters alike.
 
+### Added
+- **`Adapter\\ShopParameter`**: the providers' one spelling of the subshop URL parameter. `always(int)` gives `&shp=<id>`
+  for a URL that a third party calls with no shopper session (webhook, return, cancel); `forSubshop(int)` gives nothing
+  for shop 1 (a request of the running checkout). First consumer: paypal-payment.
+
 ### Changed (sprint 147 AW — honest failures; **providers: read this**)
 - **A contract or customer finder throws on a database error.** `ContractRepositoryInterface::findById()`,
   `findByProviderOrderId()`, `findActiveByUserId()`, `findByOrderId()` and
