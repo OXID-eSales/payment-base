@@ -1702,6 +1702,13 @@ parameters:
             count: 1
             path: ../../src/Adapter/Response/PaymentDetailsResponse.php
         -
+            # Sprint 08 (PayPal): the providers' one spelling of the `shp` URL parameter; first consumer paypal-payment (PayPalShopUrls).
+            message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopParameter::forSubshop$#'
+            identifier: shipmonk.deadMethod
+            count: 1
+            path: ../../src/Adapter/ShopParameter.php
+
+        -
             message: '#^Unused\ OxidEsales\\PaymentBase\\Adapter\\ShopCurrency::nameOrEmpty$#'
             identifier: shipmonk.deadMethod
             count: 1
