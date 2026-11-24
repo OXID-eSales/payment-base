@@ -3,7 +3,7 @@
 All notable changes to this module are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions adhere to [SemVer](https://semver.org/).
 
-## [Unreleased - for v1.8.0]
+## [v1.8.0-rc3 - 2026-11-24]
 
 ### Added (assistant, 2026-11-23)
 - **`assistant.classic-places.yaml`: the admin assistant names the money actions of the classic Payment tab.**
