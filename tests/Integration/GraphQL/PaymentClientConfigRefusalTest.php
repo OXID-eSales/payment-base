@@ -26,6 +26,7 @@ use PHPUnit\Framework\Attributes\Group;
  * Needs graphql-base; skipped where it is not installed.
  */
 #[Group('integration')]
+#[Group('graphql')]
 final class PaymentClientConfigRefusalTest extends IntegrationTestCase
 {
     public function setUp(): void

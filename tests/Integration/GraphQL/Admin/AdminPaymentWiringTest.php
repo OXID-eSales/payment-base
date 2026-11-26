@@ -33,6 +33,8 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * Skipped where the admin API is not installed (payment-base then runs without any of this).
  */
 #[Group('integration')]
+#[Group('graphql')]
+#[Group('graphql-admin')]
 final class AdminPaymentWiringTest extends IntegrationTestCase
 {
     public function setUp(): void

@@ -26,6 +26,7 @@ use OxidEsales\GraphQL\Admin\Shared\DataType\Error\NotFoundError;
 use OxidEsales\GraphQL\Admin\Shared\DataType\Error\ValidationError;
 use OxidEsales\GraphQL\Admin\Shared\DataType\Payload\PayloadWithErrors;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -36,6 +37,8 @@ use ReflectionNamedType;
  * This pins, against the REAL classes, every member payment-base relies on, so a stand-in cannot drift from the
  * thing it stands for: when the admin module changes one of these, this test says so before a shop does.
  */
+#[Group('graphql')]
+#[Group('graphql-admin')]
 final class AdminModuleParityTest extends TestCase
 {
     protected function setUp(): void

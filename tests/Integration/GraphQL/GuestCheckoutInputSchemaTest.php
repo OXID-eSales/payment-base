@@ -31,6 +31,7 @@ use TheCodingMachine\GraphQLite\SchemaFactory;
  * Needs graphql-base (GraphQLite); skipped where it is not installed.
  */
 #[Group('integration')]
+#[Group('graphql')]
 final class GuestCheckoutInputSchemaTest extends IntegrationTestCase
 {
     private const VALID_ADDRESS = '{firstName: "Gerda", lastName: "Guest", street: "Grunewaldstr.", streetNumber: "1", zipCode: "79098", city: "%s", countryId: "a7c40f631fc920687.20179984", company: "Acme"}';

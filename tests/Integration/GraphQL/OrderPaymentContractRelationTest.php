@@ -33,6 +33,7 @@ use PHPUnit\Framework\Attributes\Group;
  * Needs graphql-storefront; skipped where it is not installed.
  */
 #[Group('integration')]
+#[Group('graphql')]
 final class OrderPaymentContractRelationTest extends IntegrationTestCase
 {
     use CheckoutFixture;

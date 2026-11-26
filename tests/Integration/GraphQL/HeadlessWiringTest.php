@@ -36,6 +36,7 @@ use TheCodingMachine\GraphQLite\Types\ID;
  * skipped where it is not installed.
  */
 #[Group('integration')]
+#[Group('graphql')]
 final class HeadlessWiringTest extends IntegrationTestCase
 {
     use CheckoutFixture;

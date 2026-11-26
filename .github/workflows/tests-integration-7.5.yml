@@ -25,12 +25,6 @@ jobs:
   # Install Shop with Component - Shared setup cached for other jobs
   # ==========================================================================
   install_shop_with_module:
-    name: install_shop_with_module (${{ matrix.graphql }} GraphQL)
-    # GraphQL dimension: 'without' (no GraphQL package at all) and 'with' (GraphQL active).
-    strategy:
-      fail-fast: false
-      matrix:
-        graphql: [ 'without', 'with' ]
     runs-on: ubuntu-latest
     steps:
       - name: Print run parameters
@@ -39,7 +33,6 @@ jobs:
             PHP version: ${{ env.PHP_VERSION }}\
             MySQL version: ${{ env.MYSQL_VERSION }}\
             Template engine: ${{ env.TEMPLATE_ENGINE }}\
-            GraphQL: ${{ matrix.graphql }}\
             Trigger event: ${{ github.event_name }}"
 
       - name: Cleanup workspace
@@ -137,9 +130,6 @@ jobs:
           # The order mails (STRP-176 integration tests) are rendered from the storefront theme's
           # email templates; without a theme Mailpit receives the template names instead.
           docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/apex-theme:dev-b-7.5.x --no-interaction --no-update
-          if [ '${{ matrix.graphql }}' = 'with' ]; then
-            docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/graphql-storefront --no-interaction --no-update
-          fi
           RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/composer.lock' $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --with-all-dependencies --no-interaction
 
       # Sprint 93 — workaround for a CI-environment-specific bug in
@@ -193,31 +183,12 @@ jobs:
         run: |
           docker compose exec -T php bin/oe-console oe:theme:activate apex
 
-      # GraphQL is optional for the payment modules, so every shop is installed twice. 'with':
-      # graphql-base and graphql-storefront are installed and active before the payment modules, so
-      # their containers compile with GraphQL live and the headless tests run against it. 'without':
-      # no GraphQL package may reach the shop through any dependency.
-      - name: GraphQL ${{ matrix.graphql }} - activate GraphQL or prove it absent
+      # GraphQL is optional for the payment modules. The shop is installed WITHOUT GraphQL: the
+      # integration job first runs everything that does not need GraphQL on it, then installs GraphQL
+      # into the same shop and runs only the GraphQL tests (group 'graphql').
+      - name: Prove GraphQL absent
         run: |
-          if [ '${{ matrix.graphql }}' = 'with' ]; then
-            for package in graphql-base graphql-storefront; do
-              docker compose exec -T php bin/oe-console oe:module:install /var/www/vendor/oxid-esales/$package
-            done
-            docker compose exec -T php bin/oe-console oe:module:activate oe_graphql_base
-            docker compose exec -T php bin/oe-console oe:module:activate oe_graphql_storefront
-          else
-            present=''
-            for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
-              if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
-                present="$present $package"
-              fi
-            done
-            if [ -n "$present" ]; then
-              echo "::error title=GraphQL in the 'without' shop::installed:$present. Something requires GraphQL again; this run would not prove the module works without it."
-              exit 1
-            fi
-            echo "No GraphQL package in the shop (graphql-base, graphql-storefront, GraphQLite, graphql-php)"
-          fi
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/graphql-absent.sh
 
       # Sprint 93 / Sprint I §86–95 — payment-base is itself an
       # oxideshop-module now and must be installed and activated as
@@ -234,12 +205,6 @@ jobs:
           docker compose exec -T php ls -la /var/www/vendor/bin
           docker compose exec -T php bin/oe-console oe:module:install /var/www/test-module
           docker compose exec -T php bin/oe-console oe:module:activate oe_payment_base
-          # GraphQLite caches the schema on disk and never clears it: same step as the documented
-          # install/update procedure. graphql-base's console command exists only where graphql-base
-          # is installed and active, so the call is guarded.
-          if docker compose exec -T php bin/oe-console list --raw | grep -q '^oe:graphql:cache-clear'; then
-            docker compose exec -T php bin/oe-console oe:graphql:cache-clear
-          fi
 
       - name: Show docker log
         if: always()
@@ -257,13 +222,13 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-${{ matrix.graphql }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
 
       - name: Upload configuration artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: InstallShopWithComponent-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-${{ matrix.graphql }}
+          name: InstallShopWithComponent-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}
           path: |
             docker-compose.yml
             source/composer.json
@@ -328,7 +293,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-without-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
@@ -366,14 +331,15 @@ jobs:
   # Integration Tests - Requires full OXID shop setup with database
   # ==========================================================================
   integration_tests:
-    name: integration_tests (PHP ${{ matrix.php }}, MySQL ${{ matrix.mysql }}, ${{ matrix.graphql }} GraphQL)
+    name: integration_tests (PHP ${{ matrix.php }}, MySQL ${{ matrix.mysql }})
+    # One shop, two phases: phase 1 runs on the shop as installed, without GraphQL, everything except
+    # the group 'graphql'; phase 2 installs GraphQL into that shop and runs only the group 'graphql'.
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         php: [ '8.3', '8.4' ]
         mysql: [ '8.0' ]
-        graphql: [ 'without', 'with' ]
     needs: [ install_shop_with_module ]
     runs-on: ubuntu-latest
     steps:
@@ -382,7 +348,7 @@ jobs:
         with:
           path: |
             ./*
-          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-graphql-${{ matrix.graphql }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key: installation-${{ env.OXID_LINE }}-${{ env.PHP_VERSION }}-${{ env.MYSQL_VERSION }}-${{ env.TEMPLATE_ENGINE }}-${{ github.run_number }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
 
       - name: Checkout current component
@@ -403,9 +369,6 @@ jobs:
 
       - name: Install shop dependencies
         run: |
-          if [ '${{ matrix.graphql }}' = 'with' ]; then
-            docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/graphql-storefront --no-interaction --no-update
-          fi
           RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/composer.lock' $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer update --no-interaction
 
       - name: Install component dev dependencies
@@ -420,56 +383,56 @@ jobs:
           RETRY_BETWEEN='docker compose exec -T php php /var/www/test-module/.github/scripts/composer-dist-cache-from-codeload.php /var/www/composer.lock' $GITHUB_WORKSPACE/source/test-module/.github/scripts/retry.sh docker compose exec -T -e COMPOSER_AUTH php composer require oxid-esales/payment-base --no-interaction 2>&1 | tee composer-require.log
           grep -q "\[payment-base\] migrations done" composer-require.log
 
-      - name: GraphQL ${{ matrix.graphql }} - check the shop before the tests
+      # ---- Phase 1: the shop without GraphQL ----------------------------------------------------
+      - name: Phase 1 - prove GraphQL absent
         run: |
-          if [ '${{ matrix.graphql }}' = 'with' ]; then
-            # graphql-base registers its console commands only while it is active: without the
-            # command GraphQL is not live, and the headless tests would not run against it.
-            if ! docker compose exec -T php bin/oe-console list --raw | grep -q '^oe:graphql:cache-clear'; then
-              echo "::error title=GraphQL not active::graphql-base is not active in the 'with' shop."
-              exit 1
-            fi
-            docker compose exec -T php bin/oe-console oe:graphql:cache-clear
-          else
-            present=''
-            for package in oxid-esales/graphql-base oxid-esales/graphql-storefront thecodingmachine/graphqlite webonyx/graphql-php; do
-              if docker compose exec -T -e COMPOSER_AUTH php composer show "$package" > /dev/null 2>&1; then
-                present="$present $package"
-              fi
-            done
-            if [ -n "$present" ]; then
-              echo "::error title=GraphQL in the 'without' shop::installed:$present. Something requires GraphQL again; this run would not prove the module works without it."
-              exit 1
-            fi
-            echo "No GraphQL package in the shop (graphql-base, graphql-storefront, GraphQLite, graphql-php)"
-          fi
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/graphql-absent.sh
 
-      - name: Run integration tests with shop bootstrap
+      - name: Phase 1 - integration tests without GraphQL (all but the group 'graphql')
         run: |
           set -o pipefail
           docker compose exec -T -e XDEBUG_MODE=coverage php vendor/bin/phpunit \
             -c /var/www/test-module/tests/phpunit-integration.xml \
+            --exclude-group graphql \
             --display-skipped | tee integration-tests.log
 
-      # The GraphQL / headless tests skip themselves where graphql-base or graphql-storefront is
-      # missing. In 'with' such a skip means they silently stopped running, so it fails the job.
-      - name: GraphQL ${{ matrix.graphql }} - the headless tests ran where GraphQL is installed
+      # A test that skips itself for a missing GraphQL package here lacks #[Group('graphql')], and
+      # phase 2 would never run it.
+      - name: Phase 1 - no GraphQL test outside the group 'graphql'
         run: |
-          skipped=$(grep -c -E 'graphql-(base|storefront).* is not installed' integration-tests.log || true)
-          echo "Tests skipped for a missing GraphQL package: $skipped"
-          if [ '${{ matrix.graphql }}' = 'with' ] && [ "$skipped" -gt 0 ]; then
-            grep -B 2 -E 'graphql-(base|storefront).* is not installed' integration-tests.log
-            echo "::error title=Headless tests skipped::$skipped GraphQL tests were skipped although GraphQL is installed."
-            exit 1
-          fi
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/graphql-skip-check.sh without integration-tests.log
+
+      # ---- Phase 2: GraphQL installed into the same shop --------------------------------------
+      - name: Phase 2 - install and activate graphql-base and graphql-storefront
+        run: |
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/graphql-install.sh bin/oe-console
+
+      # The group 'graphql-admin' needs oxid-esales/graphql-admin, which is not installed here (see
+      # the notice step below), so it is excluded explicitly instead of skipping.
+      - name: Phase 2 - GraphQL tests (the group 'graphql' only)
+        run: |
+          set -o pipefail
+          docker compose exec -T -e XDEBUG_MODE=coverage php vendor/bin/phpunit \
+            -c /var/www/test-module/tests/phpunit-integration.xml \
+            --group graphql --exclude-group graphql-admin \
+            --display-skipped | tee graphql-tests.log
+
+      - name: Phase 2 - no GraphQL test skipped, at least one ran
+        run: |
+          $GITHUB_WORKSPACE/source/test-module/.github/scripts/graphql-skip-check.sh with graphql-tests.log
+
+      - name: Phase 2 - admin API tests not run here
+        run: |
+          echo "::notice title=Group graphql-admin not run::oxid-esales/graphql-admin is a private repository and supports OXID EE only; this CE shop does not install it, so the group 'graphql-admin' is not run in this workflow."
 
       - name: Upload log artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: IntegrationTestsLog-${{ matrix.php }}-${{ matrix.mysql }}-graphql-${{ matrix.graphql }}
+          name: IntegrationTestsLog-${{ matrix.php }}-${{ matrix.mysql }}
           path: |
             integration-tests.log
+            graphql-tests.log
             source/source/log/oxideshop.log
             data/php/logs/error_log.txt
             source/composer.lock

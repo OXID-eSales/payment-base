@@ -53,6 +53,8 @@ use OxidEsales\PaymentBase\Tests\Unit\Fixture\NoActionBounds;
  * provider sandbox is not involved: the money movement itself belongs to each provider module's own suites.
  */
 #[Group('integration')]
+#[Group('graphql')]
+#[Group('graphql-admin')]
 final class AdminPaymentOperationsIntegrationTest extends IntegrationTestCase
 {
     private const ORDER_ID = 'a10-op-order';
