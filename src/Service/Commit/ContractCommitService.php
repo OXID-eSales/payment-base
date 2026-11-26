@@ -76,8 +76,11 @@ class ContractCommitService implements ContractCommitServiceInterface
             return CommitOutcome::alreadyProcessed($contract->getOrderId());
         }
 
-        if ($state->isTerminal()) {
-            $this->logger->error('[ContractCommitService] provider confirms payment for a contract that is already closed', [
+        // STRP-182: a draft has no order yet (the provider module did not create it before the redirect, or the
+        // contract was reopened), a terminal contract has none any more. Both are refused loudly so the merchant
+        // finds the money; a retry of the delivery cannot change that.
+        if ($state->isTerminal() || $state->isDraft()) {
+            $this->logger->error('[ContractCommitService] provider confirms payment for a contract that has no open order', [
                 'contractId' => $contract->getId(),
                 'state' => $contract->getStateValue(),
                 'provider' => $confirmation->providerName,

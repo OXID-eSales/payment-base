@@ -158,6 +158,33 @@ final class ContractCommitServiceTest extends TestCase
         self::assertSame([], $dispatcher->events);
     }
 
+    /**
+     * STRP-182 / Mythos 2026.11-123: a draft contract has no order (the provider module did not create it before
+     * the redirect, or the contract was reopened). Before, the chain threw "Can only transition to PENDING", the
+     * webhook claim was released and the PSP retried a delivery that can never succeed.
+     */
+    public function testCommit_WhenTheContractIsADraft_IsRefusedAndNotDispatched(): void
+    {
+        $draft = new PaymentContract(1, 'user-1', BasketSnapshot::fromArray([
+            'items' => [],
+            'discounts' => [],
+            'totalGross' => 116.5,
+            'totalNet' => 97.9,
+            'totalVat' => 18.6,
+            'currency' => 'EUR',
+        ]), 'contract-1');
+        $draft->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $this->contracts->method('findById')->willReturn($draft);
+        $dispatcher = new ScriptedChainDispatcher();
+
+        $outcome = $this->service($dispatcher)->commit($this->confirmation());
+
+        self::assertSame(CommitOutcome::REFUSED, $outcome->outcome);
+        self::assertSame('contract_draft', $outcome->reason);
+        self::assertSame([], $dispatcher->events);
+        self::assertTrue($draft->getState()->isDraft());
+    }
+
     public function testAnAmountOrCurrencyMismatchIsRefused(): void
     {
         $this->contracts->method('findById')->willReturn($this->pendingContract());

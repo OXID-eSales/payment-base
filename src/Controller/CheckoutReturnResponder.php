@@ -104,6 +104,9 @@ class CheckoutReturnResponder
         if (!$this->confirmsTheContractAmount($providerName, $contract, $resolution)) {
             return null;
         }
+        if ($this->refusesADraft($providerName, $contract, $resolution)) {
+            return null;
+        }
 
         try {
             $this->dispatchReturn($context, $resolution);
@@ -141,6 +144,32 @@ class CheckoutReturnResponder
         ]);
 
         return false;
+    }
+
+    /**
+     * STRP-182: a contract gets its order (and leaves DRAFT) only through EarlyOrderCreationHandler, before the
+     * shopper goes to the provider. A draft here means the provider module skipped that step, or the contract was
+     * reopened for a new attempt. There is no order to book the payment on: the return fails (the provider
+     * controller shows its failure) and the confirmed money is logged so the merchant can find it.
+     */
+    private function refusesADraft(
+        string $providerName,
+        PaymentContractInterface $contract,
+        ReturnResolution $resolution,
+    ): bool {
+        if (!$contract->getState()->isDraft()) {
+            return false;
+        }
+
+        $this->logger->error('[CheckoutReturnResponder] payment confirmed for a draft contract without an order', [
+            'providerName' => $providerName,
+            'contractId' => $contract->getId(),
+            'authorizationId' => $resolution->authorizationId,
+            'amount' => $resolution->amount,
+            'currency' => $resolution->currency,
+        ]);
+
+        return true;
     }
 
     private function dispatchReturn(EventContext $context, ReturnResolution $resolution): void
@@ -199,6 +228,10 @@ class CheckoutReturnResponder
             ]);
 
             return $this->finish($this->buildContext($providerName, $fresh, $extraContextKeys), $fresh);
+        }
+
+        if ($this->refusesADraft($providerName, $fresh, $resolution)) {
+            return null;
         }
 
         $context = $this->buildContext($providerName, $fresh, $extraContextKeys);

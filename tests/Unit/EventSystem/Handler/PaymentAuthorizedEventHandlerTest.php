@@ -138,4 +138,37 @@ class PaymentAuthorizedEventHandlerTest extends TestCase
 
         $this->handler->handle(new PaymentAuthorizedEvent($context, 'auth_1', 'pi_9', 100.0, 'EUR'));
     }
+
+    /**
+     * STRP-182 / Mythos 2026.11-123: a draft contract has no order, so a payment confirmation cannot be booked on
+     * it. Before, a dead branch called transitionToPending(), which the contract allows only from NOT_FINISHED;
+     * the "Can only transition to PENDING" error said nothing about the real cause. The refusal names the contract
+     * and its state, and nothing is saved.
+     */
+    public function testHandle_WhenTheContractIsADraft_ThrowsWithoutSavingTheContract(): void
+    {
+        $contract = new PaymentContract(1, 'user123', BasketSnapshot::fromArray([
+            'items' => [],
+            'discounts' => [],
+            'totalGross' => 100.0,
+            'totalNet' => 84.03,
+            'totalVat' => 15.97,
+            'currency' => 'EUR',
+        ]), 'contract_draft_1');
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        $this->repository->expects($this->never())->method('save');
+
+        $context = new EventContext(['providerName' => 'stripe']);
+        $context->setContract($contract);
+
+        try {
+            $this->handler->handle(new PaymentAuthorizedEvent($context, 'auth_1', 'pi_9', 100.0, 'EUR'));
+            $this->fail('A draft contract must be refused');
+        } catch (\DomainException $refusal) {
+            $this->assertStringContainsString('contract_draft_1 is a draft and has no order', $refusal->getMessage());
+        }
+
+        $this->assertTrue($contract->getState()->isDraft());
+        $this->assertNull($context->get('authorizationId'), 'a refused confirmation writes nothing into the context');
+    }
 }
