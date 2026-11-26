@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OxidEsales\PaymentBase\EventSystem\Handler;
 
+use DomainException;
 use OxidEsales\PaymentBase\Contract\ContractCondition;
+use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\Contract\ContractReadyToCommitEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
@@ -16,7 +18,7 @@ use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
  * Handles PaymentAuthorizedEvent from payment providers.
  *
  * This handler:
- * 1. Transitions contract from DRAFT to PENDING (if in DRAFT state)
+ * 1. Refuses a DRAFT contract: it has no order yet (STRP-182)
  * 2. Fulfills the PAYMENT_AUTHORIZED condition
  * 3. If all conditions met → dispatches ContractReadyToCommitEvent
  *
@@ -57,6 +59,8 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
             return;
         }
 
+        $this->refuseADraft($contract);
+
         $this->logEvent('PaymentAuthorizedEventHandler: Contract found', [
             'contractId' => $contract->getId(),
             'state' => $contract->getStateValue(),
@@ -67,12 +71,6 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
         $context->set('providerOrderId', $event->getProviderOrderId());
         $context->set('amount', $event->getAmount());
         $context->set('currency', $event->getCurrency());
-
-        // Transition from DRAFT to PENDING if needed
-        if ($contract->getState()->isDraft()) {
-            $this->logEvent('PaymentAuthorizedEventHandler: Transitioning DRAFT -> PENDING');
-            $contract->transitionToPending();
-        }
 
         // Fulfill the payment_authorized condition
         if ($contract->getState()->isPending()) {
@@ -141,6 +139,23 @@ class PaymentAuthorizedEventHandler implements HandlerInterface
         }
 
         $this->logEvent('PaymentAuthorizedEventHandler::handle() END');
+    }
+
+    /**
+     * STRP-182: a contract gets its order and moves to PENDING only through EarlyOrderCreationHandler, before the
+     * shopper leaves for the provider. A confirmation that finds a DRAFT has no order to book the payment on;
+     * the return leg and the webhook leg refuse it before they dispatch, so this is the invariant behind them.
+     */
+    private function refuseADraft(PaymentContractInterface $contract): void
+    {
+        if (!$contract->getState()->isDraft()) {
+            return;
+        }
+
+        throw new DomainException(sprintf(
+            'Payment authorization refused: contract %s is a draft and has no order',
+            (string) $contract->getId()
+        ));
     }
 
     /**

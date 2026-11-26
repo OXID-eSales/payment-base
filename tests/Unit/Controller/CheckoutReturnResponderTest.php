@@ -10,19 +10,26 @@ declare(strict_types=1);
 namespace OxidEsales\PaymentBase\Tests\Unit\Controller;
 
 use OxidEsales\PaymentBase\Checkout\Context\HeadlessCheckoutScope;
+use OxidEsales\PaymentBase\Contract\BasketSnapshot;
+use OxidEsales\PaymentBase\Contract\ContractCondition;
 use OxidEsales\PaymentBase\Contract\ContractState;
+use OxidEsales\PaymentBase\Contract\PaymentContract;
 use OxidEsales\PaymentBase\Contract\PaymentContractInterface;
 use OxidEsales\PaymentBase\Controller\CheckoutReturnResponder;
 use OxidEsales\PaymentBase\Controller\SessionWriterInterface;
 use OxidEsales\PaymentBase\EventSystem\Event\EventContext;
 use OxidEsales\PaymentBase\EventSystem\Event\Payment\PaymentAuthorizedEvent;
 use OxidEsales\PaymentBase\EventSystem\Event\Return\CheckoutReturnCompletedEvent;
+use OxidEsales\PaymentBase\EventSystem\EventDispatcher;
 use OxidEsales\PaymentBase\EventSystem\EventDispatcherInterface;
+use OxidEsales\PaymentBase\EventSystem\EventListenerProvider;
+use OxidEsales\PaymentBase\EventSystem\Handler\PaymentAuthorizedEventHandler;
 use OxidEsales\PaymentBase\Logging\ThrowableSummary;
 use OxidEsales\PaymentBase\Repository\ContractRepositoryInterface;
 use OxidEsales\PaymentBase\Repository\StaleContractException;
 use OxidEsales\PaymentBase\Return\ReturnResolution;
 use OxidEsales\PaymentBase\Return\ReturnResolverInterface;
+use OxidEsales\PaymentBase\Service\OrderPaymentStateServiceInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -64,6 +71,7 @@ final class CheckoutReturnResponderTest extends TestCase
         $this->contract->method('getOrderId')->willReturn('order_fallback');
         $this->contract->method('getAmount')->willReturn(42.0);
         $this->contract->method('getCurrency')->willReturn('EUR');
+        $this->contract->method('getState')->willReturn(ContractState::pending());
     }
 
     /**
@@ -312,6 +320,147 @@ final class CheckoutReturnResponderTest extends TestCase
         });
 
         self::assertNull($this->buildResponder()->respond('mollie', $this->contract, $this->resolver, []));
+    }
+
+    /**
+     * STRP-182: a draft contract has no order (the provider module did not create it before the redirect, or the
+     * contract was reopened for a new attempt). The return refuses it before any event: the provider controller
+     * shows its failure, and the error log lets the merchant find the confirmed money.
+     */
+    public function testRespond_WhenTheContractIsADraft_ReturnsNullAndDispatchesNothing(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $this->dispatcher->expects(self::never())->method('dispatch');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error')->with(
+            self::stringContains('draft'),
+            self::callback(static fn (array $context): bool => $context['contractId'] === 'contr_draft'
+                && $context['authorizationId'] === 'auth_1'
+                && $context['amount'] === 42.0),
+        );
+        $writer = $this->createMock(SessionWriterInterface::class);
+        $writer->expects(self::never())->method('writeSessChallenge');
+
+        $responder = new CheckoutReturnResponder(
+            $this->dispatcher,
+            $writer,
+            $logger,
+            $this->createMock(ContractRepositoryInterface::class),
+            new HeadlessCheckoutScope(),
+            new ThrowableSummary([]),
+        );
+
+        self::assertNull($responder->respond('stripe', $this->draftContract(), $this->resolver, []));
+    }
+
+    public function testRespond_WhenTheFreshContractIsADraft_ReturnsNullAfterOneDispatch(): void
+    {
+        $this->resolver->method('resolve')->willReturn(ReturnResolution::readyToCommit('auth_1', 'ord_1', 42.0, 'EUR'));
+        $calls = 0;
+        $this->dispatcher->method('dispatch')->willReturnCallback(static function (object $event) use (&$calls): object {
+            $calls++;
+            if ($event instanceof PaymentAuthorizedEvent) {
+                throw new StaleContractException('contr_1', 2, 3);
+            }
+            return $event;
+        });
+        $contracts = $this->createMock(ContractRepositoryInterface::class);
+        $contracts->method('findById')->willReturn($this->draftContract());
+
+        self::assertNull($this->buildResponder($contracts)->respond('mollie', $this->contract, $this->resolver, []));
+        self::assertSame(2, $calls, 'only the first pass dispatched; the draft copy gets no events');
+    }
+
+    private function draftContract(): PaymentContractInterface&MockObject
+    {
+        $contract = $this->createMock(PaymentContractInterface::class);
+        $contract->method('getId')->willReturn('contr_draft');
+        $contract->method('getAmount')->willReturn(42.0);
+        $contract->method('getCurrency')->willReturn('EUR');
+        $contract->method('getState')->willReturn(ContractState::draft());
+        $contract->method('getStateValue')->willReturn(ContractState::draft()->getValue());
+        $contract->method('getOrderId')->willReturn(null);
+
+        return $contract;
+    }
+
+    /**
+     * STRP-182 / Mythos 2026.11-123, step 2: a provider module that did not create the order before the redirect
+     * leaves the contract a draft. The return with a confirmed payment threw "Can only transition to PENDING from
+     * NOT_FINISHED state" out of the responder. It must end as the handled failure (null), with the contract
+     * still a draft and nothing committed.
+     */
+    public function testRespond_WhenTheContractIsADraftWithTheRealHandler_ReturnsNullAndLeavesTheContractADraft(): void
+    {
+        $contract = $this->realContract(withOrder: false);
+
+        $orderId = $this->responderWithTheRealHandler()
+            ->respond('stripe', $contract, $this->resolverConfirming($contract), []);
+
+        self::assertNull($orderId);
+        self::assertTrue($contract->getState()->isDraft());
+    }
+
+    /**
+     * STRP-182 / Mythos 2026.11-123, step 1 (the control): with the order created before the customer leaves, the
+     * same return moves the contract on.
+     */
+    public function testRespond_WhenTheContractIsPendingWithTheRealHandler_MovesItToReadyToCommit(): void
+    {
+        $contract = $this->realContract(withOrder: true);
+
+        $orderId = $this->responderWithTheRealHandler()
+            ->respond('stripe', $contract, $this->resolverConfirming($contract), []);
+
+        self::assertSame('order_early', $orderId);
+        self::assertTrue($contract->getState()->isReadyToCommit());
+    }
+
+    private function realContract(bool $withOrder): PaymentContract
+    {
+        $contract = new PaymentContract(1, 'user_1', BasketSnapshot::fromArray([
+            'items' => [],
+            'discounts' => [],
+            'totalGross' => 42.0,
+            'totalNet' => 35.29,
+            'totalVat' => 6.71,
+            'currency' => 'EUR',
+        ]), 'contr_real');
+        $contract->addCondition(new ContractCondition(ContractCondition::TYPE_PAYMENT_AUTHORIZED));
+        if ($withOrder) {
+            $contract->transitionToNotFinished('order_early');
+            $contract->transitionToPending();
+        }
+
+        return $contract;
+    }
+
+    private function resolverConfirming(PaymentContract $contract): ReturnResolverInterface
+    {
+        $resolver = $this->createMock(ReturnResolverInterface::class);
+        $resolver->method('resolve')->willReturn(
+            ReturnResolution::readyToCommit('auth_1', 'ord_1', $contract->getAmount(), $contract->getCurrency()),
+        );
+
+        return $resolver;
+    }
+
+    private function responderWithTheRealHandler(): CheckoutReturnResponder
+    {
+        $handler = new PaymentAuthorizedEventHandler(
+            $this->createMock(ContractRepositoryInterface::class),
+            new EventDispatcher(new EventListenerProvider([])),
+            $this->createMock(OrderPaymentStateServiceInterface::class),
+        );
+
+        return new CheckoutReturnResponder(
+            new EventDispatcher(new EventListenerProvider([$handler])),
+            $this->createMock(SessionWriterInterface::class),
+            new NullLogger(),
+            $this->createMock(ContractRepositoryInterface::class),
+            new HeadlessCheckoutScope(),
+            new ThrowableSummary([]),
+        );
     }
 
     private function contractInState(ContractState $state, string $orderId): PaymentContractInterface&MockObject
