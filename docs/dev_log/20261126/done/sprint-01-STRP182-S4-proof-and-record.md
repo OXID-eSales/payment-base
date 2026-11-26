@@ -43,8 +43,11 @@ Branch `b-7.4.x-uncaught-exception-STRP-182` in stripe (from `b-7.4.x` 311709c),
   environment errors of stripe's own vendor tree (`source/config.inc.php` not found, `Safe\…` redeclared).
 - Through the shop config (`tests/phpunit.xml`), every `checkoutSuccess` test passes, B6 and B7 included; the one error
   per file is a `createCheckoutSession` test (`OrderController_parent` not found), on the baseline too.
-- The fixture works with the old and the new payment-base (same counts with the change stashed), so the stripe branch
-  needs **no** CI pin and can merge before or after payment-base.
+- **Correction after the first CI run (2026-11-26):** B6 needs the new payment-base. It now expects no dispatch for a
+  draft, and payment-base `b-7.4.x` still dispatches it (CI `isolated_unit_tests` failed on B6 only, all other jobs
+  green). Locally this did not show, because B6 stopped on the same environment error with both versions. Thus the
+  stripe branch pins payment-base to `b-7.4.x-uncaught-exception-STRP-182` in its four test workflows (9a9cf77,
+  "pin, revert after merge"). Merge order: **payment-base first**, then revert 9a9cf77 in stripe, then merge stripe.
 - stripe `./bin/pre-commit-check.sh --no-phpunit` → `COMMITABLE`.
 
 ## UI proof (D1)

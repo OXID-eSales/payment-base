@@ -11,4 +11,4 @@ Plan: [`done/sprints/sprint-01-STRP182-draft-contract-return-refused.md`](done/s
 | S3 webhook leg refuses a draft | done | draft joins the terminal refusal: `refused(contract_draft)` + error log, no event | commit-service test 12/12 green |
 | S4 proof and record | done | gate COMMITABLE; consumers compared with baseline; stripe fixtures fixed on twin branch | Unit 2165 green; integration = baseline |
 
-Open: owner merge (payment-base and stripe, any order, no pin); D1 — Mythos rerun of `repro-2026.11-123.php` after the merge.
+Open: owner merge — payment-base first, then revert the stripe CI pin 9a9cf77, then stripe; D1 — Mythos rerun of `repro-2026.11-123.php` after the merge.
